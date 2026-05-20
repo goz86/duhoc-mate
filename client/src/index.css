@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-cream: #FAF6F0;
+  --color-brand-panel: #FFFFFF;
+  --color-brand-brown-dark: #4A3E3D;
+  --color-brand-brown-light: #8B7E7B;
+  --color-brand-terracotta: #A77A6C;
+  --color-brand-terracotta-light: #E4C1B5;
+  --color-brand-accent: #E5A893;
+  --color-brand-light: #F3EFE9;
+  
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Nunito', system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-brand-cream);
+  color: var(--color-brand-brown-dark);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Glassmorphism panel styles */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.glass-panel-dark {
+  background: rgba(74, 62, 61, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(74, 62, 61, 0.1);
+}
+
+/* Custom scrollbars for cozy feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-brand-terracotta-light);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-terracotta);
+}
+
+/* Base styles for buttons and inputs */
+input, select, textarea {
+  font-family: var(--font-sans);
+}

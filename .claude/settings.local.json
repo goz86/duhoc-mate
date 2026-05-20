@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.lissenly.com)",
+      "Bash(npm run *)",
+      "Bash(lsof -ti:3001)",
+      "Bash(xargs kill -9)",
+      "Bash(lsof -ti:5173)",
+      "Bash(lsof -ti:5174)",
+      "Bash(pkill -f \"node index.js\")",
+      "Bash(pkill -f \"vite\")",
+      "PowerShell(Get-Process node -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Force)",
+      "PowerShell(Get-Process vite -ErrorAction SilentlyContinue)",
+      "PowerShell(\"Processes killed\")",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(node index.js)",
+      "Bash(Get-Process node *)",
+      "Bash(Stop-Process -Force)",
+      "Bash(Start-Sleep -Seconds 1)",
+      "Bash(Write-Host \"killed\")",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__navigate",
+      "mcp__Claude_in_Chrome__computer",
+      "mcp__Claude_in_Chrome__read_console_messages",
+      "mcp__Claude_in_Chrome__javascript_tool",
+      "PowerShell($proc = Get-Process node -ErrorAction SilentlyContinue; $proc | ForEach-Object { \"$\\($_.Id\\) $\\($_.CPU\\) $\\($_.Name\\)\" })",
+      "mcp__Claude_in_Chrome__read_network_requests",
+      "PowerShell($res = Invoke-WebRequest -Uri \"http://localhost:5173\" -UseBasicParsing; $res.StatusCode; $res.Content.Substring\\(0, 200\\))",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'Initial commit: Full Duhoc Mate build with React 19, Supabase auth, i18n, TOPIK flashcards, Pomodoro, Quick-Help Board *)"
+    ]
+  }
+}
