@@ -75,6 +75,33 @@ interface PomodoroState {
   isBreak: boolean;
 }
 
+const trendingVideoSuggestions = [
+  {
+    videoId: '5qap5aO4i9A',
+    title: 'Lo-Fi Girl Study Beat',
+    duration: 'LIVE',
+    category: 'Lo-fi',
+  },
+  {
+    videoId: 'jfKfPfyJRdk',
+    title: 'lofi hip hop radio - beats to relax/study to',
+    duration: 'LIVE',
+    category: 'Study music',
+  },
+  {
+    videoId: 'TURbeWK2wwg',
+    title: 'Korean Listening Practice for Beginners',
+    duration: '25:00',
+    category: 'Korean',
+  },
+  {
+    videoId: 'lTRiuFIWV54',
+    title: 'Study With Me Korea - Pomodoro',
+    duration: '50:00',
+    category: 'Study with me',
+  },
+];
+
 export default function App() {
   const { t } = useTranslation();
   const { user, profile, signOut } = useAuth();
@@ -648,6 +675,18 @@ export default function App() {
       duration: result.duration
     });
     setSongSearch('');
+    setShowSearchResults(false);
+    setMusicSearchResults([]);
+    setSidebarTab('playlist');
+  };
+
+  const addSuggestedVideo = (suggestion: typeof trendingVideoSuggestions[number]) => {
+    socket.emit('add-to-playlist', {
+      roomId,
+      videoId: suggestion.videoId,
+      title: suggestion.title,
+      duration: suggestion.duration
+    });
     setShowSearchResults(false);
     setMusicSearchResults([]);
     setSidebarTab('playlist');
@@ -1340,10 +1379,41 @@ export default function App() {
                     {/* Playlist Queue */}
                     <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-[250px]">
                       {playlist.length === 0 ? (
-                        <div className="text-center py-12 text-brand-brown-light space-y-2">
-                          <ListMusic className="mx-auto text-brand-terracotta-light/40" size={36} />
-                          <p className="text-sm font-semibold">Hàng đợi bài hát trống</p>
-                          <p className="text-xs">Dán link YouTube ở trên để thêm nhạc.</p>
+                        <div className="py-4 text-brand-brown-light space-y-3">
+                          <div className="rounded-2xl border border-dashed border-brand-terracotta-light/40 bg-white/60 p-4 text-center">
+                            <ListMusic className="mx-auto text-brand-terracotta-light/60" size={34} />
+                            <p className="mt-2 text-sm font-black text-brand-brown-dark">Danh sách phát đang trống</p>
+                            <p className="mt-1 text-xs leading-relaxed">Chọn nhanh một video đang phổ biến cho phòng học, hoặc dán link YouTube ở trên.</p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <p className="text-xs font-black text-brand-brown-dark">Gợi ý hôm nay</p>
+                            {trendingVideoSuggestions.map((suggestion) => (
+                              <button
+                                key={suggestion.videoId}
+                                type="button"
+                                onClick={() => addSuggestedVideo(suggestion)}
+                                className="group flex w-full items-center gap-3 rounded-2xl border border-brand-terracotta-light/10 bg-white/80 p-2 text-left transition hover:border-brand-terracotta/30 hover:shadow-sm"
+                              >
+                                <div className="relative h-12 w-18 flex-shrink-0 overflow-hidden rounded-xl bg-brand-light">
+                                  <img
+                                    src={`https://i.ytimg.com/vi/${suggestion.videoId}/hqdefault.jpg`}
+                                    alt={suggestion.title}
+                                    className="h-full w-full object-cover"
+                                    onError={(event) => { (event.target as HTMLImageElement).style.display = 'none'; }}
+                                  />
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition group-hover:opacity-100">
+                                    <Play size={14} className="text-white" />
+                                  </div>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-xs font-black text-brand-brown-dark">{suggestion.title}</p>
+                                  <p className="mt-1 text-[10px] font-bold text-brand-brown-light">{suggestion.category} · {suggestion.duration}</p>
+                                </div>
+                                <span className="rounded-lg bg-brand-terracotta px-2 py-1 text-[10px] font-black text-white">Thêm</span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       ) : (
                         playlist.map((item, idx) => (
