@@ -1,17 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
-  Plus, LogIn, Share2, Coffee, LogOut, MessageCircle, ListMusic,
-  Users, ThumbsUp, Play, Pause, RotateCcw, Send, Sparkles,
-  Clock, FileText, Video, Compass, Copy,
-  Headphones, LogIn as LoginIcon
+  Coffee, MessageCircle, ListMusic,
+  Users, ThumbsUp, Play, Pause, RotateCcw, Send,
+  Clock, FileText, Video,
+  Headphones, Music2, ChevronRight
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './contexts/AuthContext';
 import AuthModal from './components/AuthModal';
-import LanguageSwitcher from './components/LanguageSwitcher';
-import QuickHelpBoard from './components/QuickHelpBoard';
 import TopikStudy from './components/TopikStudy';
+import IdeaBoard from './components/IdeaBoard';
+import CreateTemplateModal from './components/CreateTemplateModal';
+import LandingPage from './components/LandingPage';
+import { getTemplateRoomId } from './components/TemplateMarketplace';
+import RoomHeader from './components/RoomHeader';
+import StageSelector from './components/StageSelector';
+import StudyTableStage from './components/StudyTableStage';
+import {
+  cloneTasks,
+  loadRoomTasks,
+  loadTemplates,
+  saveRoomTasks,
+  saveTemplate,
+  type IdeaTask,
+  type RoomTemplate
+} from './lib/communityTemplates';
+import type { StageMode } from './types';
 
 // Kết nối tới Socket Server (cục bộ hoặc tự động nhận theo host)
 const SOCKET_URL = window.location.hostname === 'localhost' 
@@ -78,9 +93,6 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
-  // Audio-only mode (chế độ nghe như radio - không render video)
-  const [audioOnly, setAudioOnly] = useState(false);
-
   // YouTube error handling
   const [videoError, setVideoError] = useState(false);
 
@@ -88,7 +100,7 @@ export default function App() {
   const [showHelpBoard, setShowHelpBoard] = useState(false);
 
   // Lobby (landing card) states
-  const [lobbyTab, setLobbyTab] = useState<'recent' | 'explore' | 'friends'>('recent');
+  // lobbyTab removed — new design uses sections instead of tabs
   const [activeRooms, setActiveRooms] = useState<any[]>([]);
   const [recentRooms, setRecentRooms] = useState<any[]>(() => {
     try {
@@ -116,14 +128,22 @@ export default function App() {
     return code;
   });
   const [friendInputCode, setFriendInputCode] = useState('');
+  const [templates, setTemplates] = useState<RoomTemplate[]>([]);
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
 
   // Room states
   const [members, setMembers] = useState<Member[]>([]);
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState('');
-  const [activeTab, setActiveTab] = useState<'youtube' | 'pdf' | 'pomodoro' | 'topik'>('youtube');
+  // StageMode controls the main room module: media, focus timer, TOPIK, or idea board.
+  const [stageMode, setStageMode] = useState<StageMode>('youtube');
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'playlist' | 'members'>('playlist');
+  const [ideaTasks, setIdeaTasks] = useState<IdeaTask[]>([]);
+
+  // TikTok states
+  const [tiktokUrl, setTiktokUrl] = useState('');
+  const [tiktokVideoId, setTiktokVideoId] = useState('');
 
   // YouTube states
   const [songSearch, setSongSearch] = useState('');
@@ -153,15 +173,18 @@ export default function App() {
     isBreak: false
   });
 
-  // Jitsi states
+  // Study table state. Real Jitsi embed is intentionally disabled for now so
+  // the virtual table does not get interrupted by a raw "Join meeting" iframe.
   const [jitsiActive, setJitsiActive] = useState(false);
-  const jitsiContainerRef = useRef<HTMLDivElement>(null);
-  const jitsiApiRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    loadTemplates().then(setTemplates);
+  }, []);
 
   // 1. Kết nối socket & Khởi tạo
   useEffect(() => {
@@ -174,12 +197,17 @@ export default function App() {
       if (me) setIsHost(me.isHost);
     });
 
-    socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost }) => {
+    socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost, tiktokVideoId, ideaTasks }) => {
       setPlaylist(playlist);
       setCurrentVideo(videoState);
       setPomodoro(pomodoro);
       setChatMessages(chatMessages || []);
+      setIdeaTasks(ideaTasks || []);
       setIsHost(isHost);
+      if (tiktokVideoId) {
+        setTiktokVideoId(tiktokVideoId);
+        setStageMode('tiktok');
+      }
     });
 
     socket.on('assigned-host', (val: boolean) => {
@@ -222,6 +250,13 @@ export default function App() {
       setPomodoro(pState);
     });
 
+    socket.on('idea-board-sync', (tasks: IdeaTask[]) => {
+      const nextTasks = tasks || [];
+      setIdeaTasks(nextTasks);
+      const rid = roomIdRef.current;
+      if (rid) saveRoomTasks(rid, nextTasks);
+    });
+
     socket.on('pomodoro-done', ({ isBreak }) => {
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav');
       audio.play().catch(() => {});
@@ -236,6 +271,12 @@ export default function App() {
     // Nhận danh sách phòng hoạt động
     socket.on('active-rooms-list', (rooms: any[]) => {
       setActiveRooms(rooms);
+    });
+
+    // TikTok sync (Phase B)
+    socket.on('tiktok-sync', ({ videoId }: { videoId: string }) => {
+      setTiktokVideoId(videoId);
+      setStageMode('tiktok');
     });
 
     // Nhận danh sách user online để xem bạn bè có online không
@@ -262,6 +303,16 @@ export default function App() {
     }
   }, [profile]);
 
+  useEffect(() => {
+    if (view !== 'room' || !roomId) return;
+    loadRoomTasks(roomId).then(tasks => {
+      if (tasks.length > 0) {
+        setIdeaTasks(tasks);
+        socket?.emit('idea-board-update', { roomId, tasks });
+      }
+    });
+  }, [view, roomId]);
+
   // Theo dõi cập nhật tên / mã bạn bè lên server
   useEffect(() => {
     if (username.trim()) {
@@ -281,9 +332,9 @@ export default function App() {
   const isHostRef = useRef(isHost);
   useEffect(() => { isHostRef.current = isHost; }, [isHost]);
 
-  // Init player một lần khi vào room + tab youtube
+  // Init player một lần khi vào room + stage youtube/music
   useEffect(() => {
-    if (view !== 'room' || activeTab !== 'youtube') return;
+    if (view !== 'room' || (stageMode !== 'youtube' && stageMode !== 'music')) return;
 
     const initPlayer = () => {
       if (!iframeContainerRef.current) return;
@@ -356,7 +407,7 @@ export default function App() {
       if (playerRef.current?.destroy) playerRef.current.destroy();
       playerRef.current = null;
     };
-  }, [view, activeTab]);
+  }, [view, stageMode]);
 
   // Load video mới khi currentVideo.id thay đổi (nhưng player đã tồn tại)
   useEffect(() => {
@@ -368,46 +419,18 @@ export default function App() {
     }
   }, [currentVideo.id]);
 
-  // Khởi động Jitsi Meet gọi Video/Voice
+  // Toggle only the study-table presence state. A polished call layer can be
+  // added later without leaking the default Jitsi prejoin UI into the room.
   const toggleJitsi = () => {
-    if (jitsiActive) {
-      if (jitsiApiRef.current) {
-        jitsiApiRef.current.dispose();
-      }
-      setJitsiActive(false);
-    } else {
-      setJitsiActive(true);
-      setTimeout(() => {
-        if (!jitsiContainerRef.current) return;
-        const domain = "8x8.vc";
-        const options = {
-          roomName: `vpaas-magic-cookie-3d07e60b13cf4883b27b3b3a620ce60e/study-stream-${roomId}`,
-          width: '100%',
-          height: '100%',
-          parentNode: jitsiContainerRef.current,
-          userInfo: {
-            displayName: username
-          },
-          configOverwrite: {
-            startWithAudioMuted: true,
-            startWithVideoMuted: true,
-            prejoinPageEnabled: false
-          },
-          interfaceConfigOverwrite: {
-            SHOW_JITSI_WATERMARK: false,
-            TOOLBAR_BUTTONS: ['microphone', 'camera', 'chat', 'tileview', 'hangup']
-          }
-        };
-        jitsiApiRef.current = new (window as any).JitsiMeetExternalAPI(domain, options);
-      }, 100);
-    }
+    setJitsiActive(prev => !prev);
   };
 
   // 2. Chức năng Phòng (Tạo/Tham Gia)
-  const handleCreateRoom = () => {
+  const handleCreateRoom = (seedTasks: IdeaTask[] = []) => {
     if (!username.trim()) return alert("Vui lòng nhập tên của bạn trước!");
     const generatedId = Math.random().toString(36).substring(2, 8).toUpperCase();
     setRoomId(generatedId);
+    setIdeaTasks(seedTasks);
     
     // Lưu vào phòng gần đây
     const newRecent = [
@@ -417,7 +440,8 @@ export default function App() {
     setRecentRooms(newRecent);
     localStorage.setItem('duhocmate_recent_rooms', JSON.stringify(newRecent));
 
-    socket.emit('join-room', { roomId: generatedId, username });
+    if (seedTasks.length) saveRoomTasks(generatedId, seedTasks);
+    socket.emit('join-room', { roomId: generatedId, username, ideaTasks: seedTasks });
     setView('room');
   };
 
@@ -447,6 +471,45 @@ export default function App() {
     setView('room');
   };
 
+  const handleJoinTemplateRoom = async (template: RoomTemplate) => {
+    if (!username.trim()) return alert("Vui lòng nhập tên của bạn trước!");
+
+    const fixedRoomId = getTemplateRoomId(template);
+    const storedTasks = await loadRoomTasks(fixedRoomId);
+    const seedTasks = storedTasks.length ? storedTasks : cloneTasks(template.tasks);
+
+    if (!storedTasks.length) {
+      await saveRoomTasks(fixedRoomId, seedTasks);
+    }
+
+    setRoomId(fixedRoomId);
+    setIdeaTasks(seedTasks);
+    setStageMode('ideas');
+
+    const newRecent = [
+      { id: fixedRoomId, hostName: template.title, currentSong: 'Phòng mở 24/24' },
+      ...recentRooms.filter(r => r.id !== fixedRoomId)
+    ].slice(0, 5);
+    setRecentRooms(newRecent);
+    localStorage.setItem('duhocmate_recent_rooms', JSON.stringify(newRecent));
+
+    socket.emit('join-room', { roomId: fixedRoomId, username, ideaTasks: seedTasks });
+    setView('room');
+  };
+
+  const handleIdeaTasksChange = (tasks: IdeaTask[]) => {
+    setIdeaTasks(tasks);
+    if (roomId) {
+      saveRoomTasks(roomId, tasks);
+      socket?.emit('idea-board-update', { roomId, tasks });
+    }
+  };
+
+  const handleSaveTemplate = async (template: Omit<RoomTemplate, 'id' | 'createdAt' | 'uses'>) => {
+    const saved = await saveTemplate(template);
+    setTemplates(prev => [saved, ...prev.filter(item => item.id !== saved.id)]);
+  };
+
   const handleAddFriend = (e: React.FormEvent) => {
     e.preventDefault();
     const code = friendInputCode.trim().toUpperCase();
@@ -458,6 +521,39 @@ export default function App() {
     setFriendsList(newList);
     localStorage.setItem('duhocmate_friends', JSON.stringify(newList));
     setFriendInputCode('');
+  };
+
+  // TikTok: extract video ID from URL and sync to room
+  const handleTikTokLoad = (e: React.FormEvent) => {
+    e.preventDefault();
+    const url = tiktokUrl.trim();
+    if (!url) return;
+
+    // Extract TikTok video ID from URL patterns:
+    // https://www.tiktok.com/@user/video/1234567890
+    // https://vm.tiktok.com/XXXXXX/
+    const longMatch = url.match(/tiktok\.com\/@[\w.]+\/video\/(\d+)/);
+    const shortMatch = url.match(/vm\.tiktok\.com\/([A-Za-z0-9]+)/);
+
+    let videoId = '';
+    if (longMatch) {
+      videoId = longMatch[1];
+    } else if (shortMatch) {
+      // Short URL – we just use the slug, not ideal but workable
+      videoId = shortMatch[1];
+    } else if (/^\d{15,20}$/.test(url)) {
+      // Already a raw video ID
+      videoId = url;
+    }
+
+    if (!videoId) {
+      alert('Link TikTok không hợp lệ. Vui lòng dán link đầy đủ từ TikTok.');
+      return;
+    }
+
+    setTiktokVideoId(videoId);
+    // Sync to room so others see it too
+    socket.emit('tiktok-sync', { roomId, videoId });
   };
 
   const [friendCodeCopied, setFriendCodeCopied] = useState(false);
@@ -656,10 +752,10 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (activeTab === 'pdf' && pdfDocRef.current) {
+    if (stageMode === 'pdf' && pdfDocRef.current) {
       renderPdfPage(pdfPage);
     }
-  }, [pdfPage, activeTab]);
+  }, [pdfPage, stageMode]);
 
   useEffect(() => {
     if (sidebarTab === 'chat') {
@@ -711,347 +807,37 @@ export default function App() {
   return (
     <div className="min-h-screen bg-brand-cream text-brand-brown-dark font-sans selection:bg-brand-accent selection:text-white flex flex-col items-center">
       
-      {/* LANDING PAGE */}
+      {/* LANDING PAGE — LOBBY-FIRST DESIGN */}
       {view === 'landing' && (
-        <div className="w-full max-w-6xl px-6 py-12 flex-1 flex flex-col justify-center">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-14">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-brand-terracotta flex items-center justify-center text-white shadow-lg">
-                <Sparkles size={22} className="animate-pulse" />
-              </div>
-              <span className="font-display font-extrabold text-2xl tracking-tight text-brand-brown-dark">Duhoc Mate</span>
-            </div>
-
-            {/* Right: Clock + Lang + Auth */}
-            <div className="flex items-center gap-3">
-              <span className="hidden md:flex items-center gap-1.5 text-sm text-brand-brown-light font-medium">
-                <Clock size={15} /> {new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })} KST
-              </span>
-
-              <LanguageSwitcher />
-
-              {user ? (
-                <div className="flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border ${getAvatarColor(profile?.username || username)}`}>
-                    {(profile?.username || username).substring(0, 2).toUpperCase()}
-                  </div>
-                  <button
-                    onClick={signOut}
-                    className="text-sm text-brand-brown-light hover:text-brand-terracotta font-semibold transition cursor-pointer"
-                  >
-                    {t('nav.logout')}
-                  </button>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-brand-terracotta-light/30 text-brand-brown-dark hover:bg-brand-light text-sm font-bold transition cursor-pointer"
-                  >
-                    <LoginIcon size={15} /> {t('nav.login')}
-                  </button>
-                  <button
-                    onClick={() => { setAuthMode('register'); setShowAuthModal(true); }}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-brand-terracotta hover:bg-brand-brown-dark text-white text-sm font-bold transition cursor-pointer shadow-sm"
-                  >
-                    {t('nav.register')}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Column */}
-            <div className="lg:col-span-7 space-y-8">
-              <div className="space-y-6">
-                <span className="text-base font-bold tracking-widest text-brand-terracotta uppercase bg-brand-terracotta-light/30 px-4 py-2 rounded-full inline-block">
-                  {t('landing.badge')}
-                </span>
-                <h1 className="font-display font-black text-6xl lg:text-7xl text-brand-brown-dark leading-tight">
-                  {t('landing.headline1')}<br/>
-                  <span className="text-brand-terracotta">{t('landing.headline2')}</span>
-                </h1>
-                <p className="text-brand-brown-light text-xl leading-relaxed max-w-lg font-medium">
-                  {t('landing.description')}
-                </p>
-              </div>
-
-              {/* Form Input */}
-              <div className="glass-panel p-8 rounded-3xl max-w-md shadow-xl border border-white/60 space-y-5">
-                <div>
-                  <label className="block text-sm font-bold uppercase text-brand-brown-light mb-3">TÊN CỦA BẠN (HỌC DANH)</label>
-                  <input
-                    type="text"
-                    placeholder="Nhập tên/biệt danh..."
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-brand-terracotta-light/40 bg-brand-light focus:outline-none focus:ring-2 focus:ring-brand-terracotta/40 text-brand-brown-dark font-medium transition text-base"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={handleCreateRoom}
-                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-brand-terracotta hover:bg-brand-brown-dark text-white font-bold transition shadow-md hover:shadow-lg cursor-pointer text-base"
-                  >
-                    <Plus size={20} /> Tạo phòng
-                  </button>
-                  
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="Mã phòng..." 
-                      value={roomId}
-                      onChange={(e) => setRoomId(e.target.value)}
-                      className="w-full px-3 py-2 text-center rounded-xl border border-brand-terracotta-light/40 bg-brand-light focus:outline-none focus:ring-2 focus:ring-brand-terracotta/40 text-brand-brown-dark font-bold tracking-wider uppercase text-sm"
-                    />
-                    <button 
-                      onClick={() => handleJoinRoom()}
-                      className="px-3 rounded-xl bg-brand-light hover:bg-brand-terracotta-light/50 border border-brand-terracotta-light/30 transition cursor-pointer"
-                      title="Vào phòng"
-                    >
-                      <LogIn size={18} className="text-brand-terracotta" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Badges */}
-              <div className="flex flex-wrap gap-2.5 pt-6">
-                <span className="px-4 py-2 rounded-full text-sm font-bold bg-white text-brand-brown-light border border-brand-light shadow-sm">{t('landing.features.jukebox')}</span>
-                <span className="px-4 py-2 rounded-full text-sm font-bold bg-white text-brand-brown-light border border-brand-light shadow-sm">{t('landing.features.pdf')}</span>
-                <span className="px-4 py-2 rounded-full text-sm font-bold bg-white text-brand-brown-light border border-brand-light shadow-sm">{t('landing.features.pomodoro')}</span>
-                <span className="px-4 py-2 rounded-full text-sm font-bold bg-white text-brand-brown-light border border-brand-light shadow-sm">{t('landing.features.topik')}</span>
-                <span className="px-4 py-2 rounded-full text-sm font-bold bg-white text-brand-brown-light border border-brand-light shadow-sm">{t('landing.features.video')}</span>
-              </div>
-
-              {/* Help Board CTA */}
-              <button
-                onClick={() => setShowHelpBoard(!showHelpBoard)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand-light border border-brand-terracotta-light/30 hover:bg-brand-terracotta-light/40 text-brand-brown-dark text-sm font-bold transition cursor-pointer shadow-sm"
-              >
-                🇰🇷 {showHelpBoard ? 'Ẩn bảng hỗ trợ' : 'Bảng Hỗ Trợ Cuộc Sống Hàn Quốc'}
-              </button>
-            </div>
-
-            {/* Right Column (Cozy Lobby Panel with Tabs) */}
-            <div className="lg:col-span-5 flex justify-center">
-              <div className="glass-panel p-6 rounded-[32px] shadow-2xl border border-white max-w-md w-full flex flex-col gap-6 bg-white/70 backdrop-blur-md">
-                
-                {/* Navigation Tabs Bar */}
-                <div className="flex p-1 bg-brand-light/60 rounded-full border border-brand-terracotta-light/10">
-                  <button 
-                    onClick={() => setLobbyTab('recent')}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                      lobbyTab === 'recent' 
-                        ? 'bg-white text-brand-terracotta shadow-sm' 
-                        : 'text-brand-brown-light hover:text-brand-brown-dark'
-                    }`}
-                  >
-                    <Clock size={14} /> Gần đây
-                  </button>
-                  <button 
-                    onClick={() => setLobbyTab('explore')}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                      lobbyTab === 'explore' 
-                        ? 'bg-white text-brand-terracotta shadow-sm' 
-                        : 'text-brand-brown-light hover:text-brand-brown-dark'
-                    }`}
-                  >
-                    <Compass size={14} /> Khám phá
-                  </button>
-                  <button 
-                    onClick={() => setLobbyTab('friends')}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                      lobbyTab === 'friends' 
-                        ? 'bg-white text-brand-terracotta shadow-sm' 
-                        : 'text-brand-brown-light hover:text-brand-brown-dark'
-                    }`}
-                  >
-                    <Users size={14} /> Bạn bè
-                  </button>
-                </div>
-
-                {/* Tab content wrapper */}
-                <div className="h-[360px] overflow-y-auto pr-1 space-y-3 custom-scrollbar">
-                  
-                  {/* TABS 1: RECENT */}
-                  {lobbyTab === 'recent' && (
-                    <div className="space-y-2">
-                      {recentRooms.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-52 text-center text-brand-brown-light/70 space-y-3">
-                          <Coffee size={36} className="text-brand-terracotta/40 stroke-[1.5]" />
-                          <p className="text-xs font-medium">Chưa có phòng học gần đây nào được lưu lại.</p>
-                        </div>
-                      ) : (
-                        recentRooms.map((room, idx) => (
-                          <div 
-                            key={`${room.id}-${idx}`}
-                            onClick={() => handleJoinRoom(room.id)}
-                            className="p-3.5 rounded-2xl bg-white hover:bg-brand-light border border-brand-terracotta-light/10 hover:border-brand-terracotta-light/35 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-center gap-3 group shadow-sm"
-                          >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs border ${getAvatarColor(room.hostName)}`}>
-                              {room.hostName.substring(0, 2).toUpperCase()}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-bold text-sm text-brand-brown-dark truncate group-hover:text-brand-terracotta transition">
-                                  {room.hostName} Mate Room
-                                </h4>
-                                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-light border border-brand-terracotta-light/20 text-brand-terracotta uppercase">
-                                  {room.id}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-brand-brown-light truncate mt-0.5 flex items-center gap-1 font-medium">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Gần đây
-                              </p>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-
-                  {/* TABS 2: EXPLORE */}
-                  {lobbyTab === 'explore' && (
-                    <div className="space-y-2">
-                      {activeRooms.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-52 text-center text-brand-brown-light/70 space-y-3">
-                          <Compass size={36} className="text-brand-terracotta/40 stroke-[1.5]" />
-                          <p className="text-xs font-medium">Hiện tại chưa có phòng nào hoạt động.<br />Hãy tạo phòng và chia sẻ cho bạn bè nhé!</p>
-                        </div>
-                      ) : (
-                        activeRooms.map((room, idx) => (
-                          <div 
-                            key={`${room.id}-${idx}`}
-                            onClick={() => handleJoinRoom(room.id)}
-                            className="p-3.5 rounded-2xl bg-white hover:bg-brand-light border border-brand-terracotta-light/10 hover:border-brand-terracotta-light/35 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-center gap-3 group shadow-sm"
-                          >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs border ${getAvatarColor(room.hostName)}`}>
-                              {room.hostName.substring(0, 2).toUpperCase()}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-bold text-sm text-brand-brown-dark truncate group-hover:text-brand-terracotta transition">
-                                  Phòng của {room.hostName}
-                                </h4>
-                                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-light border border-brand-terracotta-light/20 text-brand-terracotta uppercase">
-                                  {room.id}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between mt-1">
-                                <p className="text-[10px] text-brand-brown-light truncate font-medium max-w-[150px]">
-                                  🎵 {room.currentSong}
-                                </p>
-                                <span className="text-[10px] text-brand-terracotta font-extrabold flex items-center gap-1">
-                                  <Users size={10} /> {room.memberCount} đang học
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-
-                  {/* TABS 3: FRIENDS */}
-                  {lobbyTab === 'friends' && (
-                    <div className="space-y-4">
-                      {/* My friend code */}
-                      <div className="p-3 rounded-2xl bg-brand-light/70 border border-dashed border-brand-terracotta/30 flex items-center justify-between shadow-inner">
-                        <div>
-                          <p className="text-[10px] font-bold text-brand-brown-light uppercase tracking-wider">Mã bạn bè của bạn</p>
-                          <p className="text-sm font-black text-brand-brown-dark mt-0.5 font-mono select-all tracking-wider">{friendCode}</p>
-                        </div>
-                        <button 
-                          onClick={copyFriendCode}
-                          className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-white hover:bg-brand-terracotta hover:text-white border border-brand-terracotta-light/20 text-xs font-bold text-brand-terracotta transition cursor-pointer shadow-sm active:scale-95 animate-fade-in"
-                        >
-                          {friendCodeCopied ? "Đã chép!" : <><Copy size={12} /> Sao chép</>}
-                        </button>
-                      </div>
-
-                      {/* Add Friend Form */}
-                      <form onSubmit={handleAddFriend} className="flex gap-2">
-                        <input 
-                          type="text" 
-                          placeholder="Nhập mã bạn bè..." 
-                          value={friendInputCode}
-                          onChange={(e) => setFriendInputCode(e.target.value)}
-                          className="flex-1 px-3 py-2 rounded-xl border border-brand-terracotta-light/35 bg-white focus:outline-none focus:ring-2 focus:ring-brand-terracotta/40 text-brand-brown-dark font-mono uppercase font-bold text-xs tracking-wider"
-                        />
-                        <button 
-                          type="submit"
-                          className="py-2 px-3 rounded-xl bg-brand-terracotta hover:bg-brand-brown-dark text-white text-xs font-bold transition shadow-sm cursor-pointer whitespace-nowrap"
-                        >
-                          + Thêm bạn
-                        </button>
-                      </form>
-
-                      {/* Friends List Status */}
-                      <div className="space-y-2">
-                        <div className="text-[10px] font-bold text-brand-brown-light/80 uppercase tracking-wider">BẠN BÈ ĐANG NGHE</div>
-                        
-                        {friendsWithStatus.length === 0 ? (
-                          <div className="text-center py-6 text-brand-brown-light/65 text-xs font-medium space-y-1">
-                            <p>Chưa có bạn bè nào.</p>
-                            <p className="text-[10px] text-brand-brown-light/50">Chia sẻ mã của bạn để kết bạn và xem nhau đang nghe gì!</p>
-                          </div>
-                        ) : (
-                          friendsWithStatus.map((friend, idx) => (
-                            <div 
-                              key={`${friend.code}-${idx}`}
-                              onClick={() => friend.online && friend.currentRoomId && handleJoinRoom(friend.currentRoomId)}
-                              className={`p-3 rounded-2xl border transition-all duration-200 flex items-center gap-3 group ${
-                                friend.online 
-                                  ? 'bg-white hover:bg-brand-light border-brand-terracotta-light/10 hover:border-brand-terracotta-light/35 hover:-translate-y-0.5 cursor-pointer shadow-sm' 
-                                  : 'bg-white/40 border-brand-light/50 opacity-70 cursor-default'
-                              }`}
-                            >
-                              <div className="relative">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs border ${getAvatarColor(friend.username)}`}>
-                                  {friend.username.substring(0, 2).toUpperCase()}
-                                </div>
-                                <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${friend.online ? 'bg-emerald-400' : 'bg-gray-300'}`}></span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                  <h4 className="font-bold text-sm text-brand-brown-dark truncate group-hover:text-brand-terracotta transition">
-                                    {friend.username}
-                                  </h4>
-                                  <span className="text-[9px] font-mono font-bold text-brand-brown-light/50 uppercase">
-                                    {friend.code}
-                                  </span>
-                                </div>
-                                <p className="text-[10px] text-brand-brown-light truncate mt-0.5 font-medium">
-                                  {friend.online 
-                                    ? `🎵 ${friend.currentSong || 'Đang nghe nhạc'}`
-                                    : 'Ngoại tuyến'
-                                  }
-                                </p>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Help Board section */}
-          {showHelpBoard && (
-            <div className="mt-10 max-w-6xl mx-auto w-full">
-              <QuickHelpBoard />
-            </div>
-          )}
-        </div>
+        <LandingPage
+          username={username}
+          setUsername={setUsername}
+          roomId={roomId}
+          setRoomId={setRoomId}
+          onlineUsersCount={onlineUsers.length}
+          user={user}
+          profile={profile}
+          signOut={signOut}
+          setAuthMode={setAuthMode}
+          setShowAuthModal={setShowAuthModal}
+          getAvatarColor={getAvatarColor}
+          handleCreateRoom={() => handleCreateRoom()}
+          handleJoinRoom={(targetRoomId?: string) => targetRoomId ? handleJoinRoom(targetRoomId) : handleJoinRoom()}
+          handleJoinTemplateRoom={handleJoinTemplateRoom}
+          templates={templates}
+          activeRooms={activeRooms}
+          requestActiveRooms={() => socket.emit('request-active-rooms')}
+          recentRooms={recentRooms}
+          friendCode={friendCode}
+          friendCodeCopied={friendCodeCopied}
+          copyFriendCode={copyFriendCode}
+          friendInputCode={friendInputCode}
+          setFriendInputCode={setFriendInputCode}
+          handleAddFriend={handleAddFriend}
+          friendsWithStatus={friendsWithStatus}
+          showHelpBoard={showHelpBoard}
+          setShowHelpBoard={setShowHelpBoard}
+        />
       )}
 
       {/* Auth Modal */}
@@ -1061,210 +847,254 @@ export default function App() {
         defaultMode={authMode}
       />
 
+      <CreateTemplateModal
+        open={showCreateTemplate}
+        tasks={ideaTasks}
+        creatorName={profile?.username || username || 'Duhoc Mate'}
+        onClose={() => setShowCreateTemplate(false)}
+        onSave={handleSaveTemplate}
+      />
+
       {/* ROOM WORKSPACE */}
       {view === 'room' && (
         <div className="w-full flex-1 flex flex-col">
-          {/* Room Header */}
-          <header className="px-6 py-4 border-b border-brand-terracotta-light/20 flex justify-between items-center bg-white/50 backdrop-blur-md sticky top-0 z-50">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="text-brand-terracotta animate-pulse" size={24} />
-                <span className="font-display font-black text-xl tracking-tight">Duhoc Mate</span>
-              </div>
-              <div className="h-4 w-[1px] bg-brand-terracotta-light/40"></div>
-              <div className="flex items-center gap-2 bg-brand-light px-4 py-2 rounded-full border border-brand-terracotta-light/20 text-sm font-bold">
-                MÃ PHÒNG: <span className="text-brand-terracotta tracking-wider">{roomId}</span>
-                <button onClick={copyRoomId} className="hover:text-brand-brown-dark ml-2 cursor-pointer">
-                  <Share2 size={16} />
-                </button>
-                {copied && <span className="text-sm text-green-600 font-semibold ml-1">Đã copy!</span>}
-              </div>
-            </div>
+          <RoomHeader
+            roomId={roomId}
+            copied={copied}
+            stageMode={stageMode}
+            onCopyRoomId={copyRoomId}
+            onToggleAudioMode={() => setStageMode(stageMode === 'music' ? 'youtube' : 'music')}
+            onLeaveRoom={handleLeaveRoom}
+          />
 
-            <div className="flex items-center gap-2">
-              {/* Audio-only mode */}
-              <button
-                onClick={() => setAudioOnly(!audioOnly)}
-                title={audioOnly ? 'Thoát Audio Mode' : 'Bật Audio-only (nghe như radio)'}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-full font-bold text-sm cursor-pointer transition border ${
-                  audioOnly
-                    ? 'bg-brand-terracotta text-white border-brand-terracotta shadow-md'
-                    : 'bg-brand-light hover:bg-brand-terracotta-light/40 border-brand-terracotta-light/20 text-brand-brown-dark'
-                }`}
-              >
-                <Headphones size={16} />
-                <span className="hidden md:inline">{audioOnly ? t('room.audioOnlyActive') : t('room.audioOnly')}</span>
-              </button>
-
-              <LanguageSwitcher compact />
-
-              <button
-                onClick={toggleJitsi}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full font-bold text-sm shadow-sm cursor-pointer transition ${
-                  jitsiActive
-                    ? 'bg-red-500 hover:bg-red-600 text-white'
-                    : 'bg-brand-accent hover:bg-brand-terracotta text-brand-brown-dark hover:text-white'
-                }`}
-              >
-                <Video size={16} /> <span className="hidden md:inline">{jitsiActive ? t('room.stopVideoCall') : t('room.videoCall')}</span>
-              </button>
-
-              <button
-                onClick={handleLeaveRoom}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-brand-light hover:bg-brand-terracotta-light/40 border border-brand-terracotta-light/20 text-brand-brown-dark font-bold text-sm transition cursor-pointer"
-              >
-                <LogOut size={16} /> <span className="hidden md:inline">{t('room.leaveRoom')}</span>
-              </button>
-            </div>
-          </header>
-
-          {/* Core Content Grid */}
+          {/* Core Content Grid — adaptive columns based on stageMode */}
+          {(() => {
+            const mainSpan = { youtube: 'lg:col-span-8', tiktok: 'lg:col-span-5', music: 'lg:col-span-7', pdf: 'lg:col-span-9', pomodoro: 'lg:col-span-6', topik: 'lg:col-span-8', video: 'lg:col-span-9', ideas: 'lg:col-span-9' }[stageMode] || 'lg:col-span-8';
+            const sideSpan = { youtube: 'lg:col-span-4', tiktok: 'lg:col-span-7', music: 'lg:col-span-5', pdf: 'lg:col-span-3', pomodoro: 'lg:col-span-6', topik: 'lg:col-span-4', video: 'lg:col-span-3', ideas: 'lg:col-span-3' }[stageMode] || 'lg:col-span-4';
+            return (
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden max-h-[calc(100vh-73px)]">
-            
-            {/* LEFT / CENTER: Workspaces (YouTube, PDF, Pomodoro) */}
-            <main className="lg:col-span-8 p-6 flex flex-col gap-6 overflow-y-auto min-h-[500px]">
-              
-              {/* Workspace Navigation Tabs */}
-              <div className="bg-white/70 p-2 rounded-2xl border border-brand-terracotta-light/20 shadow-sm">
-                <div className="flex gap-1 w-full">
-                  {([
-                    { key: 'youtube', label: t('room.tabs.youtube') },
-                    { key: 'pdf', label: t('room.tabs.pdf') },
-                    { key: 'pomodoro', label: t('room.tabs.pomodoro') },
-                    { key: 'topik', label: t('room.tabs.topik') },
-                  ] as const).map(tab => (
-                    <button
-                      key={tab.key}
-                      onClick={() => setActiveTab(tab.key as any)}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl font-bold text-sm transition cursor-pointer ${
-                        activeTab === tab.key
-                          ? 'bg-brand-terracotta text-white shadow-md'
-                          : 'hover:bg-brand-light text-brand-brown-light'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
-              {/* Tab Display Area */}
-              <div className="flex-1 glass-panel rounded-3xl p-6 shadow-xl border border-white min-h-[450px] flex flex-col relative overflow-hidden">
-                
-                {/* 1. YouTube Player Tab */}
-                {activeTab === 'youtube' && (
+            {/* LEFT / CENTER: Stage workspace */}
+            <main className={`${mainSpan} p-4 sm:p-6 flex flex-col gap-4 overflow-y-auto min-h-[500px] transition-all duration-300`}>
+
+              <StageSelector stageMode={stageMode} onChange={setStageMode} />
+
+              {/* ── STAGE DISPLAY AREA – adapts per stageMode ── */}
+              <div className="flex-1 glass-panel rounded-3xl p-5 shadow-xl border border-white min-h-[420px] flex flex-col relative overflow-hidden">
+
+                {/* ── 1. YOUTUBE STAGE (16:9) ── */}
+                {stageMode === 'youtube' && (
                   <div className="flex-1 flex flex-col gap-4 h-full justify-between">
-                    {/* Audio-only mode display */}
-                    {audioOnly ? (
-                      <div className="flex-1 rounded-2xl bg-gradient-to-br from-brand-brown-dark to-brand-terracotta flex flex-col items-center justify-center gap-5 p-8" style={{ minHeight: '320px' }}>
-                        <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center animate-pulse">
-                          <Headphones size={44} className="text-white" />
+                    <div className="relative flex-1 rounded-2xl overflow-hidden border border-brand-terracotta-light/10 bg-black" style={{ minHeight: '300px' }}>
+                      <div className="w-full h-full" ref={iframeContainerRef}>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center pointer-events-none z-0">
+                          <Clock className="text-white/20 animate-spin" size={32} />
+                          <p className="text-xs text-white/40">Đang tải YouTube Player...</p>
                         </div>
-                        <div className="text-center text-white">
-                          <p className="font-display font-black text-xl mb-1">🎧 Radio Mode</p>
-                          <p className="text-white/70 text-sm">Đang phát âm thanh · Màn hình đã tắt</p>
-                          <p className="text-brand-terracotta-light text-xs mt-2 font-semibold">
-                            {playlist.find(item => item.videoId === currentVideo.id)?.title || 'Lo-Fi Study Beat'}
+                      </div>
+                      {videoError && (
+                        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4 z-10 p-8 text-center">
+                          <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-2">
+                            <Video size={28} className="text-white/60" />
+                          </div>
+                          <h3 className="font-display font-black text-white text-lg">YouTube cần xác minh</h3>
+                          <p className="text-white/60 text-sm max-w-xs leading-relaxed">
+                            Video này bị giới hạn embed. Mở YouTube để xác minh, sau đó quay lại.
                           </p>
-                        </div>
-                        <button
-                          onClick={() => setAudioOnly(false)}
-                          className="px-5 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white text-sm font-bold transition cursor-pointer"
-                        >
-                          Bật màn hình
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="relative flex-1 rounded-2xl overflow-hidden border border-brand-terracotta-light/10 bg-black" style={{ minHeight: '320px' }}>
-                        {/* YouTube Embed Container */}
-                        <div className="w-full h-full" ref={iframeContainerRef}>
-                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center pointer-events-none z-0">
-                            <Clock className="text-white/20 animate-spin" size={32} />
-                            <p className="text-xs text-white/40">Đang tải YouTube Player...</p>
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => { setVideoError(false); if (playerRef.current?.playVideo) playerRef.current.playVideo(); }}
+                              className="px-5 py-2.5 rounded-full bg-brand-terracotta hover:bg-brand-brown-dark text-white font-bold text-sm transition cursor-pointer"
+                            >
+                              Phát lại
+                            </button>
+                            <a
+                              href={`https://www.youtube.com/watch?v=${currentVideo.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-5 py-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-sm transition cursor-pointer"
+                            >
+                              Mở YouTube
+                            </a>
                           </div>
                         </div>
-
-                        {/* YouTube error overlay (khi video bị chặn embed) */}
-                        {videoError && (
-                          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4 z-10 p-8 text-center">
-                            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-2">
-                              <Video size={28} className="text-white/60" />
-                            </div>
-                            <h3 className="font-display font-black text-white text-lg">YouTube cần xác minh</h3>
-                            <p className="text-white/60 text-sm max-w-xs leading-relaxed">
-                              Video này bị giới hạn embed. Mở YouTube để xác minh, sau đó quay lại phòng và phát lại.
-                            </p>
-                            <div className="flex gap-3">
-                              <button
-                                onClick={() => { setVideoError(false); if (playerRef.current?.playVideo) playerRef.current.playVideo(); }}
-                                className="px-5 py-2.5 rounded-full bg-brand-terracotta hover:bg-brand-brown-dark text-white font-bold text-sm transition cursor-pointer"
-                              >
-                                Phát lại
-                              </button>
-                              <a
-                                href={`https://www.youtube.com/watch?v=${currentVideo.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-5 py-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-sm transition cursor-pointer"
-                              >
-                                Mở YouTube
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Video Playback State Status Bar */}
-                    <div className="flex items-center justify-between p-4 bg-brand-light/40 border border-brand-terracotta-light/20 rounded-2xl">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold tracking-widest text-brand-terracotta uppercase">Đang đồng bộ</span>
-                        <h4 className="font-display font-extrabold text-sm truncate max-w-md">
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3 bg-brand-light/40 border border-brand-terracotta-light/20 rounded-2xl">
+                      <div className="space-y-0.5 min-w-0">
+                        <span className="text-[10px] font-bold text-brand-terracotta uppercase">16:9 · Đang đồng bộ</span>
+                        <h4 className="font-display font-extrabold text-sm truncate text-brand-brown-dark">
                           {playlist.find(item => item.videoId === currentVideo.id)?.title || "Lo-Fi Girl Study Beat (Mặc định)"}
                         </h4>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-3">
                         <span className="h-2 w-2 rounded-full bg-green-500 animate-ping"></span>
-                        <span className="text-[10px] font-bold text-brand-brown-light uppercase">Live Sync Active</span>
+                        <span className="text-[10px] font-bold text-brand-brown-light uppercase hidden sm:block">Live Sync</span>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* 2. PDF Slides Tab */}
-                {activeTab === 'pdf' && (
+                {/* ── 2. TIKTOK STAGE (9:16) ── */}
+                {stageMode === 'tiktok' && (
+                  <div className="flex-1 flex flex-col gap-3 h-full">
+                    {/* URL Input */}
+                    <form onSubmit={handleTikTokLoad} className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder={t('room.tiktok.placeholder')}
+                        value={tiktokUrl}
+                        onChange={(e) => setTiktokUrl(e.target.value)}
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-gray-400/40 text-sm font-medium text-brand-brown-dark"
+                      />
+                      <button
+                        type="submit"
+                        className="px-4 py-2.5 rounded-xl bg-black hover:bg-gray-800 text-white font-bold text-sm transition cursor-pointer flex-shrink-0"
+                      >
+                        {t('room.tiktok.load')}
+                      </button>
+                    </form>
+
+                    {tiktokVideoId ? (
+                      <div className="flex-1 flex justify-center items-start overflow-hidden">
+                        {/* 9:16 TikTok embed centered */}
+                        <div className="relative w-full max-w-[340px]" style={{ aspectRatio: '9/16' }}>
+                          <iframe
+                            src={`https://www.tiktok.com/embed/v2/${tiktokVideoId}`}
+                            className="w-full h-full rounded-2xl border-0 shadow-lg"
+                            allowFullScreen
+                            allow="autoplay; encrypted-media"
+                            title="TikTok video"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-gray-200 rounded-2xl py-12">
+                        <div className="w-16 h-16 rounded-2xl bg-black flex items-center justify-center shadow-lg">
+                          <Music2 size={28} className="text-white" />
+                        </div>
+                        <div className="text-center px-4">
+                          <p className="font-bold text-sm text-brand-brown-dark">{t('room.tiktok.noVideo')}</p>
+                          <p className="text-xs text-brand-brown-light mt-1 max-w-xs">{t('room.tiktok.noVideoDesc')}</p>
+                        </div>
+                        <div className="text-[10px] text-brand-brown-light/50 mt-2">
+                          Ví dụ: https://www.tiktok.com/@user/video/123...
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sync notice for host */}
+                    {tiktokVideoId && (
+                      <div className={`text-[10px] font-semibold text-center px-3 py-2 rounded-xl border ${
+                        isHost
+                          ? 'bg-amber-50 border-amber-200/50 text-amber-700'
+                          : 'bg-brand-light border-brand-light text-brand-brown-light'
+                      }`}>
+                        {isHost ? '★ ' : ''}{t('room.tiktok.syncNotice')}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── 3. MUSIC / LO-FI RADIO STAGE ── */}
+                {stageMode === 'music' && (
+                  <div className="flex-1 flex flex-col items-center justify-center gap-6 py-6">
+                    {/* Hidden YouTube player (still needs the DOM container) */}
+                    <div
+                      ref={iframeContainerRef}
+                      className="absolute opacity-0 pointer-events-none w-0 h-0 overflow-hidden"
+                      aria-hidden="true"
+                    />
+
+                    {/* Album Art / Animated Orb */}
+                    <div className="relative w-44 h-44 sm:w-52 sm:h-52">
+                      {/* Outer glow ring */}
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-brand-terracotta via-amber-500 to-brand-brown-dark opacity-20 blur-xl animate-pulse" />
+                      {/* Main circle */}
+                      <div className="relative w-full h-full rounded-full bg-gradient-to-br from-brand-brown-dark via-brand-terracotta to-amber-600 flex items-center justify-center shadow-2xl overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-radial from-white/10 to-transparent" />
+                        {/* Pulsing rings */}
+                        {[0, 1, 2].map(i => (
+                          <div
+                            key={i}
+                            className="absolute rounded-full border border-white/15"
+                            style={{
+                              inset: `${i * 14}%`,
+                              animation: `ping ${1.2 + i * 0.5}s cubic-bezier(0,0,0.2,1) infinite`,
+                              animationDelay: `${i * 0.4}s`
+                            }}
+                          />
+                        ))}
+                        <Headphones size={52} className="text-white relative z-10 drop-shadow-lg" />
+                      </div>
+                    </div>
+
+                    {/* Track info */}
+                    <div className="text-center space-y-1.5 px-4">
+                      <p className="text-[10px] font-black text-brand-terracotta uppercase">
+                        🎧 {t('room.music.radioMode')}
+                      </p>
+                      <h3 className="font-display font-black text-lg sm:text-xl text-brand-brown-dark leading-tight">
+                        {playlist.find(item => item.videoId === currentVideo.id)?.title || 'Lo-Fi Girl Study Beat'}
+                      </h3>
+                      <p className="text-sm text-brand-brown-light">
+                        {currentVideo.playing ? t('room.music.nowPlaying') : t('room.music.paused')}
+                      </p>
+                    </div>
+
+                    {/* Equalizer bars */}
+                    <div className="flex gap-[3px] items-end h-10">
+                      {Array.from({ length: 16 }, (_, i) => (
+                        <div
+                          key={i}
+                          className="w-1.5 rounded-full bg-brand-terracotta"
+                          style={{
+                            height: `${30 + Math.sin(i * 0.8) * 50}%`,
+                            animation: currentVideo.playing
+                              ? `equalize ${0.4 + (i % 5) * 0.15}s ease-in-out infinite alternate`
+                              : 'none',
+                            minHeight: '4px',
+                            opacity: currentVideo.playing ? 1 : 0.3
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    <p className="text-xs text-brand-brown-light/60 text-center max-w-[240px]">
+                      {t('room.music.screenHidden')}
+                    </p>
+
+                    <button
+                      onClick={() => setStageMode('youtube')}
+                      className="flex items-center gap-1.5 px-5 py-2.5 rounded-full border border-brand-terracotta/30 text-brand-brown-dark text-sm font-bold hover:bg-brand-terracotta hover:text-white transition cursor-pointer"
+                    >
+                      {t('room.music.showVideo')} <ChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* ── 4. PDF STAGE ── */}
+                {stageMode === 'pdf' && (
                   <div className="flex-1 flex flex-col gap-4 justify-between h-full items-center">
-                    
-                    {/* Controls & File Upload */}
                     <div className="w-full flex justify-between items-center gap-4 bg-brand-light/60 p-3 rounded-2xl border border-brand-terracotta-light/20">
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         accept=".pdf"
                         onChange={handlePdfUpload}
                         className="text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-terracotta file:text-white hover:file:bg-brand-brown-dark file:cursor-pointer"
                       />
                       {pdfDocRef.current && (
-                        <div className="flex items-center gap-3">
-                          <button 
-                            onClick={() => changePdfPage('prev')}
-                            disabled={pdfPage <= 1}
-                            className="px-3 py-1.5 rounded-lg bg-white border border-brand-terracotta-light/20 font-bold text-xs disabled:opacity-50 cursor-pointer"
-                          >
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <button onClick={() => changePdfPage('prev')} disabled={pdfPage <= 1} className="px-3 py-1.5 rounded-lg bg-white border border-brand-terracotta-light/20 font-bold text-xs disabled:opacity-50 cursor-pointer">
                             Trước
                           </button>
-                          <span className="text-xs font-bold">Trang {pdfPage} / {pdfTotalPages}</span>
-                          <button 
-                            onClick={() => changePdfPage('next')}
-                            disabled={pdfPage >= pdfTotalPages}
-                            className="px-3 py-1.5 rounded-lg bg-white border border-brand-terracotta-light/20 font-bold text-xs disabled:opacity-50 cursor-pointer"
-                          >
+                          <span className="text-xs font-bold whitespace-nowrap">Trang {pdfPage} / {pdfTotalPages}</span>
+                          <button onClick={() => changePdfPage('next')} disabled={pdfPage >= pdfTotalPages} className="px-3 py-1.5 rounded-lg bg-white border border-brand-terracotta-light/20 font-bold text-xs disabled:opacity-50 cursor-pointer">
                             Sau
                           </button>
                         </div>
                       )}
                     </div>
-
-                    {/* PDF Rendering Canvas */}
                     <div className="flex-1 w-full flex items-center justify-center min-h-[300px] border border-dashed border-brand-terracotta-light/30 rounded-2xl p-4 bg-white/30 overflow-auto">
                       {pdfDocRef.current ? (
                         <canvas ref={canvasRef} className="shadow-lg rounded-xl max-w-full h-auto bg-white" />
@@ -1272,90 +1102,77 @@ export default function App() {
                         <div className="text-center space-y-2 max-w-sm">
                           <FileText size={40} className="mx-auto text-brand-terracotta-light" />
                           <h4 className="font-display font-extrabold text-sm">Chưa có Slide PDF nào</h4>
-                          <p className="text-xs text-brand-brown-light">Tải file PDF bài học lên. Chỉ cần Host chuyển trang, trang của tất cả mọi người sẽ tự động nhảy theo.</p>
+                          <p className="text-xs text-brand-brown-light">Tải file PDF bài học lên. Host chuyển trang → tất cả tự động nhảy theo.</p>
                         </div>
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* 3. Pomodoro Focus Tab */}
-                {activeTab === 'pomodoro' && (
+                {/* ── 5. POMODORO STAGE ── */}
+                {stageMode === 'pomodoro' && (
                   <div className="flex-1 flex flex-col justify-center items-center gap-8 py-8">
-                    
-                    {/* Circle Timer Visual */}
                     <div className="relative w-64 h-64 rounded-full flex flex-col justify-center items-center shadow-inner bg-brand-light/30 border-8 border-brand-terracotta-light/20">
                       <div className="absolute inset-2 rounded-full border-4 border-dashed border-brand-terracotta/20 animate-spin-slow"></div>
-                      <span className="text-[10px] font-bold tracking-widest text-brand-terracotta uppercase mb-1">
-                        {pomodoro.isBreak ? "⏰ GIẢI LAO" : "💪 TẬP TRUNG HỌC"}
+                      <span className="text-[10px] font-bold text-brand-terracotta uppercase mb-1">
+                        {pomodoro.isBreak ? t('pomodoro.break') : t('pomodoro.focus')}
                       </span>
-                      <span className="font-display font-black text-5xl tracking-tighter tabular-nums">
+                      <span className="font-display font-black text-5xl tabular-nums">
                         {formatTime(pomodoro.timeLeft)}
                       </span>
                       <span className="text-[10px] text-brand-brown-light mt-2">
-                        {pomodoro.isRunning ? "Server đang đếm ngược..." : "Tạm dừng"}
+                        {pomodoro.isRunning ? t('pomodoro.running') : t('pomodoro.paused')}
                       </span>
                     </div>
-
-                    {/* Timer Controls (Host only) */}
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 flex-wrap justify-center">
                       {pomodoro.isRunning ? (
-                        <button 
-                          onClick={() => controlPomodoro('pause')}
-                          className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition cursor-pointer"
-                        >
-                          <Pause size={14} /> Tạm dừng
+                        <button onClick={() => controlPomodoro('pause')} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition cursor-pointer">
+                          <Pause size={14} /> {t('pomodoro.pause')}
                         </button>
                       ) : (
-                        <button 
-                          onClick={() => controlPomodoro('start')}
-                          className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs transition cursor-pointer"
-                        >
-                          <Play size={14} /> Bắt đầu học
+                        <button onClick={() => controlPomodoro('start')} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs transition cursor-pointer">
+                          <Play size={14} /> {t('pomodoro.start')}
                         </button>
                       )}
-                      
-                      <button 
-                        onClick={() => controlPomodoro('reset', false)}
-                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-light hover:bg-brand-terracotta-light/40 border border-brand-terracotta-light/20 font-bold text-xs transition cursor-pointer"
-                        title="Học tiếp (25 phút)"
-                      >
-                        <RotateCcw size={14} /> 25m Học
+                      <button onClick={() => controlPomodoro('reset', false)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-light hover:bg-brand-terracotta-light/40 border border-brand-terracotta-light/20 font-bold text-xs transition cursor-pointer">
+                        <RotateCcw size={14} /> {t('pomodoro.study25')}
                       </button>
-                      <button 
-                        onClick={() => controlPomodoro('reset', true)}
-                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-light hover:bg-brand-terracotta-light/40 border border-brand-terracotta-light/20 font-bold text-xs transition cursor-pointer"
-                        title="Nghỉ giải lao (5 phút)"
-                      >
-                        <Coffee size={14} /> 5m Nghỉ
+                      <button onClick={() => controlPomodoro('reset', true)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-light hover:bg-brand-terracotta-light/40 border border-brand-terracotta-light/20 font-bold text-xs transition cursor-pointer">
+                        <Coffee size={14} /> {t('pomodoro.rest5')}
                       </button>
                     </div>
-
-                    <p className="text-xs text-brand-brown-light text-center max-w-sm">
-                      {t('pomodoro.desc')}
-                    </p>
+                    <p className="text-xs text-brand-brown-light text-center max-w-sm">{t('pomodoro.desc')}</p>
                   </div>
                 )}
 
-                {/* 4. TOPIK Study Tab */}
-                {activeTab === 'topik' && (
+                {/* ── 6. TOPIK STAGE ── */}
+                {stageMode === 'topik' && (
                   <TopikStudy roomId={roomId} socket={socket} />
+                )}
+
+                {stageMode === 'video' && (
+                  <StudyTableStage
+                    members={members}
+                    username={username}
+                    jitsiActive={jitsiActive}
+                    onToggleJitsi={toggleJitsi}
+                  />
+                )}
+
+                {stageMode === 'ideas' && (
+                  <IdeaBoard
+                    tasks={ideaTasks}
+                    members={members}
+                    onChange={handleIdeaTasksChange}
+                    onCreateTemplate={() => setShowCreateTemplate(true)}
+                  />
                 )}
               </div>
 
-              {/* Jitsi Meet Video Iframe Container */}
-              {jitsiActive && (
-                <div className="h-60 w-full glass-panel rounded-3xl overflow-hidden shadow-lg border border-white relative transition-all">
-                  <div className="absolute top-2 right-2 z-10">
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-500 text-white shadow-sm">Video Live</span>
-                  </div>
-                  <div ref={jitsiContainerRef} className="w-full h-full bg-black/90"></div>
-                </div>
-              )}
             </main>
 
-            {/* RIGHT SIDEBAR: Chat, Playlist, Members */}
-            <aside className="lg:col-span-4 border-l border-brand-terracotta-light/20 bg-white/30 backdrop-blur-lg flex flex-col max-h-full">
+            {/* RIGHT SIDEBAR: Chat, Playlist, Members — width adapts with sideSpan */}
+            <aside className={`${sideSpan} border-l border-brand-terracotta-light/20 bg-white/30 backdrop-blur-lg flex flex-col max-h-full transition-all duration-300`}>
               
               {/* Tab Navigation in Sidebar */}
               <div className="p-4 border-b border-brand-terracotta-light/10 grid grid-cols-3 gap-1 bg-white/40">
@@ -1609,7 +1426,7 @@ export default function App() {
                                   </span>
                                 )}
                                 {isHostMsg && (
-                                  <span className="px-2 rounded bg-amber-500/20 text-amber-700 text-[10px] font-black uppercase tracking-wider">Host</span>
+                                  <span className="px-2 rounded bg-amber-500/20 text-amber-700 text-[10px] font-black uppercaser">Host</span>
                                 )}
                                 <span className="text-xs text-brand-brown-light/70">{msg.timestamp}</span>
                               </div>
@@ -1694,6 +1511,8 @@ export default function App() {
               </div>
             </aside>
           </div>
+          ); // end IIFE return
+          })()} {/* end adaptive grid IIFE */}
         </div>
       )}
     </div>

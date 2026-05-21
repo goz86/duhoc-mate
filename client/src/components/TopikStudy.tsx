@@ -272,7 +272,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
         <div className="flex flex-col items-center gap-6 py-4">
           {/* Countdown Display */}
           <div className="text-center space-y-4">
-            <div className="text-sm font-bold text-brand-brown-light uppercase tracking-widest">{t('topik.examDate')}</div>
+            <div className="text-sm font-bold text-brand-brown-light uppercase">{t('topik.examDate')}</div>
 
             {daysUntilExam !== null && daysUntilExam >= 0 ? (
               <div className="space-y-2">

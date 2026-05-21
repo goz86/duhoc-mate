@@ -133,7 +133,7 @@ io.on('connection', (socket) => {
   });
 
   // 1. Tham gia phòng
-  socket.on('join-room', ({ roomId, username }) => {
+  socket.on('join-room', ({ roomId, username, ideaTasks = [] }) => {
     socket.join(roomId);
     
     // Khởi tạo phòng nếu chưa tồn tại
@@ -149,11 +149,15 @@ io.on('connection', (socket) => {
           lastUpdated: Date.now()
         },
         pomodoro: createDefaultPomodoro(),
-        chatMessages: []
+        chatMessages: [],
+        ideaTasks: Array.isArray(ideaTasks) ? ideaTasks : []
       });
     }
 
     const room = rooms.get(roomId);
+    if (Array.isArray(ideaTasks) && ideaTasks.length && (!room.ideaTasks || room.ideaTasks.length === 0)) {
+      room.ideaTasks = ideaTasks;
+    }
     
     // Kiểm tra xem user có phải host đầu tiên của phòng không
     const isHost = room.members.length === 0;
@@ -191,8 +195,15 @@ io.on('connection', (socket) => {
       videoState: room.videoState,
       pomodoro: room.pomodoro,
       chatMessages: room.chatMessages || [],
-      isHost
+      isHost,
+      tiktokVideoId: room.tiktokVideoId || null,
+      ideaTasks: room.ideaTasks || []
     });
+
+    // Nếu phòng đang có TikTok video, gửi sync cho member mới
+    if (room.tiktokVideoId) {
+      socket.emit('tiktok-sync', { videoId: room.tiktokVideoId });
+    }
 
     broadcastActiveRooms();
     
@@ -351,6 +362,22 @@ io.on('connection', (socket) => {
   // 7. Đồng bộ TOPIK Study giữa thành viên phòng
   socket.on('topik-action', ({ roomId, level, index }) => {
     socket.to(roomId).emit('topik-sync', { level, index });
+  });
+
+  // Phase B: TikTok sync — host tải video → broadcast cho cả phòng
+  socket.on('idea-board-update', ({ roomId, tasks }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    room.ideaTasks = Array.isArray(tasks) ? tasks : [];
+    socket.to(roomId).emit('idea-board-sync', room.ideaTasks);
+  });
+
+  socket.on('tiktok-sync', ({ roomId, videoId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    // Lưu state TikTok vào room để members join sau cũng nhận được
+    room.tiktokVideoId = videoId;
+    socket.to(roomId).emit('tiktok-sync', { videoId });
   });
 
   // 6. Ngắt kết nối
