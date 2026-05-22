@@ -123,7 +123,7 @@ export default function TemplateMarketplace({
           <button
             key={room.id}
             onClick={() => onJoinRoom(room.id)}
-            className="group flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition hover:border-brand-terracotta-light hover:shadow-sm"
+            className="group flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
           >
             <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border text-xs font-black ${getAvatarColor(room.hostName)}`}>
               {room.hostName.substring(0, 2).toUpperCase()}
@@ -137,7 +137,7 @@ export default function TemplateMarketplace({
         ))}
 
         {activeTab === 'explore' && topikTemplate && (
-          <article className="group flex items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 transition hover:border-brand-terracotta-light hover:shadow-sm">
+          <article className="group flex items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md">
             <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-700">
               <BookOpen size={19} />
             </div>
@@ -165,7 +165,7 @@ export default function TemplateMarketplace({
           <button
             key={room.id}
             onClick={() => onJoinRoom(room.id)}
-            className="group flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition hover:border-brand-terracotta-light hover:shadow-sm"
+            className="group flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
           >
             <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border text-xs font-black ${getAvatarColor(room.hostName)}`}>
               {room.hostName.substring(0, 2).toUpperCase()}
@@ -212,7 +212,7 @@ export default function TemplateMarketplace({
                 <button
                   key={friend.code}
                   onClick={() => friend.online && friend.currentRoomId && onJoinRoom(friend.currentRoomId)}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition hover:border-brand-terracotta-light hover:shadow-sm"
+                  className="flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
                 >
                   <div className={`flex h-10 w-10 items-center justify-center rounded-xl border text-xs font-black ${getAvatarColor(friend.username)}`}>
                     {friend.username.substring(0, 2).toUpperCase()}

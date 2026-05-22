@@ -76,7 +76,14 @@ export default function LandingPage({
   const { t } = useTranslation()
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-[#fbf6ef] text-brand-brown-dark">
+    <div className="relative isolate min-h-screen w-full overflow-x-hidden bg-[#fbf6ef] text-brand-brown-dark">
+      {/* Lớp nền trang trí — gradient blobs mờ + lưới chấm mảnh (tối giản, có chiều sâu) */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-terracotta/[0.10] blur-3xl" />
+        <div className="absolute right-[-7rem] top-1/4 h-[28rem] w-[28rem] rounded-full bg-brand-terracotta/[0.06] blur-3xl" />
+        <div className="absolute bottom-16 left-1/3 h-72 w-72 rounded-full bg-amber-300/[0.10] blur-3xl" />
+        <div className="absolute inset-0 [background-image:radial-gradient(circle,rgba(76,55,49,0.05)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent_55%)]" />
+      </div>
       <header className="sticky top-0 z-50 border-b border-black/[0.05] bg-[#fbf6ef]/88 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1560px] items-center justify-between px-5 py-4 xl:px-8">
           <div className="flex items-center gap-3">
@@ -192,7 +199,7 @@ export default function LandingPage({
                 <div className="relative z-20 mt-4 flex w-full max-w-md flex-col gap-3 sm:max-w-lg sm:flex-row">
                   <button
                     onClick={handleCreateRoom}
-                    className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition hover:bg-brand-brown-dark sm:flex-1"
+                    className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-brown-dark hover:shadow-xl hover:shadow-brand-terracotta/30 active:translate-y-0 active:scale-[0.98] sm:flex-1"
                   >
                     <Plus size={18} />
                     Tạo phòng học
