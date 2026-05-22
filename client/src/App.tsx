@@ -13,7 +13,7 @@ import TopikStudy from './components/TopikStudy';
 import IdeaBoard from './components/IdeaBoard';
 import CreateTemplateModal from './components/CreateTemplateModal';
 import LandingPage from './components/LandingPage';
-import { getTemplateRoomId } from './components/TemplateMarketplace';
+import { getTemplateRoomId } from './lib/templateRooms';
 import RoomHeader from './components/RoomHeader';
 import StageSelector from './components/StageSelector';
 import StudyTableStage from './components/StudyTableStage';
