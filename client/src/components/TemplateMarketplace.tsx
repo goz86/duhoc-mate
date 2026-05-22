@@ -1,6 +1,6 @@
 import type React from 'react'
 import { useMemo, useState } from 'react'
-import { BookOpen, Clock, Copy, RefreshCw, Search } from 'lucide-react'
+import { BookOpen, Clock, Copy, RefreshCw, Search, Users } from 'lucide-react'
 import type { RoomTemplate } from '../lib/communityTemplates'
 import { seedRoomIds } from '../lib/templateRooms'
 
@@ -123,13 +123,16 @@ export default function TemplateMarketplace({
           <button
             key={room.id}
             onClick={() => onJoinRoom(room.id)}
-            className="flex w-full items-center justify-between rounded-2xl border border-black/[0.06] bg-white px-4 py-3 text-left transition hover:border-brand-terracotta-light hover:shadow-sm"
+            className="group flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition hover:border-brand-terracotta-light hover:shadow-sm"
           >
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-black text-brand-brown-dark">{room.hostName}</span>
-              <span className="mt-1 block truncate text-xs font-bold text-brand-brown-light">{room.currentSong || 'Phòng học tập'} · {room.id}</span>
-            </span>
-            <span className="rounded-xl bg-[#fbf6ef] px-3 py-2 text-[11px] font-black uppercase text-brand-terracotta">Vào</span>
+            <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border text-xs font-black ${getAvatarColor(room.hostName)}`}>
+              {room.hostName.substring(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-black text-brand-brown-dark">{room.hostName}</p>
+              <p className="mt-0.5 truncate text-xs font-bold text-brand-brown-light">{room.currentSong || 'Phòng học tập'} · {room.id}</p>
+            </div>
+            <span className="flex-shrink-0 text-[11px] font-black uppercase text-brand-terracotta opacity-0 transition group-hover:opacity-100">Vào phòng</span>
           </button>
         ))}
 
@@ -162,13 +165,18 @@ export default function TemplateMarketplace({
           <button
             key={room.id}
             onClick={() => onJoinRoom(room.id)}
-            className="flex w-full items-center justify-between rounded-2xl border border-black/[0.06] bg-white px-4 py-3 text-left transition hover:border-brand-terracotta-light hover:shadow-sm"
+            className="group flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition hover:border-brand-terracotta-light hover:shadow-sm"
           >
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-black text-brand-brown-dark">Phòng của {room.hostName}</span>
-              <span className="mt-1 block truncate text-xs font-bold text-brand-brown-light">{room.memberCount} người · {room.currentSong || 'Study room'}</span>
-            </span>
-            <span className="rounded-lg bg-[#fbf6ef] px-2 py-1 text-[10px] font-black text-brand-terracotta">{room.id}</span>
+            <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border text-xs font-black ${getAvatarColor(room.hostName)}`}>
+              {room.hostName.substring(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-black text-brand-brown-dark">Phòng của {room.hostName}</p>
+              <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs font-bold text-brand-brown-light">
+                <Users size={12} /> {room.memberCount} · {room.currentSong || 'Khách'}
+              </p>
+            </div>
+            <span className="flex-shrink-0 text-[11px] font-black uppercase text-brand-terracotta opacity-0 transition group-hover:opacity-100">Vào phòng</span>
           </button>
         ))}
 
@@ -229,7 +237,7 @@ export default function TemplateMarketplace({
         className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl border border-black/[0.06] bg-[#fbf6ef] px-4 py-3 text-sm font-black text-brand-terracotta transition hover:bg-white"
       >
         <RefreshCw size={15} />
-        Cập nhật danh sách phòng
+        Mở rộng Khám phá
       </button>
     </section>
   )

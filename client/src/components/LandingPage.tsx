@@ -1,7 +1,8 @@
 import type React from 'react'
-import { Clock, Home, LogIn, Map, Music2, Plus, Sparkles, Users } from 'lucide-react'
+import { Clock, LogIn, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import studyLounge from '../assets/study-lounge.svg'
+import studyLounge3d from '../assets/study-lounge-3d.png'
+import duhocMateLogo from '../assets/duhoc-mate-logo.png'
 import LanguageSwitcher from './LanguageSwitcher'
 import QuickHelpBoard from './QuickHelpBoard'
 import TemplateMarketplace from './TemplateMarketplace'
@@ -77,14 +78,12 @@ export default function LandingPage({
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-[#fbf6ef] text-brand-brown-dark">
       <header className="sticky top-0 z-50 border-b border-black/[0.05] bg-[#fbf6ef]/88 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between px-5 py-4 xl:px-8">
+        <div className="mx-auto flex max-w-[1560px] items-center justify-between px-5 py-4 xl:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-terracotta text-white shadow-sm">
-              <Sparkles size={18} />
-            </div>
+            <img src={duhocMateLogo} alt="Duhoc Mate Logo" className="h-10 w-10 rounded-xl object-cover shadow-sm bg-white border border-black/[0.04]" />
             <div>
               <p className="font-display text-lg font-black leading-none">Duhoc Mate</p>
-              <p className="mt-1 text-xs font-bold text-brand-brown-light">{onlineUsersCount} bạn đang học online</p>
+              <p className="mt-1 hidden text-xs font-bold text-brand-brown-light sm:block">{onlineUsersCount} bạn đang học online</p>
             </div>
           </div>
 
@@ -107,7 +106,7 @@ export default function LandingPage({
               <div className="flex gap-2">
                 <button
                   onClick={() => { setAuthMode('login'); setShowAuthModal(true) }}
-                  className="rounded-full border border-black/[0.08] bg-white px-4 py-2 text-xs font-black text-brand-brown-dark shadow-sm hover:border-brand-terracotta-light"
+                  className="whitespace-nowrap rounded-full border border-black/[0.08] bg-white px-4 py-2 text-xs font-black text-brand-brown-dark shadow-sm hover:border-brand-terracotta-light"
                 >
                   {t('nav.login')}
                 </button>
@@ -123,135 +122,167 @@ export default function LandingPage({
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1500px] px-5 py-8 xl:px-8">
-        <section className="rounded-3xl border border-black/[0.06] bg-white/78 p-4 shadow-sm backdrop-blur">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase text-brand-terracotta">Hỗ trợ đời sống</p>
-              <h2 className="mt-1 font-display text-xl font-black">Bảng hỗ trợ cuộc sống Hàn Quốc</h2>
-              <p className="mt-1 text-sm leading-relaxed text-brand-brown-light">
-                Nhà ở, việc làm, di chuyển, khẩn cấp và hỏi đáp cộng đồng.
-              </p>
-            </div>
+      <main className="mx-auto max-w-[1560px] px-5 py-8 xl:px-8">
+        {/* Sub-Header Navigation Tab Bar */}
+        <div className="mb-6 flex gap-5 overflow-x-auto border-b border-black/[0.06] pb-3 [-ms-overflow-style:none] [scrollbar-width:none] sm:mb-8 sm:gap-6 sm:pb-4 [&::-webkit-scrollbar]:hidden">
+          <button
+            onClick={() => setShowHelpBoard(false)}
+            className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${
+              !showHelpBoard
+                ? 'text-brand-brown-dark border-b-2 border-brand-terracotta'
+                : 'text-brand-brown-light hover:text-brand-brown-dark'
+            }`}
+          >
+            🏫 Phòng học đồng bộ
+          </button>
+          <button
+            onClick={() => setShowHelpBoard(true)}
+            className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${
+              showHelpBoard
+                ? 'text-brand-brown-dark border-b-2 border-brand-terracotta'
+                : 'text-brand-brown-light hover:text-brand-brown-dark'
+            }`}
+          >
+            🇰🇷 Hỗ trợ đời sống Hàn Quốc
+          </button>
+          <a
+            href="http://localhost:5174"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 whitespace-nowrap pb-2.5 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5"
+          >
+            💳 Tính lương Alba <span className="text-[10px]">↗</span>
+          </a>
+        </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="grid grid-cols-2 gap-2 text-xs font-black text-brand-brown-light sm:flex">
-                <span className="inline-flex items-center gap-1 rounded-xl bg-[#faf7f2] px-3 py-2"><Home size={13} /> Nhà ở</span>
-                <span className="rounded-xl bg-[#faf7f2] px-3 py-2">Việc làm</span>
-                <span className="inline-flex items-center gap-1 rounded-xl bg-[#faf7f2] px-3 py-2"><Map size={13} /> Di chuyển</span>
-                <span className="rounded-xl bg-[#faf7f2] px-3 py-2">Khẩn cấp</span>
-              </div>
-              <button
-                onClick={() => setShowHelpBoard(!showHelpBoard)}
-                className="rounded-xl bg-brand-brown-dark px-4 py-3 text-xs font-black text-white hover:bg-brand-terracotta"
-              >
-                {showHelpBoard ? 'Ẩn bảng' : 'Mở bảng'}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {showHelpBoard && (
-          <section className="mt-5 overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-sm">
+        {showHelpBoard ? (
+          <section className="overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-sm">
             <QuickHelpBoard />
           </section>
-        )}
+        ) : (
+          <section className="relative mt-2 grid min-w-0 gap-8 lg:mt-4 lg:min-h-[580px] lg:grid-cols-[1.32fr_0.68fr] lg:items-stretch">
+            <div className="relative z-10 grid min-w-0 items-center gap-8 py-2 lg:grid-cols-[1.1fr_0.9fr] lg:py-6">
+              <div className="min-w-0">
+                <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-terracotta">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-terracotta animate-pulse" />
+                  REAL-TIME SYNC
+                </div>
 
-        <section className="relative mt-8 grid min-h-[620px] min-w-0 gap-8 overflow-hidden lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
-          <div className="relative z-10 min-w-0 py-8 lg:py-12">
-            <div className="inline-flex items-center gap-2 text-xs font-black uppercase text-brand-terracotta">
-              <span className="h-2 w-2 rounded-full bg-brand-terracotta" />
-              Phòng học đồng bộ
-            </div>
+                <h1 className="mt-5 font-display text-4xl font-black leading-[1.07] tracking-tight text-brand-brown-dark sm:text-5xl lg:mt-6 lg:text-[52px] lg:leading-[1.05]">
+                  <span className="lg:whitespace-nowrap">Cùng nhau học tập</span> <br />
+                  <span className="text-brand-terracotta">sẻ chia hành trình</span>
+                </h1>
+                <p className="mt-4 max-w-md text-sm font-semibold leading-relaxed text-brand-brown-dark/75 sm:text-base lg:mt-5">
+                  Tạo phòng học, nghe nhạc YouTube đồng bộ, mở Idea Board và vào phòng TOPIK 24/24.
+                </p>
 
-            <div className="mt-8 max-w-3xl">
-              <h1 className="font-display text-4xl font-black leading-[1.05] text-brand-brown-dark sm:text-6xl lg:text-7xl">
-                Học cùng nhau, nhẹ hơn mỗi ngày.
-              </h1>
-              <p className="mt-6 max-w-2xl text-lg font-medium leading-relaxed text-brand-brown-dark/78">
-                Tạo phòng học, nghe nhạc YouTube đồng bộ, mở Idea Board và vào phòng TOPIK 24/24.
-              </p>
-            </div>
-
-            <div className="relative mt-8 max-w-3xl">
-              <img
-                src={studyLounge}
-                alt="Minh họa bàn học trực tuyến"
-                className="pointer-events-none absolute left-[52%] top-6 z-0 hidden w-[470px] rounded-[30px] opacity-70 shadow-[0_28px_80px_rgba(83,61,54,0.08)] lg:block xl:left-[56%]"
-              />
-
-              <div className="relative z-10 grid w-full max-w-xl gap-3 rounded-3xl border border-black/[0.06] bg-white/82 p-3 shadow-[0_22px_70px_rgba(76,55,49,0.10)] backdrop-blur-xl sm:grid-cols-[1fr_auto]">
-                <label className="block">
-                  <span className="mb-1.5 block px-1 text-[11px] font-black uppercase text-brand-brown-light">{t('landing.yourName')}</span>
+                {/* Tên của bạn input inline */}
+                <div className="mt-7 flex w-fit items-center gap-2.5 rounded-full border border-black/[0.05] bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-brand-brown-light">{t('landing.yourName')}</span>
                   <input
                     type="text"
                     placeholder={t('landing.namePlaceholder')}
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
-                    className="h-12 w-full rounded-2xl border border-brand-terracotta-light/40 bg-[#fffaf5] px-4 text-sm font-bold text-brand-brown-dark outline-none transition focus:border-brand-terracotta-light focus:bg-white focus:ring-2 focus:ring-brand-terracotta/20"
+                    className="w-32 bg-transparent text-xs font-bold text-brand-brown-dark outline-none focus:ring-0"
                   />
-                </label>
+                </div>
 
-                <div className="flex flex-wrap items-end gap-2">
+                {/* Hai nút pill lớn bằng nhau (phong cách Lissenly) */}
+                <div className="mt-4 flex w-full max-w-md flex-col gap-3 sm:max-w-lg sm:flex-row">
                   <button
                     onClick={handleCreateRoom}
-                    className="h-12 flex-1 rounded-2xl bg-brand-terracotta px-5 text-sm font-black text-white shadow-lg shadow-brand-terracotta/20 transition hover:bg-brand-brown-dark sm:flex-none"
+                    className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition hover:bg-brand-brown-dark sm:flex-1"
                   >
-                    <span className="inline-flex items-center gap-2"><Plus size={17} /> Tạo phòng</span>
+                    <Plus size={18} />
+                    Tạo phòng học
                   </button>
-                  <div className="flex h-12 overflow-hidden rounded-2xl border border-brand-terracotta-light/40 bg-[#fffaf5]">
+
+                  <div className="flex h-14 w-full items-center rounded-full border border-black/[0.1] bg-white px-5 shadow-sm transition hover:border-brand-terracotta-light sm:flex-1">
                     <input
                       type="text"
-                      placeholder="Mã phòng"
+                      placeholder="Tham gia phòng mã ẩn"
                       value={roomId}
-                      onChange={(event) => setRoomId(event.target.value)}
+                      onChange={(event) => setRoomId(event.target.value.toUpperCase())}
                       onKeyDown={(event) => event.key === 'Enter' && handleJoinRoom()}
-                      className="w-32 bg-transparent px-3 text-center text-xs font-black uppercase text-brand-brown-dark outline-none"
+                      className="min-w-0 flex-1 bg-transparent text-sm font-bold text-brand-brown-dark outline-none placeholder:font-bold placeholder:text-brand-brown-light/70"
                     />
-                    <button onClick={() => handleJoinRoom()} className="border-l border-brand-terracotta-light/30 px-3 text-brand-terracotta hover:bg-white" title="Vào phòng">
-                      <LogIn size={16} />
+                    <button onClick={() => handleJoinRoom()} className="ml-2 shrink-0 text-brand-terracotta transition hover:text-brand-brown-dark" title="Vào phòng">
+                      <LogIn size={17} />
                     </button>
                   </div>
                 </div>
-              </div>
 
-              <div className="relative z-10 mt-6 flex flex-wrap gap-3">
-                {[
-                  { icon: Music2, label: 'Nhạc YouTube' },
-                  { icon: Users, label: 'Học cùng nhau' },
-                  { icon: Clock, label: 'Pomodoro & bảng ý tưởng' },
-                ].map(item => {
-                  const Icon = item.icon
-                  return (
-                    <span key={item.label} className="inline-flex items-center gap-2 rounded-full border border-black/[0.06] bg-white/84 px-4 py-2 text-sm font-bold text-brand-brown-light shadow-sm">
-                      <Icon size={15} className="text-brand-terracotta" />
+                {/* Badges flex row */}
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {[
+                    {
+                      icon: (
+                        <svg className="h-[15px] w-[15px] text-brand-terracotta" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <circle cx="12" cy="12" r="9" />
+                          <circle cx="12" cy="12" r="3" />
+                          <path strokeLinecap="round" d="M12 7a5 5 0 0 1 5 5" />
+                        </svg>
+                      ),
+                      label: 'YouTube Music'
+                    },
+                    {
+                      icon: (
+                        <svg className="h-[15px] w-[15px] text-brand-terracotta" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      ),
+                      label: 'Học cùng nhau'
+                    },
+                    {
+                      icon: (
+                        <svg className="h-[15px] w-[15px] text-brand-terracotta" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <circle cx="12" cy="12" r="9" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2M12 19v2M3 12h2M19 12h2" />
+                        </svg>
+                      ),
+                      label: 'Đồng bộ thời gian thực'
+                    }
+                  ].map(item => (
+                    <span key={item.label} className="inline-flex items-center gap-2 rounded-full border border-black/[0.05] bg-white/90 px-3.5 py-2 text-xs font-bold text-brand-brown-light shadow-sm">
+                      {item.icon}
                       {item.label}
                     </span>
-                  )
-                })}
+                  ))}
+                </div>
+              </div>
+
+              {/* Minh họa 3D — ẩn trên mobile, nổi không khung bên phải trên màn lớn (phong cách Lissenly) */}
+              <div className="relative hidden items-center justify-center lg:flex lg:justify-end">
+                <img
+                  src={studyLounge3d}
+                  alt="Minh họa học tập"
+                  className="w-full max-w-[460px] rounded-[44px] object-contain drop-shadow-[0_40px_55px_rgba(76,55,49,0.25)]"
+                />
               </div>
             </div>
-          </div>
 
-          <div className="relative z-10 min-w-0">
-            <TemplateMarketplace
-              templates={templates}
-              activeRooms={activeRooms}
-              recentRooms={recentRooms}
-              friendCode={friendCode}
-              friendCodeCopied={friendCodeCopied}
-              friendInputCode={friendInputCode}
-              friendsWithStatus={friendsWithStatus}
-              onJoinTemplateRoom={handleJoinTemplateRoom}
-              onJoinRoom={handleJoinRoom}
-              onRefreshRooms={requestActiveRooms}
-              copyFriendCode={copyFriendCode}
-              setFriendInputCode={setFriendInputCode}
-              handleAddFriend={handleAddFriend}
-              getAvatarColor={getAvatarColor}
-            />
-          </div>
-        </section>
+            <div className="relative z-10 min-w-0">
+              <TemplateMarketplace
+                templates={templates}
+                activeRooms={activeRooms}
+                recentRooms={recentRooms}
+                friendCode={friendCode}
+                friendCodeCopied={friendCodeCopied}
+                friendInputCode={friendInputCode}
+                friendsWithStatus={friendsWithStatus}
+                onJoinTemplateRoom={handleJoinTemplateRoom}
+                onJoinRoom={handleJoinRoom}
+                onRefreshRooms={requestActiveRooms}
+                copyFriendCode={copyFriendCode}
+                setFriendInputCode={setFriendInputCode}
+                handleAddFriend={handleAddFriend}
+                getAvatarColor={getAvatarColor}
+              />
+            </div>
+          </section>
+        )}
       </main>
     </div>
   )
