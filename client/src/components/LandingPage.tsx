@@ -160,9 +160,9 @@ export default function LandingPage({
             <QuickHelpBoard />
           </section>
         ) : (
-          <section className="relative mt-2 grid min-w-0 gap-8 lg:mt-4 lg:min-h-[580px] lg:grid-cols-[1.32fr_0.68fr] lg:items-stretch">
-            <div className="relative z-10 grid min-w-0 items-center gap-8 py-2 lg:grid-cols-[1.1fr_0.9fr] lg:py-6">
-              <div className="min-w-0">
+          <section className="relative mt-2 grid min-w-0 gap-8 lg:mt-4 lg:min-h-[580px] lg:grid-cols-[1fr_0.68fr] lg:items-stretch">
+            <div className="relative min-w-0 py-2 lg:py-6">
+              <div className="min-w-0 max-w-3xl">
                 <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-terracotta">
                   <span className="h-1.5 w-1.5 rounded-full bg-brand-terracotta animate-pulse" />
                   REAL-TIME SYNC
@@ -189,7 +189,7 @@ export default function LandingPage({
                 </div>
 
                 {/* Hai nút pill lớn bằng nhau (phong cách Lissenly) */}
-                <div className="mt-4 flex w-full max-w-md flex-col gap-3 sm:max-w-lg sm:flex-row">
+                <div className="relative z-20 mt-4 flex w-full max-w-md flex-col gap-3 sm:max-w-lg sm:flex-row">
                   <button
                     onClick={handleCreateRoom}
                     className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition hover:bg-brand-brown-dark sm:flex-1"
@@ -214,7 +214,7 @@ export default function LandingPage({
                 </div>
 
                 {/* Badges flex row */}
-                <div className="mt-5 flex flex-wrap gap-2">
+                <div className="relative z-20 mt-5 flex flex-wrap gap-2">
                   {[
                     {
                       icon: (
@@ -253,17 +253,16 @@ export default function LandingPage({
                 </div>
               </div>
 
-              {/* Minh họa 3D — ẩn trên mobile, nổi không khung bên phải trên màn lớn (phong cách Lissenly) */}
-              <div className="relative hidden items-center justify-center lg:flex lg:justify-end">
-                <img
-                  src={studyLounge3d}
-                  alt="Minh họa học tập"
-                  className="w-full max-w-[460px] rounded-[44px] object-contain drop-shadow-[0_40px_55px_rgba(76,55,49,0.25)]"
-                />
-              </div>
             </div>
 
-            <div className="relative z-10 min-w-0">
+            {/* Minh họa 3D — ẩn trên mobile, dùng absolute positioning trên desktop */}
+            <img
+              src={studyLounge3d}
+              alt="Minh họa học tập"
+              className="pointer-events-none absolute bottom-0 right-0 hidden w-[520px] rounded-[44px] object-contain drop-shadow-[0_40px_55px_rgba(76,55,49,0.25)] lg:block"
+            />
+
+            <div className="relative z-10 min-w-0 flex-1">
               <TemplateMarketplace
                 templates={templates}
                 activeRooms={activeRooms}
