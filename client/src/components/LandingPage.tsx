@@ -160,9 +160,9 @@ export default function LandingPage({
             <QuickHelpBoard />
           </section>
         ) : (
-          <section className="relative mt-2 grid min-w-0 gap-8 lg:mt-4 lg:min-h-[580px] lg:grid-cols-[1fr_0.68fr] lg:items-stretch">
-            <div className="relative min-w-0 py-2 lg:py-6">
-              <div className="min-w-0 max-w-3xl">
+          <section className="relative mt-2 grid min-w-0 gap-8 lg:mt-4 lg:min-h-[560px] lg:grid-cols-[1fr_0.6fr] lg:items-stretch">
+            <div className="relative flex min-w-0 items-center py-2 lg:py-6">
+              <div className="relative z-10 min-w-0 lg:max-w-[480px]">
                 <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-terracotta">
                   <span className="h-1.5 w-1.5 rounded-full bg-brand-terracotta animate-pulse" />
                   REAL-TIME SYNC
@@ -253,14 +253,13 @@ export default function LandingPage({
                 </div>
               </div>
 
+              {/* Minh họa 3D — ẩn trên mobile, neo góc dưới-phải cột trái, đè sau các nút (phong cách Lissenly) */}
+              <img
+                src={studyLounge3d}
+                alt="Minh họa học tập"
+                className="pointer-events-none absolute bottom-0 right-0 z-0 hidden w-[300px] object-contain drop-shadow-[0_35px_50px_rgba(76,55,49,0.18)] lg:block xl:right-[-24px] xl:w-[340px]"
+              />
             </div>
-
-            {/* Minh họa 3D — ẩn trên mobile, dùng absolute positioning trên desktop */}
-            <img
-              src={studyLounge3d}
-              alt="Minh họa học tập"
-              className="pointer-events-none absolute bottom-0 right-0 hidden w-[520px] rounded-[44px] object-contain drop-shadow-[0_40px_55px_rgba(76,55,49,0.25)] lg:block"
-            />
 
             <div className="relative z-10 min-w-0 flex-1">
               <TemplateMarketplace

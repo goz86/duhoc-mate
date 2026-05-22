@@ -74,7 +74,7 @@ export default function TemplateMarketplace({
   }, [activeRooms, query])
 
   const tabClass = (tab: LobbyTab) =>
-    `rounded-xl px-3 py-2 transition ${activeTab === tab ? 'bg-white text-brand-terracotta shadow-sm' : 'hover:bg-white/70'}`
+    `flex-1 rounded-full px-3 py-2.5 transition-all duration-200 ${activeTab === tab ? 'bg-white text-brand-brown-dark shadow-[0_2px_8px_rgba(0,0,0,0.08)]' : 'text-brand-brown-light hover:text-brand-brown-dark'}`
 
   const placeholder = {
     recent: 'Tìm phòng gần đây...',
@@ -83,9 +83,9 @@ export default function TemplateMarketplace({
   }[activeTab]
 
   return (
-    <section className="flex min-h-[430px] flex-col rounded-[28px] border border-black/[0.07] bg-white/84 p-5 shadow-[0_30px_90px_rgba(76,55,49,0.12)] backdrop-blur-xl">
-      <div className="rounded-2xl border border-black/[0.06] bg-[#fbf6ef] p-1">
-        <div className="grid grid-cols-3 gap-1 text-xs font-black text-brand-brown-light">
+    <section className="flex min-h-[500px] flex-col gap-5 rounded-[24px] bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+      <div className="rounded-full bg-[#f5f3f0] p-1.5">
+        <div className="flex gap-1 text-xs font-black">
           <button type="button" onClick={() => setActiveTab('recent')} className={tabClass('recent')}>
             Gần đây
           </button>
@@ -98,7 +98,7 @@ export default function TemplateMarketplace({
         </div>
       </div>
 
-      <label className="relative mt-4 block">
+      <label className="relative block">
         <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-brown-light" />
         <input
           value={query}
@@ -108,7 +108,7 @@ export default function TemplateMarketplace({
         />
       </label>
 
-      <div className="mt-5 h-[230px] space-y-3 overflow-y-auto pr-1">
+      <div className="h-[260px] flex-1 space-y-3 overflow-y-auto pr-1">
         {activeTab === 'recent' && visibleRecentRooms.length === 0 && (
           <div className="h-full rounded-2xl border border-dashed border-brand-terracotta-light/45 bg-[#fbf6ef] p-6 text-center">
             <Clock size={26} className="mx-auto text-brand-terracotta/60" />
