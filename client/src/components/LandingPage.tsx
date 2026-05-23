@@ -350,14 +350,14 @@ export default function LandingPage({
 
                 <h1
                   style={{ animationDelay: '100ms' }}
-                  className="mt-4 animate-fade-slide-down font-display text-5xl font-black leading-[1.02] tracking-tight text-brand-brown-dark sm:text-6xl lg:text-[54px] xl:text-[68px] 2xl:mt-6 2xl:text-[80px]"
+                  className="landing-hero-title mt-4 animate-fade-slide-down font-display text-5xl font-black leading-[1.02] tracking-tight text-brand-brown-dark sm:text-6xl lg:text-[54px] xl:text-[68px] 2xl:mt-6 2xl:text-[80px]"
                 >
                   <span className="xl:whitespace-nowrap">{t('landing.heroLine1')}</span> <br />
                   <span className="text-brand-terracotta">{t('landing.heroLine2')}</span>
                 </h1>
                 <p
                   style={{ animationDelay: '200ms' }}
-                  className="mt-4 animate-fade-slide-down max-w-md text-base font-semibold leading-relaxed text-brand-brown-dark/75 sm:text-lg 2xl:mt-6 2xl:max-w-lg 2xl:text-xl"
+                  className="landing-hero-subtitle mt-4 animate-fade-slide-down max-w-md text-base font-semibold leading-relaxed text-brand-brown-dark/75 sm:text-lg 2xl:mt-6 2xl:max-w-lg 2xl:text-xl"
                 >
                   {t('landing.heroCopy')}
                 </p>
