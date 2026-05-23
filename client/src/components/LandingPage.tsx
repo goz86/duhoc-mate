@@ -1,7 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Clock, LogIn, Plus, RefreshCw, Megaphone } from 'lucide-react'
+import {
+  ArrowLeft,
+  Clock,
+  CloudSun,
+  Globe2,
+  LockKeyhole,
+  LogIn,
+  Megaphone,
+  Music2,
+  Plus,
+  RefreshCw,
+  Timer,
+  UsersRound,
+  Wallet,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import studyLounge3d from '../assets/study-lounge-3d-new.png'
+import createRoomScene from '../assets/create-room-scene.png'
+import createRoomSceneSecondary from '../assets/create-room-scene-secondary.png'
 import duhocMateLogo from '../assets/duhoc-mate-logo-new.png'
 import LanguageSwitcher from './LanguageSwitcher'
 import QuickHelpBoard from './QuickHelpBoard'
@@ -220,7 +236,7 @@ export default function LandingPage({
             <div>
               <p className="font-display text-xl font-black leading-none">Duhoc Mate</p>
               <p className="mt-1 hidden text-xs font-bold text-brand-brown-light sm:block">
-                {onlineUsersCount > 0 ? `${onlineUsersCount} bạn đang học online` : 'Sẵn sàng tạo phòng học'}
+                {onlineUsersCount > 0 ? `${onlineUsersCount} ${t('landing.onlineNow')}` : t('landing.statusReady')}
               </p>
             </div>
           </div>
@@ -229,12 +245,12 @@ export default function LandingPage({
             {showHelpBoard && (
               <>
                 <div className="hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-brand-brown-dark shadow-sm lg:flex border border-black/[0.04]">
-                  <span className="text-amber-600">💱</span>
+                  <Wallet size={13} className="text-amber-600" />
                   <span>{exchangeRate}</span>
                 </div>
                 {weather && (
                   <div className="hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-brand-brown-dark shadow-sm lg:flex border border-black/[0.04]">
-                    <span>🌤️</span>
+                    <CloudSun size={13} className="text-brand-terracotta" />
                     <span>Seoul: {weather.temp}</span>
                     <span className="text-brand-brown-light/70">· {weather.desc}</span>
                   </div>
@@ -293,7 +309,7 @@ export default function LandingPage({
                   : 'text-brand-brown-light hover:text-brand-brown-dark'
                 }`}
             >
-              Phòng học
+              {t('landing.nav.rooms')}
             </button>
             <button
               onClick={() => setShowHelpBoard(true)}
@@ -302,7 +318,7 @@ export default function LandingPage({
                   : 'text-brand-brown-light hover:text-brand-brown-dark'
                 }`}
             >
-              Bảng tin
+              {t('landing.nav.board')}
             </button>
             <a
               href="https://www.duhocmate.com/"
@@ -310,7 +326,7 @@ export default function LandingPage({
               rel="noopener noreferrer"
               className="shrink-0 whitespace-nowrap pb-2 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5"
             >
-              Tính lương
+              {t('landing.nav.salary')}
             </a>
           </div>
 
@@ -321,29 +337,29 @@ export default function LandingPage({
             <QuickHelpBoard initialExpandedPostId={selectedPostId} />
           </section>
         ) : (
-          <section className="relative mt-1 grid min-w-0 gap-7 lg:min-h-[calc(100svh-145px)] lg:grid-cols-[0.98fr_0.95fr_0.9fr] lg:items-center xl:gap-9">
+          <section className="relative mt-1 grid min-w-0 gap-7 lg:min-h-[calc(100svh-145px)] lg:grid-cols-[minmax(0,1fr)_minmax(380px,420px)] lg:items-center xl:grid-cols-[0.98fr_0.95fr_0.9fr] xl:gap-9">
             <div className="relative flex min-w-0 items-center py-2 lg:py-4">
-              <div className="relative z-10 min-w-0 lg:max-w-[560px]">
+              <div className="relative z-10 min-w-0 lg:max-w-[620px] xl:max-w-[560px]">
                 <div
                   style={{ animationDelay: '0ms' }}
                   className="inline-flex animate-fade-slide-down items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-terracotta"
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-brand-terracotta animate-pulse" />
-                  REAL-TIME SYNC
+                  {t('landing.realtimeSync')}
                 </div>
 
                 <h1
                   style={{ animationDelay: '100ms' }}
-                  className="mt-6 animate-fade-slide-down font-display text-5xl font-black leading-[1.03] tracking-tight text-brand-brown-dark sm:text-6xl lg:text-[66px] xl:text-[76px]"
+                  className="mt-6 animate-fade-slide-down font-display text-5xl font-black leading-[1.03] tracking-tight text-brand-brown-dark sm:text-6xl lg:text-[58px] xl:text-[76px]"
                 >
-                  <span className="lg:whitespace-nowrap">Học cùng nhau</span> <br />
-                  <span className="text-brand-terracotta">ở Hàn Quốc</span>
+                  <span className="xl:whitespace-nowrap">{t('landing.heroLine1')}</span> <br />
+                  <span className="text-brand-terracotta">{t('landing.heroLine2')}</span>
                 </h1>
                 <p
                   style={{ animationDelay: '200ms' }}
                   className="mt-6 animate-fade-slide-down max-w-md text-base font-semibold leading-relaxed text-brand-brown-dark/75 sm:text-lg"
                 >
-                  Tạo phòng học, nghe nhạc và đồng bộ thời gian cùng bạn bè.
+                  {t('landing.heroCopy')}
                 </p>
 
                 {/* Tên của bạn input inline */}
@@ -351,10 +367,10 @@ export default function LandingPage({
                   style={{ animationDelay: '300ms' }}
                   className="mt-7 animate-fade-slide-down flex w-full max-w-[330px] items-center gap-3 rounded-full border border-black/[0.07] bg-white px-4 py-2.5 shadow-sm"
                 >
-                  <span className="shrink-0 text-[10px] font-black uppercase tracking-wider text-brand-brown-light">Tên của bạn</span>
+                  <span className="shrink-0 text-[10px] font-black uppercase tracking-wider text-brand-brown-light">{t('landing.yourName')}</span>
                   <input
                     type="text"
-                    placeholder="Tên / nickname..."
+                    placeholder={t('landing.namePlaceholder')}
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
                     className="min-w-0 flex-1 bg-transparent text-xs font-bold text-brand-brown-dark outline-none focus:ring-0"
@@ -364,20 +380,20 @@ export default function LandingPage({
                 {/* Hai nút chính theo nhịp landing cozy */}
                 <div
                   style={{ animationDelay: '400ms' }}
-                  className="relative z-20 mt-4 animate-fade-slide-down flex w-full max-w-[540px] flex-col gap-3 sm:flex-row"
+                  className="relative z-20 mt-4 animate-fade-slide-down flex w-full max-w-[540px] flex-col gap-3 md:flex-row"
                 >
                   <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex h-14 w-full items-center justify-center gap-2 rounded-[14px] bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-brown-dark hover:shadow-xl hover:shadow-brand-terracotta/30 active:translate-y-0 active:scale-[0.98] sm:flex-[1.08] cursor-pointer"
+                    className="flex h-14 w-full items-center justify-center gap-2 rounded-[14px] bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-brown-dark hover:shadow-xl hover:shadow-brand-terracotta/30 active:translate-y-0 active:scale-[0.98] md:flex-[1.08] cursor-pointer"
                   >
                     <Plus size={18} />
-                    Tạo phòng học
+                    <span className="whitespace-nowrap">{t('landing.createStudyRoom')}</span>
                   </button>
 
                   <div className="flex h-14 w-full items-center rounded-[14px] border border-black/[0.1] bg-white px-5 shadow-sm transition hover:border-brand-terracotta-light sm:flex-1">
                     <input
                       type="text"
-                      placeholder="Nhập mã phòng"
+                      placeholder={t('landing.joinCodePlaceholder')}
                       value={roomId}
                       onChange={(event) => setRoomId(event.target.value.toUpperCase())}
                       onKeyDown={(event) => event.key === 'Enter' && handleJoinRoom()}
@@ -392,36 +408,20 @@ export default function LandingPage({
                 {/* Badges flex row */}
                 <div
                   style={{ animationDelay: '500ms' }}
-                  className="relative z-20 mt-5 grid max-w-[540px] animate-fade-slide-down grid-cols-1 gap-2 sm:grid-cols-3"
+                  className="relative z-20 mt-5 grid max-w-[540px] animate-fade-slide-down grid-cols-1 gap-2 md:grid-cols-3"
                 >
                   {[
                     {
-                      icon: (
-                        <svg className="h-[15px] w-[15px] text-brand-terracotta" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <circle cx="12" cy="12" r="9" />
-                          <circle cx="12" cy="12" r="3" />
-                          <path strokeLinecap="round" d="M12 7a5 5 0 0 1 5 5" />
-                        </svg>
-                      ),
-                      label: 'YouTube Music'
+                      icon: <Music2 size={15} className="text-brand-terracotta" strokeWidth={2.5} />,
+                      label: t('landing.badgeMusic')
                     },
                     {
-                      icon: (
-                        <svg className="h-[15px] w-[15px] text-brand-terracotta" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                      ),
-                      label: 'Học cùng nhau'
+                      icon: <UsersRound size={15} className="text-brand-terracotta" strokeWidth={2.5} />,
+                      label: t('landing.badgeTogether')
                     },
                     {
-                      icon: (
-                        <svg className="h-[15px] w-[15px] text-brand-terracotta" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <circle cx="12" cy="12" r="9" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2M12 19v2M3 12h2M19 12h2" />
-                        </svg>
-                      ),
-                      label: 'Đồng bộ realtime'
+                      icon: <Timer size={15} className="text-brand-terracotta" strokeWidth={2.5} />,
+                      label: t('landing.badgeRealtime')
                     }
                   ].map(item => (
                     <span key={item.label} className="inline-flex min-w-0 items-center justify-center gap-2 rounded-full border border-black/[0.06] bg-white px-3 py-2 text-xs font-bold text-brand-brown-light shadow-sm">
@@ -434,10 +434,10 @@ export default function LandingPage({
             </div>
 
             {/* Cột 2: Minh họa 3D */}
-            <div className="hidden lg:flex items-center justify-center py-2 lg:py-4">
+            <div className="hidden xl:flex items-center justify-center py-2 lg:py-4">
               <div
                 style={{ animationDelay: '350ms' }}
-                className="relative z-0 -ml-20 translate-y-8 w-full max-w-[500px] animate-fade-slide-down xl:-ml-28 xl:max-w-[560px]"
+                className="relative z-0 -ml-20 w-full max-w-[500px] translate-y-8 rotate-[-2.5deg] animate-fade-slide-down transition-transform duration-500 ease-out hover:rotate-[-1deg] hover:scale-[1.015] xl:-ml-28 xl:max-w-[560px]"
               >
                 <img
                   src={studyLounge3d}
@@ -492,13 +492,27 @@ export default function LandingPage({
 
       {/* Modal tạo phòng mới */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-brown-dark/25 p-4 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#fbf6ef] p-4">
           {/* Concentric Circle Background */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none flex items-center justify-center">
-            <div className="w-[800px] h-[800px] rounded-full border border-brand-brown-light/10 absolute animate-pulse" />
-            <div className="w-[600px] h-[600px] rounded-full border border-brand-brown-light/15 absolute" />
-            <div className="w-[400px] h-[400px] rounded-full border border-brand-brown-light/20 absolute" />
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+            <div className="absolute h-[980px] w-[980px] rounded-full border border-brand-brown-light/[0.16]" />
+            <div className="absolute h-[720px] w-[720px] rounded-full border border-brand-brown-light/[0.13]" />
+            <div className="absolute h-[430px] w-[430px] rounded-full border border-brand-brown-light/[0.12]" />
+            <div className="absolute left-[52%] top-[-12rem] h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-[#f4dfbd]/25 blur-3xl" />
           </div>
+
+          <img
+            src={createRoomScene}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-[7vh] left-[4vw] hidden w-[32vw] max-w-[540px] rotate-[-4deg] rounded-[28px] border border-white/70 object-cover opacity-90 shadow-[0_28px_80px_rgba(76,55,49,0.12)] xl:block"
+          />
+          <img
+            src={createRoomSceneSecondary}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute right-[5vw] top-[9vh] hidden w-[24vw] max-w-[390px] rotate-[4deg] rounded-[26px] border border-white/70 object-cover opacity-80 shadow-[0_24px_70px_rgba(76,55,49,0.10)] 2xl:block"
+          />
 
           <div className="relative z-10 w-full max-w-[480px] text-center">
             {/* Logo and Back button */}
@@ -508,12 +522,13 @@ export default function LandingPage({
                 onClick={() => setShowCreateModal(false)}
                 className="flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-black text-brand-brown-dark shadow-sm border border-black/[0.04] hover:bg-brand-light transition cursor-pointer"
               >
-                ← Quay lại
+                <ArrowLeft size={13} />
+                {t('landing.createModal.back')}
               </button>
 
-              <div className="flex items-center gap-2 font-display font-black text-brand-brown-dark">
-                <img src={duhocMateLogo} alt="Duhoc Mate Logo" className="h-8 w-8 rounded-xl object-cover ring-1 ring-black/[0.04]" />
-                <span>Duhoc Mate</span>
+              <div className="flex items-center gap-2.5 font-display text-lg font-black text-brand-brown-dark">
+                <img src={duhocMateLogo} alt="Duhoc Mate Logo" className="h-9 w-9 rounded-[14px] object-cover shadow-sm ring-1 ring-black/[0.04]" />
+                <span className="leading-none">Duhoc Mate</span>
               </div>
 
               <div className="w-20" /> {/* Spacer */}
@@ -521,8 +536,8 @@ export default function LandingPage({
 
             {/* Modal Card */}
             <div className="rounded-[32px] bg-white p-8 shadow-2xl border border-black/[0.03]">
-              <h2 className="font-display font-black text-2xl text-brand-brown-dark tracking-tight">Tạo phòng học mới</h2>
-              <p className="text-xs font-semibold text-brand-brown-light/75 mt-1">Bắt đầu một góc học chung thật ấm và tập trung</p>
+              <h2 className="font-display font-black text-2xl text-brand-brown-dark tracking-tight">{t('landing.createModal.title')}</h2>
+              <p className="text-xs font-semibold text-brand-brown-light/75 mt-1">{t('landing.createModal.subtitle')}</p>
 
               {/* Google Login button */}
               <button
@@ -542,19 +557,19 @@ export default function LandingPage({
                   <path fill="#FBBC05" d="M4.47 10.9c-.24-.72-.37-1.48-.37-2.27s.13-1.55.37-2.27L.7 5.44C-.13 7.09-.6 8.97-.6 10.9s.47 3.81 1.3 5.46l3.77-2.92z" />
                   <path fill="#34A853" d="M12 23.04c3.24 0 5.97-1.07 7.96-2.91l-3.77-2.92c-1.05.7-2.39 1.12-3.83 1.12-3.57 0-6.65-2.6-7.73-5.86L.86 15.39c2.05 4.17 6.33 7.02 11.14 7.02z" />
                 </svg>
-                Đăng nhập với Google
+                {t('landing.createModal.google')}
               </button>
 
               {/* Divider */}
               <div className="my-6 flex items-center justify-center gap-3">
                 <div className="h-px flex-1 bg-black/[0.06]" />
-                <span className="text-[10px] font-black tracking-widest text-brand-brown-light/60">HOẶC TIẾP TỤC VỚI</span>
+                <span className="text-[10px] font-black tracking-widest text-brand-brown-light/60">{t('landing.createModal.divider')}</span>
                 <div className="h-px flex-1 bg-black/[0.06]" />
               </div>
 
               {/* Nickname input */}
               <div className="text-left">
-                <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">Tên gọi của bạn</label>
+                <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">{t('landing.createModal.nickname')}</label>
                 <input
                   type="text"
                   value={modalNickname}
@@ -562,20 +577,20 @@ export default function LandingPage({
                     setModalNickname(e.target.value);
                     setUsername(e.target.value);
                   }}
-                  placeholder="Nhập tên gọi..."
+                  placeholder={t('landing.createModal.nicknamePlaceholder')}
                   className="w-full h-12 rounded-xl bg-[#FAF6F0] border border-[#ECE6DB] px-4 text-sm font-bold text-brand-brown-dark outline-none focus:bg-white focus:border-[#D6CAB2] transition"
                 />
-                <span className="block text-[10px] font-bold text-brand-brown-light/60 italic mt-1.5">* Danh tính không thể thay đổi sau khi đã vào phòng.</span>
+                <span className="block text-[10px] font-bold text-brand-brown-light/60 italic mt-1.5">{t('landing.createModal.nicknameNote')}</span>
               </div>
 
               {/* Room Name input */}
               <div className="text-left mt-4">
-                <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">Tên phòng học</label>
+                <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">{t('landing.createModal.roomName')}</label>
                 <input
                   type="text"
                   value={modalRoomTitle}
                   onChange={(e) => setModalRoomTitle(e.target.value)}
-                  placeholder="VD: Góc học TOPIK tối nay..."
+                  placeholder={t('landing.createModal.roomPlaceholder')}
                   className="w-full h-12 rounded-xl bg-[#FAF6F0] border border-[#ECE6DB] px-4 text-sm font-bold text-brand-brown-dark outline-none focus:bg-white focus:border-[#D6CAB2] transition"
                 />
               </div>
@@ -583,7 +598,7 @@ export default function LandingPage({
               {/* Mode & Password */}
               <div className="grid grid-cols-2 gap-4 mt-4 text-left">
                 <div>
-                  <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">Chế độ phòng</label>
+                  <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">{t('landing.createModal.mode')}</label>
                   <div className="flex gap-1 bg-[#FAF6F0] border border-[#ECE6DB] rounded-xl p-1 h-12 items-center">
                     <button
                       type="button"
@@ -591,7 +606,7 @@ export default function LandingPage({
                       className={`flex-1 flex h-full items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${modalIsPrivate ? 'bg-white text-brand-brown-dark shadow-sm border border-black/[0.04]' : 'text-brand-brown-light hover:text-brand-brown-dark'
                         }`}
                     >
-                      <span>🔒</span> Riêng tư
+                      <LockKeyhole size={14} /> {t('landing.createModal.private')}
                     </button>
                     <button
                       type="button"
@@ -599,19 +614,19 @@ export default function LandingPage({
                       className={`flex-1 flex h-full items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${!modalIsPrivate ? 'bg-white text-brand-brown-dark shadow-sm border border-black/[0.04]' : 'text-brand-brown-light hover:text-brand-brown-dark'
                         }`}
                     >
-                      <span>🌐</span> Công khai
+                      <Globe2 size={14} /> {t('landing.createModal.public')}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">Mật khẩu phòng</label>
+                  <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">{t('landing.createModal.password')}</label>
                   <input
                     type="password"
                     value={modalPassword}
                     onChange={(e) => setModalPassword(e.target.value)}
                     disabled={!modalIsPrivate}
-                    placeholder={modalIsPrivate ? "Mật khẩu (bắt buộc)..." : "Không có mật khẩu"}
+                    placeholder={modalIsPrivate ? t('landing.createModal.passwordRequired') : t('landing.createModal.noPassword')}
                     className={`w-full h-12 rounded-xl border px-4 text-sm font-bold text-brand-brown-dark outline-none transition ${modalIsPrivate
                         ? 'bg-[#FAF6F0] border-[#ECE6DB] focus:bg-white focus:border-[#D6CAB2]'
                         : 'bg-[#F2EDF0] border-transparent text-gray-400 cursor-not-allowed'
@@ -624,8 +639,8 @@ export default function LandingPage({
               <button
                 type="button"
                 onClick={() => {
-                  if (!modalNickname.trim()) return alert("Vui lòng nhập tên của bạn!");
-                  if (modalIsPrivate && !modalPassword.trim()) return alert("Vui lòng nhập mật khẩu cho phòng riêng tư!");
+                  if (!modalNickname.trim()) return alert(t('landing.createModal.nameAlert'));
+                  if (modalIsPrivate && !modalPassword.trim()) return alert(t('landing.createModal.passwordAlert'));
 
                   handleCreateRoom(
                     [],
@@ -638,7 +653,7 @@ export default function LandingPage({
                 }}
                 className="mt-6 flex w-full h-12 items-center justify-center rounded-2xl bg-[#AB8B7C] text-sm font-black text-white hover:bg-brand-brown-dark shadow-md hover:shadow-lg transition cursor-pointer active:scale-[0.98]"
               >
-                Tạo phòng học
+                {t('landing.createModal.submit')}
               </button>
 
             </div>

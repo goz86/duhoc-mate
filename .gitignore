@@ -2,6 +2,8 @@ localhost.log
 localhost.err.log
 client-localhost.log
 client-localhost.err.log
+server-localhost.log
+server-localhost.err.log
 node_modules/
 client/node_modules/
 server/node_modules/

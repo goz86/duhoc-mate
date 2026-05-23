@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
+  AlertTriangle, ArrowLeft,
   Coffee, MessageCircle, ListMusic,
   Users, ThumbsUp, Play, Pause, RotateCcw, Send,
+  CloudRain,
   Clock, FileText, Video,
-  Headphones, Music2, ChevronRight
+  Headphones, Music2, ChevronRight, Search, Sparkles
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './contexts/AuthContext';
@@ -1296,7 +1298,7 @@ export default function App() {
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          placeholder="🔍 Tên bài hát, nghệ sĩ hoặc link YouTube..."
+                          placeholder="Tên bài hát, nghệ sĩ hoặc link YouTube..."
                           value={songSearch}
                           onChange={(e) => setSongSearch(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), songSearch.length < 20 || songSearch.startsWith('http') ? handleAddSongDirect(e as any) : handleSearchMusic())}
@@ -1310,7 +1312,7 @@ export default function App() {
                         >
                           {musicSearchLoading ? (
                             <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
-                          ) : '🔍'}
+                          ) : <Search size={14} />}
                           Tìm
                         </button>
                       </div>
@@ -1319,18 +1321,19 @@ export default function App() {
                       {!showSearchResults && (
                         <div className="flex flex-wrap gap-2">
                           {[
-                            { label: '✨ Lofi Girl', q: 'lofi girl study' },
-                            { label: '☕ K-Pop Học Bài', q: 'kpop study playlist 2024' },
-                            { label: '🌧️ Tiếng Mưa Cozy', q: 'rain cozy study music' },
-                            { label: '🎹 Piano Nhẹ', q: 'piano soft study music' },
+                            { icon: <Sparkles size={13} />, label: 'Lofi Girl', q: 'lofi girl study' },
+                            { icon: <Coffee size={13} />, label: 'K-Pop Học Bài', q: 'kpop study playlist 2024' },
+                            { icon: <CloudRain size={13} />, label: 'Tiếng Mưa Cozy', q: 'rain cozy study music' },
+                            { icon: <Music2 size={13} />, label: 'Piano Nhẹ', q: 'piano soft study music' },
                           ].map(tag => (
                             <button
                               key={tag.label}
                               type="button"
                               onClick={() => { setSongSearch(tag.q); }}
-                              className="px-3 py-2 bg-white/60 hover:bg-white rounded-lg border border-brand-terracotta-light/10 text-xs text-brand-brown-light transition font-medium"
+                              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white/60 hover:bg-white rounded-lg border border-brand-terracotta-light/10 text-xs text-brand-brown-light transition font-medium"
                             >
-                              {tag.label}
+                              {tag.icon}
+                              <span>{tag.label}</span>
                             </button>
                           ))}
                         </div>
@@ -1343,9 +1346,10 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => { setShowSearchResults(false); setMusicSearchResults([]); }}
-                            className="text-[9px] text-brand-brown-light hover:text-brand-terracotta font-bold cursor-pointer mb-1.5 block"
+                            className="inline-flex items-center gap-1 text-[9px] text-brand-brown-light hover:text-brand-terracotta font-bold cursor-pointer mb-1.5"
                           >
-                            ← Quay về playlist
+                            <ArrowLeft size={11} />
+                            Quay về playlist
                           </button>
 
                           {musicSearchLoading && (
@@ -1356,8 +1360,9 @@ export default function App() {
                           )}
 
                           {musicSearchError && (
-                            <div className="p-3 bg-amber-50 border border-amber-200/60 rounded-2xl text-[10px] text-amber-700 leading-relaxed">
-                              ⚠️ {musicSearchError}
+                            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200/60 rounded-2xl text-[10px] text-amber-700 leading-relaxed">
+                              <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                              <span>{musicSearchError}</span>
                             </div>
                           )}
 
@@ -1518,7 +1523,10 @@ export default function App() {
                             return (
                               <div key={msg.id} className="flex justify-center my-2">
                                 <div className="bg-brand-light/80 text-brand-brown-light/80 px-4 py-2 rounded-full text-xs font-bold border border-brand-terracotta-light/10 max-w-[90%] text-center shadow-sm select-none">
-                                  ✨ {msg.text}
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <Sparkles size={13} />
+                                    {msg.text}
+                                  </span>
                                 </div>
                               </div>
                             );

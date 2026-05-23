@@ -55,7 +55,7 @@ interface Props {
 
 export default function TopikStudy({ roomId, socket }: Props) {
   const { t, i18n } = useTranslation()
-  const lang = i18n.language as 'vi' | 'ko' | 'en'
+  const lang = ((i18n.resolvedLanguage || i18n.language).split('-')[0] || 'vi') as 'vi' | 'ko' | 'en'
 
   const [selectedLevel, setSelectedLevel] = useState(1)
   const [cardIndex, setCardIndex] = useState(0)

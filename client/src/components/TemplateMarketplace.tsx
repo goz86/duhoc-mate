@@ -1,6 +1,7 @@
 import type React from 'react'
 import { useMemo, useState } from 'react'
-import { BookOpen, Clock, Copy, RefreshCw, Search } from 'lucide-react'
+import { BookOpen, Clock, Compass, Copy, LockKeyhole, Search, UsersRound } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { RoomTemplate } from '../lib/communityTemplates'
 import { seedRoomIds } from '../lib/templateRooms'
 
@@ -67,6 +68,7 @@ export default function TemplateMarketplace({
   getAvatarColor,
   activityTicker,
 }: Props) {
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<LobbyTab>('explore')
 
@@ -110,9 +112,9 @@ export default function TemplateMarketplace({
     `flex-1 rounded-full px-3 py-2.5 transition-all duration-200 ${activeTab === tab ? 'bg-white text-brand-brown-dark shadow-[0_2px_8px_rgba(0,0,0,0.08)]' : 'text-brand-brown-light hover:text-brand-brown-dark'}`
 
   const placeholder = {
-    recent: 'Tìm phòng gần đây...',
-    explore: 'Tìm phòng, chủ đề hoặc mã phòng...',
-    friends: 'Tìm bạn bè...',
+    recent: t('landing.search.recent'),
+    explore: t('landing.search.explore'),
+    friends: t('landing.search.friends'),
   }[activeTab]
 
   return (
@@ -121,13 +123,13 @@ export default function TemplateMarketplace({
       <div className="rounded-[18px] border border-black/[0.05] bg-[#f7f2ec] p-1">
         <div className="flex gap-1 text-xs font-black">
           <button type="button" onClick={() => setActiveTab('recent')} className={tabClass('recent')}>
-            Gần đây
+            {t('landing.tabs.recent')}
           </button>
           <button type="button" onClick={() => setActiveTab('explore')} className={tabClass('explore')}>
-            Khám phá
+            {t('landing.tabs.explore')}
           </button>
           <button type="button" onClick={() => setActiveTab('friends')} className={tabClass('friends')}>
-            Bạn bè
+            {t('landing.tabs.friends')}
           </button>
         </div>
       </div>
@@ -181,7 +183,7 @@ export default function TemplateMarketplace({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <p className="truncate text-sm font-black text-brand-brown-dark">{room.roomTitle || `Phòng của ${room.hostName}`}</p>
-                  {room.isPrivate && <span className="text-[10px]" title="Phòng riêng tư">🔒</span>}
+                  {room.isPrivate && <LockKeyhole size={12} className="shrink-0 text-brand-terracotta" aria-label="Phòng riêng tư" />}
                 </div>
                 <p className="mt-0.5 truncate text-xs font-bold text-brand-brown-light/80">
                   {room.hostName} · {isHost ? 'Chủ phòng' : 'Khách'}
@@ -247,10 +249,15 @@ export default function TemplateMarketplace({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <p className="truncate text-sm font-black text-brand-brown-dark">{room.roomTitle || `Phòng của ${room.hostName}`}</p>
-                  {room.isPrivate && <span className="text-[10px]" title="Phòng riêng tư">🔒</span>}
+                  {room.isPrivate && <LockKeyhole size={12} className="shrink-0 text-brand-terracotta" aria-label="Phòng riêng tư" />}
                 </div>
                 <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs font-bold text-brand-brown-light/80">
-                  {room.hostName} · 👥 {room.memberCount} · {isHost ? 'Chủ phòng' : 'Khách'}
+                  <span className="truncate">{room.hostName}</span>
+                  <span aria-hidden="true">·</span>
+                  <UsersRound size={12} className="shrink-0 text-brand-terracotta" />
+                  <span>{room.memberCount}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{isHost ? 'Chủ phòng' : 'Khách'}</span>
                 </p>
               </div>
               <span className="flex-shrink-0 text-[11px] font-black uppercase text-brand-terracotta opacity-0 transition group-hover:opacity-100">Vào phòng</span>
@@ -334,10 +341,10 @@ export default function TemplateMarketplace({
       <button
         type="button"
         onClick={onRefreshRooms}
-        className="mt-auto flex w-full items-center justify-center gap-2 rounded-[14px] border border-black/[0.06] bg-[#fbf6ef] px-4 py-3 text-sm font-black text-brand-terracotta transition hover:bg-white"
+        className="mt-auto flex w-full items-center justify-center gap-2 rounded-[14px] border border-black/[0.06] bg-[#fbf6ef] px-4 py-3 text-sm font-black text-brand-terracotta transition hover:-translate-y-0.5 hover:bg-white hover:shadow-sm active:translate-y-0"
       >
-        <RefreshCw size={15} />
-        Mở rộng Khám phá
+        <Compass size={15} strokeWidth={2.5} />
+        {t('landing.expandExplore')}
       </button>
     </section>
   )
