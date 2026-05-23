@@ -185,7 +185,7 @@ button.ticker-inner {
   /* Compact Hero Typography & Spacing */
   .landing-hero-title {
     font-size: 2.85rem !important; /* ~45px */
-    margin-top: 0.35rem !important;
+    margin-top: 1.5rem !important;
     line-height: 1.05 !important;
   }
   
@@ -197,19 +197,18 @@ button.ticker-inner {
   
   .landing-hero-subtitle {
     font-size: 0.95rem !important; /* ~15px */
-    margin-top: 0.35rem !important;
+    margin-top: 1.25rem !important;
     line-height: 1.5 !important;
   }
   
-  
   /* Buttons container margin */
-  div.mt-4.animate-fade-slide-down {
-    margin-top: 0.6rem !important;
+  .landing-hero-buttons {
+    margin-top: 2rem !important;
   }
   
   /* Badges container margin */
-  div.mt-3.grid {
-    margin-top: 0.5rem !important;
+  .landing-hero-badges {
+    margin-top: 1.75rem !important;
   }
   
   /* TemplateMarketplace container adjustments */

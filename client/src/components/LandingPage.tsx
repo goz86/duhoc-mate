@@ -365,7 +365,7 @@ export default function LandingPage({
                 {/* Hai nút chính theo nhịp landing cozy */}
                 <div
                   style={{ animationDelay: '300ms' }}
-                  className="relative z-20 mt-4 animate-fade-slide-down flex w-full max-w-[540px] flex-col gap-3 md:flex-row 2xl:mt-5 2xl:max-w-[590px]"
+                  className="landing-hero-buttons relative z-20 mt-4 animate-fade-slide-down flex w-full max-w-[540px] flex-col gap-3 md:flex-row 2xl:mt-5 2xl:max-w-[590px]"
                 >
                   <button
                     onClick={() => setShowCreateModal(true)}
@@ -393,7 +393,7 @@ export default function LandingPage({
                 {/* Badges flex row */}
                 <div
                   style={{ animationDelay: '400ms' }}
-                  className="relative z-20 mt-3 grid max-w-[540px] animate-fade-slide-down grid-cols-1 gap-2 md:grid-cols-3 2xl:mt-5 2xl:max-w-[590px]"
+                  className="landing-hero-badges relative z-20 mt-3 grid max-w-[540px] animate-fade-slide-down grid-cols-1 gap-2 md:grid-cols-3 2xl:mt-5 2xl:max-w-[590px]"
                 >
                   {[
                     {
