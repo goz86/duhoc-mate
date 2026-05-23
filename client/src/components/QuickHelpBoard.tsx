@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import type { HelpPost } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { Plus, X, MapPin, Clock, Phone, AlertCircle, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
+import { Plus, X, MapPin, Clock, Phone, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 
 const CATEGORIES = ['housing', 'job', 'food', 'transport', 'study', 'emergency', 'social', 'other'] as const
 type Category = typeof CATEGORIES[number] | 'all'
