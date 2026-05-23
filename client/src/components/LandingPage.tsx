@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Clock, LogIn, Plus, RefreshCw, Megaphone } from 'lucide-react'
+import { Clock, LogIn, Plus, RefreshCw, Megaphone, Headphones } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import studyLounge3d from '../assets/study-lounge-3d-new.png'
 import duhocMateLogo from '../assets/duhoc-mate-logo-new.png'
@@ -9,11 +9,27 @@ import TemplateMarketplace from './TemplateMarketplace'
 import type { RoomTemplate } from '../lib/communityTemplates'
 import { supabase } from '../lib/supabase'
 import type { HelpPost } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 
 type AuthMode = 'login' | 'register'
 
-type ActiveRoom = { id: string; hostName: string; memberCount: number; currentSong?: string }
-type RecentRoom = { id: string; hostName: string; currentSong?: string }
+type ActiveRoom = { 
+  id: string 
+  hostName: string 
+  memberCount: number 
+  currentSong?: string 
+  roomTitle?: string
+  isPrivate?: boolean
+  hostAvatarUrl?: string
+}
+type RecentRoom = { 
+  id: string 
+  hostName: string 
+  currentSong?: string 
+  roomTitle?: string
+  isPrivate?: boolean
+  hostAvatarUrl?: string
+}
 type FriendStatus = { code: string; username: string; online: boolean; currentRoomId: string | null; currentSong: string | null }
 
 type LandingPageProps = {
@@ -23,13 +39,19 @@ type LandingPageProps = {
   setRoomId: (value: string) => void
   onlineUsersCount: number
   user: unknown
-  profile: { username?: string; city?: string } | null
+  profile: { username?: string; city?: string; avatar_url?: string } | null
   signOut: () => void
   setAuthMode: (mode: AuthMode) => void
   setShowAuthModal: (show: boolean) => void
   getAvatarColor: (name: string) => string
-  handleCreateRoom: () => void
-  handleJoinRoom: (roomId?: string) => void
+  handleCreateRoom: (
+    seedTasks?: any[],
+    roomTitle?: string,
+    isPrivate?: boolean,
+    password?: string,
+    avatarUrl?: string
+  ) => void
+  handleJoinRoom: (e?: React.FormEvent | string, enteredPassword?: string) => void
   handleJoinTemplateRoom: (template: RoomTemplate) => void
   templates: RoomTemplate[]
   activeRooms: ActiveRoom[]
@@ -85,6 +107,20 @@ export default function LandingPage({
   const [tickerPhase, setTickerPhase] = useState<'in' | 'show' | 'out'>('in')
   const tickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
+
+  const { signInWithGoogle } = useAuth()
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [modalNickname, setModalNickname] = useState('')
+  const [modalRoomTitle, setModalRoomTitle] = useState('')
+  const [modalIsPrivate, setModalIsPrivate] = useState(true)
+  const [modalPassword, setModalPassword] = useState('')
+
+  useEffect(() => {
+    if (showCreateModal) {
+      setModalNickname(username || profile?.username || '')
+      setModalRoomTitle(profile?.username ? `Phòng của ${profile.username}` : '')
+    }
+  }, [showCreateModal, username, profile])
 
   const handleRefreshRates = async () => {
     setExchangeRate('Đang tải...')
@@ -355,8 +391,8 @@ export default function LandingPage({
                   className="relative z-20 mt-4 animate-fade-slide-down flex w-full max-w-md flex-col gap-3 sm:max-w-lg sm:flex-row"
                 >
                   <button
-                    onClick={handleCreateRoom}
-                    className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-brown-dark hover:shadow-xl hover:shadow-brand-terracotta/30 active:translate-y-0 active:scale-[0.98] sm:flex-1"
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-brown-dark hover:shadow-xl hover:shadow-brand-terracotta/30 active:translate-y-0 active:scale-[0.98] sm:flex-1 cursor-pointer"
                   >
                     <Plus size={18} />
                     Tạo phòng học
@@ -444,6 +480,7 @@ export default function LandingPage({
                 friendCodeCopied={friendCodeCopied}
                 friendInputCode={friendInputCode}
                 friendsWithStatus={friendsWithStatus}
+                username={username}
                 onJoinTemplateRoom={handleJoinTemplateRoom}
                 onJoinRoom={handleJoinRoom}
                 onRefreshRooms={requestActiveRooms}
@@ -456,6 +493,167 @@ export default function LandingPage({
           </section>
         )}
       </main>
+
+      {/* Modal Tạo phòng mới cao cấp (Lissenly style) */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-brown-dark/25 p-4 backdrop-blur-md">
+          {/* Concentric Circle Background */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none flex items-center justify-center">
+            <div className="w-[800px] h-[800px] rounded-full border border-brand-brown-light/10 absolute animate-pulse" />
+            <div className="w-[600px] h-[600px] rounded-full border border-brand-brown-light/15 absolute" />
+            <div className="w-[400px] h-[400px] rounded-full border border-brand-brown-light/20 absolute" />
+          </div>
+
+          <div className="relative z-10 w-full max-w-[480px] text-center">
+            {/* Logo and Back button */}
+            <div className="mb-4 flex items-center justify-between px-2">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-black text-brand-brown-dark shadow-sm border border-black/[0.04] hover:bg-brand-light transition cursor-pointer"
+              >
+                ← Quay lại
+              </button>
+              
+              <div className="flex items-center gap-1.5 font-display font-black text-brand-brown-dark">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E08F74] text-white">
+                  <Headphones size={14} strokeWidth={2.5} />
+                </div>
+                <span>Lissenly<span className="text-[#E08F74]">+</span></span>
+              </div>
+
+              <div className="w-20" /> {/* Spacer */}
+            </div>
+
+            {/* Modal Card */}
+            <div className="rounded-[32px] bg-white p-8 shadow-2xl border border-black/[0.03]">
+              <h2 className="font-display font-black text-2xl text-brand-brown-dark tracking-tight">Tạo phòng mới</h2>
+              <p className="text-xs font-semibold text-brand-brown-light/75 mt-1">Bắt đầu không gian nghe nhạc của riêng bạn</p>
+
+              {/* Google Login button */}
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await signInWithGoogle();
+                  } catch (err: any) {
+                    alert('Lỗi đăng nhập: ' + err.message);
+                  }
+                }}
+                className="mt-6 flex w-full h-12 items-center justify-center gap-3 rounded-2xl border border-[#ECE6DB] bg-white text-sm font-bold text-brand-brown-dark hover:bg-brand-light hover:border-brand-terracotta-light transition cursor-pointer shadow-xs"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98.96 12 .96c-4.97 0-9.25 2.85-11.3 7.02l3.77 2.92C5.35 7.64 8.43 5.04 12 5.04z" />
+                  <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.46c-.29 1.48-1.14 2.73-2.43 3.58l3.77 2.92c2.2-2.03 3.69-5.02 3.69-8.66z" />
+                  <path fill="#FBBC05" d="M4.47 10.9c-.24-.72-.37-1.48-.37-2.27s.13-1.55.37-2.27L.7 5.44C-.13 7.09-.6 8.97-.6 10.9s.47 3.81 1.3 5.46l3.77-2.92z" />
+                  <path fill="#34A853" d="M12 23.04c3.24 0 5.97-1.07 7.96-2.91l-3.77-2.92c-1.05.7-2.39 1.12-3.83 1.12-3.57 0-6.65-2.6-7.73-5.86L.86 15.39c2.05 4.17 6.33 7.02 11.14 7.02z" />
+                </svg>
+                Đăng nhập với Google
+              </button>
+
+              {/* Divider */}
+              <div className="my-6 flex items-center justify-center gap-3">
+                <div className="h-px flex-1 bg-black/[0.06]" />
+                <span className="text-[10px] font-black tracking-widest text-brand-brown-light/60">HOẶC TIẾP TỤC VỚI</span>
+                <div className="h-px flex-1 bg-black/[0.06]" />
+              </div>
+
+              {/* Nickname input */}
+              <div className="text-left">
+                <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">Tên gọi của bạn</label>
+                <input
+                  type="text"
+                  value={modalNickname}
+                  onChange={(e) => {
+                    setModalNickname(e.target.value);
+                    setUsername(e.target.value);
+                  }}
+                  placeholder="Nhập tên gọi..."
+                  className="w-full h-12 rounded-xl bg-[#FAF6F0] border border-[#ECE6DB] px-4 text-sm font-bold text-brand-brown-dark outline-none focus:bg-white focus:border-[#D6CAB2] transition"
+                />
+                <span className="block text-[10px] font-bold text-brand-brown-light/60 italic mt-1.5">* Danh tính không thể thay đổi sau khi đã vào phòng.</span>
+              </div>
+
+              {/* Room Name input */}
+              <div className="text-left mt-4">
+                <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">Tên phòng nhạc</label>
+                <input
+                  type="text"
+                  value={modalRoomTitle}
+                  onChange={(e) => setModalRoomTitle(e.target.value)}
+                  placeholder="VD: Góc chill cuối tuần..."
+                  className="w-full h-12 rounded-xl bg-[#FAF6F0] border border-[#ECE6DB] px-4 text-sm font-bold text-brand-brown-dark outline-none focus:bg-white focus:border-[#D6CAB2] transition"
+                />
+              </div>
+
+              {/* Mode & Password */}
+              <div className="grid grid-cols-2 gap-4 mt-4 text-left">
+                <div>
+                  <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">Chế độ phòng</label>
+                  <div className="flex gap-1 bg-[#FAF6F0] border border-[#ECE6DB] rounded-xl p-1 h-12 items-center">
+                    <button
+                      type="button"
+                      onClick={() => setModalIsPrivate(true)}
+                      className={`flex-1 flex h-full items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        modalIsPrivate ? 'bg-white text-brand-brown-dark shadow-sm border border-black/[0.04]' : 'text-brand-brown-light hover:text-brand-brown-dark'
+                      }`}
+                    >
+                      <span>🔒</span> Riêng tư
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalIsPrivate(false)}
+                      className={`flex-1 flex h-full items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        !modalIsPrivate ? 'bg-white text-brand-brown-dark shadow-sm border border-black/[0.04]' : 'text-brand-brown-light hover:text-brand-brown-dark'
+                      }`}
+                    >
+                      <span>🌐</span> Công khai
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">Mật khẩu phòng</label>
+                  <input
+                    type="password"
+                    value={modalPassword}
+                    onChange={(e) => setModalPassword(e.target.value)}
+                    disabled={!modalIsPrivate}
+                    placeholder={modalIsPrivate ? "Mật khẩu (bắt buộc)..." : "Không có mật khẩu"}
+                    className={`w-full h-12 rounded-xl border px-4 text-sm font-bold text-brand-brown-dark outline-none transition ${
+                      modalIsPrivate 
+                        ? 'bg-[#FAF6F0] border-[#ECE6DB] focus:bg-white focus:border-[#D6CAB2]' 
+                        : 'bg-[#F2EDF0] border-transparent text-gray-400 cursor-not-allowed'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Create Action Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!modalNickname.trim()) return alert("Vui lòng nhập tên của bạn!");
+                  if (modalIsPrivate && !modalPassword.trim()) return alert("Vui lòng nhập mật khẩu cho phòng riêng tư!");
+                  
+                  handleCreateRoom(
+                    [],
+                    modalRoomTitle.trim() || `Phòng của ${modalNickname}`,
+                    modalIsPrivate,
+                    modalPassword,
+                    profile?.avatar_url || ''
+                  );
+                  setShowCreateModal(false);
+                }}
+                className="mt-6 flex w-full h-12 items-center justify-center rounded-2xl bg-[#AB8B7C] text-sm font-black text-white hover:bg-brand-brown-dark shadow-md hover:shadow-lg transition cursor-pointer active:scale-[0.98]"
+              >
+                Tạo Không Gian
+              </button>
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
