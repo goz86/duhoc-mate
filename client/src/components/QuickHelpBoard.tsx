@@ -29,15 +29,17 @@ const SAMPLE_POSTS: HelpPost[] = [
   { id: '3', user_id: 'demo', username: 'Thu Trang', title: 'Job làm thêm cuối tuần tại nhà hàng', content: 'Quán ăn Việt ở Ansan cần người phụ bàn cuối tuần. Lương 10,000원/h, chủ người Việt, thân thiện. DM mình để biết thêm', category: 'job', city: 'Gyeonggi', created_at: new Date(Date.now() - 86400000).toISOString(), contact: 'Zalo: 0987654321' },
 ]
 
-export default function QuickHelpBoard() {
+type QuickHelpBoardProps = {
+  initialExpandedPostId?: string | null
+}
+
+export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoardProps = {}) {
   const { t } = useTranslation()
   const { user, profile } = useAuth()
   const [posts, setPosts] = useState<HelpPost[]>(SAMPLE_POSTS)
   const [activeCategory, setActiveCategory] = useState<Category>('all')
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [exchangeRate, setExchangeRate] = useState<string>('Đang tải...')
-  const [weather, setWeather] = useState<{ temp: string; desc: string } | null>(null)
   const [expandedPost, setExpandedPost] = useState<string | null>(null)
 
   // Form state
@@ -49,9 +51,17 @@ export default function QuickHelpBoard() {
 
   useEffect(() => {
     fetchPosts()
-    fetchExchangeRate()
-    fetchWeather()
   }, [])
+
+  useEffect(() => {
+    if (initialExpandedPostId) {
+      setExpandedPost(initialExpandedPostId)
+      setTimeout(() => {
+        const el = document.getElementById(`post-${initialExpandedPostId}`)
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 100)
+    }
+  }, [initialExpandedPostId])
 
   const fetchPosts = async () => {
     if (!supabase) return
@@ -65,36 +75,7 @@ export default function QuickHelpBoard() {
     } catch { /* Use sample data */ }
   }
 
-  const fetchExchangeRate = async () => {
-    try {
-      const res = await fetch('https://open.er-api.com/v6/latest/KRW')
-      const data = await res.json()
-      const vndRate = data.rates?.VND
-      if (vndRate) {
-        const rate1000 = (1000 / vndRate * 1000).toFixed(0)
-        setExchangeRate(`1,000 ₩ ≈ ${Number(rate1000).toLocaleString('vi-VN')} ₫`)
-      }
-    } catch {
-      // Fallback giá trị xấp xỉ
-      setExchangeRate('1,000 ₩ ≈ 1,780 ₫')
-    }
-  }
 
-  const fetchWeather = async () => {
-    try {
-      const res = await fetch('https://wttr.in/Seoul?format=j1')
-      const data = await res.json()
-      const current = data.current_condition?.[0]
-      if (current) {
-        setWeather({
-          temp: `${current.temp_C}°C`,
-          desc: current.weatherDesc?.[0]?.value || 'N/A'
-        })
-      }
-    } catch {
-      setWeather({ temp: '?°C', desc: 'Không lấy được' })
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -149,26 +130,6 @@ export default function QuickHelpBoard() {
       <div className="bg-gradient-to-r from-brand-terracotta to-brand-brown-dark px-8 py-6 text-white">
         <h2 className="font-display font-black text-2xl">{t('help.title')}</h2>
         <p className="text-white/70 text-sm mt-1">{t('help.subtitle')}</p>
-
-        {/* Exchange + Weather chips */}
-        <div className="flex flex-wrap gap-3 mt-4">
-          <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium">
-            <span>💱</span>
-            <span>{t('help.exchange')}:</span>
-            <span className="font-bold">{exchangeRate}</span>
-          </div>
-          {weather && (
-            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium">
-              <span>🌤️</span>
-              <span>Seoul:</span>
-              <span className="font-bold">{weather.temp}</span>
-              <span className="text-white/70">· {weather.desc}</span>
-            </div>
-          )}
-          <button onClick={() => { fetchExchangeRate(); fetchWeather() }} className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-2 rounded-full text-xs transition cursor-pointer">
-            <RefreshCw size={12} /> Cập nhật
-          </button>
-        </div>
       </div>
 
       <div className="p-6">
@@ -280,7 +241,7 @@ export default function QuickHelpBoard() {
             </div>
           ) : (
             filtered.map(post => (
-              <div key={post.id} className="p-4 rounded-2xl bg-white border border-brand-terracotta-light/10 shadow-sm hover:shadow-md transition group">
+              <div key={post.id} id={`post-${post.id}`} className="p-4 rounded-2xl bg-white border border-brand-terracotta-light/10 shadow-sm hover:shadow-md transition group">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
