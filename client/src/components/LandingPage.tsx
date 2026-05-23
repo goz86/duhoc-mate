@@ -230,11 +230,11 @@ export default function LandingPage({
         <div className="absolute inset-0 opacity-60 [background-image:radial-gradient(circle,rgba(76,55,49,0.035)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
       </div>
       <header className="sticky top-0 z-50 bg-[#fbf6ef]/90 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-5 py-5 md:px-12">
+        <div className="flex items-center justify-between px-5 py-3 md:px-10 xl:px-12 2xl:py-5">
           <div className="flex items-center gap-3">
-            <img src={duhocMateLogo} alt="Duhoc Mate Logo" className="h-11 w-11 rounded-2xl object-cover bg-white shadow-sm ring-1 ring-black/[0.04]" />
+            <img src={duhocMateLogo} alt="Duhoc Mate Logo" className="h-10 w-10 rounded-2xl object-cover bg-white shadow-sm ring-1 ring-black/[0.04] 2xl:h-11 2xl:w-11" />
             <div>
-              <p className="font-display text-xl font-black leading-none">Duhoc Mate</p>
+              <p className="font-display text-lg font-black leading-none xl:text-xl">Duhoc Mate</p>
               <p className="mt-1 hidden text-xs font-bold text-brand-brown-light sm:block">
                 {onlineUsersCount > 0 ? `${onlineUsersCount} ${t('landing.onlineNow')}` : t('landing.statusReady')}
               </p>
@@ -298,9 +298,9 @@ export default function LandingPage({
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1510px] px-5 py-5 md:px-12">
+      <main className="mx-auto max-w-[1510px] px-5 py-2 md:px-10 xl:px-12 2xl:max-w-[1640px] 2xl:py-5">
         {/* Sub-Header Navigation Tab Bar */}
-        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:grid lg:grid-cols-[1.05fr_0.9fr_0.95fr] lg:gap-8">
+        <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:grid lg:grid-cols-[1.05fr_0.9fr_0.95fr] lg:gap-8 2xl:mb-5">
           <div className="flex gap-5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:col-span-2">
             <button
               onClick={() => setShowHelpBoard(false)}
@@ -337,9 +337,9 @@ export default function LandingPage({
             <QuickHelpBoard initialExpandedPostId={selectedPostId} />
           </section>
         ) : (
-          <section className="relative mt-1 grid min-w-0 gap-7 lg:min-h-[calc(100svh-145px)] lg:grid-cols-[minmax(0,1fr)_minmax(380px,420px)] lg:items-center xl:grid-cols-[0.98fr_0.95fr_0.9fr] xl:gap-9">
-            <div className="relative flex min-w-0 items-center py-2 lg:py-4">
-              <div className="relative z-10 min-w-0 lg:max-w-[620px] xl:max-w-[560px]">
+          <section className="relative mt-1 grid min-w-0 gap-5 lg:min-h-[calc(100svh-116px)] lg:grid-cols-[minmax(0,1fr)_minmax(360px,410px)] lg:items-center xl:gap-7 2xl:grid-cols-[0.98fr_0.95fr_0.9fr] 2xl:min-h-[calc(100svh-150px)] 2xl:gap-11">
+            <div className="relative flex min-w-0 items-center py-1 lg:py-2 2xl:py-4">
+              <div className="relative z-10 min-w-0 lg:max-w-[620px] xl:max-w-[560px] 2xl:max-w-[620px]">
                 <div
                   style={{ animationDelay: '0ms' }}
                   className="inline-flex animate-fade-slide-down items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-terracotta"
@@ -350,14 +350,14 @@ export default function LandingPage({
 
                 <h1
                   style={{ animationDelay: '100ms' }}
-                  className="mt-6 animate-fade-slide-down font-display text-5xl font-black leading-[1.03] tracking-tight text-brand-brown-dark sm:text-6xl lg:text-[58px] xl:text-[76px]"
+                  className="mt-4 animate-fade-slide-down font-display text-5xl font-black leading-[1.02] tracking-tight text-brand-brown-dark sm:text-6xl lg:text-[54px] xl:text-[68px] 2xl:mt-6 2xl:text-[80px]"
                 >
                   <span className="xl:whitespace-nowrap">{t('landing.heroLine1')}</span> <br />
                   <span className="text-brand-terracotta">{t('landing.heroLine2')}</span>
                 </h1>
                 <p
                   style={{ animationDelay: '200ms' }}
-                  className="mt-6 animate-fade-slide-down max-w-md text-base font-semibold leading-relaxed text-brand-brown-dark/75 sm:text-lg"
+                  className="mt-4 animate-fade-slide-down max-w-md text-base font-semibold leading-relaxed text-brand-brown-dark/75 sm:text-lg 2xl:mt-6 2xl:max-w-lg 2xl:text-xl"
                 >
                   {t('landing.heroCopy')}
                 </p>
@@ -365,7 +365,7 @@ export default function LandingPage({
                 {/* Tên của bạn input inline */}
                 <div
                   style={{ animationDelay: '300ms' }}
-                  className="mt-7 animate-fade-slide-down flex w-full max-w-[330px] items-center gap-3 rounded-full border border-black/[0.07] bg-white px-4 py-2.5 shadow-sm"
+                  className="mt-5 animate-fade-slide-down flex w-full max-w-[330px] items-center gap-3 rounded-full border border-black/[0.07] bg-white px-4 py-2.5 shadow-sm 2xl:mt-7 2xl:max-w-[360px]"
                 >
                   <span className="shrink-0 text-[10px] font-black uppercase tracking-wider text-brand-brown-light">{t('landing.yourName')}</span>
                   <input
@@ -380,17 +380,17 @@ export default function LandingPage({
                 {/* Hai nút chính theo nhịp landing cozy */}
                 <div
                   style={{ animationDelay: '400ms' }}
-                  className="relative z-20 mt-4 animate-fade-slide-down flex w-full max-w-[540px] flex-col gap-3 md:flex-row"
+                  className="relative z-20 mt-4 animate-fade-slide-down flex w-full max-w-[540px] flex-col gap-3 md:flex-row 2xl:mt-5 2xl:max-w-[590px]"
                 >
                   <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex h-14 w-full items-center justify-center gap-2 rounded-[14px] bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-brown-dark hover:shadow-xl hover:shadow-brand-terracotta/30 active:translate-y-0 active:scale-[0.98] md:flex-[1.08] cursor-pointer"
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-brown-dark hover:shadow-xl hover:shadow-brand-terracotta/30 active:translate-y-0 active:scale-[0.98] md:flex-[1.08] cursor-pointer 2xl:h-14"
                   >
                     <Plus size={18} />
                     <span className="whitespace-nowrap">{t('landing.createStudyRoom')}</span>
                   </button>
 
-                  <div className="flex h-14 w-full items-center rounded-[14px] border border-black/[0.1] bg-white px-5 shadow-sm transition hover:border-brand-terracotta-light sm:flex-1">
+                  <div className="flex h-12 w-full items-center rounded-[14px] border border-black/[0.1] bg-white px-5 shadow-sm transition hover:border-brand-terracotta-light sm:flex-1 2xl:h-14">
                     <input
                       type="text"
                       placeholder={t('landing.joinCodePlaceholder')}
@@ -408,7 +408,7 @@ export default function LandingPage({
                 {/* Badges flex row */}
                 <div
                   style={{ animationDelay: '500ms' }}
-                  className="relative z-20 mt-5 grid max-w-[540px] animate-fade-slide-down grid-cols-1 gap-2 md:grid-cols-3"
+                  className="relative z-20 mt-3 grid max-w-[540px] animate-fade-slide-down grid-cols-1 gap-2 md:grid-cols-3 2xl:mt-5 2xl:max-w-[590px]"
                 >
                   {[
                     {
@@ -424,7 +424,7 @@ export default function LandingPage({
                       label: t('landing.badgeRealtime')
                     }
                   ].map(item => (
-                    <span key={item.label} className="inline-flex min-w-0 items-center justify-center gap-2 rounded-full border border-black/[0.06] bg-white px-3 py-2 text-xs font-bold text-brand-brown-light shadow-sm">
+                    <span key={item.label} className="inline-flex min-w-0 items-center justify-center gap-2 rounded-full border border-black/[0.06] bg-white px-3 py-1.5 text-xs font-bold text-brand-brown-light shadow-sm 2xl:py-2">
                       {item.icon}
                       {item.label}
                     </span>
@@ -434,10 +434,10 @@ export default function LandingPage({
             </div>
 
             {/* Cột 2: Minh họa 3D */}
-            <div className="hidden xl:flex items-center justify-center py-2 lg:py-4">
+            <div className="hidden 2xl:flex items-center justify-center py-1 lg:py-2 2xl:py-4">
               <div
                 style={{ animationDelay: '350ms' }}
-                className="relative z-0 -ml-20 w-full max-w-[500px] translate-y-8 rotate-[-2.5deg] animate-fade-slide-down transition-transform duration-500 ease-out hover:rotate-[-1deg] hover:scale-[1.015] xl:-ml-28 xl:max-w-[560px]"
+                className="relative z-0 -ml-20 w-full max-w-[470px] translate-y-5 rotate-[-2.5deg] animate-fade-slide-down transition-transform duration-500 ease-out hover:rotate-[-1deg] hover:scale-[1.015] xl:-ml-24 2xl:-ml-28 2xl:max-w-[620px] 2xl:translate-y-8"
               >
                 <img
                   src={studyLounge3d}

@@ -158,4 +158,77 @@ button.ticker-inner {
   text-overflow: ellipsis;
 }
 
-
+/* Spacing and layout optimization for 15.6" laptops and shorter viewports */
+@media (max-height: 840px) {
+  /* Compact header */
+  header div.flex {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  
+  /* Compact main layout */
+  main {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+  }
+  
+  /* Compact sub-header tabs */
+  main > div.mb-2 {
+    margin-bottom: 0.25rem !important;
+  }
+  
+  /* Grid height reset */
+  section.relative.mt-1.grid {
+    min-height: auto !important;
+  }
+  
+  /* Compact Hero Typography & Spacing */
+  h1 {
+    font-size: 2.25rem !important; /* ~36px */
+    margin-top: 0.35rem !important;
+    line-height: 1.1 !important;
+  }
+  
+  p {
+    font-size: 0.875rem !important; /* ~14px */
+    margin-top: 0.35rem !important;
+    line-height: 1.5 !important;
+  }
+  
+  /* Nickname input container margin */
+  div.mt-5.animate-fade-slide-down {
+    margin-top: 0.6rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  
+  /* Buttons container margin */
+  div.mt-4.animate-fade-slide-down {
+    margin-top: 0.6rem !important;
+  }
+  
+  /* Badges container margin */
+  div.mt-3.grid {
+    margin-top: 0.5rem !important;
+  }
+  
+  /* TemplateMarketplace container adjustments */
+  section.ml-auto.flex {
+    min-height: 440px !important;
+    height: calc(100svh - 110px) !important;
+    padding: 0.75rem !important;
+    gap: 0.6rem !important;
+  }
+  
+  /* Compact list inside Marketplace */
+  section.ml-auto.flex div.min-h-0.space-y-3 {
+    margin-top: 0.25rem !important;
+  }
+  
+  section.ml-auto.flex div.min-h-0.space-y-3 > article,
+  section.ml-auto.flex div.min-h-0.space-y-3 > button {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    border-radius: 12px !important;
+  }
+}
