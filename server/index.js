@@ -59,7 +59,10 @@ const broadcastActiveRooms = () => {
     id: r.roomId,
     hostName: r.members.find(m => m.isHost)?.username || 'Ẩn danh',
     memberCount: r.members.length,
-    currentSong: r.playlist[0]?.title || 'Đang nghe nhạc Lofi'
+    currentSong: r.playlist[0]?.title || 'Đang nghe nhạc Lofi',
+    roomTitle: r.roomTitle || `Phòng học tập`,
+    isPrivate: !!r.isPrivate,
+    hostAvatarUrl: r.hostAvatarUrl || ''
   }));
   io.emit('active-rooms-list', activeRooms);
 };
@@ -127,15 +130,16 @@ io.on('connection', (socket) => {
       id: r.roomId,
       hostName: r.members.find(m => m.isHost)?.username || 'Ẩn danh',
       memberCount: r.members.length,
-      currentSong: r.playlist[0]?.title || 'Đang nghe nhạc Lofi'
+      currentSong: r.playlist[0]?.title || 'Đang nghe nhạc Lofi',
+      roomTitle: r.roomTitle || `Phòng học tập`,
+      isPrivate: !!r.isPrivate,
+      hostAvatarUrl: r.hostAvatarUrl || ''
     }));
     socket.emit('active-rooms-list', activeRooms);
   });
 
   // 1. Tham gia phòng
-  socket.on('join-room', ({ roomId, username, ideaTasks = [] }) => {
-    socket.join(roomId);
-    
+  socket.on('join-room', ({ roomId, username, ideaTasks = [], roomTitle, isPrivate, password, hostAvatarUrl }) => {
     // Khởi tạo phòng nếu chưa tồn tại
     if (!rooms.has(roomId)) {
       rooms.set(roomId, {
@@ -150,11 +154,25 @@ io.on('connection', (socket) => {
         },
         pomodoro: createDefaultPomodoro(),
         chatMessages: [],
-        ideaTasks: Array.isArray(ideaTasks) ? ideaTasks : []
+        ideaTasks: Array.isArray(ideaTasks) ? ideaTasks : [],
+        roomTitle: roomTitle || `Phòng của ${username}`,
+        isPrivate: !!isPrivate,
+        password: password || '',
+        hostAvatarUrl: hostAvatarUrl || ''
       });
     }
 
     const room = rooms.get(roomId);
+
+    // Kiểm tra mật khẩu nếu phòng riêng tư và không phải là chủ phòng (members.length > 0)
+    if (room.isPrivate && room.members.length > 0) {
+      if (room.password && room.password !== password) {
+        socket.emit('join-room-error', 'Sai mật khẩu phòng!');
+        return;
+      }
+    }
+
+    socket.join(roomId);
     if (Array.isArray(ideaTasks) && ideaTasks.length && (!room.ideaTasks || room.ideaTasks.length === 0)) {
       room.ideaTasks = ideaTasks;
     }
