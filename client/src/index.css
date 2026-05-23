@@ -84,3 +84,78 @@ input, select, textarea {
   animation: fadeSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* ── Activity Ticker ── */
+.activity-ticker {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.ticker-inner {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+button.ticker-inner {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+}
+
+.ticker-clickable {
+  cursor: pointer;
+}
+
+.ticker-clickable:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.ticker-in {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.ticker-show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ticker-out {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.ticker-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ticker-author {
+  font-weight: 700;
+  color: var(--color-brand-brown-dark);
+  flex-shrink: 0;
+}
+
+.ticker-sep {
+  color: var(--color-brand-terracotta-light);
+  flex-shrink: 0;
+}
+
+.ticker-text {
+  color: var(--color-brand-brown-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
