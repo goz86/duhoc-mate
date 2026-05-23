@@ -40,3 +40,11 @@ Khi `activeTab` thay đổi, React sẽ coi component này là hoàn toàn mới
 - Danh sách phòng gần đây (Recent Rooms)
 - Phòng TOPIK 24/24 và phòng người dùng tạo ở tab Khám phá (Explore Rooms)
 - Danh sách bạn bè ở tab Bạn bè (Friends List)
+
+### 4. Cố định chiều cao của thẻ Marketplace
+Để ngăn hiện tượng co giãn chiều cao của giao diện (Layout Shift) khi chuyển giữa các tab có số lượng phần tử khác nhau, chúng ta sẽ cố định chiều cao của thẻ `TemplateMarketplace` bằng class `h-[540px]` thay vì `min-h-[500px]`:
+```tsx
+<section className="flex h-[540px] flex-col gap-5 rounded-[24px] bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+```
+Phần danh sách phòng có class `flex-1 overflow-y-auto` sẽ tự động chiếm trọn phần chiều cao còn lại của thẻ và hiện thanh cuộn khi danh sách quá dài, đảm bảo chiều cao tổng thể của trang Landing Page luôn cố định và cân đối.
+
