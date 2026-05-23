@@ -311,6 +311,11 @@ export default function App() {
       setOnlineUsers(users);
     });
 
+    socket.on('join-room-error', (errorMessage: string) => {
+      alert(errorMessage);
+      setView('landing');
+    });
+
     // Đăng ký thông tin của bản thân và yêu cầu danh sách phòng ban đầu
     const localUsername = localStorage.getItem('duhocmate_username') || '';
     const localFriendCode = localStorage.getItem('duhocmate_friend_code') || '';
@@ -453,7 +458,13 @@ export default function App() {
   };
 
   // 2. Chức năng Phòng (Tạo/Tham Gia)
-  const handleCreateRoom = (seedTasks: IdeaTask[] = []) => {
+  const handleCreateRoom = (
+    seedTasks: IdeaTask[] = [],
+    roomTitle?: string,
+    isPrivate?: boolean,
+    password?: string,
+    avatarUrl?: string
+  ) => {
     if (!username.trim()) return alert("Vui lòng nhập tên của bạn trước!");
     const generatedId = Math.random().toString(36).substring(2, 8).toUpperCase();
     setRoomId(generatedId);
@@ -461,18 +472,33 @@ export default function App() {
     
     // Lưu vào phòng gần đây
     const newRecent = [
-      { id: generatedId, hostName: username, currentSong: 'Phòng mới tạo' },
+      { 
+        id: generatedId, 
+        hostName: username, 
+        currentSong: 'Phòng mới tạo',
+        roomTitle: roomTitle || `Phòng của ${username}`,
+        isPrivate: !!isPrivate,
+        hostAvatarUrl: avatarUrl || profile?.avatar_url || ''
+      },
       ...recentRooms.filter(r => r.id !== generatedId)
     ].slice(0, 5);
     setRecentRooms(newRecent);
     localStorage.setItem('duhocmate_recent_rooms', JSON.stringify(newRecent));
 
     if (seedTasks.length) saveRoomTasks(generatedId, seedTasks);
-    socket.emit('join-room', { roomId: generatedId, username, ideaTasks: seedTasks });
+    socket.emit('join-room', { 
+      roomId: generatedId, 
+      username, 
+      ideaTasks: seedTasks,
+      roomTitle: roomTitle || `Phòng của ${username}`,
+      isPrivate: !!isPrivate,
+      password: password || '',
+      hostAvatarUrl: avatarUrl || profile?.avatar_url || ''
+    });
     setView('room');
   };
 
-  const handleJoinRoom = (e?: React.FormEvent | string) => {
+  const handleJoinRoom = (e?: React.FormEvent | string, enteredPassword?: string) => {
     let targetRoomId = roomId;
     if (typeof e === 'string') {
       targetRoomId = e;
@@ -486,15 +512,29 @@ export default function App() {
     const formattedId = targetRoomId.trim().toUpperCase();
     setRoomId(formattedId);
 
+    // Lấy thông tin phòng hiện tại nếu nó đang active để lưu thông tin chính xác
+    const matchedActive = activeRooms.find(r => r.id === formattedId);
+
     // Lưu vào phòng gần đây
     const newRecent = [
-      { id: formattedId, hostName: 'Bạn học', currentSong: 'Phòng học tập' },
+      { 
+        id: formattedId, 
+        hostName: matchedActive?.hostName || 'Bạn học', 
+        currentSong: 'Phòng học tập',
+        roomTitle: matchedActive?.roomTitle || 'Phòng học tập',
+        isPrivate: matchedActive?.isPrivate || false,
+        hostAvatarUrl: matchedActive?.hostAvatarUrl || ''
+      },
       ...recentRooms.filter(r => r.id !== formattedId)
     ].slice(0, 5);
     setRecentRooms(newRecent);
     localStorage.setItem('duhocmate_recent_rooms', JSON.stringify(newRecent));
 
-    socket.emit('join-room', { roomId: formattedId, username });
+    socket.emit('join-room', { 
+      roomId: formattedId, 
+      username,
+      password: enteredPassword || '' 
+    });
     setView('room');
   };
 
@@ -860,8 +900,8 @@ export default function App() {
           setAuthMode={setAuthMode}
           setShowAuthModal={setShowAuthModal}
           getAvatarColor={getAvatarColor}
-          handleCreateRoom={() => handleCreateRoom()}
-          handleJoinRoom={(targetRoomId?: string) => targetRoomId ? handleJoinRoom(targetRoomId) : handleJoinRoom()}
+          handleCreateRoom={handleCreateRoom}
+          handleJoinRoom={handleJoinRoom}
           handleJoinTemplateRoom={handleJoinTemplateRoom}
           templates={templates}
           activeRooms={activeRooms}
