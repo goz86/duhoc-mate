@@ -23,7 +23,7 @@ type LandingPageProps = {
   setRoomId: (value: string) => void
   onlineUsersCount: number
   user: unknown
-  profile: { username?: string } | null
+  profile: { username?: string; city?: string } | null
   signOut: () => void
   setAuthMode: (mode: AuthMode) => void
   setShowAuthModal: (show: boolean) => void
@@ -213,7 +213,7 @@ export default function LandingPage({
             )}
             <span className="hidden items-center gap-1 rounded-full bg-white px-3 py-2 text-xs font-bold text-brand-brown-light shadow-sm md:flex">
               <Clock size={13} />
-              {new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })} KST
+              {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} {profile?.city || 'Seoul'}
             </span>
             <LanguageSwitcher />
             {user ? (
