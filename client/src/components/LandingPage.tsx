@@ -338,7 +338,7 @@ export default function LandingPage({
           </section>
         ) : (
           <section className="relative mt-1 grid min-w-0 gap-5 lg:min-h-[calc(100svh-116px)] lg:grid-cols-[minmax(0,1fr)_minmax(360px,410px)] lg:items-center xl:gap-7 2xl:grid-cols-[0.98fr_0.95fr_0.9fr] 2xl:min-h-[calc(100svh-150px)] 2xl:gap-11">
-            <div className="relative flex min-w-0 items-center py-1 lg:py-2 2xl:py-4">
+            <div className="relative flex min-w-0 items-start pt-3 pb-1 lg:pt-8 lg:pb-2 2xl:pt-12 2xl:pb-4">
               <div className="relative z-10 min-w-0 lg:max-w-[620px] xl:max-w-[560px] 2xl:max-w-[620px]">
                 <div
                   style={{ animationDelay: '0ms' }}
@@ -365,7 +365,7 @@ export default function LandingPage({
                 {/* Tên của bạn input inline */}
                 <div
                   style={{ animationDelay: '300ms' }}
-                  className="mt-5 animate-fade-slide-down flex w-full max-w-[330px] items-center gap-3 rounded-full border border-black/[0.07] bg-white px-4 py-2.5 shadow-sm 2xl:mt-7 2xl:max-w-[360px]"
+                  className="landing-nickname-container mt-5 animate-fade-slide-down flex h-11 w-full max-w-[330px] items-center gap-3 rounded-full border border-black/[0.07] bg-white px-4 shadow-sm 2xl:mt-7 2xl:h-12 2xl:max-w-[360px]"
                 >
                   <span className="shrink-0 text-[10px] font-black uppercase tracking-wider text-brand-brown-light">{t('landing.yourName')}</span>
                   <input
