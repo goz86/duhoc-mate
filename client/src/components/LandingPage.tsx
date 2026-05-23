@@ -337,8 +337,8 @@ export default function LandingPage({
             <QuickHelpBoard initialExpandedPostId={selectedPostId} />
           </section>
         ) : (
-          <section className="relative mt-1 grid min-w-0 gap-5 lg:min-h-[calc(100svh-116px)] lg:grid-cols-[minmax(0,1fr)_minmax(360px,410px)] lg:items-center xl:gap-7 2xl:grid-cols-[0.98fr_0.95fr_0.9fr] 2xl:min-h-[calc(100svh-150px)] 2xl:gap-11">
-            <div className="relative flex min-w-0 items-start pt-3 pb-1 lg:pt-8 lg:pb-2 2xl:pt-12 2xl:pb-4">
+          <section className="relative mt-1 grid min-w-0 gap-5 lg:min-h-[calc(100svh-116px)] lg:grid-cols-[minmax(0,1fr)_minmax(360px,410px)] lg:items-start xl:gap-7 2xl:grid-cols-[0.98fr_0.95fr_0.9fr] 2xl:min-h-[calc(100svh-150px)] 2xl:gap-11 lg:pt-6 2xl:pt-10">
+            <div className="relative flex min-w-0 items-start pt-3 pb-1 lg:pt-6 lg:pb-2 2xl:pt-8 2xl:pb-4">
               <div className="relative z-10 min-w-0 lg:max-w-[620px] xl:max-w-[560px] 2xl:max-w-[620px]">
                 <div
                   style={{ animationDelay: '0ms' }}
@@ -362,24 +362,9 @@ export default function LandingPage({
                   {t('landing.heroCopy')}
                 </p>
 
-                {/* Tên của bạn input inline */}
-                <div
-                  style={{ animationDelay: '300ms' }}
-                  className="landing-nickname-container mt-5 animate-fade-slide-down flex h-11 w-full max-w-[330px] items-center gap-3 rounded-full border border-black/[0.07] bg-white px-4 shadow-sm 2xl:mt-7 2xl:h-12 2xl:max-w-[360px]"
-                >
-                  <span className="shrink-0 text-[10px] font-black uppercase tracking-wider text-brand-brown-light">{t('landing.yourName')}</span>
-                  <input
-                    type="text"
-                    placeholder={t('landing.namePlaceholder')}
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
-                    className="min-w-0 flex-1 bg-transparent text-xs font-bold text-brand-brown-dark outline-none focus:ring-0"
-                  />
-                </div>
-
                 {/* Hai nút chính theo nhịp landing cozy */}
                 <div
-                  style={{ animationDelay: '400ms' }}
+                  style={{ animationDelay: '300ms' }}
                   className="relative z-20 mt-4 animate-fade-slide-down flex w-full max-w-[540px] flex-col gap-3 md:flex-row 2xl:mt-5 2xl:max-w-[590px]"
                 >
                   <button
@@ -407,7 +392,7 @@ export default function LandingPage({
 
                 {/* Badges flex row */}
                 <div
-                  style={{ animationDelay: '500ms' }}
+                  style={{ animationDelay: '400ms' }}
                   className="relative z-20 mt-3 grid max-w-[540px] animate-fade-slide-down grid-cols-1 gap-2 md:grid-cols-3 2xl:mt-5 2xl:max-w-[590px]"
                 >
                   {[
