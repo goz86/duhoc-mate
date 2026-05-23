@@ -247,8 +247,8 @@ export default function LandingPage({
 
       <main className="mx-auto max-w-[1560px] px-5 py-8 xl:px-8">
         {/* Sub-Header Navigation Tab Bar */}
-        <div className="mb-6 flex items-center justify-between border-b border-black/[0.06] pb-3 sm:mb-8 sm:pb-4 gap-4">
-          <div className="flex gap-5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between lg:grid lg:grid-cols-[1.2fr_1fr_1.1fr] lg:gap-6 border-b border-black/[0.06] pb-3 sm:mb-8 sm:pb-4 gap-4">
+          <div className="flex gap-5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:col-span-2">
             <button
               onClick={() => setShowHelpBoard(false)}
               className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${
@@ -281,23 +281,25 @@ export default function LandingPage({
 
           {/* Activity Ticker */}
           {tickerPosts.length > 0 && (
-            <div className="activity-ticker hidden md:flex items-center bg-[#FAF6F0] border border-black/[0.04] rounded-xl px-4 py-1.5 max-w-[360px] h-8 overflow-hidden shadow-xs">
-              <button
-                onClick={() => {
-                  setSelectedPostId(tickerPosts[tickerIndex]?.id)
-                  setShowHelpBoard(true)
-                }}
-                className={`ticker-inner ticker-${tickerPhase} ticker-clickable flex items-center gap-2 w-full text-left`}
-              >
-                <span className="ticker-icon text-brand-terracotta flex items-center">
-                  <Megaphone size={12} strokeWidth={2.5} />
-                </span>
-                <span className="ticker-author font-bold text-xs text-brand-brown-dark shrink-0">{tickerPosts[tickerIndex]?.username}</span>
-                <span className="ticker-sep text-brand-terracotta-light font-bold">·</span>
-                <span className="ticker-text text-xs text-brand-brown-light truncate font-semibold">
-                  {tickerPosts[tickerIndex]?.title}
-                </span>
-              </button>
+            <div className="flex justify-start lg:col-span-1">
+              <div className="activity-ticker hidden md:flex items-center bg-[#FAF6F0] border border-black/[0.04] rounded-xl px-4 py-1.5 max-w-[360px] h-8 overflow-hidden shadow-xs">
+                <button
+                  onClick={() => {
+                    setSelectedPostId(tickerPosts[tickerIndex]?.id)
+                    setShowHelpBoard(true)
+                  }}
+                  className={`ticker-inner ticker-${tickerPhase} ticker-clickable flex items-center gap-2 w-full text-left`}
+                >
+                  <span className="ticker-icon text-brand-terracotta flex items-center">
+                    <Megaphone size={12} strokeWidth={2.5} />
+                  </span>
+                  <span className="ticker-author font-bold text-xs text-brand-brown-dark shrink-0">{tickerPosts[tickerIndex]?.username}</span>
+                  <span className="ticker-sep text-brand-terracotta-light font-bold">·</span>
+                  <span className="ticker-text text-xs text-brand-brown-light truncate font-semibold">
+                    {tickerPosts[tickerIndex]?.title}
+                  </span>
+                </button>
+              </div>
             </div>
           )}
         </div>
