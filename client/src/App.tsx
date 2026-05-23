@@ -29,8 +29,8 @@ import {
 import type { StageMode } from './types';
 
 // Kết nối Socket Server — đọc từ env var khi deploy, fallback localhost khi dev
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 
-  (window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin);
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 let socket: Socket;
 
@@ -686,9 +686,7 @@ export default function App() {
     setShowSearchResults(true);
     
     try {
-      const SEARCH_URL = window.location.hostname === 'localhost'
-        ? 'http://localhost:3001/api/search-music'
-        : `${window.location.origin.replace('3000', '3001')}/api/search-music`;
+      const SEARCH_URL = `${API_BASE_URL}/api/search-music`;
 
       const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(songSearch.trim())}`);
       const data = await res.json();
