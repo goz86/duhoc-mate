@@ -129,7 +129,7 @@ const vi = {
   'auth.registerSuccess': 'Tạo tài khoản thành công!',
   'auth.error': 'Đã có lỗi xảy ra. Vui lòng thử lại.',
 
-  'help.title': 'Bảng hỗ trợ cuộc sống Hàn Quốc',
+  'help.title': 'Bảng tin hỗ trợ đời sống Hàn Quốc',
   'help.subtitle': 'Tỷ giá · Thời tiết · Bảng tin cộng đồng',
   'help.exchange': 'Tỷ giá Won → VND',
   'help.weather': 'Thời tiết Seoul',
