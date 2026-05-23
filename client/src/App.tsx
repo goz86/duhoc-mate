@@ -28,10 +28,9 @@ import {
 } from './lib/communityTemplates';
 import type { StageMode } from './types';
 
-// Kết nối tới Socket Server (cục bộ hoặc tự động nhận theo host)
-const SOCKET_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3001' 
-  : window.location.origin.replace('3000', '3001');
+// Kết nối Socket Server — đọc từ env var khi deploy, fallback localhost khi dev
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 
+  (window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin);
 
 let socket: Socket;
 

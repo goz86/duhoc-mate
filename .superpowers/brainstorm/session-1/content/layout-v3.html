@@ -1,0 +1,104 @@
+<h2>Đề xuất giao diện: Di chuyển Tỷ giá/Thời tiết & Tích hợp Ticker</h2>
+<p class="subtitle">Dưới đây là phương án tái cấu trúc giao diện Header và Sub-header (Thanh điều hướng) theo yêu cầu của bạn:</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="header-layout" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Đưa Tỷ giá & Thời tiết lên Header</h3>
+      <p>Đặt cạnh Logo hoặc KST Clock dưới dạng các Chip bo tròn gọn gàng. Chỉ hiển thị khi đang ở tab <strong>Bảng tin</strong> để tránh rác giao diện lúc học.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="ticker-layout" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Ticker chạy chữ cùng dòng với Tabs</h3>
+      <p>Đặt <strong>Activity Ticker</strong> phía bên phải của hàng Tabs (Phòng học · Bảng tin · Tính lương), tự động đổi tin ngẫu nhiên sau mỗi 3 giây.</p>
+    </div>
+  </div>
+</div>
+
+<div class="split" style="margin-top: 2rem;">
+  <!-- Mockup Giao diện mới -->
+  <div class="mockup" style="flex: 1; width: 100%;">
+    <div class="mockup-header" style="background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 0.75rem 1rem;">Giao diện Đề xuất (Tỷ giá trên Header & Ticker cạnh Tabs)</div>
+    <div class="mockup-body" style="background: #fbf6ef; padding: 1.5rem; min-height: 450px; font-family: sans-serif;">
+      
+      <!-- HEADER MOCKUP -->
+      <div style="background: white; border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 0.75rem 1.25rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+        <!-- Logo & Title -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 32px; height: 32px; background: #ea580c; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 14px;">DM</div>
+          <div>
+            <div style="font-weight: 800; font-size: 14px; color: #4a3e3d;">Duhoc Mate</div>
+            <div style="font-size: 9px; color: #8b7e7b; font-weight: bold;">12 bạn đang học</div>
+          </div>
+        </div>
+
+        <!-- Realtime Exchange & Weather (Chuyển từ board lên header) -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="background: #f3efe9; border: 1px solid rgba(0,0,0,0.04); padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: bold; color: #4a3e3d; display: flex; align-items: center; gap: 4px;">
+            <span>₩</span> 1,000₩ ≈ 17,800₫
+          </div>
+          <div style="background: #f3efe9; border: 1px solid rgba(0,0,0,0.04); padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: bold; color: #4a3e3d; display: flex; align-items: center; gap: 4px;">
+            <span>🌤️</span> Seoul 24°C
+          </div>
+        </div>
+
+        <!-- Right buttons -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 11px; color: #8b7e7b; font-weight: bold; background: white; padding: 4px 8px; border-radius: 99px; border: 1px solid rgba(0,0,0,0.04);">17:49 KST</span>
+          <div style="width: 28px; height: 28px; border-radius: 99px; background: #a77a6c; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">HA</div>
+        </div>
+      </div>
+
+      <!-- NAVIGATION + TICKER MOCKUP -->
+      <div style="border-b: 1px solid rgba(0,0,0,0.06); padding-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+        <!-- Left: Navigation Tabs -->
+        <div style="display: flex; gap: 1rem; font-size: 13px; font-weight: 800;">
+          <span style="color: #8b7e7b; cursor: pointer; padding-bottom: 6px;">Phòng học</span>
+          <span style="color: #4a3e3d; border-bottom: 2px solid #a77a6c; padding-bottom: 6px; cursor: pointer;">Bảng tin</span>
+          <span style="color: #8b7e7b; cursor: pointer; padding-bottom: 6px;">Tính lương</span>
+        </div>
+
+        <!-- Right: Activity Ticker (các tiêu đề bài viết ngẫu nhiên chạy cùng dòng) -->
+        <div style="background: rgba(167, 122, 108, 0.05); border: 1px solid rgba(167, 122, 108, 0.1); border-radius: 8px; padding: 4px 12px; max-width: 320px; display: flex; align-items: center; gap: 6px; font-size: 11px; overflow: hidden; height: 24px; animation: pulse 2s infinite;">
+          <span style="color: #a77a6c; font-weight: bold; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 3px;">
+            📢 MỚI NHẤT
+          </span>
+          <span style="color: #8b7e7b;">|</span>
+          <span style="color: #4a3e3d; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">
+            Minh Anh: Cần người đi cùng lên Cục XNC Suwon...
+          </span>
+        </div>
+      </div>
+
+      <!-- BULLETIN BOARD CONTENT MOCKUP -->
+      <div style="background: white; border: 1px solid rgba(0,0,0,0.06); border-radius: 16px; overflow: hidden;">
+        <!-- New clean header (no weather/rates here) -->
+        <div style="background: linear-gradient(135deg, #a77a6c, #4a3e3d); color: white; padding: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="margin: 0; font-size: 18px; font-weight: 800;">Bảng tin hỗ trợ đời sống Hàn Quốc</h3>
+            <p style="margin: 4px 0 0; font-size: 11px; color: rgba(255,255,255,0.7);">Kênh thông tin và hỗ trợ cộng đồng du học sinh Việt tại Hàn</p>
+          </div>
+          <button style="background: #a77a6c; border: none; color: white; padding: 6px 12px; border-radius: 99px; font-size: 11px; font-weight: bold; cursor: pointer;">
+            + Đăng tin
+          </button>
+        </div>
+        
+        <!-- Post Sample -->
+        <div style="padding: 1rem;">
+          <div style="border: 1px solid rgba(167, 122, 108, 0.1); border-radius: 12px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; background: #FAF6F0;">
+            <div>
+              <span style="background: #e0f2fe; color: #0369a1; font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">Di chuyển</span>
+              <h4 style="margin: 4px 0 0; font-size: 12px; color: #4a3e3d; font-weight: 800;">Cần người đi cùng lên Cục XNC Suwon</h4>
+              <p style="margin: 2px 0 0; font-size: 10px; color: #8b7e7b;">Đăng bởi Minh Anh · 1 giờ trước · Suwon</p>
+            </div>
+            <span style="font-size: 12px; color: #8b7e7b;">▼</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

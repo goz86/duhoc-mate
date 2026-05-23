@@ -13,19 +13,19 @@ import { useAuth } from '../contexts/AuthContext'
 
 type AuthMode = 'login' | 'register'
 
-type ActiveRoom = { 
-  id: string 
-  hostName: string 
-  memberCount: number 
-  currentSong?: string 
+type ActiveRoom = {
+  id: string
+  hostName: string
+  memberCount: number
+  currentSong?: string
   roomTitle?: string
   isPrivate?: boolean
   hostAvatarUrl?: string
 }
-type RecentRoom = { 
-  id: string 
-  hostName: string 
-  currentSong?: string 
+type RecentRoom = {
+  id: string
+  hostName: string
+  currentSong?: string
   roomTitle?: string
   isPrivate?: boolean
   hostAvatarUrl?: string
@@ -101,7 +101,7 @@ export default function LandingPage({
 
   const [exchangeRate, setExchangeRate] = useState<string>('Đang tải...')
   const [weather, setWeather] = useState<{ temp: string; desc: string } | null>(null)
-  
+
   const [tickerPosts, setTickerPosts] = useState<HelpPost[]>([])
   const [tickerIndex, setTickerIndex] = useState(0)
   const [tickerPhase, setTickerPhase] = useState<'in' | 'show' | 'out'>('in')
@@ -287,21 +287,19 @@ export default function LandingPage({
           <div className="flex gap-5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:col-span-2">
             <button
               onClick={() => setShowHelpBoard(false)}
-              className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${
-                !showHelpBoard
+              className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${!showHelpBoard
                   ? 'text-brand-brown-dark border-b-2 border-brand-terracotta'
                   : 'text-brand-brown-light hover:text-brand-brown-dark'
-              }`}
+                }`}
             >
               Phòng học
             </button>
             <button
               onClick={() => setShowHelpBoard(true)}
-              className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${
-                showHelpBoard
+              className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${showHelpBoard
                   ? 'text-brand-brown-dark border-b-2 border-brand-terracotta'
                   : 'text-brand-brown-light hover:text-brand-brown-dark'
-              }`}
+                }`}
             >
               Bảng tin
             </button>
@@ -311,7 +309,7 @@ export default function LandingPage({
               rel="noopener noreferrer"
               className="shrink-0 whitespace-nowrap pb-2.5 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5"
             >
-               Tính lương
+              Tính lương
             </a>
           </div>
 
@@ -348,7 +346,7 @@ export default function LandingPage({
           <section className="relative mt-2 grid min-w-0 gap-6 lg:mt-4 lg:min-h-[560px] lg:grid-cols-[1.2fr_1fr_1.1fr] lg:items-center">
             <div className="relative flex min-w-0 items-center py-2 lg:py-6">
               <div className="relative z-10 min-w-0 lg:max-w-[480px]">
-                <div 
+                <div
                   style={{ animationDelay: '0ms' }}
                   className="inline-flex animate-fade-slide-down items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-terracotta"
                 >
@@ -356,14 +354,14 @@ export default function LandingPage({
                   REAL-TIME SYNC
                 </div>
 
-                <h1 
+                <h1
                   style={{ animationDelay: '100ms' }}
                   className="mt-5 animate-fade-slide-down font-display text-4xl font-black leading-[1.07] tracking-tight text-brand-brown-dark sm:text-5xl lg:mt-6 lg:text-[52px] lg:leading-[1.05]"
                 >
                   <span className="lg:whitespace-nowrap">Cùng nhau </span> <br />
                   <span className="text-brand-terracotta">sẻ chia hành trình</span>
                 </h1>
-                <p 
+                <p
                   style={{ animationDelay: '200ms' }}
                   className="mt-4 animate-fade-slide-down max-w-md text-sm font-semibold leading-relaxed text-brand-brown-dark/75 sm:text-base lg:mt-5"
                 >
@@ -371,7 +369,7 @@ export default function LandingPage({
                 </p>
 
                 {/* Tên của bạn input inline */}
-                <div 
+                <div
                   style={{ animationDelay: '300ms' }}
                   className="mt-7 animate-fade-slide-down flex w-fit items-center gap-2.5 rounded-full border border-black/[0.05] bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm"
                 >
@@ -386,7 +384,7 @@ export default function LandingPage({
                 </div>
 
                 {/* Hai nút pill lớn bằng nhau (phong cách Lissenly) */}
-                <div 
+                <div
                   style={{ animationDelay: '400ms' }}
                   className="relative z-20 mt-4 animate-fade-slide-down flex w-full max-w-md flex-col gap-3 sm:max-w-lg sm:flex-row"
                 >
@@ -414,7 +412,7 @@ export default function LandingPage({
                 </div>
 
                 {/* Badges flex row */}
-                <div 
+                <div
                   style={{ animationDelay: '500ms' }}
                   className="relative z-20 mt-5 animate-fade-slide-down flex flex-wrap gap-2"
                 >
@@ -459,7 +457,7 @@ export default function LandingPage({
 
             {/* Cột 2: Minh họa 3D */}
             <div className="hidden lg:flex items-center justify-center py-2 lg:py-6">
-              <div 
+              <div
                 style={{ animationDelay: '350ms' }}
                 className="relative w-full max-w-[340px] xl:max-w-[420px] animate-fade-slide-down"
               >
@@ -514,7 +512,7 @@ export default function LandingPage({
               >
                 ← Quay lại
               </button>
-              
+
               <div className="flex items-center gap-1.5 font-display font-black text-brand-brown-dark">
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E08F74] text-white">
                   <Headphones size={14} strokeWidth={2.5} />
@@ -594,18 +592,16 @@ export default function LandingPage({
                     <button
                       type="button"
                       onClick={() => setModalIsPrivate(true)}
-                      className={`flex-1 flex h-full items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                        modalIsPrivate ? 'bg-white text-brand-brown-dark shadow-sm border border-black/[0.04]' : 'text-brand-brown-light hover:text-brand-brown-dark'
-                      }`}
+                      className={`flex-1 flex h-full items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${modalIsPrivate ? 'bg-white text-brand-brown-dark shadow-sm border border-black/[0.04]' : 'text-brand-brown-light hover:text-brand-brown-dark'
+                        }`}
                     >
                       <span>🔒</span> Riêng tư
                     </button>
                     <button
                       type="button"
                       onClick={() => setModalIsPrivate(false)}
-                      className={`flex-1 flex h-full items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                        !modalIsPrivate ? 'bg-white text-brand-brown-dark shadow-sm border border-black/[0.04]' : 'text-brand-brown-light hover:text-brand-brown-dark'
-                      }`}
+                      className={`flex-1 flex h-full items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${!modalIsPrivate ? 'bg-white text-brand-brown-dark shadow-sm border border-black/[0.04]' : 'text-brand-brown-light hover:text-brand-brown-dark'
+                        }`}
                     >
                       <span>🌐</span> Công khai
                     </button>
@@ -620,11 +616,10 @@ export default function LandingPage({
                     onChange={(e) => setModalPassword(e.target.value)}
                     disabled={!modalIsPrivate}
                     placeholder={modalIsPrivate ? "Mật khẩu (bắt buộc)..." : "Không có mật khẩu"}
-                    className={`w-full h-12 rounded-xl border px-4 text-sm font-bold text-brand-brown-dark outline-none transition ${
-                      modalIsPrivate 
-                        ? 'bg-[#FAF6F0] border-[#ECE6DB] focus:bg-white focus:border-[#D6CAB2]' 
+                    className={`w-full h-12 rounded-xl border px-4 text-sm font-bold text-brand-brown-dark outline-none transition ${modalIsPrivate
+                        ? 'bg-[#FAF6F0] border-[#ECE6DB] focus:bg-white focus:border-[#D6CAB2]'
                         : 'bg-[#F2EDF0] border-transparent text-gray-400 cursor-not-allowed'
-                    }`}
+                      }`}
                   />
                 </div>
               </div>
@@ -635,7 +630,7 @@ export default function LandingPage({
                 onClick={() => {
                   if (!modalNickname.trim()) return alert("Vui lòng nhập tên của bạn!");
                   if (modalIsPrivate && !modalPassword.trim()) return alert("Vui lòng nhập mật khẩu cho phòng riêng tư!");
-                  
+
                   handleCreateRoom(
                     [],
                     modalRoomTitle.trim() || `Phòng của ${modalNickname}`,

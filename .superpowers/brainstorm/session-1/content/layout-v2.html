@@ -1,0 +1,91 @@
+<h2>Khắc phục chữ bị đè và tối ưu hóa ảnh 3D</h2>
+<p class="subtitle">Hiện tại ảnh 3D bị quá to (do ảnh vuông) dẫn đến đè lên phần chữ mô tả và ô nhập tên. Dưới đây là các phương án khắc phục:</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="scale-position" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Điều chỉnh Tỷ lệ & Vị trí (Khuyên dùng)</h3>
+      <p>Giảm nhẹ kích thước ảnh (300px -> 260px), dịch chuyển sang phải thêm 40px và hạ thấp xuống dưới. Giúp giải phóng hoàn toàn vùng chữ mô tả và ô nhập tên.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="card-style" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Bo góc sâu & Đổ bóng mịn (Deep Rounding + Glass Border)</h3>
+      <p>Bo tròn góc ảnh mạnh hơn (<code>rounded-[32px]</code>), thêm viền trắng mờ dạng Glassmorphism để bức ảnh trông như một bức tranh nghệ thuật nổi lên, tách biệt khỏi phần chữ.</p>
+    </div>
+  </div>
+</div>
+
+<div class="split" style="margin-top: 2rem;">
+  <!-- Bản hiện tại bị thô -->
+  <div class="mockup" style="flex: 1;">
+    <div class="mockup-header" style="background: #fee2e2; color: #991b1b; font-weight: bold; padding: 0.5rem 1rem;">Bố cục hiện tại (Bị đè chữ mô tả & ô tên)</div>
+    <div class="mockup-body" style="background: #fbf6ef; padding: 1.5rem; min-height: 400px; display: flex; flex-direction: column; justify-content: space-between;">
+      
+      <div style="position: relative; border: 1px dashed #ef4444; padding: 1rem; border-radius: 8px; display: flex; flex-direction: column; height: 320px; overflow: hidden; background: rgba(239, 68, 68, 0.02);">
+        <!-- Text & Input -->
+        <div style="z-index: 10;">
+          <div style="font-size: 10px; color: #ea580c; font-weight: bold;">● REAL-TIME SYNC</div>
+          <h4 style="font-size: 20px; margin: 0.3rem 0; color: #4c3731; font-weight: 800;">Cùng nhau học tập<br>sẻ chia hành trình</h4>
+          <p style="font-size: 11px; color: #78716c; width: 280px; line-height: 1.4; font-weight: 600;">
+            Tạo phòng học, nghe nhạc YouTube đồng bộ, mở Idea Board và vào phòng TOPIK 24/24.
+          </p>
+          
+          <div style="margin-top: 1rem; width: 150px; height: 28px; border: 1px solid #d6d3d1; background: white; border-radius: 9999px; display: flex; align-items: center; padding: 0 10px; font-size: 10px;">
+            TÊN CỦA BẠN: goz
+          </div>
+        </div>
+        
+        <!-- Big Square Image (Current positioning: left-210, bottom-0, w-300) -->
+        <div style="position: absolute; bottom: 0px; left: 160px; width: 240px; height: 240px; background: #fed7aa; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: #c2410c; border: 1px solid #ea580c; z-index: 1; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="font-weight: bold;">Ảnh 3D vuông (To)</div>
+          <div style="font-size: 8px; text-align: center; color: #9a3412; padding: 5px;">(Góc trên bên trái của ảnh lấn lên đè vào vùng chữ mô tả & ô tên bên trên)</div>
+        </div>
+
+        <!-- Buttons Row -->
+        <div style="display: flex; gap: 0.5rem; margin-top: auto; z-index: 10; position: relative;">
+          <div style="flex: 1; height: 36px; background: #ea580c; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold;">+ Tạo phòng học</div>
+          <div style="flex: 1; height: 36px; border: 1px solid #d6d3d1; background: white; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #78716c; font-size: 11px;">Tham gia phòng mã ẩn</div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+  
+  <!-- Bản đề xuất tinh chỉnh -->
+  <div class="mockup" style="flex: 1;">
+    <div class="mockup-header" style="background: #dcfce7; color: #166534; font-weight: bold; padding: 0.5rem 1rem;">Bản đề xuất tinh chỉnh (Gọn gàng - Không đè chữ)</div>
+    <div class="mockup-body" style="background: #fbf6ef; padding: 1.5rem; min-height: 400px; display: flex; flex-direction: column; justify-content: space-between;">
+      
+      <div style="position: relative; border: 2px solid #22c55e; padding: 1rem; border-radius: 8px; display: flex; flex-direction: column; height: 320px; overflow: visible; background: rgba(34, 197, 94, 0.02);">
+        <!-- Text & Input -->
+        <div style="z-index: 10;">
+          <div style="font-size: 10px; color: #ea580c; font-weight: bold;">● REAL-TIME SYNC</div>
+          <h4 style="font-size: 20px; margin: 0.3rem 0; color: #4c3731; font-weight: 800;">Cùng nhau học tập<br>sẻ chia hành trình</h4>
+          <p style="font-size: 11px; color: #78716c; width: 260px; line-height: 1.4; font-weight: 600;">
+            Tạo phòng học, nghe nhạc YouTube đồng bộ, mở Idea Board và vào phòng TOPIK 24/24.
+          </p>
+          
+          <div style="margin-top: 1.2rem; width: 150px; height: 28px; border: 1px solid #d6d3d1; background: white; border-radius: 9999px; display: flex; align-items: center; padding: 0 10px; font-size: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            TÊN CỦA BẠN: goz
+          </div>
+        </div>
+        
+        <!-- Smaller & Repositioned Image (Proposed: left-260, bottom--10, w-240, rounded-3xl, double shadow) -->
+        <div style="position: absolute; bottom: -10px; left: 220px; width: 210px; height: 210px; background: #fed7aa; border-radius: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: #c2410c; border: 2px solid #fff; z-index: 1; box-shadow: 0 10px 25px -5px rgba(76,55,49,0.3), 0 8px 10px -6px rgba(76,55,49,0.3);">
+          <div style="font-weight: bold; font-size: 11px;">Ảnh 3D tinh chỉnh</div>
+          <div style="font-size: 8px; text-align: center; color: #9a3412; padding: 5px;">(Kích thước vừa vặn, dịch phải và hạ thấp giúp thoát hẳn khỏi vùng chữ bên trên)</div>
+        </div>
+
+        <!-- Buttons Row -->
+        <div style="display: flex; gap: 0.5rem; margin-top: auto; z-index: 10; position: relative;">
+          <div style="flex: 1; height: 36px; background: #ea580c; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold; box-shadow: 0 4px 6px rgba(234,88,12,0.25);">+ Tạo phòng học</div>
+          <div style="flex: 1; height: 36px; border: 1px solid #ea580c; background: rgba(255,255,255,0.9); border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #ea580c; font-size: 11px; font-weight: bold; backdrop-filter: blur(4px);">Tham gia phòng mã ẩn</div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>

@@ -1,0 +1,123 @@
+<h2>Thiết kế tab "Gần đây / Khám phá / Bạn bè" theo chiều dọc</h2>
+<p class="subtitle">Hãy chọn phương án bố cục bạn thích nhất cho phần danh sách phòng học ở cột phải:</p>
+
+<div class="options" data-multiselect="false">
+  <div class="option" data-choice="sidebar" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>(Khuyên dùng) Thanh Tab dọc bên trái (Left Sidebar tabs)</h3>
+      <p>Các tab chuyển nhanh xếp dọc ở lề trái, ô tìm kiếm và danh sách phòng ở bên phải. Tận dụng tối đa chiều dọc và giống thiết kế Lissenly.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="stacked" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Xếp chồng dọc ở trên đầu (Stacked tabs)</h3>
+      <p>Các nút tab xếp chồng theo hàng dọc chiếm trọn bề ngang, nằm trên ô tìm kiếm và danh sách phòng học. Giữ giao diện dạng 1 cột đơn giản.</p>
+    </div>
+  </div>
+</div>
+
+<div class="split" style="margin-top: 2rem;">
+  <!-- Phương án A: Left Sidebar tabs -->
+  <div class="mockup" style="flex: 1;">
+    <div class="mockup-header" style="background: #dcfce7; color: #166534; font-weight: bold; padding: 0.5rem 1rem;">Phương án A: Tab dọc bên trái (Left Sidebar)</div>
+    <div class="mockup-body" style="background: #f5f3f0; padding: 1.5rem; min-height: 400px; display: flex; align-items: center; justify-content: center;">
+      
+      <!-- Card container -->
+      <div style="background: white; border-radius: 24px; padding: 1.2rem; width: 340px; display: flex; gap: 0.75rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05); box-sizing: border-box;">
+        
+        <!-- Left vertical tabs -->
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 85px; border-right: 1px solid rgba(0,0,0,0.06); padding-right: 0.5rem; flex-shrink: 0;">
+          <div style="font-size: 9px; color: #8b7e7b; font-weight: 900; text-transform: uppercase; margin-bottom: 0.2rem; padding: 0 4px; letter-spacing: 0.05em;">MENU</div>
+          <div style="padding: 8px 4px; border-radius: 12px; background: rgba(0,0,0,0.03); color: #8b7e7b; font-weight: 800; font-size: 10px; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+            🕒 Gần đây
+          </div>
+          <div style="padding: 8px 4px; border-radius: 12px; background: #FAF6F0; color: #ea580c; border-left: 3px solid #ea580c; font-weight: 900; font-size: 10px; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+            🧭 Khám phá
+          </div>
+          <div style="padding: 8px 4px; border-radius: 12px; background: rgba(0,0,0,0.03); color: #8b7e7b; font-weight: 800; font-size: 10px; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+            👥 Bạn bè
+          </div>
+        </div>
+
+        <!-- Right content area -->
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; flex: 1; min-width: 0;">
+          <!-- Search input -->
+          <div style="position: relative; height: 32px; border: 1px solid rgba(0,0,0,0.08); background: #fbf6ef; border-radius: 12px; display: flex; align-items: center; padding: 0 10px; font-size: 10px; color: #8b7e7b; font-weight: bold;">
+            🔍 Tìm phòng...
+          </div>
+          <!-- Room list with fade transition mockup -->
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; overflow: hidden; height: 220px;">
+            <div style="padding: 8px; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; display: flex; gap: 8px; align-items: center; background: white; font-size: 11px; font-weight: 800; color: #4A3E3D;">
+              <div style="width: 24px; height: 24px; border-radius: 8px; background: #e0f2fe; color: #0369a1; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; flex-shrink: 0;">VU</div>
+              <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">486 May</div>
+            </div>
+            <div style="padding: 8px; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; display: flex; gap: 8px; align-items: center; background: white; font-size: 11px; font-weight: 800; color: #4A3E3D;">
+              <div style="width: 24px; height: 24px; border-radius: 8px; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; flex-shrink: 0;">CG</div>
+              <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Chill Guy</div>
+            </div>
+            <div style="padding: 8px; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; display: flex; gap: 8px; align-items: center; background: white; font-size: 11px; font-weight: 800; color: #4A3E3D;">
+              <div style="width: 24px; height: 24px; border-radius: 8px; background: #dcfce7; color: #15803d; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; flex-shrink: 0;">GA</div>
+              <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Gà</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Phương án B: Stacked tabs at the top -->
+  <div class="mockup" style="flex: 1;">
+    <div class="mockup-header" style="background: #fee2e2; color: #991b1b; font-weight: bold; padding: 0.5rem 1rem;">Phương án B: Các tab xếp chồng (Stacked)</div>
+    <div class="mockup-body" style="background: #f5f3f0; padding: 1.5rem; min-height: 400px; display: flex; align-items: center; justify-content: center;">
+      
+      <!-- Card container -->
+      <div style="background: white; border-radius: 24px; padding: 1.5rem; width: 340px; display: flex; flex-direction: column; gap: 0.75rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05); box-sizing: border-box;">
+        
+        <!-- Stacked tabs at top -->
+        <div style="background: #f5f3f0; border-radius: 16px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+          <div style="padding: 8px; border-radius: 10px; background: transparent; color: #8b7e7b; font-weight: 800; font-size: 11px; text-align: center; cursor: pointer;">
+            🕒 Gần đây
+          </div>
+          <div style="padding: 8px; border-radius: 10px; background: white; color: #ea580c; font-weight: 900; font-size: 11px; text-align: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            🧭 Khám phá
+          </div>
+          <div style="padding: 8px; border-radius: 10px; background: transparent; color: #8b7e7b; font-weight: 800; font-size: 11px; text-align: center; cursor: pointer;">
+            👥 Bạn bè
+          </div>
+        </div>
+
+        <!-- Search input -->
+        <div style="position: relative; height: 32px; border: 1px solid rgba(0,0,0,0.08); background: #fbf6ef; border-radius: 12px; display: flex; align-items: center; padding: 0 10px; font-size: 10px; color: #8b7e7b; font-weight: bold;">
+          🔍 Tìm phòng...
+        </div>
+
+        <!-- Room list -->
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; overflow: hidden; height: 160px;">
+          <div style="padding: 8px; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; display: flex; gap: 8px; align-items: center; background: white; font-size: 11px; font-weight: 800; color: #4A3E3D;">
+            <div style="width: 24px; height: 24px; border-radius: 8px; background: #e0f2fe; color: #0369a1; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; flex-shrink: 0;">VU</div>
+            <div>486 May</div>
+          </div>
+          <div style="padding: 8px; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; display: flex; gap: 8px; align-items: center; background: white; font-size: 11px; font-weight: 800; color: #4A3E3D;">
+            <div style="width: 24px; height: 24px; border-radius: 8px; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; flex-shrink: 0;">CG</div>
+            <div>Chill Guy</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 2rem;">
+  <h3>Ý tưởng Animation "Hiện từ trên xuống dưới" (Staggered Fade-in)</h3>
+  <p>Khi chuyển tab, danh sách phòng học sẽ không xuất hiện đột ngột mà sẽ chạy hiệu ứng chuyển động mượt mà:</p>
+  <ul>
+    <li>Từng thẻ phòng học sẽ trượt nhẹ từ trên xuống dưới (dịch chuyển khoảng 12px) kèm theo tăng độ rõ nét (fade-in).</li>
+    <li>Áp dụng độ trễ tăng dần (stagger delay) cho mỗi thẻ: phòng 1 hiện sau 0ms, phòng 2 hiện sau 60ms, phòng 3 hiện sau 120ms... tạo cảm giác cực kỳ sinh động và hiện đại.</li>
+  </ul>
+</div>

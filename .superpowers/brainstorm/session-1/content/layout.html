@@ -1,0 +1,123 @@
+<h2>Cải thiện bố cục Trang chủ (Landing Page Layout)</h2>
+<p class="subtitle">Khắc phục khoảng trống thừa trên PC và căn chỉnh ảnh 3D đè dưới nút giống Lissenly</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="spacing" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Thu hẹp độ rộng trang (Max-width: 1280px)</h3>
+      <p>Giảm khoảng trống thừa hai bên trên PC, giúp toàn bộ nội dung gom lại vừa mắt hơn (thay vì giãn rộng 1560px).</p>
+    </div>
+  </div>
+  <div class="option" data-choice="overlap" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Căn chỉnh ảnh 3D đè dưới nút "Tham gia phòng mã ẩn"</h3>
+      <p>Thay đổi định vị ảnh 3D từ <code>right-0</code> sang <code>left-[260px]</code> để luôn nằm cố định bên dưới nút nhập mã phòng học.</p>
+    </div>
+  </div>
+</div>
+
+<div class="split" style="margin-top: 2rem;">
+  <!-- Bố cục hiện tại -->
+  <div class="mockup" style="flex: 1;">
+    <div class="mockup-header" style="background: #fee2e2; color: #991b1b; font-weight: bold; padding: 0.5rem 1rem;">Bố cục hiện tại (Rộng 1560px - Ảnh bị đẩy ra xa)</div>
+    <div class="mockup-body" style="background: #fbf6ef; padding: 1.5rem; min-height: 380px; display: flex; flex-direction: column; justify-content: space-between;">
+      <!-- Header -->
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(76,55,49,0.1); padding-bottom: 0.5rem; font-size: 11px;">
+        <strong style="color: #4c3731;">Duhoc Mate</strong>
+        <span style="color: #a8a29e;">12:38 KST | Đăng nhập | Đăng ký</span>
+      </div>
+      
+      <!-- Main Content Grid -->
+      <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2rem; margin-top: 1rem; flex-grow: 1;">
+        <!-- Left Column -->
+        <div style="position: relative; border: 1px dashed #d6d3d1; padding: 1rem; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; min-height: 250px;">
+          <div>
+            <div style="font-size: 10px; color: #ea580c; font-weight: bold; letter-spacing: 0.05em;">● REAL-TIME SYNC</div>
+            <h4 style="font-size: 20px; margin: 0.3rem 0; color: #4c3731; font-weight: 800; line-height: 1.2;">Cùng nhau học tập<br>sẻ chia hành trình</h4>
+            <p style="font-size: 11px; color: #78716c; margin: 0;">Tạo phòng học, nghe nhạc YouTube đồng bộ...</p>
+          </div>
+          
+          <!-- Buttons -->
+          <div style="display: flex; gap: 0.5rem; margin-top: auto; z-index: 10;">
+            <div style="flex: 1; height: 36px; background: #ea580c; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold;">+ Tạo phòng học</div>
+            <div style="flex: 1; height: 36px; border: 1px solid #d6d3d1; background: white; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #78716c; font-size: 11px;">Tham gia phòng mã ẩn</div>
+          </div>
+          
+          <!-- 3D Image (Current: aligned to the right edge of this broad column) -->
+          <div style="position: absolute; bottom: 5px; right: 5px; width: 90px; height: 90px; background: #fed7aa; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; color: #c2410c; border: 1px solid #ea580c; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); z-index: 1;">
+            <span style="font-weight: bold;">Ảnh 3D</span>
+            <span style="font-size: 8px;">(Bị tách rời)</span>
+          </div>
+        </div>
+        
+        <!-- Right Column -->
+        <div style="border: 1px solid rgba(76,55,49,0.1); background: white; border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+          <div style="display: flex; justify-content: space-around; font-size: 11px; border-bottom: 1px solid #f3f4f6; padding-bottom: 0.5rem; font-weight: bold;">
+            <span>Gần đây</span>
+            <strong style="color: #ea580c;">Khám phá</strong>
+            <span>Bạn bè</span>
+          </div>
+          <div style="height: 120px; background: #f9fafb; border-radius: 8px; margin: 0.5rem 0; border: 1px dashed #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #9ca3af;">
+            Danh sách phòng học...
+          </div>
+          <div style="height: 32px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #4c3731; font-weight: bold;">
+            Mở rộng Khám phá
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Bố cục đề xuất -->
+  <div class="mockup" style="flex: 1;">
+    <div class="mockup-header" style="background: #dcfce7; color: #166534; font-weight: bold; padding: 0.5rem 1rem;">Bố cục đề xuất (Rộng 1280px - Ảnh 3D đè dưới nút)</div>
+    <div class="mockup-body" style="background: #fbf6ef; padding: 1.5rem; min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; border: 2px solid #22c55e; border-radius: 4px;">
+      <!-- Header -->
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(76,55,49,0.1); padding-bottom: 0.5rem; font-size: 11px;">
+        <strong style="color: #4c3731;">Duhoc Mate</strong>
+        <span style="color: #a8a29e;">12:38 KST | Đăng nhập | Đăng ký</span>
+      </div>
+      
+      <!-- Main Content Grid -->
+      <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 1.5rem; margin-top: 1rem; flex-grow: 1;">
+        <!-- Left Column -->
+        <div style="position: relative; border: 1px dashed #22c55e; padding: 1rem; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; min-height: 250px; overflow: visible;">
+          <div>
+            <div style="font-size: 10px; color: #ea580c; font-weight: bold; letter-spacing: 0.05em;">● REAL-TIME SYNC</div>
+            <h4 style="font-size: 20px; margin: 0.3rem 0; color: #4c3731; font-weight: 800; line-height: 1.2;">Cùng nhau học tập<br>sẻ chia hành trình</h4>
+            <p style="font-size: 11px; color: #78716c; margin: 0;">Tạo phòng học, nghe nhạc YouTube đồng bộ...</p>
+          </div>
+          
+          <!-- 3D Image (Proposed: absolute, left-[120px], overlapping under the second button) -->
+          <div style="position: absolute; bottom: -10px; left: 120px; width: 140px; height: 120px; background: #fed7aa; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: #c2410c; border: 2px solid #ea580c; box-shadow: 0 10px 15px -3px rgba(76,55,49,0.25); z-index: 5; opacity: 0.95;">
+            <span style="font-weight: bold;">Ảnh 3D</span>
+            <span style="font-size: 9px; text-align: center;">(Đè dưới nút ẩn)</span>
+          </div>
+
+          <!-- Buttons -->
+          <div style="display: flex; gap: 0.5rem; margin-top: auto; z-index: 10; position: relative;">
+            <div style="flex: 1; height: 36px; background: #ea580c; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold; box-shadow: 0 4px 6px -1px rgb(234 88 12 / 0.3);">+ Tạo phòng học</div>
+            <div style="flex: 1; height: 36px; border: 1px solid #ea580c; background: rgba(255, 255, 255, 0.9); border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #ea580c; font-size: 11px; font-weight: bold; backdrop-filter: blur(4px);">Tham gia phòng mã ẩn</div>
+          </div>
+        </div>
+        
+        <!-- Right Column -->
+        <div style="border: 1px solid rgba(76,55,49,0.1); background: white; border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; z-index: 10;">
+          <div style="display: flex; justify-content: space-around; font-size: 11px; border-bottom: 1px solid #f3f4f6; padding-bottom: 0.5rem; font-weight: bold;">
+            <span>Gần đây</span>
+            <strong style="color: #ea580c;">Khám phá</strong>
+            <span>Bạn bè</span>
+          </div>
+          <div style="height: 120px; background: #f9fafb; border-radius: 8px; margin: 0.5rem 0; border: 1px dashed #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #9ca3af;">
+            Danh sách phòng học...
+          </div>
+          <div style="height: 32px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #4c3731; font-weight: bold;">
+            Mở rộng Khám phá
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
