@@ -170,21 +170,33 @@ export default function LandingPage({
           <section className="relative mt-2 grid min-w-0 gap-6 lg:mt-4 lg:min-h-[560px] lg:grid-cols-[1.2fr_1fr_1.1fr] lg:items-center">
             <div className="relative flex min-w-0 items-center py-2 lg:py-6">
               <div className="relative z-10 min-w-0 lg:max-w-[480px]">
-                <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-terracotta">
+                <div 
+                  style={{ animationDelay: '0ms' }}
+                  className="inline-flex animate-fade-slide-down items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-terracotta"
+                >
                   <span className="h-1.5 w-1.5 rounded-full bg-brand-terracotta animate-pulse" />
                   REAL-TIME SYNC
                 </div>
 
-                <h1 className="mt-5 font-display text-4xl font-black leading-[1.07] tracking-tight text-brand-brown-dark sm:text-5xl lg:mt-6 lg:text-[52px] lg:leading-[1.05]">
+                <h1 
+                  style={{ animationDelay: '100ms' }}
+                  className="mt-5 animate-fade-slide-down font-display text-4xl font-black leading-[1.07] tracking-tight text-brand-brown-dark sm:text-5xl lg:mt-6 lg:text-[52px] lg:leading-[1.05]"
+                >
                   <span className="lg:whitespace-nowrap">Cùng nhau học tập</span> <br />
                   <span className="text-brand-terracotta">sẻ chia hành trình</span>
                 </h1>
-                <p className="mt-4 max-w-md text-sm font-semibold leading-relaxed text-brand-brown-dark/75 sm:text-base lg:mt-5">
+                <p 
+                  style={{ animationDelay: '200ms' }}
+                  className="mt-4 animate-fade-slide-down max-w-md text-sm font-semibold leading-relaxed text-brand-brown-dark/75 sm:text-base lg:mt-5"
+                >
                   Tạo phòng, chia sẻ mã phòng và nghe nhạc ,cùng nhau học đồng bộ thời gian thực.
                 </p>
 
                 {/* Tên của bạn input inline */}
-                <div className="mt-7 flex w-fit items-center gap-2.5 rounded-full border border-black/[0.05] bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm">
+                <div 
+                  style={{ animationDelay: '300ms' }}
+                  className="mt-7 animate-fade-slide-down flex w-fit items-center gap-2.5 rounded-full border border-black/[0.05] bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm"
+                >
                   <span className="text-[10px] font-black uppercase tracking-wider text-brand-brown-light">{t('landing.yourName')}</span>
                   <input
                     type="text"
@@ -196,7 +208,10 @@ export default function LandingPage({
                 </div>
 
                 {/* Hai nút pill lớn bằng nhau (phong cách Lissenly) */}
-                <div className="relative z-20 mt-4 flex w-full max-w-md flex-col gap-3 sm:max-w-lg sm:flex-row">
+                <div 
+                  style={{ animationDelay: '400ms' }}
+                  className="relative z-20 mt-4 animate-fade-slide-down flex w-full max-w-md flex-col gap-3 sm:max-w-lg sm:flex-row"
+                >
                   <button
                     onClick={handleCreateRoom}
                     className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-brown-dark hover:shadow-xl hover:shadow-brand-terracotta/30 active:translate-y-0 active:scale-[0.98] sm:flex-1"
@@ -221,7 +236,10 @@ export default function LandingPage({
                 </div>
 
                 {/* Badges flex row */}
-                <div className="relative z-20 mt-5 flex flex-wrap gap-2">
+                <div 
+                  style={{ animationDelay: '500ms' }}
+                  className="relative z-20 mt-5 animate-fade-slide-down flex flex-wrap gap-2"
+                >
                   {[
                     {
                       icon: (
@@ -263,7 +281,10 @@ export default function LandingPage({
 
             {/* Cột 2: Minh họa 3D */}
             <div className="hidden lg:flex items-center justify-center py-2 lg:py-6">
-              <div className="relative w-full max-w-[340px] xl:max-w-[420px]">
+              <div 
+                style={{ animationDelay: '350ms' }}
+                className="relative w-full max-w-[340px] xl:max-w-[420px] animate-fade-slide-down"
+              >
                 <img
                   src={studyLounge3d}
                   alt="Minh họa học tập"
