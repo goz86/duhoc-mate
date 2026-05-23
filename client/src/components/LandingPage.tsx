@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Clock, LogIn, Plus, RefreshCw, Megaphone, Headphones } from 'lucide-react'
+import { Clock, LogIn, Plus, RefreshCw, Megaphone } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import studyLounge3d from '../assets/study-lounge-3d-new.png'
 import duhocMateLogo from '../assets/duhoc-mate-logo-new.png'
@@ -209,18 +209,19 @@ export default function LandingPage({
     <div className="relative isolate min-h-screen w-full overflow-x-hidden bg-[#fbf6ef] text-brand-brown-dark">
       {/* Lớp nền trang trí — gradient blobs mờ + lưới chấm mảnh (tối giản, có chiều sâu) */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-terracotta/[0.10] blur-3xl" />
-        <div className="absolute right-[-7rem] top-1/4 h-[28rem] w-[28rem] rounded-full bg-brand-terracotta/[0.06] blur-3xl" />
-        <div className="absolute bottom-16 left-1/3 h-72 w-72 rounded-full bg-amber-300/[0.10] blur-3xl" />
-        <div className="absolute inset-0 [background-image:radial-gradient(circle,rgba(76,55,49,0.05)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent_55%)]" />
+        <div className="absolute left-1/2 top-28 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-[#f4dfbd]/35 blur-3xl" />
+        <div className="absolute right-[-10rem] top-1/3 h-[26rem] w-[26rem] rounded-full bg-brand-terracotta/[0.07] blur-3xl" />
+        <div className="absolute inset-0 opacity-60 [background-image:radial-gradient(circle,rgba(76,55,49,0.035)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
       </div>
-      <header className="sticky top-0 z-50 border-b border-black/[0.05] bg-[#fbf6ef]/88 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1560px] items-center justify-between px-5 py-4 xl:px-8">
+      <header className="sticky top-0 z-50 bg-[#fbf6ef]/90 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-5 py-5 md:px-12">
           <div className="flex items-center gap-3">
-            <img src={duhocMateLogo} alt="Duhoc Mate Logo" className="h-10 w-10 rounded-xl object-cover shadow-sm bg-white border border-black/[0.04]" />
+            <img src={duhocMateLogo} alt="Duhoc Mate Logo" className="h-11 w-11 rounded-2xl object-cover bg-white shadow-sm ring-1 ring-black/[0.04]" />
             <div>
-              <p className="font-display text-lg font-black leading-none">Duhoc Mate</p>
-              <p className="mt-1 hidden text-xs font-bold text-brand-brown-light sm:block">{onlineUsersCount} bạn đang học online</p>
+              <p className="font-display text-xl font-black leading-none">Duhoc Mate</p>
+              <p className="mt-1 hidden text-xs font-bold text-brand-brown-light sm:block">
+                {onlineUsersCount > 0 ? `${onlineUsersCount} bạn đang học online` : 'Sẵn sàng tạo phòng học'}
+              </p>
             </div>
           </div>
 
@@ -281,13 +282,13 @@ export default function LandingPage({
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1560px] px-5 py-8 xl:px-8">
+      <main className="mx-auto max-w-[1510px] px-5 py-5 md:px-12">
         {/* Sub-Header Navigation Tab Bar */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between lg:grid lg:grid-cols-[1.2fr_1fr_1.1fr] lg:gap-6 border-b border-black/[0.06] pb-3 sm:mb-8 sm:pb-4 gap-4">
+        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:grid lg:grid-cols-[1.05fr_0.9fr_0.95fr] lg:gap-8">
           <div className="flex gap-5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:col-span-2">
             <button
               onClick={() => setShowHelpBoard(false)}
-              className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${!showHelpBoard
+              className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all cursor-pointer relative ${!showHelpBoard
                   ? 'text-brand-brown-dark border-b-2 border-brand-terracotta'
                   : 'text-brand-brown-light hover:text-brand-brown-dark'
                 }`}
@@ -296,7 +297,7 @@ export default function LandingPage({
             </button>
             <button
               onClick={() => setShowHelpBoard(true)}
-              className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${showHelpBoard
+              className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all cursor-pointer relative ${showHelpBoard
                   ? 'text-brand-brown-dark border-b-2 border-brand-terracotta'
                   : 'text-brand-brown-light hover:text-brand-brown-dark'
                 }`}
@@ -307,35 +308,12 @@ export default function LandingPage({
               href="https://www.duhocmate.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 whitespace-nowrap pb-2.5 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5"
+              className="shrink-0 whitespace-nowrap pb-2 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5"
             >
               Tính lương
             </a>
           </div>
 
-          {/* Activity Ticker */}
-          {tickerPosts.length > 0 && (
-            <div className="flex justify-start lg:col-span-1">
-              <div className="activity-ticker hidden md:flex items-center bg-[#FAF6F0] border border-black/[0.04] rounded-xl px-4 py-1.5 max-w-[360px] h-8 overflow-hidden shadow-xs">
-                <button
-                  onClick={() => {
-                    setSelectedPostId(tickerPosts[tickerIndex]?.id)
-                    setShowHelpBoard(true)
-                  }}
-                  className={`ticker-inner ticker-${tickerPhase} ticker-clickable flex items-center gap-2 w-full text-left`}
-                >
-                  <span className="ticker-icon text-brand-terracotta flex items-center">
-                    <Megaphone size={12} strokeWidth={2.5} />
-                  </span>
-                  <span className="ticker-author font-bold text-xs text-brand-brown-dark shrink-0">{tickerPosts[tickerIndex]?.username}</span>
-                  <span className="ticker-sep text-brand-terracotta-light font-bold">·</span>
-                  <span className="ticker-text text-xs text-brand-brown-light truncate font-semibold">
-                    {tickerPosts[tickerIndex]?.title}
-                  </span>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {showHelpBoard ? (
@@ -343,9 +321,9 @@ export default function LandingPage({
             <QuickHelpBoard initialExpandedPostId={selectedPostId} />
           </section>
         ) : (
-          <section className="relative mt-2 grid min-w-0 gap-6 lg:mt-4 lg:min-h-[560px] lg:grid-cols-[1.2fr_1fr_1.1fr] lg:items-center">
-            <div className="relative flex min-w-0 items-center py-2 lg:py-6">
-              <div className="relative z-10 min-w-0 lg:max-w-[480px]">
+          <section className="relative mt-1 grid min-w-0 gap-7 lg:min-h-[calc(100svh-145px)] lg:grid-cols-[0.98fr_0.95fr_0.9fr] lg:items-center xl:gap-9">
+            <div className="relative flex min-w-0 items-center py-2 lg:py-4">
+              <div className="relative z-10 min-w-0 lg:max-w-[560px]">
                 <div
                   style={{ animationDelay: '0ms' }}
                   className="inline-flex animate-fade-slide-down items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-terracotta"
@@ -356,56 +334,56 @@ export default function LandingPage({
 
                 <h1
                   style={{ animationDelay: '100ms' }}
-                  className="mt-5 animate-fade-slide-down font-display text-4xl font-black leading-[1.07] tracking-tight text-brand-brown-dark sm:text-5xl lg:mt-6 lg:text-[52px] lg:leading-[1.05]"
+                  className="mt-6 animate-fade-slide-down font-display text-5xl font-black leading-[1.03] tracking-tight text-brand-brown-dark sm:text-6xl lg:text-[66px] xl:text-[76px]"
                 >
-                  <span className="lg:whitespace-nowrap">Cùng nhau </span> <br />
-                  <span className="text-brand-terracotta">sẻ chia hành trình</span>
+                  <span className="lg:whitespace-nowrap">Học cùng nhau</span> <br />
+                  <span className="text-brand-terracotta">ở Hàn Quốc</span>
                 </h1>
                 <p
                   style={{ animationDelay: '200ms' }}
-                  className="mt-4 animate-fade-slide-down max-w-md text-sm font-semibold leading-relaxed text-brand-brown-dark/75 sm:text-base lg:mt-5"
+                  className="mt-6 animate-fade-slide-down max-w-md text-base font-semibold leading-relaxed text-brand-brown-dark/75 sm:text-lg"
                 >
-                  Tạo phòng, chia sẻ mã phòng và nghe nhạc ,cùng nhau học đồng bộ thời gian thực.
+                  Tạo phòng học, nghe nhạc và đồng bộ thời gian cùng bạn bè.
                 </p>
 
                 {/* Tên của bạn input inline */}
                 <div
                   style={{ animationDelay: '300ms' }}
-                  className="mt-7 animate-fade-slide-down flex w-fit items-center gap-2.5 rounded-full border border-black/[0.05] bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm"
+                  className="mt-7 animate-fade-slide-down flex w-full max-w-[330px] items-center gap-3 rounded-full border border-black/[0.07] bg-white px-4 py-2.5 shadow-sm"
                 >
-                  <span className="text-[10px] font-black uppercase tracking-wider text-brand-brown-light">{t('landing.yourName')}</span>
+                  <span className="shrink-0 text-[10px] font-black uppercase tracking-wider text-brand-brown-light">Tên của bạn</span>
                   <input
                     type="text"
-                    placeholder={t('landing.namePlaceholder')}
+                    placeholder="Tên / nickname..."
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
-                    className="w-32 bg-transparent text-xs font-bold text-brand-brown-dark outline-none focus:ring-0"
+                    className="min-w-0 flex-1 bg-transparent text-xs font-bold text-brand-brown-dark outline-none focus:ring-0"
                   />
                 </div>
 
-                {/* Hai nút pill lớn bằng nhau (phong cách Lissenly) */}
+                {/* Hai nút chính theo nhịp landing cozy */}
                 <div
                   style={{ animationDelay: '400ms' }}
-                  className="relative z-20 mt-4 animate-fade-slide-down flex w-full max-w-md flex-col gap-3 sm:max-w-lg sm:flex-row"
+                  className="relative z-20 mt-4 animate-fade-slide-down flex w-full max-w-[540px] flex-col gap-3 sm:flex-row"
                 >
                   <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-brown-dark hover:shadow-xl hover:shadow-brand-terracotta/30 active:translate-y-0 active:scale-[0.98] sm:flex-1 cursor-pointer"
+                    className="flex h-14 w-full items-center justify-center gap-2 rounded-[14px] bg-brand-terracotta px-6 text-base font-black text-white shadow-lg shadow-brand-terracotta/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-brown-dark hover:shadow-xl hover:shadow-brand-terracotta/30 active:translate-y-0 active:scale-[0.98] sm:flex-[1.08] cursor-pointer"
                   >
                     <Plus size={18} />
                     Tạo phòng học
                   </button>
 
-                  <div className="flex h-14 w-full items-center rounded-full border border-black/[0.1] bg-white px-5 shadow-sm transition hover:border-brand-terracotta-light sm:flex-1">
+                  <div className="flex h-14 w-full items-center rounded-[14px] border border-black/[0.1] bg-white px-5 shadow-sm transition hover:border-brand-terracotta-light sm:flex-1">
                     <input
                       type="text"
-                      placeholder="Tham gia phòng mã ẩn"
+                      placeholder="Nhập mã phòng"
                       value={roomId}
                       onChange={(event) => setRoomId(event.target.value.toUpperCase())}
                       onKeyDown={(event) => event.key === 'Enter' && handleJoinRoom()}
                       className="min-w-0 flex-1 bg-transparent text-sm font-bold text-brand-brown-dark outline-none placeholder:font-bold placeholder:text-brand-brown-light/70"
                     />
-                    <button onClick={() => handleJoinRoom()} className="ml-2 shrink-0 text-brand-terracotta transition hover:text-brand-brown-dark" title="Vào phòng">
+                    <button onClick={() => handleJoinRoom()} className="ml-2 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#fbf6ef] text-brand-terracotta transition hover:bg-brand-terracotta hover:text-white" title="Vào phòng">
                       <LogIn size={17} />
                     </button>
                   </div>
@@ -414,7 +392,7 @@ export default function LandingPage({
                 {/* Badges flex row */}
                 <div
                   style={{ animationDelay: '500ms' }}
-                  className="relative z-20 mt-5 animate-fade-slide-down flex flex-wrap gap-2"
+                  className="relative z-20 mt-5 grid max-w-[540px] animate-fade-slide-down grid-cols-1 gap-2 sm:grid-cols-3"
                 >
                   {[
                     {
@@ -443,10 +421,10 @@ export default function LandingPage({
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2M12 19v2M3 12h2M19 12h2" />
                         </svg>
                       ),
-                      label: 'Đồng bộ thời gian thực'
+                      label: 'Đồng bộ realtime'
                     }
                   ].map(item => (
-                    <span key={item.label} className="inline-flex items-center gap-2 rounded-full border border-black/[0.05] bg-white/90 px-3.5 py-2 text-xs font-bold text-brand-brown-light shadow-sm">
+                    <span key={item.label} className="inline-flex min-w-0 items-center justify-center gap-2 rounded-full border border-black/[0.06] bg-white px-3 py-2 text-xs font-bold text-brand-brown-light shadow-sm">
                       {item.icon}
                       {item.label}
                     </span>
@@ -456,15 +434,15 @@ export default function LandingPage({
             </div>
 
             {/* Cột 2: Minh họa 3D */}
-            <div className="hidden lg:flex items-center justify-center py-2 lg:py-6">
+            <div className="hidden lg:flex items-center justify-center py-2 lg:py-4">
               <div
                 style={{ animationDelay: '350ms' }}
-                className="relative w-full max-w-[340px] xl:max-w-[420px] animate-fade-slide-down"
+                className="relative z-0 -ml-20 translate-y-8 w-full max-w-[500px] animate-fade-slide-down xl:-ml-28 xl:max-w-[560px]"
               >
                 <img
                   src={studyLounge3d}
                   alt="Minh họa học tập"
-                  className="w-full rounded-[32px] object-cover shadow-xl border border-black/5"
+                  className="w-full rounded-[30px] border border-black/[0.04] object-cover shadow-[0_30px_80px_rgba(76,55,49,0.16)]"
                 />
               </div>
             </div>
@@ -486,13 +464,33 @@ export default function LandingPage({
                 setFriendInputCode={setFriendInputCode}
                 handleAddFriend={handleAddFriend}
                 getAvatarColor={getAvatarColor}
+                activityTicker={tickerPosts.length > 0 ? (
+                  <div className="activity-ticker flex h-8 items-center overflow-hidden rounded-full border border-black/[0.05] bg-[#fbf6ef] px-4 py-1.5 shadow-xs">
+                    <button
+                      onClick={() => {
+                        setSelectedPostId(tickerPosts[tickerIndex]?.id)
+                        setShowHelpBoard(true)
+                      }}
+                      className={`ticker-inner ticker-${tickerPhase} ticker-clickable flex w-full items-center gap-2 text-left`}
+                    >
+                      <span className="ticker-icon flex items-center text-brand-terracotta">
+                        <Megaphone size={12} strokeWidth={2.5} />
+                      </span>
+                      <span className="ticker-author shrink-0 text-xs font-bold text-brand-brown-dark">{tickerPosts[tickerIndex]?.username}</span>
+                      <span className="ticker-sep font-bold text-brand-terracotta-light">·</span>
+                      <span className="ticker-text truncate text-xs font-semibold text-brand-brown-light">
+                        {tickerPosts[tickerIndex]?.title}
+                      </span>
+                    </button>
+                  </div>
+                ) : null}
               />
             </div>
           </section>
         )}
       </main>
 
-      {/* Modal Tạo phòng mới cao cấp (Lissenly style) */}
+      {/* Modal tạo phòng mới */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-brown-dark/25 p-4 backdrop-blur-md">
           {/* Concentric Circle Background */}
@@ -513,11 +511,9 @@ export default function LandingPage({
                 ← Quay lại
               </button>
 
-              <div className="flex items-center gap-1.5 font-display font-black text-brand-brown-dark">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E08F74] text-white">
-                  <Headphones size={14} strokeWidth={2.5} />
-                </div>
-                <span>Lissenly<span className="text-[#E08F74]">+</span></span>
+              <div className="flex items-center gap-2 font-display font-black text-brand-brown-dark">
+                <img src={duhocMateLogo} alt="Duhoc Mate Logo" className="h-8 w-8 rounded-xl object-cover ring-1 ring-black/[0.04]" />
+                <span>Duhoc Mate</span>
               </div>
 
               <div className="w-20" /> {/* Spacer */}
@@ -525,8 +521,8 @@ export default function LandingPage({
 
             {/* Modal Card */}
             <div className="rounded-[32px] bg-white p-8 shadow-2xl border border-black/[0.03]">
-              <h2 className="font-display font-black text-2xl text-brand-brown-dark tracking-tight">Tạo phòng mới</h2>
-              <p className="text-xs font-semibold text-brand-brown-light/75 mt-1">Bắt đầu không gian nghe nhạc của riêng bạn</p>
+              <h2 className="font-display font-black text-2xl text-brand-brown-dark tracking-tight">Tạo phòng học mới</h2>
+              <p className="text-xs font-semibold text-brand-brown-light/75 mt-1">Bắt đầu một góc học chung thật ấm và tập trung</p>
 
               {/* Google Login button */}
               <button
@@ -574,12 +570,12 @@ export default function LandingPage({
 
               {/* Room Name input */}
               <div className="text-left mt-4">
-                <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">Tên phòng nhạc</label>
+                <label className="block text-[10px] font-black tracking-wider text-brand-brown-light/75 uppercase mb-1.5">Tên phòng học</label>
                 <input
                   type="text"
                   value={modalRoomTitle}
                   onChange={(e) => setModalRoomTitle(e.target.value)}
-                  placeholder="VD: Góc chill cuối tuần..."
+                  placeholder="VD: Góc học TOPIK tối nay..."
                   className="w-full h-12 rounded-xl bg-[#FAF6F0] border border-[#ECE6DB] px-4 text-sm font-bold text-brand-brown-dark outline-none focus:bg-white focus:border-[#D6CAB2] transition"
                 />
               </div>
@@ -642,7 +638,7 @@ export default function LandingPage({
                 }}
                 className="mt-6 flex w-full h-12 items-center justify-center rounded-2xl bg-[#AB8B7C] text-sm font-black text-white hover:bg-brand-brown-dark shadow-md hover:shadow-lg transition cursor-pointer active:scale-[0.98]"
               >
-                Tạo Không Gian
+                Tạo phòng học
               </button>
 
             </div>

@@ -24,6 +24,12 @@ type RecentRoom = {
 type FriendStatus = { code: string; username: string; online: boolean; currentRoomId: string | null; currentSong: string | null }
 type LobbyTab = 'recent' | 'explore' | 'friends'
 
+const previewRooms = [
+  { id: 'TOPIK', title: 'Góc luyện TOPIK tối', host: 'Duhoc Mate', meta: '20:00 · luyện nghe · cộng đồng', avatar: 'T', color: 'bg-[#f6ede7] text-brand-terracotta' },
+  { id: 'SEOUL', title: 'Ca đêm Seoul', host: 'Minh Anh', meta: 'Pomodoro · nhạc nhẹ · bạn học', avatar: 'S', color: 'bg-[#eef4ff] text-blue-700' },
+  { id: 'NOTICE', title: 'Bảng tin du học', host: 'Cộng đồng', meta: 'hỏi đáp · việc làm · nhà ở', avatar: 'D', color: 'bg-[#f8f4ee] text-brand-brown-light' },
+]
+
 type Props = {
   templates: RoomTemplate[]
   activeRooms: ActiveRoom[]
@@ -40,6 +46,7 @@ type Props = {
   setFriendInputCode: (value: string) => void
   handleAddFriend: (event: React.FormEvent) => void
   getAvatarColor: (name: string) => string
+  activityTicker?: React.ReactNode
 }
 
 export default function TemplateMarketplace({
@@ -58,6 +65,7 @@ export default function TemplateMarketplace({
   setFriendInputCode,
   handleAddFriend,
   getAvatarColor,
+  activityTicker,
 }: Props) {
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<LobbyTab>('explore')
@@ -90,6 +98,14 @@ export default function TemplateMarketplace({
     })
   }, [activeRooms, query])
 
+  const visiblePreviewRooms = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return previewRooms.filter(room => {
+      const haystack = [room.id, room.title, room.host, room.meta].join(' ').toLowerCase()
+      return !q || haystack.includes(q)
+    })
+  }, [query])
+
   const tabClass = (tab: LobbyTab) =>
     `flex-1 rounded-full px-3 py-2.5 transition-all duration-200 ${activeTab === tab ? 'bg-white text-brand-brown-dark shadow-[0_2px_8px_rgba(0,0,0,0.08)]' : 'text-brand-brown-light hover:text-brand-brown-dark'}`
 
@@ -100,8 +116,9 @@ export default function TemplateMarketplace({
   }[activeTab]
 
   return (
-    <section className="flex h-[540px] flex-col gap-5 rounded-[24px] bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
-      <div className="rounded-full bg-[#f5f3f0] p-1.5">
+    <section className="ml-auto flex h-[640px] w-full max-w-[420px] flex-col gap-4 rounded-[28px] border border-black/[0.05] bg-white p-5 shadow-[0_24px_80px_rgba(76,55,49,0.08)]">
+      {activityTicker}
+      <div className="rounded-[18px] border border-black/[0.05] bg-[#f7f2ec] p-1">
         <div className="flex gap-1 text-xs font-black">
           <button type="button" onClick={() => setActiveTab('recent')} className={tabClass('recent')}>
             Gần đây
@@ -121,11 +138,11 @@ export default function TemplateMarketplace({
           value={query}
           onChange={event => setQuery(event.target.value)}
           placeholder={placeholder}
-          className="h-12 w-full rounded-2xl border border-black/[0.08] bg-[#fbf6ef] px-11 text-sm font-bold text-brand-brown-dark outline-none transition focus:border-brand-terracotta-light focus:bg-white focus:ring-2 focus:ring-brand-terracotta/20"
+          className="h-11 w-full rounded-[14px] border border-black/[0.08] bg-[#fbf6ef] px-11 text-sm font-bold text-brand-brown-dark outline-none transition focus:border-brand-terracotta-light focus:bg-white focus:ring-2 focus:ring-brand-terracotta/20"
         />
       </label>
 
-      <div key={activeTab} className="h-[260px] flex-1 space-y-3 overflow-y-auto pr-1">
+      <div key={activeTab} className="h-[380px] flex-1 space-y-3 overflow-y-auto pr-1">
         {activeTab === 'recent' && visibleRecentRooms.length === 0 && (
           <div className="h-full rounded-2xl border border-dashed border-brand-terracotta-light/45 bg-[#fbf6ef] p-6 text-center">
             <Clock size={26} className="mx-auto text-brand-terracotta/60" />
@@ -150,7 +167,7 @@ export default function TemplateMarketplace({
                 }
               }}
               style={{ animationDelay: `${index * 50}ms` }}
-              className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
+              className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-[16px] border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
             >
               <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full overflow-hidden border border-black/[0.06] bg-[#fbf6ef]">
                 {room.hostAvatarUrl ? (
@@ -178,7 +195,7 @@ export default function TemplateMarketplace({
         {activeTab === 'explore' && topikTemplate && (
           <article 
             style={{ animationDelay: '0ms' }}
-            className="group animate-fade-slide-down flex items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md">
+            className="group animate-fade-slide-down flex items-center gap-3 rounded-[16px] border border-black/[0.06] bg-white px-3 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md">
             <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-700">
               <BookOpen size={19} />
             </div>
@@ -216,7 +233,7 @@ export default function TemplateMarketplace({
                 }
               }}
               style={{ animationDelay: `${(index + (topikTemplate ? 1 : 0)) * 50}ms` }}
-              className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
+              className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-[16px] border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
             >
               <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full overflow-hidden border border-black/[0.06] bg-[#fbf6ef]">
                 {room.hostAvatarUrl ? (
@@ -240,6 +257,27 @@ export default function TemplateMarketplace({
             </button>
           )
         })}
+
+        {activeTab === 'explore' && visibleUserRooms.length === 0 && visiblePreviewRooms.map((room, index) => (
+          <article
+            key={room.id}
+            style={{ animationDelay: `${(index + (topikTemplate ? 1 : 0)) * 50}ms` }}
+            className="group animate-fade-slide-down flex items-center gap-3 rounded-[16px] border border-black/[0.05] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
+          >
+            <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[14px] border border-black/[0.04] text-sm font-black ${room.color}`}>
+              {room.avatar}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-black text-brand-brown-dark">{room.title}</p>
+              <p className="mt-0.5 truncate text-xs font-bold text-brand-brown-light/80">
+                {room.host} · {room.meta}
+              </p>
+            </div>
+            <span className="flex-shrink-0 rounded-full bg-[#fbf6ef] px-2 py-1 text-[10px] font-black uppercase text-brand-terracotta">
+              Gợi ý
+            </span>
+          </article>
+        ))}
 
         {activeTab === 'friends' && (
           <>
@@ -274,7 +312,7 @@ export default function TemplateMarketplace({
                   key={friend.code}
                   onClick={() => friend.online && friend.currentRoomId && onJoinRoom(friend.currentRoomId)}
                   style={{ animationDelay: `${index * 50}ms` }}
-                  className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
+                  className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-[16px] border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
                 >
                   <div className={`flex h-10 w-10 items-center justify-center rounded-xl border text-xs font-black ${getAvatarColor(friend.username)}`}>
                     {friend.username.substring(0, 2).toUpperCase()}
@@ -296,7 +334,7 @@ export default function TemplateMarketplace({
       <button
         type="button"
         onClick={onRefreshRooms}
-        className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl border border-black/[0.06] bg-[#fbf6ef] px-4 py-3 text-sm font-black text-brand-terracotta transition hover:bg-white"
+        className="mt-auto flex w-full items-center justify-center gap-2 rounded-[14px] border border-black/[0.06] bg-[#fbf6ef] px-4 py-3 text-sm font-black text-brand-terracotta transition hover:bg-white"
       >
         <RefreshCw size={15} />
         Mở rộng Khám phá
