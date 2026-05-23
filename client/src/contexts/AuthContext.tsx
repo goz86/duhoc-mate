@@ -11,6 +11,7 @@ interface AuthContextType {
   supabaseReady: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signUp: (email: string, password: string, username: string, city?: string) => Promise<{ error: any }>
+  signInWithGoogle: () => Promise<{ error: any }>
   signOut: () => Promise<void>
   updateProfile: (updates: Partial<Profile>) => Promise<void>
 }
@@ -34,7 +35,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
+      if (session?.user) {
+        fetchProfile(session.user.id, session.user.email, session.user.user_metadata)
+      }
       setLoading(false)
     })
 
@@ -42,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchProfile(session.user.id)
+        fetchProfile(session.user.id, session.user.email, session.user.user_metadata)
       } else {
         setProfile(null)
       }
@@ -51,14 +54,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, userEmail?: string, metadata?: any) => {
     if (!supabase) return
     const { data } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single()
-    if (data) setProfile(data as Profile)
+    if (data) {
+      setProfile(data as Profile)
+    } else {
+      // Tạo profile cho user Google OAuth nếu chưa tồn tại
+      const fallbackUsername = metadata?.full_name || metadata?.name || userEmail?.split('@')[0] || `user_${userId.substring(0, 5)}`;
+      const newProfile = {
+        id: userId,
+        username: fallbackUsername,
+        avatar_url: metadata?.avatar_url || '',
+        language: 'vi' as const,
+        created_at: new Date().toISOString()
+      }
+      const { data: inserted } = await supabase
+        .from('profiles')
+        .insert(newProfile)
+        .select()
+        .single()
+      if (inserted) {
+        setProfile(inserted as Profile)
+      } else {
+        setProfile(newProfile as Profile)
+      }
+    }
   }
 
   const signIn = async (email: string, password: string) => {
@@ -82,6 +107,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error }
   }
 
+  const signInWithGoogle = async () => {
+    if (!supabase) return { error: new Error('Supabase chưa được cấu hình') }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    })
+    return { error }
+  }
+
   const signOut = async () => {
     if (!supabase) return
     await supabase.auth.signOut()
@@ -99,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, supabaseReady, signIn, signUp, signOut, updateProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, supabaseReady, signIn, signUp, signInWithGoogle, signOut, updateProfile }}>
       {children}
     </AuthContext.Provider>
   )
