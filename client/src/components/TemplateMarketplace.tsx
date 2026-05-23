@@ -4,8 +4,23 @@ import { BookOpen, Clock, Copy, RefreshCw, Search, Users } from 'lucide-react'
 import type { RoomTemplate } from '../lib/communityTemplates'
 import { seedRoomIds } from '../lib/templateRooms'
 
-type ActiveRoom = { id: string; hostName: string; memberCount: number; currentSong?: string }
-type RecentRoom = { id: string; hostName: string; currentSong?: string }
+type ActiveRoom = { 
+  id: string 
+  hostName: string 
+  memberCount: number 
+  currentSong?: string 
+  roomTitle?: string
+  isPrivate?: boolean
+  hostAvatarUrl?: string
+}
+type RecentRoom = { 
+  id: string 
+  hostName: string 
+  currentSong?: string 
+  roomTitle?: string
+  isPrivate?: boolean
+  hostAvatarUrl?: string
+}
 type FriendStatus = { code: string; username: string; online: boolean; currentRoomId: string | null; currentSong: string | null }
 type LobbyTab = 'recent' | 'explore' | 'friends'
 
@@ -17,8 +32,9 @@ type Props = {
   friendCodeCopied: boolean
   friendInputCode: string
   friendsWithStatus: FriendStatus[]
+  username: string
   onJoinTemplateRoom: (template: RoomTemplate) => void
-  onJoinRoom: (roomId: string) => void
+  onJoinRoom: (roomId: string, password?: string) => void
   onRefreshRooms: () => void
   copyFriendCode: () => void
   setFriendInputCode: (value: string) => void
@@ -34,6 +50,7 @@ export default function TemplateMarketplace({
   friendCodeCopied,
   friendInputCode,
   friendsWithStatus,
+  username,
   onJoinTemplateRoom,
   onJoinRoom,
   onRefreshRooms,
@@ -119,23 +136,44 @@ export default function TemplateMarketplace({
           </div>
         )}
 
-        {activeTab === 'recent' && visibleRecentRooms.map((room, index) => (
-          <button
-            key={room.id}
-            onClick={() => onJoinRoom(room.id)}
-            style={{ animationDelay: `${index * 50}ms` }}
-            className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
-          >
-            <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border text-xs font-black ${getAvatarColor(room.hostName)}`}>
-              {room.hostName.substring(0, 2).toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-black text-brand-brown-dark">{room.hostName}</p>
-              <p className="mt-0.5 truncate text-xs font-bold text-brand-brown-light">{room.currentSong || 'Phòng học tập'} · {room.id}</p>
-            </div>
-            <span className="flex-shrink-0 text-[11px] font-black uppercase text-brand-terracotta opacity-0 transition group-hover:opacity-100">Vào phòng</span>
-          </button>
-        ))}
+        {activeTab === 'recent' && visibleRecentRooms.map((room, index) => {
+          const isHost = room.hostName === username;
+          return (
+            <button
+              key={room.id}
+              onClick={() => {
+                if (room.isPrivate) {
+                  const pass = prompt("Nhập mật khẩu để vào phòng:");
+                  if (pass !== null) onJoinRoom(room.id, pass);
+                } else {
+                  onJoinRoom(room.id);
+                }
+              }}
+              style={{ animationDelay: `${index * 50}ms` }}
+              className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
+            >
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full overflow-hidden border border-black/[0.06] bg-[#fbf6ef]">
+                {room.hostAvatarUrl ? (
+                  <img src={room.hostAvatarUrl} alt={room.hostName} className="h-full w-full object-cover" />
+                ) : (
+                  <div className={`flex h-full w-full items-center justify-center text-xs font-black ${getAvatarColor(room.hostName)}`}>
+                    {room.hostName.substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-sm font-black text-brand-brown-dark">{room.roomTitle || `Phòng của ${room.hostName}`}</p>
+                  {room.isPrivate && <span className="text-[10px]" title="Phòng riêng tư">🔒</span>}
+                </div>
+                <p className="mt-0.5 truncate text-xs font-bold text-brand-brown-light/80">
+                  {room.hostName} · {isHost ? 'Chủ phòng' : 'Khách'}
+                </p>
+              </div>
+              <span className="flex-shrink-0 text-[11px] font-black uppercase text-brand-terracotta opacity-0 transition group-hover:opacity-100">Vào phòng</span>
+            </button>
+          )
+        })}
 
         {activeTab === 'explore' && topikTemplate && (
           <article 
@@ -164,25 +202,44 @@ export default function TemplateMarketplace({
           </article>
         )}
 
-        {activeTab === 'explore' && visibleUserRooms.map((room, index) => (
-          <button
-            key={room.id}
-            onClick={() => onJoinRoom(room.id)}
-            style={{ animationDelay: `${(index + (topikTemplate ? 1 : 0)) * 50}ms` }}
-            className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
-          >
-            <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border text-xs font-black ${getAvatarColor(room.hostName)}`}>
-              {room.hostName.substring(0, 2).toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-black text-brand-brown-dark">Phòng của {room.hostName}</p>
-              <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs font-bold text-brand-brown-light">
-                <Users size={12} /> {room.memberCount} · {room.currentSong || 'Khách'}
-              </p>
-            </div>
-            <span className="flex-shrink-0 text-[11px] font-black uppercase text-brand-terracotta opacity-0 transition group-hover:opacity-100">Vào phòng</span>
-          </button>
-        ))}
+        {activeTab === 'explore' && visibleUserRooms.map((room, index) => {
+          const isHost = room.hostName === username;
+          return (
+            <button
+              key={room.id}
+              onClick={() => {
+                if (room.isPrivate) {
+                  const pass = prompt("Nhập mật khẩu để vào phòng:");
+                  if (pass !== null) onJoinRoom(room.id, pass);
+                } else {
+                  onJoinRoom(room.id);
+                }
+              }}
+              style={{ animationDelay: `${(index + (topikTemplate ? 1 : 0)) * 50}ms` }}
+              className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-2xl border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-md"
+            >
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full overflow-hidden border border-black/[0.06] bg-[#fbf6ef]">
+                {room.hostAvatarUrl ? (
+                  <img src={room.hostAvatarUrl} alt={room.hostName} className="h-full w-full object-cover" />
+                ) : (
+                  <div className={`flex h-full w-full items-center justify-center text-xs font-black ${getAvatarColor(room.hostName)}`}>
+                    {room.hostName.substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-sm font-black text-brand-brown-dark">{room.roomTitle || `Phòng của ${room.hostName}`}</p>
+                  {room.isPrivate && <span className="text-[10px]" title="Phòng riêng tư">🔒</span>}
+                </div>
+                <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs font-bold text-brand-brown-light/80">
+                  {room.hostName} · 👥 {room.memberCount} · {isHost ? 'Chủ phòng' : 'Khách'}
+                </p>
+              </div>
+              <span className="flex-shrink-0 text-[11px] font-black uppercase text-brand-terracotta opacity-0 transition group-hover:opacity-100">Vào phòng</span>
+            </button>
+          )
+        })}
 
         {activeTab === 'friends' && (
           <>
