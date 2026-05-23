@@ -270,7 +270,7 @@ export default function LandingPage({
               Bảng tin
             </button>
             <a
-              href="http://localhost:5174"
+              href="https://www.duhocmate.com/"
               target="_blank"
               rel="noopener noreferrer"
               className="shrink-0 whitespace-nowrap pb-2.5 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5"
