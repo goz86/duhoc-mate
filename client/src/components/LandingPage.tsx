@@ -1,5 +1,5 @@
-import type React from 'react'
-import { Clock, LogIn, Plus } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+import { Clock, LogIn, Plus, RefreshCw, Megaphone } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import studyLounge3d from '../assets/study-lounge-3d-new.png'
 import duhocMateLogo from '../assets/duhoc-mate-logo-new.png'
@@ -7,6 +7,8 @@ import LanguageSwitcher from './LanguageSwitcher'
 import QuickHelpBoard from './QuickHelpBoard'
 import TemplateMarketplace from './TemplateMarketplace'
 import type { RoomTemplate } from '../lib/communityTemplates'
+import { supabase } from '../lib/supabase'
+import type { HelpPost } from '../lib/supabase'
 
 type AuthMode = 'login' | 'register'
 
@@ -75,6 +77,98 @@ export default function LandingPage({
 }: LandingPageProps) {
   const { t } = useTranslation()
 
+  const [exchangeRate, setExchangeRate] = useState<string>('Đang tải...')
+  const [weather, setWeather] = useState<{ temp: string; desc: string } | null>(null)
+  
+  const [tickerPosts, setTickerPosts] = useState<HelpPost[]>([])
+  const [tickerIndex, setTickerIndex] = useState(0)
+  const [tickerPhase, setTickerPhase] = useState<'in' | 'show' | 'out'>('in')
+  const tickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
+
+  const handleRefreshRates = async () => {
+    setExchangeRate('Đang tải...')
+    try {
+      const res = await fetch('https://open.er-api.com/v6/latest/KRW')
+      const data = await res.json()
+      const vndRate = data.rates?.VND
+      if (vndRate) {
+        const rate1000 = (1000 * vndRate).toFixed(0)
+        setExchangeRate(`1,000 ₩ ≈ ${Number(rate1000).toLocaleString('vi-VN')} ₫`)
+      }
+    } catch {
+      setExchangeRate('1,000 ₩ ≈ 17,800 ₫')
+    }
+
+    try {
+      const res = await fetch('https://wttr.in/Seoul?format=j1')
+      const data = await res.json()
+      const current = data.current_condition?.[0]
+      if (current) {
+        setWeather({
+          temp: `${current.temp_C}°C`,
+          desc: current.weatherDesc?.[0]?.value || 'N/A'
+        })
+      }
+    } catch {
+      setWeather({ temp: '?°C', desc: 'Không lấy được' })
+    }
+  }
+
+  useEffect(() => {
+    if (showHelpBoard) {
+      handleRefreshRates()
+    }
+  }, [showHelpBoard])
+
+  useEffect(() => {
+    const fetchTickerPosts = async () => {
+      try {
+        if (supabase) {
+          const { data } = await supabase
+            .from('help_posts')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(15)
+          if (data && data.length > 0) {
+            setTickerPosts(data as HelpPost[])
+            return
+          }
+        }
+      } catch {
+        // Fallback below
+      }
+      setTickerPosts([
+        { id: '1', user_id: 'demo', username: 'Minh Anh', title: 'Cần người đi cùng lên Cục XNC Suwon', content: '', category: 'transport', city: 'Suwon', created_at: new Date().toISOString() },
+        { id: '2', user_id: 'demo', username: 'Goz', title: 'Tìm bạn mua chung gia vị Việt ở Itaewon', content: '', category: 'food', city: 'Seoul', created_at: new Date().toISOString() },
+        { id: '3', user_id: 'demo', username: 'Thu Trang', title: 'Job làm thêm cuối tuần tại nhà hàng', content: '', category: 'job', city: 'Gyeonggi', created_at: new Date().toISOString() },
+      ])
+    }
+    fetchTickerPosts()
+  }, [])
+
+  useEffect(() => {
+    if (tickerPosts.length === 0) return
+
+    const runTicker = () => {
+      setTickerPhase('in')
+      tickerTimerRef.current = setTimeout(() => {
+        setTickerPhase('show')
+        tickerTimerRef.current = setTimeout(() => {
+          setTickerPhase('out')
+          tickerTimerRef.current = setTimeout(() => {
+            setTickerIndex((prev) => (prev + 1) % tickerPosts.length)
+          }, 350)
+        }, 2200)
+      }, 350)
+    }
+
+    runTicker()
+    return () => {
+      if (tickerTimerRef.current) clearTimeout(tickerTimerRef.current)
+    }
+  }, [tickerIndex, tickerPosts])
+
   return (
     <div className="relative isolate min-h-screen w-full overflow-x-hidden bg-[#fbf6ef] text-brand-brown-dark">
       {/* Lớp nền trang trí — gradient blobs mờ + lưới chấm mảnh (tối giản, có chiều sâu) */}
@@ -95,6 +189,28 @@ export default function LandingPage({
           </div>
 
           <div className="flex items-center gap-2">
+            {showHelpBoard && (
+              <>
+                <div className="hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-brand-brown-dark shadow-sm lg:flex border border-black/[0.04]">
+                  <span className="text-amber-600">💱</span>
+                  <span>{exchangeRate}</span>
+                </div>
+                {weather && (
+                  <div className="hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-brand-brown-dark shadow-sm lg:flex border border-black/[0.04]">
+                    <span>🌤️</span>
+                    <span>Seoul: {weather.temp}</span>
+                    <span className="text-brand-brown-light/70">· {weather.desc}</span>
+                  </div>
+                )}
+                <button
+                  onClick={handleRefreshRates}
+                  className="hidden p-2 rounded-full bg-white hover:bg-brand-light text-brand-brown-light hover:text-brand-brown-dark transition shadow-sm lg:block border border-black/[0.04] cursor-pointer"
+                  title="Cập nhật tỷ giá & thời tiết"
+                >
+                  <RefreshCw size={13} />
+                </button>
+              </>
+            )}
             <span className="hidden items-center gap-1 rounded-full bg-white px-3 py-2 text-xs font-bold text-brand-brown-light shadow-sm md:flex">
               <Clock size={13} />
               {new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })} KST
@@ -131,40 +247,64 @@ export default function LandingPage({
 
       <main className="mx-auto max-w-[1560px] px-5 py-8 xl:px-8">
         {/* Sub-Header Navigation Tab Bar */}
-        <div className="mb-6 flex gap-5 overflow-x-auto border-b border-black/[0.06] pb-3 [-ms-overflow-style:none] [scrollbar-width:none] sm:mb-8 sm:gap-6 sm:pb-4 [&::-webkit-scrollbar]:hidden">
-          <button
-            onClick={() => setShowHelpBoard(false)}
-            className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${
-              !showHelpBoard
-                ? 'text-brand-brown-dark border-b-2 border-brand-terracotta'
-                : 'text-brand-brown-light hover:text-brand-brown-dark'
-            }`}
-          >
-            🏫 Phòng học đồng bộ
-          </button>
-          <button
-            onClick={() => setShowHelpBoard(true)}
-            className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${
-              showHelpBoard
-                ? 'text-brand-brown-dark border-b-2 border-brand-terracotta'
-                : 'text-brand-brown-light hover:text-brand-brown-dark'
-            }`}
-          >
-            🇰🇷 Hỗ trợ đời sống Hàn Quốc
-          </button>
-          <a
-            href="http://localhost:5174"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 whitespace-nowrap pb-2.5 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5"
-          >
-            💳 Tính lương Alba <span className="text-[10px]">↗</span>
-          </a>
+        <div className="mb-6 flex items-center justify-between border-b border-black/[0.06] pb-3 sm:mb-8 sm:pb-4 gap-4">
+          <div className="flex gap-5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button
+              onClick={() => setShowHelpBoard(false)}
+              className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${
+                !showHelpBoard
+                  ? 'text-brand-brown-dark border-b-2 border-brand-terracotta'
+                  : 'text-brand-brown-light hover:text-brand-brown-dark'
+              }`}
+            >
+              Phòng học
+            </button>
+            <button
+              onClick={() => setShowHelpBoard(true)}
+              className={`shrink-0 whitespace-nowrap pb-2.5 text-sm font-black transition-all cursor-pointer relative ${
+                showHelpBoard
+                  ? 'text-brand-brown-dark border-b-2 border-brand-terracotta'
+                  : 'text-brand-brown-light hover:text-brand-brown-dark'
+              }`}
+            >
+              Bảng tin
+            </button>
+            <a
+              href="http://localhost:5174"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 whitespace-nowrap pb-2.5 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5"
+            >
+               Tính lương
+            </a>
+          </div>
+
+          {/* Activity Ticker */}
+          {tickerPosts.length > 0 && (
+            <div className="activity-ticker hidden md:flex items-center bg-[#FAF6F0] border border-black/[0.04] rounded-xl px-4 py-1.5 max-w-[360px] h-8 overflow-hidden shadow-xs">
+              <button
+                onClick={() => {
+                  setSelectedPostId(tickerPosts[tickerIndex]?.id)
+                  setShowHelpBoard(true)
+                }}
+                className={`ticker-inner ticker-${tickerPhase} ticker-clickable flex items-center gap-2 w-full text-left`}
+              >
+                <span className="ticker-icon text-brand-terracotta flex items-center">
+                  <Megaphone size={12} strokeWidth={2.5} />
+                </span>
+                <span className="ticker-author font-bold text-xs text-brand-brown-dark shrink-0">{tickerPosts[tickerIndex]?.username}</span>
+                <span className="ticker-sep text-brand-terracotta-light font-bold">·</span>
+                <span className="ticker-text text-xs text-brand-brown-light truncate font-semibold">
+                  {tickerPosts[tickerIndex]?.title}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
 
         {showHelpBoard ? (
           <section className="overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-sm">
-            <QuickHelpBoard />
+            <QuickHelpBoard initialExpandedPostId={selectedPostId} />
           </section>
         ) : (
           <section className="relative mt-2 grid min-w-0 gap-6 lg:mt-4 lg:min-h-[560px] lg:grid-cols-[1.2fr_1fr_1.1fr] lg:items-center">
@@ -182,7 +322,7 @@ export default function LandingPage({
                   style={{ animationDelay: '100ms' }}
                   className="mt-5 animate-fade-slide-down font-display text-4xl font-black leading-[1.07] tracking-tight text-brand-brown-dark sm:text-5xl lg:mt-6 lg:text-[52px] lg:leading-[1.05]"
                 >
-                  <span className="lg:whitespace-nowrap">Cùng nhau học tập</span> <br />
+                  <span className="lg:whitespace-nowrap">Cùng nhau </span> <br />
                   <span className="text-brand-terracotta">sẻ chia hành trình</span>
                 </h1>
                 <p 
