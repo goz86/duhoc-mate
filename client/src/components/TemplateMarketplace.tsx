@@ -1,6 +1,6 @@
 import type React from 'react'
 import { useMemo, useState } from 'react'
-import { BookOpen, Clock, Copy, RefreshCw, Search, Users } from 'lucide-react'
+import { BookOpen, Clock, Copy, RefreshCw, Search } from 'lucide-react'
 import type { RoomTemplate } from '../lib/communityTemplates'
 import { seedRoomIds } from '../lib/templateRooms'
 
