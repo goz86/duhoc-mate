@@ -83,7 +83,7 @@ export default function TemplateMarketplace({
   }[activeTab]
 
   return (
-    <section className="flex min-h-[500px] flex-col gap-5 rounded-[24px] bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+    <section className="flex h-[540px] flex-col gap-5 rounded-[24px] bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
       <div className="rounded-full bg-[#f5f3f0] p-1.5">
         <div className="flex gap-1 text-xs font-black">
           <button type="button" onClick={() => setActiveTab('recent')} className={tabClass('recent')}>
