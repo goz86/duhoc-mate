@@ -1,8 +1,8 @@
 import type React from 'react'
 import { Clock, LogIn, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import studyLounge3d from '../assets/study-lounge-3d.png'
-import duhocMateLogo from '../assets/duhoc-mate-logo.png'
+import studyLounge3d from '../assets/study-lounge-3d-new.png'
+import duhocMateLogo from '../assets/duhoc-mate-logo-new.png'
 import LanguageSwitcher from './LanguageSwitcher'
 import QuickHelpBoard from './QuickHelpBoard'
 import TemplateMarketplace from './TemplateMarketplace'
@@ -167,7 +167,7 @@ export default function LandingPage({
             <QuickHelpBoard />
           </section>
         ) : (
-          <section className="relative mt-2 grid min-w-0 gap-8 lg:mt-4 lg:min-h-[560px] lg:grid-cols-[1fr_0.6fr] lg:items-stretch">
+          <section className="relative mt-2 grid min-w-0 gap-6 lg:mt-4 lg:min-h-[560px] lg:grid-cols-[1.2fr_1fr_1.1fr] lg:items-center">
             <div className="relative flex min-w-0 items-center py-2 lg:py-6">
               <div className="relative z-10 min-w-0 lg:max-w-[480px]">
                 <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-terracotta">
@@ -180,7 +180,7 @@ export default function LandingPage({
                   <span className="text-brand-terracotta">sẻ chia hành trình</span>
                 </h1>
                 <p className="mt-4 max-w-md text-sm font-semibold leading-relaxed text-brand-brown-dark/75 sm:text-base lg:mt-5">
-                  Tạo phòng học, nghe nhạc YouTube đồng bộ, mở Idea Board và vào phòng TOPIK 24/24.
+                  Tạo phòng, chia sẻ mã phòng và nghe nhạc ,cùng nhau học đồng bộ thời gian thực.
                 </p>
 
                 {/* Tên của bạn input inline */}
@@ -259,13 +259,17 @@ export default function LandingPage({
                   ))}
                 </div>
               </div>
+            </div>
 
-              {/* Minh họa 3D — ẩn trên mobile, neo góc dưới-phải cột trái, đè sau các nút (phong cách Lissenly) */}
-              <img
-                src={studyLounge3d}
-                alt="Minh họa học tập"
-                className="pointer-events-none absolute bottom-0 right-0 z-0 hidden w-[300px] object-contain drop-shadow-[0_35px_50px_rgba(76,55,49,0.18)] lg:block xl:right-[-24px] xl:w-[340px]"
-              />
+            {/* Cột 2: Minh họa 3D */}
+            <div className="hidden lg:flex items-center justify-center py-2 lg:py-6">
+              <div className="relative w-full max-w-[340px] xl:max-w-[420px]">
+                <img
+                  src={studyLounge3d}
+                  alt="Minh họa học tập"
+                  className="w-full rounded-[32px] object-cover shadow-xl border border-black/5"
+                />
+              </div>
             </div>
 
             <div className="relative z-10 min-w-0 flex-1">
