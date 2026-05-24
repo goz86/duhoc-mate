@@ -218,6 +218,7 @@ export default function App() {
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'playlist' | 'members'>('playlist');
   const [ideaTasks, setIdeaTasks] = useState<IdeaTask[]>([]);
   const [roomCollapsed, setRoomCollapsed] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [roomTheme, setRoomTheme] = useState<'cream' | 'midnight' | 'sakura' | 'ocean' | 'forest' | 'sunset' | 'neon' | 'arctic'>('cream');
@@ -243,6 +244,12 @@ export default function App() {
   });
   const playerRef = useRef<any>(null);
   const iframeContainerRef = useRef<HTMLDivElement>(null);
+  const currentVideoRef = useRef(currentVideo);
+  useEffect(() => { currentVideoRef.current = currentVideo; }, [currentVideo]);
+  const roomIdRef = useRef(roomId);
+  useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
+  const isHostRef = useRef(isHost);
+  useEffect(() => { isHostRef.current = isHost; }, [isHost]);
   const [localPaused, setLocalPaused] = useState(false);
   const localPausedRef = useRef(false);
   const [lyrics, setLyrics] = useState<string>('');
@@ -443,18 +450,18 @@ export default function App() {
     }
   }, [username, friendCode]);
 
-  // === YouTube IFrame API â€“ Khá»Ÿi táº¡o Player ===
-  // DÃ¹ng ref Ä‘á»ƒ trÃ¡nh stale closure trong cÃ¡c callback
-  const currentVideoRef = useRef(currentVideo);
-  useEffect(() => { currentVideoRef.current = currentVideo; }, [currentVideo]);
-  const roomIdRef = useRef(roomId);
-  useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
-  const isHostRef = useRef(isHost);
-  useEffect(() => { isHostRef.current = isHost; }, [isHost]);
-
-  // Init player má»™t láº§n khi vÃ o room + stage youtube/music
+  // === YouTube IFrame API â€“ Khá�  // Init or update player when currentVideo.id becomes available
   useEffect(() => {
     if (view !== 'room') return;
+
+    if (!currentVideo.id) {
+      // Nếu không có video ID, hủy player nếu có
+      if (playerRef.current?.destroy) {
+        playerRef.current.destroy();
+      }
+      playerRef.current = null;
+      return;
+    }
 
     const initPlayer = () => {
       if (!iframeContainerRef.current) return;
@@ -465,7 +472,7 @@ export default function App() {
       playerRef.current = new (window as any).YT.Player('yt-player-iframe', {
         height: '100%',
         width: '100%',
-        videoId: currentVideoRef.current.id,
+        videoId: currentVideo.id,
         playerVars: {
           autoplay: 1,
           controls: 1,
@@ -477,7 +484,12 @@ export default function App() {
         events: {
           onReady: (event: any) => {
             setVideoError(false);
-            event.target.playVideo();
+            if (currentVideoRef.current.playing) {
+              event.target.playVideo();
+            }
+            if (currentVideoRef.current.time) {
+              event.target.seekTo(currentVideoRef.current.time, true);
+            }
           },
           onError: (event: any) => {
             // 2 = video không hợp lệ/bị xóa/offline
@@ -510,16 +522,22 @@ export default function App() {
       });
     };
 
-    if (!(window as any).YT || !(window as any).YT.Player) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.head.appendChild(tag);
-      (window as any).onYouTubeIframeAPIReady = initPlayer;
+    if (!playerRef.current) {
+      if (!(window as any).YT || !(window as any).YT.Player) {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+        (window as any).onYouTubeIframeAPIReady = initPlayer;
+      } else {
+        setTimeout(initPlayer, 100);
+      }
     } else {
-      setTimeout(initPlayer, 100);
+      if (playerRef.current.loadVideoById) {
+        playerRef.current.loadVideoById(currentVideo.id, currentVideo.time || 0);
+      }
     }
 
-    // Interval Ä‘á»“ng bá»™ thá»i gian (chá»‰ host gá»­i)
+    // Interval đồng bộ thời gian (chỉ host gửi)
     const interval = setInterval(() => {
       if (isHostRef.current && playerRef.current?.getCurrentTime) {
         const time = playerRef.current.getCurrentTime();
@@ -533,9 +551,17 @@ export default function App() {
 
     return () => {
       clearInterval(interval);
-      if (playerRef.current?.destroy) playerRef.current.destroy();
-      playerRef.current = null;
     };
+  }, [view, currentVideo.id]);
+
+  // Hủy player khi rời phòng (view khác 'room')
+  useEffect(() => {
+    if (view !== 'room') {
+      if (playerRef.current?.destroy) {
+        playerRef.current.destroy();
+      }
+      playerRef.current = null;
+    }
   }, [view]);
 
   // Load video má»›i khi currentVideo.id thay Ä‘á»•i (nhÆ°ng player Ä‘Ã£ tá»“n táº¡i)
@@ -923,6 +949,7 @@ export default function App() {
   const copyRoomInvite = () => {
     const invite = `${window.location.origin}?room=${roomId}`;
     navigator.clipboard.writeText(invite);
+    setShowInviteModal(true);
     setCustomAlert({ message: 'Đã sao chép link mời vào phòng.', show: true });
   };
 
@@ -959,6 +986,10 @@ export default function App() {
   };
 
   const transferHost = (memberId?: string) => {
+    if (!isHost) {
+      setCustomAlert({ message: 'Chỉ host hiện tại mới có thể chuyển host.', show: true });
+      return;
+    }
     const target = memberId
       ? members.find(member => member.id === memberId)
       : members.find(member => member.id !== socket?.id);
