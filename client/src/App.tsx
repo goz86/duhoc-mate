@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
   AlertTriangle, ArrowLeft,
@@ -6,13 +6,12 @@ import {
   Users, ThumbsUp, Play, Pause, RotateCcw, Send,
   CloudRain,
   Clock, FileText, Video,
-  Headphones, Music2, ChevronRight, Search, Sparkles, LogIn,
-  Minimize2, Palette, Settings, UserPlus, Crown, X, Check,
-  Link2, Volume2, SkipForward, ImagePlus, Power, Plus
+  Headphones, Music2, ChevronRight, Search, Sparkles,
+  Minimize2, Palette, Settings, Crown,
+  Link2, Volume2, SkipForward, Plus
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './contexts/AuthContext';
-import duhocMateLogo from './assets/duhoc-mate-logo-new.png';
 import AuthModal from './components/AuthModal';
 import TopikStudy from './components/TopikStudy';
 import IdeaBoard from './components/IdeaBoard';
@@ -116,7 +115,7 @@ const trendingVideoSuggestions = [
 
 export default function App() {
   const { t } = useTranslation();
-  const { user, profile, signOut, signInWithGoogle } = useAuth();
+  const { user, profile, signOut } = useAuth();
 
   const [customAlert, setCustomAlert] = useState<{ message: string; show: boolean } | null>(null);
 
@@ -140,6 +139,15 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (customAlert && customAlert.show) {
+      const timer = setTimeout(() => {
+        setCustomAlert(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [customAlert]);
+
   // Navigation & Auth states
   const [view, setView] = useState<'landing' | 'room'>('landing');
   const [roomId, setRoomId] = useState('');
@@ -157,7 +165,6 @@ export default function App() {
 
   // YouTube error handling
   const [videoError, setVideoError] = useState(false);
-  const [hasEverPlayed, setHasEverPlayed] = useState(false);
 
   // Session tracking cho popup tổng kết
   const joinTimeRef = useRef<number>(Date.now());
@@ -283,7 +290,6 @@ export default function App() {
     socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost, tiktokVideoId, ideaTasks }) => {
       setPlaylist(playlist);
       setCurrentVideo(videoState);
-      setHasEverPlayed(videoState?.playing === true); // nếu phòng đang phát thì coi như đã từng phát
       setVideoError(false);
       // Reset session tracking
       joinTimeRef.current = Date.now();
@@ -485,7 +491,6 @@ export default function App() {
             const curTime = event.target.getCurrentTime();
             const cvr = currentVideoRef.current;
             setVideoError(false);
-            if (state === 1) setHasEverPlayed(true);
 
             // Non-host: chỉ cập nhật local state, KHÔNG emit socket
             if (!isHostRef.current) {
@@ -716,13 +721,13 @@ export default function App() {
       if (storedRoomRecord && storedRoomRecord.passwordHash) {
         const enteredHash = await hashRoomPassword(enteredPassword);
         if (enteredHash !== storedRoomRecord.passwordHash) {
-          // Bá» qua kiá»ƒm tra máº­t kháº©u náº¿u Ä‘Ãºng lÃ  chá»§ phÃ²ng Ä‘Ã£ xÃ¡c minh báº±ng hostUserId/local
+          // Bỏ qua kiểm tra mật khẩu nếu đúng là chủ phòng đã xác minh bằng hostUserId/local
           if (!isHostOfRoom) {
-            alert('Sai máº­t kháº©u phÃ²ng!');
+            setPasswordModalError('Mật khẩu không chính xác!');
             return;
           }
         } else {
-          // ÄÃºng máº­t kháº©u, lÆ°u láº¡i vÃ o local storage Ä‘á»ƒ láº§n sau khÃ´ng cáº§n nháº­p láº¡i
+          // Đúng mật khẩu, lưu lại vào local storage để lần sau không cần nhập lại
           try {
             const roomPasswordsRaw = localStorage.getItem('duhocmate_room_passwords');
             const roomPasswords = roomPasswordsRaw ? JSON.parse(roomPasswordsRaw) : {};
@@ -761,7 +766,17 @@ export default function App() {
       password: enteredPassword || '',
       friendCode
     });
+    setShowPasswordModal(false);
     setView('room');
+  };
+
+  const handlePasswordModalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!enteredRoomPassword.trim()) {
+      setPasswordModalError('Vui lòng nhập mật khẩu!');
+      return;
+    }
+    handleJoinRoom(passwordModalRoomId, enteredRoomPassword);
   };
 
   const handleJoinTemplateRoom = async (
@@ -1368,6 +1383,215 @@ export default function App() {
               </button>
               {' '}để lưu lịch sử phòng
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Alert Toast */}
+      {customAlert && customAlert.show && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[300] max-w-sm w-full bg-white rounded-2xl shadow-xl border border-brand-terracotta-light/20 p-4 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-terracotta/10 flex items-center justify-center text-brand-terracotta">
+              <Sparkles size={16} />
+            </div>
+            <div className="flex-grow">
+              <p className="text-xs font-bold text-brand-brown-dark">{customAlert.message}</p>
+            </div>
+            <button
+              onClick={() => setCustomAlert(null)}
+              className="flex-shrink-0 text-brand-brown-light hover:text-brand-brown-dark text-xs font-bold"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Password Room Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <h2 className="font-display text-xl font-black text-brand-brown-dark">Nhập mật khẩu phòng</h2>
+            <p className="mt-1.5 text-sm font-semibold text-brand-brown-light">
+              Phòng này đã được thiết lập riêng tư. Vui lòng nhập mật khẩu để tham gia.
+            </p>
+            <form onSubmit={handlePasswordModalSubmit} className="mt-5 flex flex-col gap-3">
+              <input
+                autoFocus
+                type="password"
+                placeholder="Mật khẩu..."
+                value={enteredRoomPassword}
+                onChange={e => {
+                  setEnteredRoomPassword(e.target.value);
+                  setPasswordModalError('');
+                }}
+                className="w-full rounded-2xl border border-black/[0.1] bg-brand-light px-4 py-3 text-sm font-bold text-brand-brown-dark outline-none focus:border-brand-terracotta focus:ring-2 focus:ring-brand-terracotta/20"
+              />
+              {passwordModalError && (
+                <p className="text-xs font-bold text-brand-terracotta">{passwordModalError}</p>
+              )}
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="flex-1 rounded-2xl border border-black/[0.08] bg-white py-3 text-sm font-black text-brand-brown-light transition hover:bg-brand-light"
+                >
+                  Huỷ
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-2xl bg-brand-terracotta py-3 text-sm font-black text-white shadow-md shadow-brand-terracotta/20 transition hover:bg-brand-brown-dark"
+                >
+                  Tham gia
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Theme Selector Modal */}
+      {showThemeModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <h2 className="font-display text-xl font-black text-brand-brown-dark">Chọn giao diện phòng</h2>
+            <p className="mt-1.5 text-sm font-semibold text-brand-brown-light">
+              Lựa chọn tông màu sắc phù hợp với không gian học của bạn.
+            </p>
+            <div className="grid grid-cols-2 gap-3 mt-5">
+              {roomThemeOptions.map((theme) => {
+                const isSelected = roomTheme === theme.key;
+                return (
+                  <button
+                    key={theme.key}
+                    type="button"
+                    onClick={() => {
+                      setRoomTheme(theme.key);
+                      setShowThemeModal(false);
+                    }}
+                    className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition text-left cursor-pointer ${
+                      isSelected
+                        ? 'border-brand-terracotta bg-brand-light text-brand-brown-dark font-black'
+                        : 'border-black/[0.06] hover:border-brand-terracotta-light/40 text-brand-brown-light font-bold bg-white'
+                    }`}
+                  >
+                    <span className="w-8 h-8 rounded-full bg-brand-terracotta-light/30 flex items-center justify-center font-display font-extrabold text-xs text-brand-terracotta uppercase">
+                      {theme.icon}
+                    </span>
+                    <span className="text-sm">{theme.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => setShowThemeModal(false)}
+              className="w-full mt-6 rounded-2xl border border-black/[0.08] bg-white py-3 text-sm font-black text-brand-brown-light transition hover:bg-brand-light"
+            >
+              Huỷ
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Room Settings Modal */}
+      {showRoomSettings && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <h2 className="font-display text-xl font-black text-brand-brown-dark">Cài đặt phòng học</h2>
+            <p className="mt-1.5 text-sm font-semibold text-brand-brown-light">
+              Điều chỉnh thông tin phòng học của bạn.
+            </p>
+            <form onSubmit={(e) => { e.preventDefault(); saveRoomSettings(); }} className="mt-5 flex flex-col gap-4">
+              {!isHost && (
+                <div className="p-3 bg-amber-50 text-amber-700 text-xs font-bold rounded-2xl mb-2 border border-amber-200">
+                  Chỉ có chủ phòng mới có quyền thay đổi các cài đặt này.
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-bold text-brand-brown-light uppercase block mb-1">Tên phòng</label>
+                <input
+                  type="text"
+                  placeholder="Tên phòng..."
+                  disabled={!isHost}
+                  value={roomSettingsName}
+                  onChange={e => setRoomSettingsName(e.target.value)}
+                  className="w-full rounded-2xl border border-black/[0.1] bg-brand-light px-4 py-3 text-sm font-bold text-brand-brown-dark outline-none focus:border-brand-terracotta focus:ring-2 focus:ring-brand-terracotta/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-brand-brown-light uppercase block mb-1">Hình nền phòng (URL)</label>
+                <input
+                  type="text"
+                  placeholder="URL ảnh nền (jpeg, png, webp)..."
+                  disabled={!isHost}
+                  value={roomBackgroundUrl}
+                  onChange={e => setRoomBackgroundUrl(e.target.value)}
+                  className="w-full rounded-2xl border border-black/[0.1] bg-brand-light px-4 py-3 text-sm font-bold text-brand-brown-dark outline-none focus:border-brand-terracotta focus:ring-2 focus:ring-brand-terracotta/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-brand-light/60 border border-brand-terracotta-light/10">
+                <div>
+                  <p className="text-sm font-bold text-brand-brown-dark">Phòng công khai</p>
+                  <p className="text-xs text-brand-brown-light font-medium">Bất kỳ ai cũng có thể thấy và vào phòng</p>
+                </div>
+                <input
+                  type="checkbox"
+                  disabled={!isHost}
+                  checked={roomSettingsPublic}
+                  onChange={e => setRoomSettingsPublic(e.target.checked)}
+                  className="h-5 w-5 rounded border-black/[0.1] text-brand-terracotta focus:ring-brand-terracotta disabled:opacity-60 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              {!roomSettingsPublic && (
+                <div>
+                  <label className="text-xs font-bold text-brand-brown-light uppercase block mb-1">Mật khẩu phòng</label>
+                  <input
+                    type="password"
+                    placeholder="Mật khẩu..."
+                    disabled={!isHost}
+                    value={roomSettingsPassword}
+                    onChange={e => setRoomSettingsPassword(e.target.value)}
+                    className="w-full rounded-2xl border border-black/[0.1] bg-brand-light px-4 py-3 text-sm font-bold text-brand-brown-dark outline-none focus:border-brand-terracotta focus:ring-2 focus:ring-brand-terracotta/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                  />
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2 mt-2">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowRoomSettings(false)}
+                    className="flex-1 rounded-2xl border border-black/[0.08] bg-white py-3 text-sm font-black text-brand-brown-light transition hover:bg-brand-light"
+                  >
+                    Đóng
+                  </button>
+                  {isHost && (
+                    <button
+                      type="submit"
+                      className="flex-1 rounded-2xl bg-brand-terracotta py-3 text-sm font-black text-white shadow-md shadow-brand-terracotta/20 transition hover:bg-brand-brown-dark"
+                    >
+                      Lưu cấu hình
+                    </button>
+                  )}
+                </div>
+
+                {isHost && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowRoomSettings(false);
+                      closeRoomPermanently();
+                    }}
+                    className="w-full rounded-2xl border-2 border-red-200 hover:bg-red-50 py-3 text-sm font-black text-red-600 transition"
+                  >
+                    Đóng phòng vĩnh viễn
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
         </div>
       )}
