@@ -548,6 +548,15 @@ export default function App() {
             setVideoError(false);
             const title = event.target.getVideoData?.()?.title;
             if (title) setPlayerVideoTitle(title);
+            // Nếu join phòng khi host đã pause sẵn → stop + mute + ẩn iframe ngay
+            if (isHostPausedRef.current && !isHostRef.current) {
+              event.target.mute();
+              event.target.stopVideo();
+              if (iframeContainerRef.current) {
+                iframeContainerRef.current.style.visibility = 'hidden';
+              }
+              return;
+            }
             if (currentVideoRef.current.playing) {
               event.target.playVideo();
             }
@@ -572,9 +581,10 @@ export default function App() {
 
             // Non-host: chỉ cập nhật local state, KHÔNG emit socket
             if (!isHostRef.current) {
-              // state=1 (playing) hoặc state=3 (buffering) khi host đã pause → chặn ngay lập tức
+              // state=1 (playing) hoặc state=3 (buffering) khi host đã pause → STOP ngay lập tức
               if (isHostPausedRef.current && (state === 1 || state === 3)) {
-                event.target.pauseVideo();
+                event.target.stopVideo();
+                event.target.mute();
                 return;
               }
               if (state === 2) {
@@ -678,28 +688,42 @@ export default function App() {
     }
   }, [currentVideo.id]);
 
-  // Enforcement loop: khi host pause, liên tục force-pause + mute mọi auto-resume của YouTube
+  // Enforcement loop: khi host pause → STOP video hoàn toàn + mute + ẩn iframe
+  // Khi host resume → load lại video từ time đã sync
   useEffect(() => {
     if (isHost) return; // Host không bị ảnh hưởng
 
     if (isHostPaused) {
-      // Pause + mute ngay lập tức để không nghe tiếng kể cả khi YouTube tự play
-      playerRef.current?.pauseVideo?.();
+      // 1. Mute ngay
       playerRef.current?.mute?.();
+      // 2. STOP video (mạnh hơn pause - clear buffer, không tự resume được)
+      playerRef.current?.stopVideo?.();
+      // 3. Ẩn iframe container — ngăn iframe phát ngầm
+      if (iframeContainerRef.current) {
+        iframeContainerRef.current.style.visibility = 'hidden';
+      }
 
-      // Cứ 500ms kiểm tra và ép pause nếu YouTube tự resume
+      // Enforcement mỗi 300ms: nếu YouTube vẫn cố play → stop lại
       const enforceId = setInterval(() => {
         const state = playerRef.current?.getPlayerState?.();
-        if (state === 1 || state === 3) { // 1=playing, 3=buffering
-          playerRef.current?.pauseVideo?.();
+        if (state === 1 || state === 3) { // playing or buffering
+          playerRef.current?.stopVideo?.();
           playerRef.current?.mute?.();
         }
-      }, 500);
+      }, 300);
 
       return () => clearInterval(enforceId);
     } else {
-      // Host resume → unmute lại
+      // Host resume → hiện iframe lại, unmute, load video từ time host
+      if (iframeContainerRef.current) {
+        iframeContainerRef.current.style.visibility = '';
+      }
       playerRef.current?.unMute?.();
+      // stopVideo đã clear player → cần loadVideoById để phát lại từ đúng time
+      const cv = currentVideoRef.current;
+      if (cv?.id && playerRef.current?.loadVideoById) {
+        playerRef.current.loadVideoById(cv.id, cv.time || 0);
+      }
     }
   }, [isHostPaused, isHost]);
 
