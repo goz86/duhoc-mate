@@ -1527,7 +1527,7 @@ export default function App() {
     // Tách tên bài hát (bỏ phần "- Official MV", "(Official)", v.v.)
     const lyricQueries = getLyricsSearchCandidates(activeVideoTitle);
     Promise.all(
-      lyricQueries.map((query) =>
+      lyricQueries.map((query: string) =>
         fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}&limit=8`)
           .then(res => res.json())
           .catch(() => [])
@@ -1537,7 +1537,7 @@ export default function App() {
       .then((data: any[]) => {
         const track = findBestLyricsTrack(Array.isArray(data) ? data : [], activeVideoTitle);
         const synced = parseSyncedLyrics(track?.syncedLyrics);
-        const plain = track?.plainLyrics || synced.map((line) => line.text).join('\n');
+        const plain = track?.plainLyrics || synced.map((line: LyricLine) => line.text).join('\n');
         if (plain) {
           setLyrics(plain);
           setSyncedLyrics(synced);
@@ -1590,7 +1590,7 @@ export default function App() {
   const estimatedLyrics = syncedLyrics.length ? [] : createEstimatedLyrics(lyrics, videoDuration);
   const displayLyricLines = syncedLyrics.length ? syncedLyrics : estimatedLyrics;
   const isEstimatedLyrics = syncedLyrics.length === 0 && displayLyricLines.length > 0;
-  const activeLyricIndex = displayLyricLines.reduce((activeIndex, line, index) => (
+  const activeLyricIndex = displayLyricLines.reduce((activeIndex: number, line: LyricLine, index: number) => (
     effectiveLyricTime + 0.15 >= line.time ? index : activeIndex
   ), -1);
 
@@ -2311,7 +2311,7 @@ export default function App() {
                               </p>
                             </div>
                             <div className="space-y-1.5 pb-6">
-                            {displayLyricLines.map((line, index) => {
+                            {displayLyricLines.map((line: LyricLine, index: number) => {
                               const isActive = index === activeLyricIndex;
                               return (
                                 <p
