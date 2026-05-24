@@ -32,6 +32,14 @@ import {
 } from './lib/communityTemplates';
 import type { StageMode } from './types';
 import { deletePersistentRoom, findPersistentRoom, hashRoomPassword, savePersistentRoom, type PersistentRoom } from './lib/persistentRooms';
+import {
+  createEstimatedLyrics,
+  findBestLyricsTrack,
+  getLyricsSearchCandidates,
+  parseSyncedLyrics,
+  type LyricLine,
+  type LyricsSearchTrack
+} from './lib/lyrics';
 
 // Káº¿t ná»‘i Socket Server â€” Ä‘á»c tá»« env var khi deploy, fallback localhost khi dev
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
@@ -79,53 +87,12 @@ interface Message {
   timestamp: string;
 }
 
-interface LyricLine {
-  time: number;
-  text: string;
-}
-
 interface PomodoroState {
   timeLeft: number;
   duration: number;
   isRunning: boolean;
   isBreak: boolean;
 }
-
-const parseSyncedLyrics = (value?: string): LyricLine[] => {
-  if (!value) return [];
-  return value
-    .split('\n')
-    .map((line) => {
-      const match = line.match(/^\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]\s*(.*)$/);
-      if (!match) return null;
-      const minutes = Number(match[1]);
-      const seconds = Number(match[2]);
-      const fraction = Number((match[3] || '0').padEnd(3, '0'));
-      return {
-        time: minutes * 60 + seconds + fraction / 1000,
-        text: match[4].trim(),
-      };
-    })
-    .filter((line): line is LyricLine => !!line && !!line.text);
-};
-
-const createEstimatedLyrics = (value: string, duration: number): LyricLine[] => {
-  const lines = value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (lines.length === 0) return [];
-
-  const safeDuration = duration > 40 ? duration : 240;
-  const startAt = Math.min(12, safeDuration * 0.08);
-  const endAt = Math.max(startAt + lines.length * 2.4, safeDuration - 8);
-  const step = lines.length > 1 ? (endAt - startAt) / (lines.length - 1) : 0;
-
-  return lines.map((text, index) => ({
-    text,
-    time: startAt + step * index,
-  }));
-};
 
 const trendingVideoSuggestions = [
   {
@@ -308,6 +275,8 @@ export default function App() {
   // Mục đích: chặn YouTube tự fire state=1 sau buffer/seek/ad khi host đã pause
   // false = host đã pause, không cho phép emit play từ onStateChange spurious
   const hostWantsToPlayRef = useRef<boolean>(false);
+  // Trigger để force re-init YouTube player (dùng khi destroy/recreate sau host resume)
+  const [playerReinitTrigger, setPlayerReinitTrigger] = useState(0);
   const [playerVideoTitle, setPlayerVideoTitle] = useState('');
   const [lyrics, setLyrics] = useState<string>('');
   const [syncedLyrics, setSyncedLyrics] = useState<LyricLine[]>([]);
@@ -423,6 +392,13 @@ export default function App() {
     });
 
     socket.on('video-sync', ({ action, time, videoId, videoState }) => {
+      console.log('[SOCKET] video-sync received', {
+        action,
+        time,
+        videoId,
+        pausedByHost: videoState?.pausedByHost,
+        isHost: isHostRef.current
+      });
       // Track số bài đã phát trong phiên
       if (videoId && videoId !== currentVideoRef.current?.id) {
         songsPlayedRef.current += 1;
@@ -613,7 +589,7 @@ export default function App() {
             }
           },
           onStateChange: (event: any) => {
-            const state = event.data; // 1=playing, 2=paused, 0=ended
+            const state = event.data; // 1=playing, 2=paused, 0=ended, 3=buffering, 5=cued, -1=unstarted
             const curTime = event.target.getCurrentTime();
             const title = event.target.getVideoData?.()?.title;
             if (title) setPlayerVideoTitle(title);
@@ -622,10 +598,20 @@ export default function App() {
             const cvr = currentVideoRef.current;
             setVideoError(false);
 
+            // DEBUG: log mọi state change để debug
+            console.log('[YT-STATE]', {
+              state,
+              isHost: isHostRef.current,
+              isHostPaused: isHostPausedRef.current,
+              hostWantsToPlay: hostWantsToPlayRef.current,
+              cvrPlaying: cvr.playing
+            });
+
             // Non-host: chỉ cập nhật local state, KHÔNG emit socket
             if (!isHostRef.current) {
               // state=1 (playing) hoặc state=3 (buffering) khi host đã pause → STOP ngay lập tức
               if (isHostPausedRef.current && (state === 1 || state === 3)) {
+                console.log('[YT-STATE] NON-HOST blocked - stopVideo');
                 event.target.stopVideo();
                 event.target.mute();
                 return;
@@ -642,17 +628,16 @@ export default function App() {
 
             // Chỉ host mới đồng bộ video cho cả phòng
             // Dùng flag hostWantsToPlayRef để CHẶN HOÀN TOÀN spurious state=1 từ YouTube
-            // (bất kể bao lâu sau pause - 2s, 5s, 30s đều bị block)
             if (state === 1 && !cvr.playing) {
               if (!hostWantsToPlayRef.current) {
-                // Host đã pause qua UI - mọi state=1 từ YouTube đều là spurious → pause lại
+                console.log('[YT-STATE] HOST blocked spurious state=1 - flag is false');
                 event.target.pauseVideo();
                 return;
               }
-              // Host thực sự muốn play (đã click UI play button trước đó)
+              console.log('[YT-STATE] HOST emit PLAY');
               socket.emit('video-action', { roomId: roomIdRef.current, action: 'play', time: curTime });
             } else if (state === 2 && cvr.playing) {
-              // Host pause qua YouTube control (không qua UI) - cũng set flag
+              console.log('[YT-STATE] HOST emit PAUSE');
               hostWantsToPlayRef.current = false;
               socket.emit('video-action', { roomId: roomIdRef.current, action: 'pause', time: curTime });
             }
@@ -704,7 +689,7 @@ export default function App() {
     return () => {
       clearInterval(interval);
     };
-  }, [view, currentVideo.id]);
+  }, [view, currentVideo.id, playerReinitTrigger]);
 
   // Hủy player khi rời phòng (view khác 'room')
   useEffect(() => {
@@ -738,42 +723,34 @@ export default function App() {
     }
   }, [currentVideo.id]);
 
-  // Enforcement loop: khi host pause → STOP video hoàn toàn + mute + ẩn iframe
-  // Khi host resume → load lại video từ time đã sync
+  // NUCLEAR OPTION: khi host pause → DESTROY player hoàn toàn
+  // Khi host resume → re-init player từ đầu (qua useEffect [view, currentVideo.id])
   useEffect(() => {
     if (isHost) return; // Host không bị ảnh hưởng
 
     if (isHostPaused) {
-      // 1. Mute ngay
-      playerRef.current?.mute?.();
-      // 2. STOP video (mạnh hơn pause - clear buffer, không tự resume được)
-      playerRef.current?.stopVideo?.();
-      // 3. Ẩn iframe container — ngăn iframe phát ngầm
-      if (iframeContainerRef.current) {
-        iframeContainerRef.current.style.visibility = 'hidden';
-      }
-
-      // Enforcement mỗi 300ms: nếu YouTube vẫn cố play → stop lại
-      const enforceId = setInterval(() => {
-        const state = playerRef.current?.getPlayerState?.();
-        if (state === 1 || state === 3) { // playing or buffering
-          playerRef.current?.stopVideo?.();
-          playerRef.current?.mute?.();
+      console.log('[ENFORCE] Host paused - DESTROY player completely');
+      // Destroy player - không thể tự phát được nữa vì không còn iframe
+      if (playerRef.current?.destroy) {
+        try {
+          playerRef.current.destroy();
+        } catch (e) {
+          console.error('[ENFORCE] destroy error', e);
         }
-      }, 300);
-
-      return () => clearInterval(enforceId);
-    } else {
-      // Host resume → hiện iframe lại, unmute, load video từ time host
+        playerRef.current = null;
+      }
+      // Clear container - xóa iframe khỏi DOM
       if (iframeContainerRef.current) {
-        iframeContainerRef.current.style.visibility = '';
+        iframeContainerRef.current.innerHTML = '';
       }
-      playerRef.current?.unMute?.();
-      // stopVideo đã clear player → cần loadVideoById để phát lại từ đúng time
-      const cv = currentVideoRef.current;
-      if (cv?.id && playerRef.current?.loadVideoById) {
-        playerRef.current.loadVideoById(cv.id, cv.time || 0);
-      }
+    } else {
+      console.log('[ENFORCE] Host resumed - trigger player re-init');
+      // Trigger re-init bằng cách set playerRef = null
+      // useEffect [view, currentVideo.id] sẽ check và tạo player mới
+      // KHÔNG cần làm gì thêm vì playerRef đã là null từ destroy ở trên
+      // Nếu vẫn còn (do user pause/resume nhanh), force null
+      playerRef.current = null;
+      setPlayerReinitTrigger(t => t + 1);
     }
   }, [isHostPaused, isHost]);
 
@@ -1548,11 +1525,17 @@ export default function App() {
     setSyncedLyrics([]);
     setShowLyrics(false);
     // Tách tên bài hát (bỏ phần "- Official MV", "(Official)", v.v.)
-    const cleanTitle = activeVideoTitle.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').trim();
-    fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle)}&limit=1`)
-      .then(res => res.json())
+    const lyricQueries = getLyricsSearchCandidates(activeVideoTitle);
+    Promise.all(
+      lyricQueries.map((query) =>
+        fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}&limit=8`)
+          .then(res => res.json())
+          .catch(() => [])
+      )
+    )
+      .then((results) => results.flat())
       .then((data: any[]) => {
-        const track = data?.[0];
+        const track = findBestLyricsTrack(Array.isArray(data) ? data : [], activeVideoTitle);
         const synced = parseSyncedLyrics(track?.syncedLyrics);
         const plain = track?.plainLyrics || synced.map((line) => line.text).join('\n');
         if (plain) {
