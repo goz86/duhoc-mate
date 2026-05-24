@@ -79,12 +79,35 @@ interface Message {
   timestamp: string;
 }
 
+interface LyricLine {
+  time: number;
+  text: string;
+}
+
 interface PomodoroState {
   timeLeft: number;
   duration: number;
   isRunning: boolean;
   isBreak: boolean;
 }
+
+const parseSyncedLyrics = (value?: string): LyricLine[] => {
+  if (!value) return [];
+  return value
+    .split('\n')
+    .map((line) => {
+      const match = line.match(/^\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]\s*(.*)$/);
+      if (!match) return null;
+      const minutes = Number(match[1]);
+      const seconds = Number(match[2]);
+      const fraction = Number((match[3] || '0').padEnd(3, '0'));
+      return {
+        time: minutes * 60 + seconds + fraction / 1000,
+        text: match[4].trim(),
+      };
+    })
+    .filter((line): line is LyricLine => !!line && !!line.text);
+};
 
 const trendingVideoSuggestions = [
   {
@@ -262,8 +285,11 @@ export default function App() {
   const isHostPausedRef = useRef(false);
   const [showHostPausedToast, setShowHostPausedToast] = useState(false);
   const [lyrics, setLyrics] = useState<string>('');
+  const [syncedLyrics, setSyncedLyrics] = useState<LyricLine[]>([]);
+  const [playbackTime, setPlaybackTime] = useState(0);
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
+  const activeLyricRef = useRef<HTMLParagraphElement>(null);
 
   // PDF states
   const [pdfPage, setPdfPage] = useState(1);
@@ -604,15 +630,37 @@ export default function App() {
     }
   }, [view]);
 
-  // Load video má»›i khi currentVideo.id thay Ä‘á»•i (nhÆ°ng player Ä‘Ã£ tá»“n táº¡i)
+  // Load video mới khi currentVideo.id thay đổi (nhưng player đã tồn tại)
   useEffect(() => {
     if (!playerRef.current) return;
     if (!currentVideo.id) return;
 
     if (playerRef.current.loadVideoById) {
       playerRef.current.loadVideoById(currentVideo.id, currentVideo.time || 0);
+      // Nếu host đang pause toàn phòng và ta là non-host → pause ngay sau khi load
+      if (isHostPausedRef.current && !isHostRef.current) {
+        setTimeout(() => playerRef.current?.pauseVideo?.(), 300);
+      }
     }
   }, [currentVideo.id]);
+
+  // Enforcement loop: khi host pause, liên tục force-pause mọi auto-resume của YouTube
+  useEffect(() => {
+    if (!isHostPaused || isHost) return;
+
+    // Pause ngay lập tức
+    playerRef.current?.pauseVideo?.();
+
+    // Cứ 500ms kiểm tra và ép pause nếu YouTube tự resume
+    const enforceId = setInterval(() => {
+      const state = playerRef.current?.getPlayerState?.();
+      if (state === 1 || state === 3) { // 1=playing, 3=buffering
+        playerRef.current?.pauseVideo?.();
+      }
+    }, 500);
+
+    return () => clearInterval(enforceId);
+  }, [isHostPaused, isHost]);
 
   // Toggle only the study-table presence state. A polished call layer can be
   // added later without leaking the default Jitsi prejoin UI into the room.
@@ -1272,7 +1320,10 @@ export default function App() {
     if (!pdfDocRef.current || !canvasRef.current) return;
     try {
       const page = await pdfDocRef.current.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 1.5 });
+      const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900;
+      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1440;
+      const scale = viewportHeight < 760 ? 0.9 : viewportWidth < 1440 ? 1.1 : 1.35;
+      const viewport = page.getViewport({ scale });
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
       if (!context) return;
@@ -1294,6 +1345,15 @@ export default function App() {
     if (stageMode === 'pdf' && pdfDocRef.current) {
       renderPdfPage(pdfPage);
     }
+  }, [pdfPage, stageMode]);
+
+  useEffect(() => {
+    if (stageMode !== 'pdf') return;
+    const handleResize = () => {
+      if (pdfDocRef.current) renderPdfPage(pdfPage);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [pdfPage, stageMode]);
 
   useEffect(() => {
@@ -1360,25 +1420,56 @@ export default function App() {
   React.useEffect(() => {
     if (!activeVideoTitle || activeVideoTitle === 'Lo-Fi Girl Study Beat') {
       setLyrics('');
+      setSyncedLyrics([]);
+      setShowLyrics(false);
       return;
     }
     setLyricsLoading(true);
     setLyrics('');
+    setSyncedLyrics([]);
+    setShowLyrics(false);
     // Tách tên bài hát (bỏ phần "- Official MV", "(Official)", v.v.)
     const cleanTitle = activeVideoTitle.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').trim();
     fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle)}&limit=1`)
       .then(res => res.json())
       .then((data: any[]) => {
         const track = data?.[0];
-        if (track?.plainLyrics) {
-          setLyrics(track.plainLyrics);
+        const synced = parseSyncedLyrics(track?.syncedLyrics);
+        const plain = track?.plainLyrics || synced.map((line) => line.text).join('\n');
+        if (plain) {
+          setLyrics(plain);
+          setSyncedLyrics(synced);
+          setShowLyrics(true);
         } else {
           setLyrics('');
+          setSyncedLyrics([]);
         }
       })
-      .catch(() => setLyrics(''))
+      .catch(() => {
+        setLyrics('');
+        setSyncedLyrics([]);
+      })
       .finally(() => setLyricsLoading(false));
   }, [currentVideo.id]);
+
+  React.useEffect(() => {
+    if (!showLyrics || syncedLyrics.length === 0) return;
+    const updateTime = () => {
+      const time = playerRef.current?.getCurrentTime?.();
+      if (typeof time === 'number') setPlaybackTime(time);
+    };
+    updateTime();
+    const timer = window.setInterval(updateTime, 500);
+    return () => window.clearInterval(timer);
+  }, [showLyrics, syncedLyrics.length, currentVideo.id]);
+
+  const activeLyricIndex = syncedLyrics.reduce((activeIndex, line, index) => (
+    playbackTime + 0.2 >= line.time ? index : activeIndex
+  ), -1);
+
+  React.useEffect(() => {
+    activeLyricRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [activeLyricIndex]);
 
   return (
     <div className="min-h-screen bg-brand-cream text-brand-brown-dark font-sans selection:bg-brand-accent selection:text-white flex flex-col items-center">
@@ -1926,8 +2017,16 @@ export default function App() {
                 )}
 
                 {/* â”€â”€ 1. YOUTUBE STAGE (16:9) â”€â”€ */}
-                <div className={`${stageMode === 'youtube' && !roomCollapsed ? 'flex flex-1 flex-col gap-4 h-full justify-between' : 'absolute h-px w-px overflow-hidden opacity-0 pointer-events-none'}`} aria-hidden={stageMode !== 'youtube' || roomCollapsed}>
-                    <div className="relative flex-1 rounded-2xl overflow-hidden border border-brand-terracotta-light/10 bg-black" style={{ minHeight: '260px' }}>
+                <div className={`${stageMode === 'youtube' && !roomCollapsed ? 'flex flex-1 flex-col gap-3 h-full justify-start overflow-y-auto pr-1' : 'absolute h-px w-px overflow-hidden opacity-0 pointer-events-none'}`} aria-hidden={stageMode !== 'youtube' || roomCollapsed}>
+                    <div className={`mx-auto grid w-full max-w-[1180px] gap-3 ${showLyrics && (lyrics || lyricsLoading) ? 'xl:grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1'}`}>
+                    <div
+                      className="relative flex-none rounded-2xl overflow-hidden border border-brand-terracotta-light/10 bg-black"
+                      style={{
+                        width: showLyrics && (lyrics || lyricsLoading) ? '100%' : 'min(100%, 99.5vh, 1180px)',
+                        aspectRatio: '16 / 9',
+                        minHeight: '220px'
+                      }}
+                    >
                       <div className="w-full h-full" ref={iframeContainerRef}>
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center pointer-events-none z-0">
                           <Clock className="text-white/20 animate-spin" size={32} />
@@ -2001,7 +2100,58 @@ export default function App() {
                       )}
                     </div>
                     {/* Info bar + local pause cho non-host — ẩn khi chưa có video */}
-                    <div className={`flex items-center justify-between px-4 py-3 bg-brand-light/40 border border-brand-terracotta-light/20 rounded-2xl transition-all duration-300 ${!currentVideo.id ? 'opacity-0 pointer-events-none h-0 py-0 overflow-hidden' : ''}`}>
+                    {showLyrics && (lyrics || lyricsLoading) && (
+                      <aside
+                        className="min-h-[220px] overflow-y-auto rounded-2xl border border-brand-terracotta-light/20 bg-white/90 p-4 shadow-sm backdrop-blur-sm"
+                        style={{ maxHeight: 'min(56vh, 560px)' }}
+                      >
+                        <div className="mb-3 flex items-center justify-between gap-3 border-b border-brand-terracotta-light/15 pb-3">
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-black uppercase tracking-wide text-brand-terracotta">
+                              {syncedLyrics.length ? 'Đồng bộ lời bài hát' : 'Lời bài hát'}
+                            </p>
+                            <h4 className="truncate text-sm font-black text-brand-brown-dark">{activeVideoTitle}</h4>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowLyrics(false)}
+                            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-brand-terracotta-light/20 bg-white text-brand-brown-light transition hover:text-brand-terracotta"
+                            aria-label="Đóng lời bài hát"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+
+                        {lyricsLoading ? (
+                          <p className="py-10 text-center text-xs text-brand-brown-light animate-pulse">Đang tải lời bài hát...</p>
+                        ) : syncedLyrics.length > 0 ? (
+                          <div className="space-y-1.5 pb-6">
+                            {syncedLyrics.map((line, index) => {
+                              const isActive = index === activeLyricIndex;
+                              return (
+                                <p
+                                  key={`${line.time}-${index}`}
+                                  ref={isActive ? activeLyricRef : undefined}
+                                  className={`rounded-xl px-3 py-2 text-sm leading-relaxed transition ${
+                                    isActive
+                                      ? 'bg-brand-terracotta text-white shadow-sm'
+                                      : 'text-brand-brown-light hover:bg-brand-light/70'
+                                  }`}
+                                >
+                                  {line.text}
+                                </p>
+                              );
+                            })}
+                          </div>
+                        ) : lyrics ? (
+                          <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-brand-brown-dark">{lyrics}</pre>
+                        ) : (
+                          <p className="py-10 text-center text-xs text-brand-brown-light">Không tìm thấy lời bài hát.</p>
+                        )}
+                      </aside>
+                    )}
+                    </div>
+                    <div className={`mx-auto flex w-full max-w-[1180px] items-center justify-between px-4 py-3 bg-brand-light/40 border border-brand-terracotta-light/20 rounded-2xl transition-all duration-300 ${!currentVideo.id ? 'opacity-0 pointer-events-none h-0 py-0 overflow-hidden' : ''}`}>
                       <div className="space-y-0.5 min-w-0 flex-1">
                         <span className="text-[10px] font-bold text-brand-terracotta uppercase">
                           {isHost ? '★ Host · Đang đồng bộ' : isHostPaused ? '⏸ Host đã tạm dừng' : localPaused ? '⏸ Tạm dừng riêng' : '· Đang đồng bộ'}
@@ -2053,7 +2203,7 @@ export default function App() {
                       </div>
                     </div>
                     {showLyrics && (
-                      <div className="max-h-52 overflow-y-auto rounded-2xl border border-brand-terracotta-light/20 bg-white/80 p-4 backdrop-blur-sm">
+                      <div className="mx-auto max-h-44 w-full max-w-[1180px] overflow-y-auto rounded-2xl border border-brand-terracotta-light/20 bg-white/85 p-4 backdrop-blur-sm xl:max-h-52">
                         {lyricsLoading ? (
                           <p className="text-center text-xs text-brand-brown-light animate-pulse">Đang tải lời bài hát...</p>
                         ) : lyrics ? (
@@ -2206,7 +2356,7 @@ export default function App() {
 
                 {/* ── 4. PDF STAGE ── */}
                 {stageMode === 'pdf' && (
-                  <div className="flex-1 flex flex-col gap-4 justify-between h-full items-center">
+                  <div className="flex-1 flex flex-col gap-3 justify-start h-full items-center overflow-y-auto pr-1">
                     <div className="w-full flex justify-between items-center gap-4 bg-brand-light/60 p-3 rounded-2xl border border-brand-terracotta-light/20">
                       <input
                         type="file"
@@ -2226,9 +2376,9 @@ export default function App() {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 w-full flex items-center justify-center min-h-[300px] border border-dashed border-brand-terracotta-light/30 rounded-2xl p-4 bg-white/30 overflow-auto">
+                    <div className="flex-1 w-full flex items-start justify-center min-h-[240px] max-h-[calc(100vh-300px)] border border-dashed border-brand-terracotta-light/30 rounded-2xl p-4 bg-white/30 overflow-auto xl:min-h-[300px]">
                       {pdfDocRef.current ? (
-                        <canvas ref={canvasRef} className="shadow-lg rounded-xl max-w-full h-auto bg-white" />
+                        <canvas ref={canvasRef} className="shadow-lg rounded-xl max-h-full max-w-full bg-white object-contain" />
                       ) : (
                         <div className="text-center space-y-2 max-w-sm">
                           <FileText size={40} className="mx-auto text-brand-terracotta-light" />
