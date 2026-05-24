@@ -284,6 +284,8 @@ export default function App() {
   const [isHostPaused, setIsHostPaused] = useState(false);
   const isHostPausedRef = useRef(false);
   const [showHostPausedToast, setShowHostPausedToast] = useState(false);
+  // Timestamp của lần pause gần nhất (host) - dùng để chặn spurious state=1 từ YouTube
+  const hostLastPauseAtRef = useRef<number>(0);
   const [playerVideoTitle, setPlayerVideoTitle] = useState('');
   const [lyrics, setLyrics] = useState<string>('');
   const [syncedLyrics, setSyncedLyrics] = useState<LyricLine[]>([]);
@@ -418,12 +420,14 @@ export default function App() {
 
       if (action === 'play') {
         playerRef.current.playVideo();
+        // Chỉ seek khi đang play - tránh YouTube auto-play sau khi buffer xong seek
+        if (time !== undefined && Math.abs(playerRef.current.getCurrentTime() - time) > 2) {
+          playerRef.current.seekTo(time, true);
+        }
       } else if (action === 'pause') {
         playerRef.current.pauseVideo();
-      }
-
-      if (time !== undefined && Math.abs(playerRef.current.getCurrentTime() - time) > 2) {
-        playerRef.current.seekTo(time, true);
+        // KHÔNG seek khi pause - seekTo trên video đã pause vẫn có thể trigger buffer → auto-play
+        // Khi host play lại sẽ tự sync time
       }
     });
 
@@ -584,9 +588,18 @@ export default function App() {
             }
 
             // Chỉ host mới đồng bộ video cho cả phòng
+            // Chặn spurious state=1 (YouTube auto-fire sau buffer/seek) khi host vừa pause < 2s
+            const now = Date.now();
+            const sincePause = now - (hostLastPauseAtRef.current || 0);
             if (state === 1 && !cvr.playing) {
+              if (sincePause < 2000) {
+                // Host vừa pause < 2s mà YouTube tự fire state=1 → bỏ qua, pause lại
+                event.target.pauseVideo();
+                return;
+              }
               socket.emit('video-action', { roomId: roomIdRef.current, action: 'play', time: curTime });
             } else if (state === 2 && cvr.playing) {
+              hostLastPauseAtRef.current = now;
               socket.emit('video-action', { roomId: roomIdRef.current, action: 'pause', time: curTime });
             }
           }
@@ -614,13 +627,18 @@ export default function App() {
       }
     }
 
-    // Interval đồng bộ thời gian (chỉ host gửi)
+    // Interval đồng bộ thời gian (chỉ host gửi, CHỈ khi đang play)
+    // Không emit khi host đang pause - tránh non-host bị seek + auto-play loop
     const interval = setInterval(() => {
-      if (isHostRef.current && playerRef.current?.getCurrentTime) {
+      if (
+        isHostRef.current &&
+        playerRef.current?.getCurrentTime &&
+        currentVideoRef.current.playing
+      ) {
         const time = playerRef.current.getCurrentTime();
         socket.emit('video-action', {
           roomId: roomIdRef.current,
-          action: currentVideoRef.current.playing ? 'play' : 'pause',
+          action: 'play',
           time
         });
       }
@@ -1069,10 +1087,12 @@ export default function App() {
     if (isHostRef.current) {
       // Host: điều khiển toàn phòng qua socket
       if (currentVideo.playing) {
+        hostLastPauseAtRef.current = Date.now(); // Đánh dấu để chặn spurious state=1
         playerRef.current?.pauseVideo?.();
         socket.emit('video-action', { roomId, action: 'pause', time: currentTime });
         setCurrentVideo(prev => ({ ...prev, playing: false, time: currentTime }));
       } else {
+        hostLastPauseAtRef.current = 0; // Reset khi play
         playerRef.current?.playVideo?.();
         socket.emit('video-action', { roomId, action: 'play', time: currentTime });
         setCurrentVideo(prev => ({ ...prev, playing: true, time: currentTime }));
