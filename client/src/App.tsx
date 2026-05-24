@@ -109,6 +109,24 @@ const parseSyncedLyrics = (value?: string): LyricLine[] => {
     .filter((line): line is LyricLine => !!line && !!line.text);
 };
 
+const createEstimatedLyrics = (value: string, duration: number): LyricLine[] => {
+  const lines = value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return [];
+
+  const safeDuration = duration > 40 ? duration : 240;
+  const startAt = Math.min(12, safeDuration * 0.08);
+  const endAt = Math.max(startAt + lines.length * 2.4, safeDuration - 8);
+  const step = lines.length > 1 ? (endAt - startAt) / (lines.length - 1) : 0;
+
+  return lines.map((text, index) => ({
+    text,
+    time: startAt + step * index,
+  }));
+};
+
 const trendingVideoSuggestions = [
   {
     videoId: 'TURbeWK2wwg',
@@ -286,10 +304,15 @@ export default function App() {
   const [showHostPausedToast, setShowHostPausedToast] = useState(false);
   // Timestamp của lần pause gần nhất (host) - dùng để chặn spurious state=1 từ YouTube
   const hostLastPauseAtRef = useRef<number>(0);
+  // Flag bền vững: host CÓ muốn play hay không (set qua UI button của ta)
+  // Mục đích: chặn YouTube tự fire state=1 sau buffer/seek/ad khi host đã pause
+  // false = host đã pause, không cho phép emit play từ onStateChange spurious
+  const hostWantsToPlayRef = useRef<boolean>(false);
   const [playerVideoTitle, setPlayerVideoTitle] = useState('');
   const [lyrics, setLyrics] = useState<string>('');
   const [syncedLyrics, setSyncedLyrics] = useState<LyricLine[]>([]);
   const [playbackTime, setPlaybackTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
   const [lyricsOffset, setLyricsOffset] = useState(0);
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
@@ -349,6 +372,12 @@ export default function App() {
       const hostPaused = !!videoState?.pausedByHost;
       isHostPausedRef.current = hostPaused;
       setIsHostPaused(hostPaused);
+      // Nếu là host và video đang playing → set flag cho phép emit play
+      if (isHost && videoState?.playing) {
+        hostWantsToPlayRef.current = true;
+      } else {
+        hostWantsToPlayRef.current = false;
+      }
       if (tiktokVideoId) {
         setTiktokVideoId(tiktokVideoId);
         setStageMode('tiktok');
@@ -357,6 +386,10 @@ export default function App() {
 
     socket.on('assigned-host', (val: boolean) => {
       setIsHost(val);
+      // Khi được assign làm host mới → sync flag theo trạng thái video hiện tại
+      if (val) {
+        hostWantsToPlayRef.current = !!currentVideoRef.current?.playing;
+      }
     });
 
     socket.on('room-settings-updated', ({ roomTitle, isPrivate }: { roomTitle?: string; isPrivate?: boolean }) => {
@@ -400,6 +433,12 @@ export default function App() {
       const hostPaused = !!videoState.pausedByHost;
       isHostPausedRef.current = hostPaused;
       setIsHostPaused(hostPaused);
+
+      // HOST: sync hostWantsToPlayRef theo action (cho phép auto-play của bài mới)
+      // Nếu là host VÀ nhận action play (vd server auto-play bài đầu) → cho phép emit play sau này
+      if (isHostRef.current) {
+        hostWantsToPlayRef.current = (action === 'play');
+      }
 
       // Nếu host phát lại → reset local pause, ẩn toast
       if (action === 'play') {
@@ -548,6 +587,8 @@ export default function App() {
             setVideoError(false);
             const title = event.target.getVideoData?.()?.title;
             if (title) setPlayerVideoTitle(title);
+            const duration = event.target.getDuration?.();
+            if (typeof duration === 'number' && duration > 0) setVideoDuration(duration);
             // Nếu join phòng khi host đã pause sẵn → stop + mute + ẩn iframe ngay
             if (isHostPausedRef.current && !isHostRef.current) {
               event.target.mute();
@@ -576,6 +617,8 @@ export default function App() {
             const curTime = event.target.getCurrentTime();
             const title = event.target.getVideoData?.()?.title;
             if (title) setPlayerVideoTitle(title);
+            const duration = event.target.getDuration?.();
+            if (typeof duration === 'number' && duration > 0) setVideoDuration(duration);
             const cvr = currentVideoRef.current;
             setVideoError(false);
 
@@ -598,18 +641,19 @@ export default function App() {
             }
 
             // Chỉ host mới đồng bộ video cho cả phòng
-            // Chặn spurious state=1 (YouTube auto-fire sau buffer/seek) khi host vừa pause < 2s
-            const now = Date.now();
-            const sincePause = now - (hostLastPauseAtRef.current || 0);
+            // Dùng flag hostWantsToPlayRef để CHẶN HOÀN TOÀN spurious state=1 từ YouTube
+            // (bất kể bao lâu sau pause - 2s, 5s, 30s đều bị block)
             if (state === 1 && !cvr.playing) {
-              if (sincePause < 2000) {
-                // Host vừa pause < 2s mà YouTube tự fire state=1 → bỏ qua, pause lại
+              if (!hostWantsToPlayRef.current) {
+                // Host đã pause qua UI - mọi state=1 từ YouTube đều là spurious → pause lại
                 event.target.pauseVideo();
                 return;
               }
+              // Host thực sự muốn play (đã click UI play button trước đó)
               socket.emit('video-action', { roomId: roomIdRef.current, action: 'play', time: curTime });
             } else if (state === 2 && cvr.playing) {
-              hostLastPauseAtRef.current = now;
+              // Host pause qua YouTube control (không qua UI) - cũng set flag
+              hostWantsToPlayRef.current = false;
               socket.emit('video-action', { roomId: roomIdRef.current, action: 'pause', time: curTime });
             }
           }
@@ -629,10 +673,13 @@ export default function App() {
     } else {
       if (playerRef.current.loadVideoById) {
         setPlayerVideoTitle('');
+        setVideoDuration(0);
         playerRef.current.loadVideoById(currentVideo.id, currentVideo.time || 0);
         setTimeout(() => {
           const title = playerRef.current?.getVideoData?.()?.title;
           if (title) setPlayerVideoTitle(title);
+          const duration = playerRef.current?.getDuration?.();
+          if (typeof duration === 'number' && duration > 0) setVideoDuration(duration);
         }, 700);
       }
     }
@@ -676,10 +723,13 @@ export default function App() {
 
     if (playerRef.current.loadVideoById) {
       setPlayerVideoTitle('');
+      setVideoDuration(0);
       playerRef.current.loadVideoById(currentVideo.id, currentVideo.time || 0);
       setTimeout(() => {
         const title = playerRef.current?.getVideoData?.()?.title;
         if (title) setPlayerVideoTitle(title);
+        const duration = playerRef.current?.getDuration?.();
+        if (typeof duration === 'number' && duration > 0) setVideoDuration(duration);
       }, 700);
       // Nếu host đang pause toàn phòng và ta là non-host → pause ngay sau khi load
       if (isHostPausedRef.current && !isHostRef.current) {
@@ -1111,12 +1161,14 @@ export default function App() {
     if (isHostRef.current) {
       // Host: điều khiển toàn phòng qua socket
       if (currentVideo.playing) {
-        hostLastPauseAtRef.current = Date.now(); // Đánh dấu để chặn spurious state=1
+        hostWantsToPlayRef.current = false; // CHẶN mọi spurious state=1 sau pause
+        hostLastPauseAtRef.current = Date.now();
         playerRef.current?.pauseVideo?.();
         socket.emit('video-action', { roomId, action: 'pause', time: currentTime });
         setCurrentVideo(prev => ({ ...prev, playing: false, time: currentTime }));
       } else {
-        hostLastPauseAtRef.current = 0; // Reset khi play
+        hostWantsToPlayRef.current = true; // CHO PHÉP state=1 emit play
+        hostLastPauseAtRef.current = 0;
         playerRef.current?.playVideo?.();
         socket.emit('video-action', { roomId, action: 'play', time: currentTime });
         setCurrentVideo(prev => ({ ...prev, playing: true, time: currentTime }));
@@ -1520,15 +1572,17 @@ export default function App() {
   }, [activeVideoTitle]);
 
   React.useEffect(() => {
-    if (!showLyrics || syncedLyrics.length === 0) return;
+    if (!showLyrics || !lyrics) return;
     const updateTime = () => {
       const time = playerRef.current?.getCurrentTime?.();
       if (typeof time === 'number') setPlaybackTime(time);
+      const duration = playerRef.current?.getDuration?.();
+      if (typeof duration === 'number' && duration > 0) setVideoDuration(duration);
     };
     updateTime();
     const timer = window.setInterval(updateTime, 500);
     return () => window.clearInterval(timer);
-  }, [showLyrics, syncedLyrics.length, currentVideo.id]);
+  }, [showLyrics, lyrics, currentVideo.id]);
 
   React.useEffect(() => {
     if (!currentVideo.id) {
@@ -1550,7 +1604,10 @@ export default function App() {
   };
 
   const effectiveLyricTime = Math.max(0, playbackTime - lyricsOffset);
-  const activeLyricIndex = syncedLyrics.reduce((activeIndex, line, index) => (
+  const estimatedLyrics = syncedLyrics.length ? [] : createEstimatedLyrics(lyrics, videoDuration);
+  const displayLyricLines = syncedLyrics.length ? syncedLyrics : estimatedLyrics;
+  const isEstimatedLyrics = syncedLyrics.length === 0 && displayLyricLines.length > 0;
+  const activeLyricIndex = displayLyricLines.reduce((activeIndex, line, index) => (
     effectiveLyricTime + 0.15 >= line.time ? index : activeIndex
   ), -1);
 
@@ -2230,9 +2287,14 @@ export default function App() {
 
                         {lyricsLoading ? (
                           <p className="py-10 text-center text-xs text-brand-brown-light animate-pulse">Đang tải lời bài hát...</p>
-                        ) : syncedLyrics.length > 0 ? (
+                        ) : displayLyricLines.length > 0 ? (
                           <div>
                             <div className="mb-3 rounded-2xl border border-brand-terracotta-light/20 bg-brand-light/45 p-2">
+                              {isEstimatedLyrics && (
+                                <p className="mb-2 text-center text-[10px] font-bold text-brand-brown-light">
+                                  Bài này không có timestamp chuẩn, app đang tự cuộn theo thời lượng video.
+                                </p>
+                              )}
                               <div className="grid grid-cols-3 gap-2">
                                 <button
                                   type="button"
@@ -2266,7 +2328,7 @@ export default function App() {
                               </p>
                             </div>
                             <div className="space-y-1.5 pb-6">
-                            {syncedLyrics.map((line, index) => {
+                            {displayLyricLines.map((line, index) => {
                               const isActive = index === activeLyricIndex;
                               return (
                                 <p
