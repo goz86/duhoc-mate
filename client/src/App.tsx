@@ -8,7 +8,7 @@ import {
   Clock, FileText, Video,
   Headphones, Music2, ChevronRight, Search, Sparkles,
   Minimize2, Palette, Settings, Crown,
-  Link2, Volume2, SkipForward, Plus
+  Link2, Volume2, SkipForward, Plus, Share2, X
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './contexts/AuthContext';
@@ -1420,7 +1420,7 @@ export default function App() {
 
       {/* Custom Alert Toast */}
       {customAlert && customAlert.show && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[300] max-w-sm w-full bg-white rounded-2xl shadow-xl border border-brand-terracotta-light/20 p-4 animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[10000] max-w-sm w-full bg-white rounded-2xl shadow-xl border border-brand-terracotta-light/20 p-4 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-terracotta/10 flex items-center justify-center text-brand-terracotta">
               <Sparkles size={16} />
@@ -1438,9 +1438,57 @@ export default function App() {
         </div>
       )}
 
+      {/* Invite Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-[28px] bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-xl font-black text-brand-brown-dark">Mời bạn bè</h2>
+              <button
+                type="button"
+                onClick={() => setShowInviteModal(false)}
+                className="rounded-full p-2 text-brand-brown-light transition hover:bg-brand-light"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="mt-6 rounded-3xl border border-brand-terracotta-light/25 bg-brand-light/35 p-5 text-center">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`${window.location.origin}?room=${roomId}`)}`}
+                alt="QR mời vào phòng"
+                className="mx-auto h-56 w-56 rounded-2xl bg-white p-3"
+              />
+            </div>
+            <div className="mt-5 text-center">
+              <p className="text-xs font-bold text-brand-brown-light">Mã phòng</p>
+              <p className="mt-2 font-mono text-3xl font-black tracking-[0.28em] text-brand-brown-dark">{roomId}</p>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}?room=${roomId}`);
+                  setCustomAlert({ message: 'Đã sao chép link mời vào phòng.', show: true });
+                }}
+                className="flex-1 rounded-2xl bg-brand-terracotta py-3 text-sm font-black text-white shadow-md shadow-brand-terracotta/20 transition hover:bg-brand-brown-dark"
+              >
+                Copy link
+              </button>
+              <button
+                type="button"
+                onClick={() => navigator.share?.({ title: 'Duhoc Mate', text: `Vào phòng ${roomId}`, url: `${window.location.origin}?room=${roomId}` })}
+                className="rounded-2xl border border-brand-terracotta-light/25 bg-white px-4 text-brand-brown-dark transition hover:bg-brand-light"
+              >
+                <Share2 size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Password Room Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <h2 className="font-display text-xl font-black text-brand-brown-dark">Nhập mật khẩu phòng</h2>
             <p className="mt-1.5 text-sm font-semibold text-brand-brown-light">
@@ -1483,7 +1531,7 @@ export default function App() {
 
       {/* Theme Selector Modal */}
       {showThemeModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <h2 className="font-display text-xl font-black text-brand-brown-dark">Chọn giao diện phòng</h2>
             <p className="mt-1.5 text-sm font-semibold text-brand-brown-light">
@@ -1526,7 +1574,7 @@ export default function App() {
 
       {/* Room Settings Modal */}
       {showRoomSettings && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <h2 className="font-display text-xl font-black text-brand-brown-dark">Cài đặt phòng học</h2>
             <p className="mt-1.5 text-sm font-semibold text-brand-brown-light">
@@ -1723,7 +1771,7 @@ export default function App() {
             <button onClick={() => setShowRoomSettings(true)} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
               <Settings size={14} /> Cài đặt phòng
             </button>
-            <button onClick={() => transferHost()} disabled={!isHost} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light disabled:cursor-not-allowed disabled:opacity-45">
+            <button onClick={() => transferHost()} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
               <Crown size={14} /> Chuyển host
             </button>
 
@@ -1731,8 +1779,8 @@ export default function App() {
 
           {/* Core Content Grid â€” adaptive columns based on stageMode */}
           {(() => {
-            const mainSpan = roomCollapsed ? 'lg:col-span-12' : ({ youtube: 'lg:col-span-8', tiktok: 'lg:col-span-5', music: 'lg:col-span-7', pdf: 'lg:col-span-9', pomodoro: 'lg:col-span-6', topik: 'lg:col-span-8', video: 'lg:col-span-9', ideas: 'lg:col-span-9' }[stageMode] || 'lg:col-span-8');
-            const sideSpan = roomCollapsed ? 'hidden' : ({ youtube: 'lg:col-span-4', tiktok: 'lg:col-span-7', music: 'lg:col-span-5', pdf: 'lg:col-span-3', pomodoro: 'lg:col-span-6', topik: 'lg:col-span-4', video: 'lg:col-span-3', ideas: 'lg:col-span-3' }[stageMode] || 'lg:col-span-4');
+            const mainSpan = roomCollapsed ? 'lg:col-span-12' : 'lg:col-span-8';
+            const sideSpan = roomCollapsed ? 'hidden' : 'lg:col-span-4';
             return (
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 lg:overflow-hidden lg:max-h-[calc(100vh-73px)]">
 
@@ -2165,33 +2213,33 @@ export default function App() {
             </main>
 
             {/* RIGHT SIDEBAR: Chat, Playlist, Members — width adapts with sideSpan */}
-            <aside className={`${sideSpan} border-l border-brand-terracotta-light/20 bg-white/30 backdrop-blur-lg flex flex-col lg:max-h-full transition-all duration-300`}>
+            <aside className={`${sideSpan} min-w-0 border-l border-brand-terracotta-light/20 bg-white/30 backdrop-blur-lg flex flex-col lg:max-h-full transition-all duration-300`}>
               
               {/* Tab Navigation in Sidebar */}
-              <div className="p-4 border-b border-brand-terracotta-light/10 grid grid-cols-3 gap-1 bg-white/40">
+              <div className="p-4 border-b border-brand-terracotta-light/10 grid grid-cols-3 gap-2 bg-white/40">
                 <button
                   onClick={() => setSidebarTab('playlist')}
-                  className={`py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`h-11 min-w-0 rounded-xl px-2 font-bold text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     sidebarTab === 'playlist'
                       ? 'bg-brand-terracotta text-white shadow-sm'
                       : 'hover:bg-brand-light text-brand-brown-light'
                   }`}
                 >
-                  <ListMusic size={16} /> Playlist ({playlist.length})
+                  <ListMusic size={16} className="shrink-0" /> <span className="truncate">Playlist ({playlist.length})</span>
                 </button>
                 <button
                   onClick={() => setSidebarTab('chat')}
-                  className={`py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`h-11 min-w-0 rounded-xl px-2 font-bold text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     sidebarTab === 'chat'
                       ? 'bg-brand-terracotta text-white shadow-sm'
                       : 'hover:bg-brand-light text-brand-brown-light'
                   }`}
                 >
-                  <MessageCircle size={16} /> Chat ({chatMessages.length})
+                  <MessageCircle size={16} className="shrink-0" /> <span className="truncate">Chat ({chatMessages.length})</span>
                 </button>
                 <button
                   onClick={() => setSidebarTab('members')}
-                  className={`py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`h-11 min-w-0 rounded-xl px-2 font-bold text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     sidebarTab === 'members'
                       ? 'bg-brand-terracotta text-white shadow-sm'
                       : 'hover:bg-brand-light text-brand-brown-light'
@@ -2421,9 +2469,9 @@ export default function App() {
 
                 {/* 2. CHAT TAB */}
                 {sidebarTab === 'chat' && (
-                  <div className="flex flex-col gap-0">
+                  <div className="flex h-full min-h-[calc(100vh-235px)] flex-col gap-0">
                     {/* Messages Area */}
-                    <div className="overflow-y-auto overscroll-y-contain space-y-4 pr-1 mb-2 max-h-[45vh] lg:max-h-[360px] custom-scrollbar">
+                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain space-y-4 pr-1 mb-3 custom-scrollbar">
                       {chatMessages.length === 0 ? (
                         <div className="text-center py-12 text-brand-brown-light space-y-2">
                           <MessageCircle className="mx-auto text-brand-terracotta-light/40" size={36} />
@@ -2479,8 +2527,9 @@ export default function App() {
                       <div ref={messagesEndRef} />
                     </div>
 
+                    <div className="mt-auto shrink-0 border-t border-brand-terracotta-light/10 pt-3">
                     {/* Quick Emojis Bar */}
-                    <div className="flex gap-2 pb-3 overflow-x-auto select-none border-t border-brand-terracotta-light/10 pt-3 shrink-0 animate-fadeIn">
+                    <div className="flex gap-2 pb-3 overflow-x-auto select-none animate-fadeIn">
                       {['☕', '📖', '🎵', '🔥', '👏', '🇻🇳', '🇰🇷', '💪'].map(emoji => (
                         <button
                           key={emoji}
@@ -2494,7 +2543,7 @@ export default function App() {
                     </div>
 
                     {/* Chat Form */}
-                    <form onSubmit={sendChatMessage} className="flex gap-2 pt-2 border-t border-brand-terracotta-light/10 shrink-0">
+                    <form onSubmit={sendChatMessage} className="flex gap-2 pt-2 shrink-0">
                       <input
                         type="text"
                         placeholder="Nhập tin nhắn..."
@@ -2509,6 +2558,7 @@ export default function App() {
                         <Send size={18} />
                       </button>
                     </form>
+                    </div>
                   </div>
                 )}
 
