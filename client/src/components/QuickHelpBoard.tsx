@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AlertCircle, ChevronDown, ChevronUp, Clock, MapPin, Phone, Plus, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { HelpPost } from '../lib/supabase'
+import { repairHelpPostText } from '../lib/textEncoding'
 import { useAuth } from '../contexts/AuthContext'
-import { Plus, X, MapPin, Clock, Phone, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 
 const CATEGORIES = ['housing', 'job', 'food', 'transport', 'study', 'emergency', 'social', 'other'] as const
 type Category = typeof CATEGORIES[number] | 'all'
 
 const KOREAN_CITIES = ['Seoul', 'Busan', 'Daegu', 'Incheon', 'Gwangju', 'Daejeon', 'Suwon', 'Jeonju', 'Gyeonggi', 'Gyeongnam', 'Khác']
 
-// Màu sắc cho từng danh mục
 const CAT_COLORS: Record<string, string> = {
   housing: 'bg-blue-50 text-blue-700 border-blue-200',
   job: 'bg-violet-50 text-violet-700 border-violet-200',
@@ -22,11 +22,40 @@ const CAT_COLORS: Record<string, string> = {
   other: 'bg-gray-50 text-gray-600 border-gray-200',
 }
 
-// Dữ liệu mẫu khi Supabase chưa setup
 const SAMPLE_POSTS: HelpPost[] = [
-  { id: '1', user_id: 'demo', username: 'Minh Anh', title: 'Cần người đi cùng lên Cục XNC Suwon', content: 'Mình cần gia hạn visa lần đầu, không quen đường. Ai cũng cần thì đi chung cho vui nhé, mình biết đường 방향 sơ sơ thôi', category: 'transport', city: 'Suwon', created_at: new Date(Date.now() - 3600000).toISOString(), contact: 'Zalo: 0912345678' },
-  { id: '2', user_id: 'demo', username: 'Goz', title: 'Tìm bạn mua chung gia vị Việt ở Itaewon', content: 'Cuối tháng mình lên Itaewon mua mắm ruốc, sả, lá chanh... Ai cần gì thì nhắn mình, mình mua chung cho rẻ shipping', category: 'food', city: 'Seoul', created_at: new Date(Date.now() - 7200000).toISOString(), contact: 'KakaoTalk: goz_kr' },
-  { id: '3', user_id: 'demo', username: 'Thu Trang', title: 'Job làm thêm cuối tuần tại nhà hàng', content: 'Quán ăn Việt ở Ansan cần người phụ bàn cuối tuần. Lương 10,000원/h, chủ người Việt, thân thiện. DM mình để biết thêm', category: 'job', city: 'Gyeonggi', created_at: new Date(Date.now() - 86400000).toISOString(), contact: 'Zalo: 0987654321' },
+  {
+    id: '1',
+    user_id: 'demo',
+    username: 'Minh Anh',
+    title: 'Cần người đi cùng lên Cục XNC Suwon',
+    content: 'Mình cần gia hạn visa lần đầu, không quen đường. Ai cũng cần thì đi chung cho vui nhé, mình biết đường 방향 sơ sơ thôi',
+    category: 'transport',
+    city: 'Suwon',
+    created_at: new Date(Date.now() - 3600000).toISOString(),
+    contact: 'Zalo: 0912345678',
+  },
+  {
+    id: '2',
+    user_id: 'demo',
+    username: 'Goz',
+    title: 'Tìm bạn mua chung gia vị Việt ở Itaewon',
+    content: 'Cuối tháng mình lên Itaewon mua mắm ruốc, sả, lá chanh... Ai cần gì thì nhắn mình, mình mua chung cho rẻ shipping',
+    category: 'food',
+    city: 'Seoul',
+    created_at: new Date(Date.now() - 7200000).toISOString(),
+    contact: 'KakaoTalk: goz_kr',
+  },
+  {
+    id: '3',
+    user_id: 'demo',
+    username: 'Thu Trang',
+    title: 'Job làm thêm cuối tuần tại nhà hàng',
+    content: 'Quán ăn Việt ở Ansan cần người phụ bàn cuối tuần. Lương 10,000원/h, chủ người Việt, thân thiện. DM mình để biết thêm',
+    category: 'job',
+    city: 'Gyeonggi',
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+    contact: 'Zalo: 0987654321',
+  },
 ]
 
 type QuickHelpBoardProps = {
@@ -42,7 +71,6 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
   const [loading, setLoading] = useState(false)
   const [expandedPost, setExpandedPost] = useState<string | null>(null)
 
-  // Form state
   const [formTitle, setFormTitle] = useState('')
   const [formContent, setFormContent] = useState('')
   const [formCategory, setFormCategory] = useState<typeof CATEGORIES[number]>('other')
@@ -71,14 +99,14 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50)
-      if (data && data.length > 0) setPosts(data as HelpPost[])
-    } catch { /* Use sample data */ }
+      if (data && data.length > 0) setPosts((data as HelpPost[]).map(repairHelpPostText))
+    } catch {
+      // Sample data stays visible if Supabase is unavailable.
+    }
   }
 
-
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
     if (!user || !profile) return
     setLoading(true)
 
@@ -90,30 +118,32 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
       category: formCategory,
       city: formCity,
       contact: formContact,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     }
 
     try {
       if (supabase) {
         const { data, error } = await supabase.from('help_posts').insert(newPost).select().single()
         if (!error && data) {
-          setPosts(prev => [data as HelpPost, ...prev])
+          setPosts(prev => [repairHelpPostText(data as HelpPost), ...prev])
         } else {
           setPosts(prev => [{ ...newPost, id: Date.now().toString() } as HelpPost, ...prev])
         }
       } else {
-        // Optimistic UI khi chưa có Supabase
         setPosts(prev => [{ ...newPost, id: Date.now().toString() } as HelpPost, ...prev])
       }
     } catch {
       setPosts(prev => [{ ...newPost, id: Date.now().toString() } as HelpPost, ...prev])
     }
 
-    setFormTitle(''); setFormContent(''); setFormContact(''); setShowForm(false)
+    setFormTitle('')
+    setFormContent('')
+    setFormContact('')
+    setShowForm(false)
     setLoading(false)
   }
 
-  const filtered = activeCategory === 'all' ? posts : posts.filter(p => p.category === activeCategory)
+  const filtered = activeCategory === 'all' ? posts : posts.filter(post => post.category === activeCategory)
 
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime()
@@ -125,74 +155,72 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
   }
 
   return (
-    <div className="w-full bg-brand-cream rounded-3xl overflow-hidden">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-brand-terracotta to-brand-brown-dark px-8 py-6 text-white">
-        <h2 className="font-display font-black text-2xl">{t('help.title')}</h2>
-        <p className="text-white/70 text-sm mt-1">{t('help.subtitle')}</p>
+    <div className="w-full overflow-hidden rounded-3xl bg-brand-cream">
+      <div className="bg-gradient-to-r from-brand-terracotta to-brand-brown-dark px-4 py-4 sm:px-8 sm:py-6 text-white">
+        <h2 className="font-display text-lg sm:text-2xl font-black">{t('help.title')}</h2>
+        <p className="mt-1 text-xs sm:text-sm text-white/70">{t('help.subtitle')}</p>
       </div>
 
-      <div className="p-6">
-        {/* Category filter */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex flex-wrap gap-1.5">
+      <div className="p-4 sm:p-6">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="grid grid-cols-4 gap-1 sm:flex sm:flex-wrap sm:gap-1.5">
             <button
               onClick={() => setActiveCategory('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition cursor-pointer ${activeCategory === 'all' ? 'bg-brand-terracotta text-white border-brand-terracotta' : 'bg-white border-brand-terracotta-light/20 text-brand-brown-light hover:bg-brand-light'}`}
+              className={`cursor-pointer rounded-full border px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold transition ${activeCategory === 'all' ? 'border-brand-terracotta bg-brand-terracotta text-white' : 'border-brand-terracotta-light/20 bg-white text-brand-brown-light hover:bg-brand-light'}`}
             >
               {t('help.cat.all')}
             </button>
-            {CATEGORIES.map(cat => (
+            {CATEGORIES.map(category => (
               <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition cursor-pointer ${activeCategory === cat ? 'bg-brand-terracotta text-white border-brand-terracotta' : 'bg-white border-brand-terracotta-light/20 text-brand-brown-light hover:bg-brand-light'}`}
+                key={category}
+                onClick={() => setActiveCategory(category)}
+                className={`cursor-pointer rounded-full border px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold transition ${activeCategory === category ? 'border-brand-terracotta bg-brand-terracotta text-white' : 'border-brand-terracotta-light/20 bg-white text-brand-brown-light hover:bg-brand-light'}`}
               >
-                {t(`help.cat.${cat}`)}
+                {t(`help.cat.${category}`)}
               </button>
             ))}
           </div>
 
-          {/* New post button */}
           {user ? (
             <button
               onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-brand-terracotta hover:bg-brand-brown-dark text-white text-sm font-bold transition cursor-pointer shadow-sm ml-2 shrink-0"
+              className="w-full sm:w-auto sm:ml-2 flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-brand-terracotta px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-brand-brown-dark"
             >
               <Plus size={16} /> {t('help.newPost')}
             </button>
           ) : (
-            <div className="text-xs text-brand-brown-light ml-2 shrink-0 italic">{t('help.noLogin')}</div>
+            <div className="text-center sm:text-left sm:ml-2 shrink-0 text-xs italic text-brand-brown-light">{t('help.noLogin')}</div>
           )}
         </div>
 
-        {/* New post form */}
         {showForm && user && (
-          <form onSubmit={handleSubmit} className="mb-5 p-5 rounded-2xl bg-white border border-brand-terracotta-light/20 shadow-sm space-y-3">
-            <div className="flex items-center justify-between mb-1">
-              <h4 className="font-display font-extrabold text-base text-brand-brown-dark">Đăng tin hỗ trợ</h4>
-              <button type="button" onClick={() => setShowForm(false)} className="p-1 rounded-lg hover:bg-brand-light cursor-pointer"><X size={16} className="text-brand-brown-light" /></button>
+          <form onSubmit={handleSubmit} className="mb-5 space-y-2 sm:space-y-3 rounded-2xl border border-brand-terracotta-light/20 bg-white p-3 sm:p-5 shadow-sm">
+            <div className="mb-1 flex items-center justify-between">
+              <h4 className="font-display text-sm sm:text-base font-extrabold text-brand-brown-dark">Đăng tin hỗ trợ</h4>
+              <button type="button" onClick={() => setShowForm(false)} className="cursor-pointer rounded-lg p-1 hover:bg-brand-light">
+                <X size={16} className="text-brand-brown-light" />
+              </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <div>
-                <label className="block text-xs font-bold text-brand-brown-light uppercase mb-1">Danh mục</label>
+                <label className="mb-1 block text-[11px] sm:text-xs font-bold uppercase text-brand-brown-light">Danh mục</label>
                 <select
                   value={formCategory}
-                  onChange={e => setFormCategory(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl border border-brand-terracotta-light/30 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-terracotta/30"
+                  onChange={event => setFormCategory(event.target.value as typeof CATEGORIES[number])}
+                  className="w-full rounded-xl border border-brand-terracotta-light/30 bg-white px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-terracotta/30"
                 >
-                  {CATEGORIES.map(c => <option key={c} value={c}>{t(`help.cat.${c}`)}</option>)}
+                  {CATEGORIES.map(category => <option key={category} value={category}>{t(`help.cat.${category}`)}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-brand-brown-light uppercase mb-1">Thành phố</label>
+                <label className="mb-1 block text-[11px] sm:text-xs font-bold uppercase text-brand-brown-light">Thành phố</label>
                 <select
                   value={formCity}
-                  onChange={e => setFormCity(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-brand-terracotta-light/30 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-terracotta/30"
+                  onChange={event => setFormCity(event.target.value)}
+                  className="w-full rounded-xl border border-brand-terracotta-light/30 bg-white px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-terracotta/30"
                 >
-                  {KOREAN_CITIES.map(c => <option key={c}>{c}</option>)}
+                  {KOREAN_CITIES.map(city => <option key={city}>{city}</option>)}
                 </select>
               </div>
             </div>
@@ -201,78 +229,77 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
               type="text"
               placeholder={t('help.titleField')}
               value={formTitle}
-              onChange={e => setFormTitle(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-brand-terracotta-light/30 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-terracotta/30"
+              onChange={event => setFormTitle(event.target.value)}
+              className="w-full rounded-xl border border-brand-terracotta-light/30 bg-white px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-terracotta/30"
               required
             />
             <textarea
               placeholder={t('help.contentField')}
               value={formContent}
-              onChange={e => setFormContent(e.target.value)}
+              onChange={event => setFormContent(event.target.value)}
               rows={3}
-              className="w-full px-4 py-2.5 rounded-xl border border-brand-terracotta-light/30 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-terracotta/30 resize-none"
+              className="w-full resize-none rounded-xl border border-brand-terracotta-light/30 bg-white px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-terracotta/30"
               required
             />
             <input
               type="text"
               placeholder={t('help.contactField')}
               value={formContact}
-              onChange={e => setFormContact(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-brand-terracotta-light/30 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-terracotta/30"
+              onChange={event => setFormContact(event.target.value)}
+              className="w-full rounded-xl border border-brand-terracotta-light/30 bg-white px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-terracotta/30"
             />
             <div className="flex gap-2">
-              <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-xl bg-brand-terracotta hover:bg-brand-brown-dark text-white font-bold text-sm transition cursor-pointer disabled:opacity-60">
+              <button type="submit" disabled={loading} className="flex-1 cursor-pointer rounded-xl bg-brand-terracotta py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white transition hover:bg-brand-brown-dark disabled:opacity-60">
                 {loading ? 'Đang đăng...' : t('help.submit')}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2.5 rounded-xl bg-brand-light hover:bg-brand-terracotta-light/30 text-brand-brown-dark font-bold text-sm transition cursor-pointer">
+              <button type="button" onClick={() => setShowForm(false)} className="cursor-pointer rounded-xl bg-brand-light px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-brand-brown-dark transition hover:bg-brand-terracotta-light/30">
                 {t('help.cancel')}
               </button>
             </div>
           </form>
         )}
 
-        {/* Posts list */}
         <div className="space-y-3">
           {filtered.length === 0 ? (
-            <div className="text-center py-12 space-y-2 text-brand-brown-light">
+            <div className="space-y-2 py-12 text-center text-brand-brown-light">
               <AlertCircle size={32} className="mx-auto text-brand-terracotta-light/40" />
               <p className="text-sm font-semibold">{t('help.noPosts')}</p>
               <p className="text-xs">{t('help.noPostsDesc')}</p>
             </div>
           ) : (
             filtered.map(post => (
-              <div key={post.id} id={`post-${post.id}`} className="p-4 rounded-2xl bg-white border border-brand-terracotta-light/10 shadow-sm hover:shadow-md transition group">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border uppercase ${CAT_COLORS[post.category] || CAT_COLORS.other}`}>
+              <div key={post.id} id={`post-${post.id}`} className="group rounded-2xl border border-brand-terracotta-light/10 bg-white p-3 sm:p-4 shadow-sm transition hover:shadow-md">
+                <div className="flex items-start justify-between gap-2 sm:gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex flex-wrap items-center gap-1 sm:gap-2">
+                      <span className={`rounded-full border px-1.5 py-0.5 text-[9px] sm:text-[10px] font-black uppercase ${CAT_COLORS[post.category] || CAT_COLORS.other}`}>
                         {t(`help.cat.${post.category}`)}
                       </span>
-                      <div className="flex items-center gap-1 text-xs text-brand-brown-light">
-                        <MapPin size={11} /> {post.city}
+                      <div className="flex items-center gap-0.5 text-[11px] sm:text-xs text-brand-brown-light">
+                        <MapPin size={10} /> {post.city}
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-brand-brown-light">
-                        <Clock size={11} /> {timeAgo(post.created_at)}
+                      <div className="flex items-center gap-0.5 text-[11px] sm:text-xs text-brand-brown-light">
+                        <Clock size={10} /> {timeAgo(post.created_at)}
                       </div>
                     </div>
-                    <h4 className="font-display font-extrabold text-sm text-brand-brown-dark group-hover:text-brand-terracotta transition">
+                    <h4 className="font-display text-xs sm:text-sm font-extrabold text-brand-brown-dark transition group-hover:text-brand-terracotta line-clamp-2">
                       {post.title}
                     </h4>
-                    <p className="text-xs text-brand-brown-light mt-0.5 font-medium">bởi {post.username}</p>
+                    <p className="mt-0.5 text-[11px] sm:text-xs font-medium text-brand-brown-light">bởi {post.username}</p>
                   </div>
                   <button
                     onClick={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
-                    className="p-1.5 rounded-lg hover:bg-brand-light transition cursor-pointer shrink-0"
+                    className="shrink-0 cursor-pointer rounded-lg p-1 sm:p-1.5 transition hover:bg-brand-light"
                   >
-                    {expandedPost === post.id ? <ChevronUp size={16} className="text-brand-brown-light" /> : <ChevronDown size={16} className="text-brand-brown-light" />}
+                    {expandedPost === post.id ? <ChevronUp size={14} className="text-brand-brown-light sm:w-4 sm:h-4" /> : <ChevronDown size={14} className="text-brand-brown-light sm:w-4 sm:h-4" />}
                   </button>
                 </div>
 
                 {expandedPost === post.id && (
-                  <div className="mt-3 pt-3 border-t border-brand-terracotta-light/10 space-y-2">
-                    <p className="text-sm text-brand-brown-dark leading-relaxed">{post.content}</p>
+                  <div className="mt-2 sm:mt-3 space-y-2 border-t border-brand-terracotta-light/10 pt-2 sm:pt-3">
+                    <p className="text-xs sm:text-sm leading-relaxed text-brand-brown-dark">{post.content}</p>
                     {post.contact && (
-                      <div className="flex items-center gap-2 text-xs text-brand-terracotta font-semibold bg-brand-light/50 px-3 py-2 rounded-xl">
+                      <div className="flex items-center gap-2 rounded-xl bg-brand-light/50 px-2 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-brand-terracotta">
                         <Phone size={12} /> {t('help.contact')}: {post.contact}
                       </div>
                     )}

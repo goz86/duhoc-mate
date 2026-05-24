@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import yts from 'yt-search';
+import { readFileSync, writeFileSync } from 'fs';
 
 const app = express();
 app.use(cors());
@@ -43,6 +44,20 @@ const io = new Server(httpServer, {
 // Lưu trữ dữ liệu các phòng trong memory
 // Cấu trúc room: { roomId, members: [], playlist: [], videoState: { id, time, playing }, pomodoro: {} }
 const rooms = new Map();
+
+// Persist roomDirectory sang file JSON để không mất dữ liệu sau restart
+const ROOM_DIR_FILE = './room-directory.json';
+let _savedDir = {};
+try { _savedDir = JSON.parse(readFileSync(ROOM_DIR_FILE, 'utf8')); } catch {}
+const roomDirectory = new Map(Object.entries(_savedDir));
+
+const saveRoomDirectory = () => {
+  try {
+    const obj = {};
+    for (const [k, v] of roomDirectory.entries()) obj[k] = v;
+    writeFileSync(ROOM_DIR_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) { console.error('saveRoomDirectory error:', e.message); }
+};
 const onlineUsers = new Map(); // socket.id -> { socketId, friendCode, username, currentRoomId, currentSong }
 
 // Trạng thái mặc định của đồng hồ Pomodoro
@@ -65,6 +80,56 @@ const broadcastActiveRooms = () => {
     hostAvatarUrl: r.hostAvatarUrl || ''
   }));
   io.emit('active-rooms-list', activeRooms);
+};
+
+const getRoomDirectoryList = () => {
+  return Array.from(roomDirectory.values())
+    .map(entry => {
+      const liveRoom = rooms.get(entry.id);
+      const host = liveRoom?.members.find(m => m.isHost);
+      const { password, ...publicEntry } = entry;
+      void password;
+
+      return {
+        ...publicEntry,
+        hostName: host?.username || entry.hostName || 'An danh',
+        memberCount: liveRoom?.members.length || 0,
+        currentSong: liveRoom?.playlist[0]?.title || entry.currentSong || 'Dang nghe nhac Lofi',
+        roomTitle: liveRoom?.roomTitle || entry.roomTitle || 'Phong hoc tap',
+        isPrivate: liveRoom ? !!liveRoom.isPrivate : !!entry.isPrivate,
+        hostAvatarUrl: liveRoom?.hostAvatarUrl || entry.hostAvatarUrl || '',
+        lastActiveAt: liveRoom ? new Date().toISOString() : entry.lastActiveAt
+      };
+    })
+    .sort((a, b) => {
+      const memberDiff = (b.memberCount || 0) - (a.memberCount || 0);
+      if (memberDiff !== 0) return memberDiff;
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    })
+    .slice(0, 50);
+};
+
+const rememberRoom = (room, hostName) => {
+  const existing = roomDirectory.get(room.roomId);
+  const now = new Date().toISOString();
+
+  roomDirectory.set(room.roomId, {
+    id: room.roomId,
+    hostName: hostName || existing?.hostName || 'An danh',
+    memberCount: room.members.length,
+    currentSong: room.playlist[0]?.title || existing?.currentSong || 'Dang nghe nhac Lofi',
+    roomTitle: room.roomTitle || existing?.roomTitle || 'Phong hoc tap',
+    isPrivate: !!room.isPrivate,
+    password: room.password || existing?.password || '',
+    hostAvatarUrl: room.hostAvatarUrl || existing?.hostAvatarUrl || '',
+    createdAt: existing?.createdAt || now,
+    lastActiveAt: now
+  });
+  saveRoomDirectory();
+};
+
+const broadcastRoomDirectory = () => {
+  io.emit('active-rooms-list', getRoomDirectoryList());
 };
 
 // Helper phát sóng danh sách user online (để filter tìm bạn bè)
@@ -135,11 +200,12 @@ io.on('connection', (socket) => {
       isPrivate: !!r.isPrivate,
       hostAvatarUrl: r.hostAvatarUrl || ''
     }));
-    socket.emit('active-rooms-list', activeRooms);
+    socket.emit('active-rooms-list', getRoomDirectoryList());
   });
 
   // 1. Tham gia phòng
-  socket.on('join-room', ({ roomId, username, ideaTasks = [], roomTitle, isPrivate, password, hostAvatarUrl }) => {
+  socket.on('join-room', ({ roomId, username, ideaTasks = [], roomTitle, isPrivate, password, hostAvatarUrl, friendCode }) => {
+    const rememberedRoom = roomDirectory.get(roomId);
     // Khởi tạo phòng nếu chưa tồn tại
     if (!rooms.has(roomId)) {
       rooms.set(roomId, {
@@ -147,7 +213,7 @@ io.on('connection', (socket) => {
         members: [],
         playlist: [],
         videoState: {
-          id: '5qap5aO4i9A', // Video mặc định (Lofi Girl)
+          id: '', // Không có video mặc định — chờ người dùng chọn
           time: 0,
           playing: false,
           lastUpdated: Date.now()
@@ -156,13 +222,16 @@ io.on('connection', (socket) => {
         chatMessages: [],
         ideaTasks: Array.isArray(ideaTasks) ? ideaTasks : [],
         roomTitle: roomTitle || `Phòng của ${username}`,
-        isPrivate: !!isPrivate,
-        password: password || '',
-        hostAvatarUrl: hostAvatarUrl || ''
+        isPrivate: isPrivate !== undefined ? !!isPrivate : !!rememberedRoom?.isPrivate,
+        password: password || rememberedRoom?.password || '',
+        hostAvatarUrl: hostAvatarUrl || rememberedRoom?.hostAvatarUrl || ''
       });
     }
 
     const room = rooms.get(roomId);
+    if (rememberedRoom && !roomTitle) {
+      room.roomTitle = rememberedRoom.roomTitle || room.roomTitle;
+    }
 
     // Kiểm tra mật khẩu nếu phòng riêng tư và không phải là chủ phòng (members.length > 0)
     if (room.isPrivate && room.members.length > 0) {
@@ -183,20 +252,26 @@ io.on('connection', (socket) => {
     const newMember = {
       id: socket.id,
       username: username || `Bạn học #${Math.floor(1000 + Math.random() * 9000)}`,
-      isHost
+      isHost,
+      friendCode: friendCode || onlineUsers.get(socket.id)?.friendCode || ''
     };
 
     room.members.push(newMember);
+    if (isHost && hostAvatarUrl) {
+      room.hostAvatarUrl = hostAvatarUrl;
+    }
+    rememberRoom(room, room.members.find(m => m.isHost)?.username || newMember.username);
 
     // Cập nhật thông tin phòng & bài hát của user trong onlineUsers
     const user = onlineUsers.get(socket.id);
     if (user) {
       user.currentRoomId = roomId;
+      if (friendCode) user.friendCode = friendCode;
       user.currentSong = room.playlist[0]?.title || 'Đang nghe nhạc Lofi';
     } else {
       onlineUsers.set(socket.id, {
         socketId: socket.id,
-        friendCode: '',
+        friendCode: friendCode || '',
         username: newMember.username,
         currentRoomId: roomId,
         currentSong: room.playlist[0]?.title || 'Đang nghe nhạc Lofi'
@@ -223,7 +298,7 @@ io.on('connection', (socket) => {
       socket.emit('tiktok-sync', { videoId: room.tiktokVideoId });
     }
 
-    broadcastActiveRooms();
+    broadcastRoomDirectory();
     
     // Thông báo hệ thống khi có thành viên mới
     sendSystemMessage(roomId, `Bạn học ${newMember.username} đã tham gia phòng.`);
@@ -306,14 +381,33 @@ io.on('connection', (socket) => {
       addedBy
     };
 
+    // wasEmpty: playlist trống VÀ không có video nào đang phát (kể cả video mặc định cũ đang lỗi)
+    const wasEmpty = room.playlist.length === 0 && !room.videoState.playing;
+
     room.playlist.push(newItem);
-    
+
     // Sắp xếp playlist theo số vote giảm dần
     room.playlist.sort((a, b) => b.votes - a.votes);
 
     io.to(roomId).emit('update-playlist', room.playlist);
     sendSystemMessage(roomId, `Bạn học ${addedBy} đã thêm bài: "${title}".`);
     updateRoomMembersSongs(roomId, room.playlist[0]?.title || 'Đang nghe nhạc Lofi');
+
+    // Nếu phòng chưa có video nào đang phát → tự động phát bài vừa thêm
+    if (wasEmpty) {
+      room.videoState.id = newItem.videoId;
+      room.videoState.time = 0;
+      room.videoState.playing = true;
+      room.videoState.lastUpdated = Date.now();
+      room.playlist = room.playlist.filter(item => item.id !== newItem.id);
+      io.to(roomId).emit('update-playlist', room.playlist);
+      io.to(roomId).emit('video-sync', {
+        action: 'play',
+        time: 0,
+        videoId: newItem.videoId,
+        videoState: room.videoState
+      });
+    }
   });
 
   socket.on('vote-song', ({ roomId, songId }) => {
@@ -399,6 +493,58 @@ io.on('connection', (socket) => {
   });
 
   // 6. Ngắt kết nối
+  socket.on('room-settings-update', ({ roomId, roomTitle, isPrivate, password }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const sender = room.members.find(m => m.id === socket.id);
+    if (!sender?.isHost) return;
+
+    if (roomTitle) room.roomTitle = roomTitle;
+    if (typeof isPrivate === 'boolean') room.isPrivate = isPrivate;
+    if (password !== undefined) room.password = password || '';
+    rememberRoom(room, room.members.find(m => m.isHost)?.username || sender.username);
+
+    io.to(roomId).emit('room-settings-updated', {
+      roomTitle: room.roomTitle,
+      isPrivate: room.isPrivate
+    });
+    broadcastRoomDirectory();
+  });
+
+  socket.on('transfer-host', ({ roomId, targetId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const sender = room.members.find(m => m.id === socket.id);
+    const target = room.members.find(m => m.id === targetId);
+    if (!sender?.isHost || !target) return;
+
+    room.members.forEach(member => {
+      member.isHost = member.id === targetId;
+      io.to(member.id).emit('assigned-host', member.id === targetId);
+    });
+    io.to(roomId).emit('room-users', room.members);
+    sendSystemMessage(roomId, `${target.username} đã trở thành host của phòng.`);
+    rememberRoom(room, target.username);
+    broadcastRoomDirectory();
+  });
+
+  socket.on('close-room', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const sender = room.members.find(m => m.id === socket.id);
+    if (!sender?.isHost) return;
+
+    io.to(roomId).emit('room-closed', { roomId });
+    room.members.forEach(member => {
+      const memberSocket = io.sockets.sockets.get(member.id);
+      memberSocket?.leave(roomId);
+    });
+    rooms.delete(roomId);
+    roomDirectory.delete(roomId);
+    saveRoomDirectory();
+    broadcastRoomDirectory();
+  });
+
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
     onlineUsers.delete(socket.id);
@@ -414,6 +560,7 @@ io.on('connection', (socket) => {
 
         if (room.members.length === 0) {
           // Xóa phòng nếu không còn ai
+          rememberRoom(room, removedMember.username);
           rooms.delete(roomId);
           console.log(`Deleted empty room: ${roomId}`);
         } else {
@@ -429,7 +576,7 @@ io.on('connection', (socket) => {
           // Cập nhật lại danh sách user cho những người còn lại
           io.to(roomId).emit('room-users', room.members);
         }
-        broadcastActiveRooms();
+        broadcastRoomDirectory();
         break;
       }
     }

@@ -112,7 +112,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo: `${window.location.origin}/`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'select_account',
+        },
       }
     })
     return { error }
@@ -125,12 +129,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user || !supabase) return
-    const { data } = await supabase
+    const payload = {
+      id: user.id,
+      username: updates.username || profile?.username || user.email?.split('@')[0] || `user_${user.id.substring(0, 5)}`,
+      avatar_url: updates.avatar_url ?? profile?.avatar_url ?? '',
+      city: updates.city ?? profile?.city ?? '',
+      bio: updates.bio ?? profile?.bio ?? '',
+      language: updates.language ?? profile?.language ?? ('vi' as const),
+      created_at: profile?.created_at || new Date().toISOString(),
+    }
+    const { data, error } = await supabase
       .from('profiles')
-      .update(updates)
-      .eq('id', user.id)
+      .upsert(payload, { onConflict: 'id' })
       .select()
       .single()
+    if (error) throw error
     if (data) setProfile(data as Profile)
   }
 

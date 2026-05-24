@@ -3,9 +3,9 @@ import { Check, ChevronDown, Globe } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 
 const LANGS = [
-  { code: 'vi', label: 'Tiếng Việt' },
-  { code: 'ko', label: '한국어' },
-  { code: 'en', label: 'English' },
+  { code: 'vi', label: 'Tiếng Việt', abbr: 'VN' },
+  { code: 'ko', label: '한국어', abbr: 'KR' },
+  { code: 'en', label: 'English', abbr: 'EG' },
 ] as const
 
 type LangCode = (typeof LANGS)[number]['code']
@@ -46,8 +46,8 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
         className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-black/[0.08] bg-white px-3 py-2 text-sm font-extrabold text-brand-brown-dark shadow-sm transition hover:border-brand-terracotta-light hover:bg-brand-light cursor-pointer"
       >
         <Globe size={15} className="shrink-0 text-brand-brown-light" />
-        <span className="hidden sm:inline">{!compact ? current.label : current.label.slice(0, 2).toUpperCase()}</span>
-        <span className="sm:hidden">{current.label.slice(0, 2).toUpperCase()}</span>
+        <span className="hidden sm:inline">{!compact ? current.label : current.abbr}</span>
+        <span className="sm:hidden">{current.abbr}</span>
         <ChevronDown size={13} className={`text-brand-brown-light transition ${open ? 'rotate-180' : ''}`} />
       </button>
 
