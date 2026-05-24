@@ -339,12 +339,24 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomId);
     if (!room) return;
 
-    // GUARD CỨNG: nếu host đang pause toàn phòng (pausedByHost=true)
-    // → CHỈ chấp nhận action='play' khi userInitiated=true (user click UI) hoặc có videoId mới (playSong)
-    // Tất cả play từ onStateChange spurious / interval đều bị chặn
+    // GUARD 1: chặn pause liên tục khi đã pausedByHost (host onStateChange spam state=2)
+    // → không re-broadcast, không update lastUpdated (để guard 2 hoạt động đúng)
+    if (action === 'pause' && room.videoState.pausedByHost && !userInitiated) {
+      // Đã pause rồi, bỏ qua spurious pause repeat
+      return;
+    }
+
+    // GUARD 2: chặn spurious play trong vòng 1.5s sau pause
+    // (YouTube IFrame API fire state=1 spurious sau buffer/seek thường < 1s)
+    // - userInitiated=true → cho qua ngay (UI button click)
+    // - có videoId → cho qua ngay (playSong - đổi bài)
+    // - sincePause > 1500ms → cho qua (đã đủ time, không còn là spurious)
     if (action === 'play' && room.videoState.pausedByHost && !userInitiated && !videoId) {
-      console.log(`[GUARD] Block auto-play from ${socket.id} (pausedByHost=true, userInitiated=false)`);
-      return; // KHÔNG update state, KHÔNG emit
+      const sincePause = Date.now() - (room.videoState.lastUpdated || 0);
+      if (sincePause < 1500) {
+        console.log(`[GUARD] Block spurious play from ${socket.id} (sincePause=${sincePause}ms)`);
+        return;
+      }
     }
 
     // Cập nhật trạng thái video của phòng
