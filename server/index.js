@@ -216,6 +216,7 @@ io.on('connection', (socket) => {
           id: '', // Không có video mặc định — chờ người dùng chọn
           time: 0,
           playing: false,
+          pausedByHost: false, // Host đã tạm dừng toàn phòng
           lastUpdated: Date.now()
         },
         pomodoro: createDefaultPomodoro(),
@@ -341,8 +342,14 @@ io.on('connection', (socket) => {
     // Cập nhật trạng thái video của phòng
     if (videoId) room.videoState.id = videoId;
     if (time !== undefined) room.videoState.time = time;
-    if (action === 'play') room.videoState.playing = true;
-    if (action === 'pause') room.videoState.playing = false;
+    if (action === 'play') {
+      room.videoState.playing = true;
+      room.videoState.pausedByHost = false; // Host phát lại → bỏ trạng thái dừng
+    }
+    if (action === 'pause') {
+      room.videoState.playing = false;
+      room.videoState.pausedByHost = true; // Host dừng → đánh dấu toàn phòng
+    }
     room.videoState.lastUpdated = Date.now();
 
     // Gửi lại trạng thái video mới cho các thành viên khác trong phòng (ngoại trừ người gửi)

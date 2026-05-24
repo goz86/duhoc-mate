@@ -252,6 +252,9 @@ export default function App() {
   useEffect(() => { isHostRef.current = isHost; }, [isHost]);
   const [localPaused, setLocalPaused] = useState(false);
   const localPausedRef = useRef(false);
+  const [isHostPaused, setIsHostPaused] = useState(false);
+  const isHostPausedRef = useRef(false);
+  const [showHostPausedToast, setShowHostPausedToast] = useState(false);
   const [lyrics, setLyrics] = useState<string>('');
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
@@ -306,6 +309,10 @@ export default function App() {
       setChatMessages(chatMessages || []);
       setIdeaTasks(ideaTasks || []);
       setIsHost(isHost);
+      // Khởi tạo trạng thái host pause khi vào phòng
+      const hostPaused = !!videoState?.pausedByHost;
+      isHostPausedRef.current = hostPaused;
+      setIsHostPaused(hostPaused);
       if (tiktokVideoId) {
         setTiktokVideoId(tiktokVideoId);
         setStageMode('tiktok');
@@ -352,6 +359,23 @@ export default function App() {
         songsPlayedRef.current += 1;
       }
       setCurrentVideo(videoState);
+
+      // Cập nhật trạng thái "Host đã dừng"
+      const hostPaused = !!videoState.pausedByHost;
+      isHostPausedRef.current = hostPaused;
+      setIsHostPaused(hostPaused);
+
+      // Nếu host phát lại → reset local pause, ẩn toast
+      if (action === 'play') {
+        localPausedRef.current = false;
+        setLocalPaused(false);
+        setShowHostPausedToast(false);
+      }
+      // Nếu host dừng → show toast cho non-host
+      if (action === 'pause' && !isHostRef.current) {
+        setShowHostPausedToast(true);
+      }
+
       if (!playerRef.current) return;
 
       if (videoId && playerRef.current.getVideoData?.().video_id !== videoId) {
@@ -506,8 +530,18 @@ export default function App() {
 
             // Non-host: chỉ cập nhật local state, KHÔNG emit socket
             if (!isHostRef.current) {
-              if (state === 2) { localPausedRef.current = true; setLocalPaused(true); }
-              else if (state === 1) { localPausedRef.current = false; setLocalPaused(false); }
+              if (state === 2) {
+                localPausedRef.current = true;
+                setLocalPaused(true);
+              } else if (state === 1) {
+                // Nếu host đã pause toàn phòng → chặn auto-resume
+                if (isHostPausedRef.current) {
+                  setTimeout(() => playerRef.current?.pauseVideo?.(), 80);
+                  return;
+                }
+                localPausedRef.current = false;
+                setLocalPaused(false);
+              }
               return;
             }
 
@@ -955,14 +989,36 @@ export default function App() {
 
   const toggleMiniPlayback = () => {
     const currentTime = playerRef.current?.getCurrentTime?.() || currentVideo.time || 0;
-    if (currentVideo.playing) {
-      playerRef.current?.pauseVideo?.();
-      socket.emit('video-action', { roomId, action: 'pause', time: currentTime });
-      setCurrentVideo(prev => ({ ...prev, playing: false, time: currentTime }));
+    if (isHostRef.current) {
+      // Host: điều khiển toàn phòng qua socket
+      if (currentVideo.playing) {
+        playerRef.current?.pauseVideo?.();
+        socket.emit('video-action', { roomId, action: 'pause', time: currentTime });
+        setCurrentVideo(prev => ({ ...prev, playing: false, time: currentTime }));
+      } else {
+        playerRef.current?.playVideo?.();
+        socket.emit('video-action', { roomId, action: 'play', time: currentTime });
+        setCurrentVideo(prev => ({ ...prev, playing: true, time: currentTime }));
+      }
     } else {
-      playerRef.current?.playVideo?.();
-      socket.emit('video-action', { roomId, action: 'play', time: currentTime });
-      setCurrentVideo(prev => ({ ...prev, playing: true, time: currentTime }));
+      // Non-host: chỉ điều khiển local
+      if (!localPausedRef.current) {
+        // Đang phát → tạm dừng riêng
+        playerRef.current?.pauseVideo?.();
+        localPausedRef.current = true;
+        setLocalPaused(true);
+      } else {
+        // Đang tạm dừng → phát lại
+        if (isHostPausedRef.current) {
+          // Host đã dừng toàn phòng → không cho resume, show toast
+          setShowHostPausedToast(true);
+          return;
+        }
+        playerRef.current?.seekTo?.(currentVideo.time || 0, true);
+        playerRef.current?.playVideo?.();
+        localPausedRef.current = false;
+        setLocalPaused(false);
+      }
     }
   };
 
@@ -1438,6 +1494,27 @@ export default function App() {
         </div>
       )}
 
+      {/* Host Paused Toast */}
+      {showHostPausedToast && !isHost && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[10000] max-w-xs w-full bg-brand-brown-dark rounded-2xl shadow-xl p-3.5 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white">
+              <Pause size={15} />
+            </div>
+            <div className="flex-grow">
+              <p className="text-xs font-bold text-white">⏸ Host đã tạm dừng video</p>
+              <p className="text-[10px] text-white/60 mt-0.5">Chờ host phát lại để tiếp tục đồng bộ</p>
+            </div>
+            <button
+              onClick={() => setShowHostPausedToast(false)}
+              className="flex-shrink-0 text-white/50 hover:text-white text-xs font-bold"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Invite Modal */}
       {showInviteModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
@@ -1779,18 +1856,18 @@ export default function App() {
 
           {/* Core Content Grid â€” adaptive columns based on stageMode */}
           {(() => {
-            const mainSpan = roomCollapsed ? 'lg:col-span-12' : 'lg:col-span-8';
-            const sideSpan = roomCollapsed ? 'hidden' : 'lg:col-span-4';
+            const mainSpan = roomCollapsed ? 'lg:col-span-12' : 'lg:col-span-9';
+            const sideSpan = roomCollapsed ? 'hidden' : 'lg:col-span-3';
             return (
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 lg:overflow-hidden lg:max-h-[calc(100vh-73px)]">
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 lg:overflow-hidden lg:max-h-[calc(100vh-108px)] xl:max-h-[calc(100vh-96px)]">
 
             {/* LEFT / CENTER: Stage workspace */}
-            <main className={`${mainSpan} p-4 sm:p-6 flex flex-col gap-4 lg:overflow-y-auto transition-all duration-300`}>
+            <main className={`${mainSpan} p-4 xl:p-6 flex flex-col gap-4 lg:overflow-y-auto transition-all duration-300`}>
 
               {!roomCollapsed && <StageSelector stageMode={stageMode} onChange={setStageMode} />}
 
               {/* â”€â”€ STAGE DISPLAY AREA â€“ adapts per stageMode â”€â”€ */}
-              <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : 'flex-1 glass-panel rounded-3xl p-5 shadow-xl border border-white min-h-[420px] flex flex-col'} relative overflow-hidden`}>
+              <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : 'flex-1 glass-panel rounded-3xl p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col'} relative overflow-hidden`}>
 
                 {roomCollapsed && (
                   <div className="w-full max-w-xl space-y-8 text-center">
@@ -1844,7 +1921,7 @@ export default function App() {
 
                 {/* â”€â”€ 1. YOUTUBE STAGE (16:9) â”€â”€ */}
                 <div className={`${stageMode === 'youtube' && !roomCollapsed ? 'flex flex-1 flex-col gap-4 h-full justify-between' : 'absolute h-px w-px overflow-hidden opacity-0 pointer-events-none'}`} aria-hidden={stageMode !== 'youtube' || roomCollapsed}>
-                    <div className="relative flex-1 rounded-2xl overflow-hidden border border-brand-terracotta-light/10 bg-black" style={{ minHeight: '300px' }}>
+                    <div className="relative flex-1 rounded-2xl overflow-hidden border border-brand-terracotta-light/10 bg-black" style={{ minHeight: '260px' }}>
                       <div className="w-full h-full" ref={iframeContainerRef}>
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center pointer-events-none z-0">
                           <Clock className="text-white/20 animate-spin" size={32} />
@@ -1921,7 +1998,7 @@ export default function App() {
                     <div className={`flex items-center justify-between px-4 py-3 bg-brand-light/40 border border-brand-terracotta-light/20 rounded-2xl transition-all duration-300 ${!currentVideo.id ? 'opacity-0 pointer-events-none h-0 py-0 overflow-hidden' : ''}`}>
                       <div className="space-y-0.5 min-w-0 flex-1">
                         <span className="text-[10px] font-bold text-brand-terracotta uppercase">
-                          {isHost ? '★ Host · Đang đồng bộ' : localPaused ? '⏸ Tạm dừng riêng' : '· Đang đồng bộ'}
+                          {isHost ? '★ Host · Đang đồng bộ' : isHostPaused ? '⏸ Host đã tạm dừng' : localPaused ? '⏸ Tạm dừng riêng' : '· Đang đồng bộ'}
                         </span>
                         <h4 className="font-display font-extrabold text-sm truncate text-brand-brown-dark">
                           {activeVideoTitle}
@@ -1933,10 +2010,19 @@ export default function App() {
                             type="button"
                             onClick={() => {
                               if (localPaused) {
+                                if (isHostPaused) {
+                                  // Host đã dừng toàn phòng → không cho resume
+                                  setShowHostPausedToast(true);
+                                  return;
+                                }
                                 playerRef.current?.seekTo?.(currentVideo.time || 0, true);
                                 playerRef.current?.playVideo?.();
+                                localPausedRef.current = false;
+                                setLocalPaused(false);
                               } else {
                                 playerRef.current?.pauseVideo?.();
+                                localPausedRef.current = true;
+                                setLocalPaused(true);
                               }
                             }}
                             className="flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/30 bg-white px-3 py-1.5 text-[11px] font-bold text-brand-brown-dark shadow-sm transition hover:bg-brand-light"
@@ -2216,10 +2302,10 @@ export default function App() {
             <aside className={`${sideSpan} min-w-0 border-l border-brand-terracotta-light/20 bg-white/30 backdrop-blur-lg flex flex-col lg:max-h-full transition-all duration-300`}>
               
               {/* Tab Navigation in Sidebar */}
-              <div className="p-4 border-b border-brand-terracotta-light/10 grid grid-cols-3 gap-2 bg-white/40">
+              <div className="p-3 border-b border-brand-terracotta-light/10 grid grid-cols-3 gap-1.5 bg-white/40 xl:p-4 xl:gap-2">
                 <button
                   onClick={() => setSidebarTab('playlist')}
-                  className={`h-11 min-w-0 rounded-xl px-2 font-bold text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`h-10 min-w-0 rounded-xl px-1.5 font-bold text-xs xl:h-11 xl:px-2 xl:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     sidebarTab === 'playlist'
                       ? 'bg-brand-terracotta text-white shadow-sm'
                       : 'hover:bg-brand-light text-brand-brown-light'
@@ -2229,7 +2315,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setSidebarTab('chat')}
-                  className={`h-11 min-w-0 rounded-xl px-2 font-bold text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`h-10 min-w-0 rounded-xl px-1.5 font-bold text-xs xl:h-11 xl:px-2 xl:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     sidebarTab === 'chat'
                       ? 'bg-brand-terracotta text-white shadow-sm'
                       : 'hover:bg-brand-light text-brand-brown-light'
@@ -2239,7 +2325,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setSidebarTab('members')}
-                  className={`h-11 min-w-0 rounded-xl px-2 font-bold text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`h-10 min-w-0 rounded-xl px-1.5 font-bold text-xs xl:h-11 xl:px-2 xl:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     sidebarTab === 'members'
                       ? 'bg-brand-terracotta text-white shadow-sm'
                       : 'hover:bg-brand-light text-brand-brown-light'
@@ -2250,7 +2336,7 @@ export default function App() {
               </div>
 
               {/* Sidebar Content Panel */}
-              <div className="flex-1 lg:overflow-y-auto p-4 flex flex-col min-h-0">
+              <div className="flex-1 lg:overflow-y-auto p-3 xl:p-4 flex flex-col min-h-0">
                 
                 {/* 1. PLAYLIST & JUKEBOX TAB */}
                 {sidebarTab === 'playlist' && (
