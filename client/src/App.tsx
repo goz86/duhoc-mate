@@ -35,7 +35,13 @@ import { deletePersistentRoom, findPersistentRoom, hashRoomPassword, savePersist
 
 // Káº¿t ná»‘i Socket Server â€” Ä‘á»c tá»« env var khi deploy, fallback localhost khi dev
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const LOCAL_API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : LOCAL_API_BASE_URL);
+
+const getApiBaseCandidates = () => {
+  const bases = [API_BASE_URL, '', LOCAL_API_BASE_URL];
+  return Array.from(new Set(bases.map((base) => base.replace(/\/$/, ''))));
+};
 
 let socket: Socket;
 
@@ -530,15 +536,15 @@ export default function App() {
 
             // Non-host: chỉ cập nhật local state, KHÔNG emit socket
             if (!isHostRef.current) {
+              // state=1 (playing) hoặc state=3 (buffering) khi host đã pause → chặn ngay lập tức
+              if (isHostPausedRef.current && (state === 1 || state === 3)) {
+                event.target.pauseVideo();
+                return;
+              }
               if (state === 2) {
                 localPausedRef.current = true;
                 setLocalPaused(true);
               } else if (state === 1) {
-                // Nếu host đã pause toàn phòng → chặn auto-resume
-                if (isHostPausedRef.current) {
-                  setTimeout(() => playerRef.current?.pauseVideo?.(), 80);
-                  return;
-                }
                 localPausedRef.current = false;
                 setLocalPaused(false);
               }
@@ -1143,7 +1149,7 @@ export default function App() {
     setShowSearchResults(true);
     
     try {
-      const SEARCH_URL = `${API_BASE_URL}/api/search-music`;
+      const SEARCH_URL = `${getApiBaseCandidates()[0]}/api/search-music`;
 
       const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(songSearch.trim())}`);
       const data = await res.json();
@@ -1154,7 +1160,7 @@ export default function App() {
         setMusicSearchResults(data.results || []);
       }
     } catch {
-      setMusicSearchError('KhÃ´ng thá»ƒ káº¿t ná»‘i server tÃ¬m kiáº¿m. HÃ£y thá»­ paste link YouTube trá»±c tiáº¿p.');
+      setMusicSearchError('Không thể kết nối server tìm kiếm. Hãy thử lại hoặc dán link YouTube trực tiếp.');
     } finally {
       setMusicSearchLoading(false);
     }
