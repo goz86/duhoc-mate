@@ -389,9 +389,7 @@ io.on('connection', (socket) => {
     // Sắp xếp playlist theo số vote giảm dần
     room.playlist.sort((a, b) => b.votes - a.votes);
 
-    io.to(roomId).emit('update-playlist', room.playlist);
     sendSystemMessage(roomId, `Bạn học ${addedBy} đã thêm bài: "${title}".`);
-    updateRoomMembersSongs(roomId, room.playlist[0]?.title || 'Đang nghe nhạc Lofi');
 
     // Nếu phòng chưa có video nào đang phát → tự động phát bài vừa thêm
     if (wasEmpty) {
@@ -400,6 +398,7 @@ io.on('connection', (socket) => {
       room.videoState.playing = true;
       room.videoState.lastUpdated = Date.now();
       room.playlist = room.playlist.filter(item => item.id !== newItem.id);
+      // Emit playlist và video-sync cùng lúc để tránh race condition
       io.to(roomId).emit('update-playlist', room.playlist);
       io.to(roomId).emit('video-sync', {
         action: 'play',
@@ -407,6 +406,11 @@ io.on('connection', (socket) => {
         videoId: newItem.videoId,
         videoState: room.videoState
       });
+      updateRoomMembersSongs(roomId, newItem.title);
+    } else {
+      // Chỉ emit update-playlist một lần nếu không phải auto-play
+      io.to(roomId).emit('update-playlist', room.playlist);
+      updateRoomMembersSongs(roomId, room.playlist[0]?.title || 'Đang nghe nhạc Lofi');
     }
   });
 
