@@ -335,9 +335,17 @@ io.on('connection', (socket) => {
   });
 
   // 3. Đồng bộ Video YouTube
-  socket.on('video-action', ({ roomId, action, time, videoId }) => {
+  socket.on('video-action', ({ roomId, action, time, videoId, userInitiated }) => {
     const room = rooms.get(roomId);
     if (!room) return;
+
+    // GUARD CỨNG: nếu host đang pause toàn phòng (pausedByHost=true)
+    // → CHỈ chấp nhận action='play' khi userInitiated=true (user click UI) hoặc có videoId mới (playSong)
+    // Tất cả play từ onStateChange spurious / interval đều bị chặn
+    if (action === 'play' && room.videoState.pausedByHost && !userInitiated && !videoId) {
+      console.log(`[GUARD] Block auto-play from ${socket.id} (pausedByHost=true, userInitiated=false)`);
+      return; // KHÔNG update state, KHÔNG emit
+    }
 
     // Cập nhật trạng thái video của phòng
     if (videoId) room.videoState.id = videoId;

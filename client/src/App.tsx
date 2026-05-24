@@ -37,8 +37,7 @@ import {
   findBestLyricsTrack,
   getLyricsSearchCandidates,
   parseSyncedLyrics,
-  type LyricLine,
-  type LyricsSearchTrack
+  type LyricLine
 } from './lib/lyrics';
 
 // Káº¿t ná»‘i Socket Server â€” Ä‘á»c tá»« env var khi deploy, fallback localhost khi dev
@@ -530,6 +529,7 @@ export default function App() {
   // === YouTube IFrame API â€“ Khá�  // Init or update player when currentVideo.id becomes available
   useEffect(() => {
     if (view !== 'room') return;
+    void playerReinitTrigger;
 
     if (!currentVideo.id) {
       // Nếu không có video ID, hủy player nếu có
@@ -1141,13 +1141,13 @@ export default function App() {
         hostWantsToPlayRef.current = false; // CHẶN mọi spurious state=1 sau pause
         hostLastPauseAtRef.current = Date.now();
         playerRef.current?.pauseVideo?.();
-        socket.emit('video-action', { roomId, action: 'pause', time: currentTime });
+        socket.emit('video-action', { roomId, action: 'pause', time: currentTime, userInitiated: true });
         setCurrentVideo(prev => ({ ...prev, playing: false, time: currentTime }));
       } else {
         hostWantsToPlayRef.current = true; // CHO PHÉP state=1 emit play
         hostLastPauseAtRef.current = 0;
         playerRef.current?.playVideo?.();
-        socket.emit('video-action', { roomId, action: 'play', time: currentTime });
+        socket.emit('video-action', { roomId, action: 'play', time: currentTime, userInitiated: true });
         setCurrentVideo(prev => ({ ...prev, playing: true, time: currentTime }));
       }
     } else {
