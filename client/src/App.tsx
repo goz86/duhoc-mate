@@ -284,9 +284,11 @@ export default function App() {
   const [isHostPaused, setIsHostPaused] = useState(false);
   const isHostPausedRef = useRef(false);
   const [showHostPausedToast, setShowHostPausedToast] = useState(false);
+  const [playerVideoTitle, setPlayerVideoTitle] = useState('');
   const [lyrics, setLyrics] = useState<string>('');
   const [syncedLyrics, setSyncedLyrics] = useState<LyricLine[]>([]);
   const [playbackTime, setPlaybackTime] = useState(0);
+  const [lyricsOffset, setLyricsOffset] = useState(0);
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const activeLyricRef = useRef<HTMLParagraphElement>(null);
@@ -540,6 +542,8 @@ export default function App() {
         events: {
           onReady: (event: any) => {
             setVideoError(false);
+            const title = event.target.getVideoData?.()?.title;
+            if (title) setPlayerVideoTitle(title);
             if (currentVideoRef.current.playing) {
               event.target.playVideo();
             }
@@ -557,6 +561,8 @@ export default function App() {
           onStateChange: (event: any) => {
             const state = event.data; // 1=playing, 2=paused, 0=ended
             const curTime = event.target.getCurrentTime();
+            const title = event.target.getVideoData?.()?.title;
+            if (title) setPlayerVideoTitle(title);
             const cvr = currentVideoRef.current;
             setVideoError(false);
 
@@ -599,7 +605,12 @@ export default function App() {
       }
     } else {
       if (playerRef.current.loadVideoById) {
+        setPlayerVideoTitle('');
         playerRef.current.loadVideoById(currentVideo.id, currentVideo.time || 0);
+        setTimeout(() => {
+          const title = playerRef.current?.getVideoData?.()?.title;
+          if (title) setPlayerVideoTitle(title);
+        }, 700);
       }
     }
 
@@ -636,7 +647,12 @@ export default function App() {
     if (!currentVideo.id) return;
 
     if (playerRef.current.loadVideoById) {
+      setPlayerVideoTitle('');
       playerRef.current.loadVideoById(currentVideo.id, currentVideo.time || 0);
+      setTimeout(() => {
+        const title = playerRef.current?.getVideoData?.()?.title;
+        if (title) setPlayerVideoTitle(title);
+      }, 700);
       // Nếu host đang pause toàn phòng và ta là non-host → pause ngay sau khi load
       if (isHostPausedRef.current && !isHostRef.current) {
         setTimeout(() => playerRef.current?.pauseVideo?.(), 300);
@@ -644,22 +660,29 @@ export default function App() {
     }
   }, [currentVideo.id]);
 
-  // Enforcement loop: khi host pause, liên tục force-pause mọi auto-resume của YouTube
+  // Enforcement loop: khi host pause, liên tục force-pause + mute mọi auto-resume của YouTube
   useEffect(() => {
-    if (!isHostPaused || isHost) return;
+    if (isHost) return; // Host không bị ảnh hưởng
 
-    // Pause ngay lập tức
-    playerRef.current?.pauseVideo?.();
+    if (isHostPaused) {
+      // Pause + mute ngay lập tức để không nghe tiếng kể cả khi YouTube tự play
+      playerRef.current?.pauseVideo?.();
+      playerRef.current?.mute?.();
 
-    // Cứ 500ms kiểm tra và ép pause nếu YouTube tự resume
-    const enforceId = setInterval(() => {
-      const state = playerRef.current?.getPlayerState?.();
-      if (state === 1 || state === 3) { // 1=playing, 3=buffering
-        playerRef.current?.pauseVideo?.();
-      }
-    }, 500);
+      // Cứ 500ms kiểm tra và ép pause nếu YouTube tự resume
+      const enforceId = setInterval(() => {
+        const state = playerRef.current?.getPlayerState?.();
+        if (state === 1 || state === 3) { // 1=playing, 3=buffering
+          playerRef.current?.pauseVideo?.();
+          playerRef.current?.mute?.();
+        }
+      }, 500);
 
-    return () => clearInterval(enforceId);
+      return () => clearInterval(enforceId);
+    } else {
+      // Host resume → unmute lại
+      playerRef.current?.unMute?.();
+    }
   }, [isHostPaused, isHost]);
 
   // Toggle only the study-table presence state. A polished call layer can be
@@ -1414,7 +1437,7 @@ export default function App() {
     { key: 'arctic', label: 'Arctic', icon: 'A' },
   ] as const;
 
-  const activeVideoTitle = playlist.find(item => item.videoId === currentVideo.id)?.title || 'Lo-Fi Girl Study Beat';
+  const activeVideoTitle = playlist.find(item => item.videoId === currentVideo.id)?.title || playerVideoTitle || (currentVideo.id ? `Video YouTube (${currentVideo.id})` : 'Lo-Fi Girl Study Beat');
 
   // Fetch lyrics khi video thay đổi
   React.useEffect(() => {
@@ -1450,7 +1473,7 @@ export default function App() {
         setSyncedLyrics([]);
       })
       .finally(() => setLyricsLoading(false));
-  }, [currentVideo.id]);
+  }, [activeVideoTitle]);
 
   React.useEffect(() => {
     if (!showLyrics || syncedLyrics.length === 0) return;
@@ -1463,8 +1486,28 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [showLyrics, syncedLyrics.length, currentVideo.id]);
 
+  React.useEffect(() => {
+    if (!currentVideo.id) {
+      setLyricsOffset(0);
+      return;
+    }
+    const saved = Number(localStorage.getItem(`duhocmate_lyrics_offset_${currentVideo.id}`));
+    setLyricsOffset(Number.isFinite(saved) ? saved : 0);
+  }, [currentVideo.id]);
+
+  const adjustLyricsOffset = (delta: number) => {
+    setLyricsOffset((prev) => {
+      const next = Math.max(-20, Math.min(30, Number((prev + delta).toFixed(1))));
+      if (currentVideo.id) {
+        localStorage.setItem(`duhocmate_lyrics_offset_${currentVideo.id}`, String(next));
+      }
+      return next;
+    });
+  };
+
+  const effectiveLyricTime = Math.max(0, playbackTime - lyricsOffset);
   const activeLyricIndex = syncedLyrics.reduce((activeIndex, line, index) => (
-    playbackTime + 0.2 >= line.time ? index : activeIndex
+    effectiveLyricTime + 0.15 >= line.time ? index : activeIndex
   ), -1);
 
   React.useEffect(() => {
@@ -2071,6 +2114,25 @@ export default function App() {
                         </div>
                       )}
 
+                      {/* Overlay khi host đã pause toàn phòng — chặn user nhìn thấy YouTube auto-resume */}
+                      {isHostPaused && !isHost && currentVideo.id && (
+                        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 p-8 text-center bg-gradient-to-br from-brand-brown-dark/95 to-black/95 backdrop-blur-md">
+                          <div className="w-16 h-16 rounded-full bg-brand-terracotta/20 border-2 border-brand-terracotta/40 flex items-center justify-center">
+                            <Pause size={28} className="text-brand-terracotta" />
+                          </div>
+                          <div>
+                            <h3 className="font-display font-black text-white text-xl mb-1">Host đã tạm dừng</h3>
+                            <p className="text-white/60 text-sm max-w-xs leading-relaxed">
+                              Video sẽ tiếp tục khi host phát lại
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 text-white/40 text-xs">
+                            <span className="h-2 w-2 rounded-full bg-brand-terracotta animate-pulse"></span>
+                            <span>Đang chờ host...</span>
+                          </div>
+                        </div>
+                      )}
+
                       {videoError && playlist.length > 0 && (
                         <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4 z-10 p-8 text-center">
                           <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-2">
@@ -2125,7 +2187,41 @@ export default function App() {
                         {lyricsLoading ? (
                           <p className="py-10 text-center text-xs text-brand-brown-light animate-pulse">Đang tải lời bài hát...</p>
                         ) : syncedLyrics.length > 0 ? (
-                          <div className="space-y-1.5 pb-6">
+                          <div>
+                            <div className="mb-3 rounded-2xl border border-brand-terracotta-light/20 bg-brand-light/45 p-2">
+                              <div className="grid grid-cols-3 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => adjustLyricsOffset(1)}
+                                  className="rounded-xl bg-white px-2 py-2 text-[10px] font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-terracotta hover:text-white"
+                                  title="Dùng khi lời đang chạy trước nhạc"
+                                >
+                                  Chậm 1s
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => adjustLyricsOffset(-1)}
+                                  className="rounded-xl bg-white px-2 py-2 text-[10px] font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-terracotta hover:text-white"
+                                  title="Dùng khi lời đang chậm hơn nhạc"
+                                >
+                                  Sớm 1s
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setLyricsOffset(0);
+                                    if (currentVideo.id) localStorage.removeItem(`duhocmate_lyrics_offset_${currentVideo.id}`);
+                                  }}
+                                  className="rounded-xl bg-white px-2 py-2 text-[10px] font-black text-brand-brown-light shadow-sm transition hover:text-brand-terracotta"
+                                >
+                                  Reset
+                                </button>
+                              </div>
+                              <p className="mt-2 text-center text-[10px] font-bold text-brand-brown-light">
+                                Lệch: {lyricsOffset > 0 ? '+' : ''}{lyricsOffset.toFixed(0)}s · Thời lời: {formatTime(Math.floor(effectiveLyricTime))}
+                              </p>
+                            </div>
+                            <div className="space-y-1.5 pb-6">
                             {syncedLyrics.map((line, index) => {
                               const isActive = index === activeLyricIndex;
                               return (
@@ -2142,6 +2238,7 @@ export default function App() {
                                 </p>
                               );
                             })}
+                            </div>
                           </div>
                         ) : lyrics ? (
                           <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-brand-brown-dark">{lyrics}</pre>
@@ -2202,7 +2299,7 @@ export default function App() {
                         <span className="text-[10px] font-bold text-brand-brown-light uppercase hidden sm:block">Live Sync</span>
                       </div>
                     </div>
-                    {showLyrics && (
+                    {false && showLyrics && (
                       <div className="mx-auto max-h-44 w-full max-w-[1180px] overflow-y-auto rounded-2xl border border-brand-terracotta-light/20 bg-white/85 p-4 backdrop-blur-sm xl:max-h-52">
                         {lyricsLoading ? (
                           <p className="text-center text-xs text-brand-brown-light animate-pulse">Đang tải lời bài hát...</p>
