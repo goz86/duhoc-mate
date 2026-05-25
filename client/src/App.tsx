@@ -2328,7 +2328,8 @@ export default function App() {
                         className="relative min-h-[220px] overflow-y-auto rounded-2xl border border-brand-terracotta-light/20 bg-white/90 p-4 shadow-sm backdrop-blur-sm"
                         style={{ maxHeight: 'min(56vh, 560px)' }}
                       >
-                        <div className="mb-3 flex items-center justify-between gap-3 border-b border-brand-terracotta-light/15 pb-3">
+                        <div className="sticky top-0 z-30 -mx-4 -mt-4 mb-3 border-b border-brand-terracotta-light/15 bg-white/95 px-4 pb-3 pt-4 backdrop-blur">
+                          <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <p className="text-[10px] font-black uppercase tracking-wide text-brand-terracotta">
                               {syncedLyrics.length ? 'Đồng bộ lời bài hát' : 'Lời bài hát'}
@@ -2343,6 +2344,10 @@ export default function App() {
                           >
                             <X size={14} />
                           </button>
+                          </div>
+                          <p className="mt-2 text-[11px] font-bold text-brand-brown-light/75">
+                            Nhấn đúp vào một dòng để chỉnh lời bài hát khớp với video.
+                          </p>
                         </div>
 
                         {lyricsLoading ? (
@@ -2410,9 +2415,6 @@ export default function App() {
                                 </p>
                               );
                             })}
-                              <p className="px-3 pt-4 text-center text-[11px] font-bold text-brand-brown-light/70">
-                                Nhấn đúp vào một dòng để chỉnh lời bài hát khớp với video.
-                              </p>
                             </div>
                           </div>
                         ) : lyrics ? (
