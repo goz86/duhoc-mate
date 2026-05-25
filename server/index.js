@@ -37,8 +37,7 @@ app.get('/api/search-music', async (req, res) => {
   }
 });
 
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
+const socketOptions = {
   cors: {
     origin: '*', // Hỗ trợ mọi nguồn kết nối cục bộ và deploy
     methods: ['GET', 'POST'],
@@ -48,7 +47,10 @@ const io = new Server(httpServer, {
   transports: ['websocket', 'polling'],
   pingInterval: 25000,
   pingTimeout: 60000
-});
+};
+
+const httpServer = createServer(app);
+const io = new Server(httpServer, socketOptions);
 
 // Lưu trữ dữ liệu các phòng trong memory
 // Cấu trúc room: { roomId, members: [], playlist: [], videoState: { id, time, playing }, pomodoro: {} }
@@ -726,8 +728,24 @@ setInterval(() => {
   }
 }, 1000);
 
-const PORT = process.env.PORT || 3001;
+const DEFAULT_PORT = 3001;
+const PORT = Number(process.env.PORT) || DEFAULT_PORT;
 const HOST = '0.0.0.0';
-httpServer.listen(PORT, HOST, () => {
-  console.log(`Socket.io Server is running on ${HOST}:${PORT}`);
-});
+
+const listen = (server, port, label) => {
+  server.listen(port, HOST, () => {
+    console.log(`Socket.io Server is running on ${HOST}:${port} (${label})`);
+  });
+  server.on('error', (err) => {
+    console.error(`Server failed on ${HOST}:${port} (${label}):`, err.message);
+    if (label === 'primary') process.exit(1);
+  });
+};
+
+listen(httpServer, PORT, 'primary');
+
+if (PORT !== DEFAULT_PORT) {
+  const fallbackServer = createServer(app);
+  io.attach(fallbackServer, socketOptions);
+  listen(fallbackServer, DEFAULT_PORT, 'fallback');
+}
