@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
-  AlertTriangle, ArrowLeft,
+  AlertTriangle,
   Coffee, MessageCircle, ListMusic,
   Users, ThumbsUp, Play, Pause, RotateCcw, Send,
   CloudRain,
@@ -341,6 +341,57 @@ export default function App() {
   const [showLyrics, setShowLyrics] = useState(false);
   const [showYoutubeCaptions, setShowYoutubeCaptions] = useState(false);
   const activeLyricRef = useRef<HTMLParagraphElement>(null);
+  const lastSearchQueryRef = useRef('');
+
+  useEffect(() => {
+    const trimmed = songSearch.trim();
+    if (!trimmed) {
+      setMusicSearchResults([]);
+      setShowSearchResults(false);
+      setMusicSearchError('');
+      lastSearchQueryRef.current = '';
+      return;
+    }
+
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      if (trimmed === lastSearchQueryRef.current) return;
+      lastSearchQueryRef.current = trimmed;
+      setMusicSearchLoading(true);
+      setMusicSearchError('');
+      setShowSearchResults(true);
+      try {
+        const SEARCH_URL = `${getApiBaseCandidates()[0]}/api/search-music`;
+        const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(trimmed)}`);
+        const data = await res.json();
+        if (data.error && !data.results?.length) {
+          setMusicSearchError(data.error);
+        } else {
+          setMusicSearchResults(data.results || []);
+        }
+      } catch (err: any) {
+        setMusicSearchError('Không thể kết nối server tìm kiếm. Hãy thử lại.');
+      } finally {
+        setMusicSearchLoading(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [songSearch]);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const searchContainer = document.getElementById('search-container');
+      if (searchContainer && !searchContainer.contains(e.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, []);
 
   const advanceToNextPlaylistItem = (player?: any) => {
     if (!isHostRef.current || advancingPlaylistRef.current) return false;
@@ -1482,7 +1533,13 @@ export default function App() {
 
   // Tìm kiếm nhạc qua Invidious API (proxy server)
   const handleSearchMusic = async () => {
-    if (!songSearch.trim()) return;
+    const trimmed = songSearch.trim();
+    if (!trimmed) return;
+    if (trimmed === lastSearchQueryRef.current) {
+      setShowSearchResults(true);
+      return;
+    }
+    lastSearchQueryRef.current = trimmed;
     setMusicSearchLoading(true);
     setMusicSearchError('');
     setMusicSearchResults([]);
@@ -1491,7 +1548,7 @@ export default function App() {
     try {
       const SEARCH_URL = `${getApiBaseCandidates()[0]}/api/search-music`;
 
-      const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(songSearch.trim())}`);
+      const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(trimmed)}`);
       const data = await res.json();
 
       if (data.error && !data.results?.length) {
@@ -3020,14 +3077,14 @@ export default function App() {
               </div>
 
               {/* Sidebar Content Panel */}
-              <div className={`flex-1 \${sidebarTab === 'chat' ? 'lg:overflow-hidden' : 'lg:overflow-y-auto'} p-3 xl:p-4 flex flex-col min-h-0`}>
+              <div className="flex-1 lg:overflow-hidden p-3 xl:p-4 flex flex-col min-h-0">
                 
                 {/* 1. PLAYLIST & JUKEBOX TAB */}
                 {sidebarTab === 'playlist' && (
                   <div className="flex-1 flex flex-col gap-3 min-h-0">
                     
                     {/* Search / Add Song Form */}
-                    <div className="space-y-3">
+                    <div className="space-y-3 relative shrink-0" id="search-container">
                       <div className="flex gap-2">
                         <input
                           type="text"
@@ -3051,50 +3108,38 @@ export default function App() {
                       </div>
 
                       {/* Quick Tags */}
-                      {!showSearchResults && (
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            { icon: <Sparkles size={13} />, label: 'Lofi Girl', q: 'lofi girl study' },
-                            { icon: <Coffee size={13} />, label: 'K-Pop Học Bài', q: 'kpop study playlist 2024' },
-                            { icon: <CloudRain size={13} />, label: 'Tiếng Mưa Cozy', q: 'rain cozy study music' },
-                            { icon: <Music2 size={13} />, label: 'Piano Nhẹ', q: 'piano soft study music' },
-                          ].map(tag => (
-                            <button
-                              key={tag.label}
-                              type="button"
-                              onClick={() => { setSongSearch(tag.q); }}
-                              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white/60 hover:bg-white rounded-lg border border-brand-terracotta-light/10 text-xs text-brand-brown-light transition font-medium"
-                            >
-                              {tag.icon}
-                              <span>{tag.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Search Results */}
-                      {showSearchResults && (
-                        <div className="relative">
-                          {/* Nút đóng kết quả */}
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { icon: <Sparkles size={13} />, label: 'Lofi Girl', q: 'lofi girl study' },
+                          { icon: <Coffee size={13} />, label: 'K-Pop Học Bài', q: 'kpop study playlist 2024' },
+                          { icon: <CloudRain size={13} />, label: 'Tiếng Mưa Cozy', q: 'rain cozy study music' },
+                          { icon: <Music2 size={13} />, label: 'Piano Nhẹ', q: 'piano soft study music' },
+                        ].map(tag => (
                           <button
+                            key={tag.label}
                             type="button"
-                            onClick={() => { setShowSearchResults(false); setMusicSearchResults([]); }}
-                            className="inline-flex items-center gap-1 text-[9px] text-brand-brown-light hover:text-brand-terracotta font-bold cursor-pointer mb-1.5"
+                            onClick={() => { setSongSearch(tag.q); }}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white/60 hover:bg-white rounded-lg border border-brand-terracotta-light/10 text-xs text-brand-brown-light transition font-medium"
                           >
-                            <ArrowLeft size={11} />
-                            Quay về playlist
+                            {tag.icon}
+                            <span>{tag.label}</span>
                           </button>
+                        ))}
+                      </div>
 
+                      {/* Search Results Dropdown */}
+                      {showSearchResults && songSearch.trim() && (
+                        <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white/95 backdrop-blur-md border border-brand-terracotta-light/15 rounded-2xl shadow-2xl p-2.5 max-h-[320px] overflow-y-auto custom-scrollbar space-y-2">
                           {musicSearchLoading && (
-                            <div className="flex items-center justify-center py-8 gap-2 text-brand-brown-light">
+                            <div className="flex items-center justify-center py-6 gap-2 text-brand-brown-light">
                               <span className="w-4 h-4 border-2 border-brand-terracotta border-t-transparent rounded-full animate-spin" />
                               <span className="text-xs">Đang tìm kiếm...</span>
                             </div>
                           )}
 
                           {musicSearchError && (
-                            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200/60 rounded-2xl text-[10px] text-amber-700 leading-relaxed">
-                              <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                            <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200/60 rounded-xl text-[10px] text-amber-700 leading-relaxed">
+                              <AlertTriangle size={12} className="mt-0.5 shrink-0" />
                               <span>{musicSearchError}</span>
                             </div>
                           )}
@@ -3105,54 +3150,51 @@ export default function App() {
                             </div>
                           )}
 
-                          <div className="space-y-2 max-h-[380px] overflow-y-auto pr-0.5 custom-scrollbar">
-                            {musicSearchResults.map((result) => (
-                              <div
-                                key={result.videoId}
-                                className="flex items-center gap-2.5 p-2 rounded-2xl bg-white/80 border border-brand-terracotta-light/10 hover:shadow-md hover:border-brand-terracotta/20 transition group cursor-pointer"
-                                onClick={() => addSongFromResult(result)}
-                              >
-                                {/* Thumbnail */}
-                                <div className="relative flex-shrink-0 w-14 h-10 rounded-lg overflow-hidden bg-brand-light">
-                                  <img
-                                    src={result.thumbnail}
-                                    alt={result.title}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                  />
-                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition flex items-center justify-center">
-                                    <Play className="text-white opacity-0 group-hover:opacity-100 transition" size={14} />
-                                  </div>
+                          {!musicSearchLoading && musicSearchResults.map((result) => (
+                            <div
+                              key={result.videoId}
+                              className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-brand-light/45 border border-transparent hover:border-brand-terracotta-light/10 transition group cursor-pointer"
+                              onClick={() => addSongFromResult(result)}
+                            >
+                              {/* Thumbnail */}
+                              <div className="relative flex-shrink-0 w-14 h-10 rounded-lg overflow-hidden bg-brand-light">
+                                <img
+                                  src={result.thumbnail}
+                                  alt={result.title}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition flex items-center justify-center">
+                                  <Play className="text-white opacity-0 group-hover:opacity-100 transition" size={12} />
                                 </div>
-
-                                {/* Info */}
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[10px] font-bold text-brand-brown-dark truncate leading-tight">{result.title}</p>
-                                  <p className="text-[9px] text-brand-brown-light truncate mt-0.5">
-                                    {result.author} · {result.duration}
-                                    {result.views > 0 && ` · ${result.views >= 1000000 ? `${(result.views/1000000).toFixed(1)}M` : result.views >= 1000 ? `${Math.floor(result.views/1000)}K` : result.views} lượt xem`}
-                                  </p>
-                                </div>
-
-                                {/* Add Button */}
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); addSongFromResult(result); }}
-                                  className="flex-shrink-0 px-2 py-1 rounded-lg bg-brand-terracotta text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 transition"
-                                >
-                                  + Thêm
-                                </button>
                               </div>
-                            ))}
-                          </div>
+
+                              {/* Info */}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-bold text-brand-brown-dark truncate leading-tight">{result.title}</p>
+                                <p className="text-[9px] text-brand-brown-light truncate mt-0.5">
+                                  {result.author} · {result.duration}
+                                </p>
+                              </div>
+
+                              {/* Add Button */}
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); addSongFromResult(result); }}
+                                className="flex-shrink-0 px-2 py-1 rounded-lg bg-brand-terracotta text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 transition"
+                              >
+                                + Thêm
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
 
-                    <div className="h-[1px] bg-brand-terracotta-light/10 my-0" />
+                    <div className="h-[1px] bg-brand-terracotta-light/10 my-0 shrink-0" />
 
                     {/* Playlist Queue */}
-                    <div className="overflow-y-auto overscroll-y-contain space-y-3 pr-1 max-h-[40vh] lg:max-h-none lg:overflow-visible">
+                    <div className="overflow-y-auto overscroll-y-contain space-y-3 pr-1 flex-1 min-h-0 custom-scrollbar">
                       {playlist.length === 0 ? (
                         <div className="py-4 text-brand-brown-light space-y-3">
                           <div className="rounded-2xl border border-dashed border-brand-terracotta-light/40 bg-white/60 p-4 text-center">
@@ -3369,7 +3411,7 @@ export default function App() {
 
                 {/* 3. MEMBERS TAB – Discord-style with voice indicators */}
                 {sidebarTab === 'members' && (
-                  <div className="flex-1 space-y-3">
+                  <div className="flex-1 space-y-3 flex flex-col min-h-0">
                     <div className="flex justify-between items-center pb-3 border-b border-brand-terracotta-light/10 mb-2">
                       <span className="text-xs font-bold uppercase text-brand-brown-light">Danh sách bạn học</span>
                       <span className="px-3 py-1 rounded-md text-xs font-bold bg-brand-terracotta-light/30 text-brand-terracotta">{members.length} đang online</span>
@@ -3412,7 +3454,7 @@ export default function App() {
                       </div>
                     )}
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
                       {members.map((m) => {
                         const vUser = voiceChat.voiceUsers.get(m.id);
                         const isInVoice = !!vUser;
