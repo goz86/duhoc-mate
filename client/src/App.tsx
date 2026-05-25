@@ -34,6 +34,7 @@ import {
 } from './lib/communityTemplates';
 import type { StageMode } from './types';
 import { deletePersistentRoom, findPersistentRoom, hashRoomPassword, savePersistentRoom, type PersistentRoom } from './lib/persistentRooms';
+import { getNextPlaylistItem } from './lib/playlist';
 import {
   createEstimatedLyrics,
   findBestLyricsTrack,
@@ -262,6 +263,9 @@ export default function App() {
   const iframeContainerRef = useRef<HTMLDivElement>(null);
   const currentVideoRef = useRef(currentVideo);
   useEffect(() => { currentVideoRef.current = currentVideo; }, [currentVideo]);
+  const playlistRef = useRef<PlaylistItem[]>(playlist);
+  useEffect(() => { playlistRef.current = playlist; }, [playlist]);
+  const advancingPlaylistRef = useRef(false);
   const roomIdRef = useRef(roomId);
   useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
   const isHostRef = useRef(isHost);
@@ -659,6 +663,32 @@ export default function App() {
             // Differentiate 2 cases of state=1 sau khi pause:
             // - Spurious từ YouTube (sau buffer/seek/ad) thường < 2s sau pause → CHẶN
             // - User explicitly click YouTube native play → ALLOW (sincePause > 2s)
+            if (state === 1) {
+              advancingPlaylistRef.current = false;
+            }
+
+            if (state === 0 && !advancingPlaylistRef.current) {
+              const nextItem = getNextPlaylistItem(playlistRef.current);
+              if (nextItem) {
+                advancingPlaylistRef.current = true;
+                hostWantsToPlayRef.current = true;
+                hostLastPauseAtRef.current = 0;
+                const nextVideoState = { id: nextItem.videoId, time: 0, playing: true };
+                setVideoError(false);
+                setCurrentVideo(nextVideoState);
+                event.target.loadVideoById?.(nextItem.videoId, 0);
+                socket.emit('video-action', {
+                  roomId: roomIdRef.current,
+                  action: 'play',
+                  time: 0,
+                  videoId: nextItem.videoId,
+                  userInitiated: true,
+                });
+                socket.emit('remove-song', { roomId: roomIdRef.current, songId: nextItem.id });
+              }
+              return;
+            }
+
             if (state === 1 && !cvr.playing) {
               const sincePause = Date.now() - (hostLastPauseAtRef.current || 0);
               // Chặn spurious state=1 nếu trong vòng 2s sau pause VÀ flag không bật
