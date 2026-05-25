@@ -37,8 +37,13 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: '*', // Hỗ trợ mọi nguồn kết nối cục bộ và deploy
-    methods: ['GET', 'POST']
-  }
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type'],
+    credentials: true
+  },
+  transports: ['websocket', 'polling'],
+  pingInterval: 25000,
+  pingTimeout: 60000
 });
 
 // Lưu trữ dữ liệu các phòng trong memory
@@ -718,6 +723,7 @@ setInterval(() => {
 }, 1000);
 
 const PORT = process.env.PORT || 3001;
-httpServer.listen(PORT, () => {
-  console.log(`Socket.io Server is running on port ${PORT}`);
+const HOST = '0.0.0.0';
+httpServer.listen(PORT, HOST, () => {
+  console.log(`Socket.io Server is running on ${HOST}:${PORT}`);
 });
