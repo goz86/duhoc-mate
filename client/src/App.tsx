@@ -587,6 +587,9 @@ export default function App() {
         localPausedRef.current = false;
         setLocalPaused(false);
         setShowHostPausedToast(false);
+        if (iframeContainerRef.current) {
+          iframeContainerRef.current.style.visibility = 'visible';
+        }
       }
       // Nếu host dừng → show toast cho non-host
       if (action === 'pause' && !isHostRef.current) {
@@ -604,6 +607,9 @@ export default function App() {
         // Ngưỡng > 1s (thay vì > 2s cũ) để catch drift nhỏ hơn
         if (time !== undefined && Math.abs(playerRef.current.getCurrentTime() - time) > 1) {
           playerRef.current.seekTo(time, true);
+        }
+        if (playerVolume > 0) {
+          playerRef.current.unMute?.();
         }
         playerRef.current.playVideo();
       } else if (action === 'pause') {
@@ -772,6 +778,13 @@ export default function App() {
                 iframeContainerRef.current.style.visibility = 'hidden';
               }
               return;
+            } else {
+              if (iframeContainerRef.current) {
+                iframeContainerRef.current.style.visibility = 'visible';
+              }
+              if (playerVolume > 0) {
+                event.target.unMute?.();
+              }
             }
             if (currentVideoRef.current.playing) {
               event.target.playVideo();
