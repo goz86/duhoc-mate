@@ -132,6 +132,9 @@ export function useVoiceChat(
     // Nhận audio track từ remote peer
     pc.ontrack = (event) => {
       const ctx = getAudioContext();
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(err => console.warn('[VoiceChat] Failed to resume AudioContext in ontrack:', err));
+      }
       const remoteStream = event.streams[0] ?? new MediaStream([event.track]);
       const source = ctx.createMediaStreamSource(remoteStream);
       const gainNode = ctx.createGain();
