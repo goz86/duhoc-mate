@@ -2379,7 +2379,7 @@ export default function App() {
               {!roomCollapsed && <StageSelector stageMode={stageMode} onChange={setStageMode} />}
 
               {/* ── STAGE DISPLAY AREA – adapts per stageMode ── */}
-              <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : 'flex-1 glass-panel rounded-3xl p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col'} relative overflow-hidden`}>
+              <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : 'flex-1 glass-panel rounded-3xl p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col'} relative ${stageMode === 'pdf' ? 'overflow-visible' : 'overflow-hidden'}`}>
 
                 {roomCollapsed && (
                   <div className="w-full max-w-xl space-y-8 text-center">
@@ -2955,18 +2955,18 @@ export default function App() {
                     )}
 
                     {/* Embed area */}
-                    <div className="flex-1 w-full rounded-2xl overflow-hidden border border-brand-terracotta-light/20 bg-white/20 min-h-0">
+                    <div className="w-full rounded-2xl overflow-hidden border border-brand-terracotta-light/20 bg-white/20" style={{ height: 'calc(100vh - 260px)', minHeight: '420px' }}>
                       {slideUrl ? (
                         <iframe
                           src={slideUrl}
-                          className="w-full h-full min-h-[300px]"
+                          className="w-full h-full"
                           style={{ border: 'none' }}
                           allow="autoplay"
                           allowFullScreen
                           title="Slide trình chiếu"
                         />
                       ) : (
-                        <div className="flex flex-col items-center justify-center h-full min-h-[300px] gap-4 p-6 text-center">
+                        <div className="flex flex-col items-center justify-center h-full gap-4 p-6 text-center">
                           <div className="w-16 h-16 rounded-full bg-brand-terracotta/10 border-2 border-brand-terracotta/20 flex items-center justify-center">
                             <FileText size={28} className="text-brand-terracotta/60" />
                           </div>
