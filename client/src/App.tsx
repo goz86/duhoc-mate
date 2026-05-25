@@ -2281,7 +2281,7 @@ export default function App() {
                     {/* Info bar + local pause cho non-host — ẩn khi chưa có video */}
                     {showLyrics && (lyrics || lyricsLoading) && (
                       <aside
-                        className="min-h-[220px] overflow-y-auto rounded-2xl border border-brand-terracotta-light/20 bg-white/90 p-4 shadow-sm backdrop-blur-sm"
+                        className="relative min-h-[220px] overflow-y-auto rounded-2xl border border-brand-terracotta-light/20 bg-white/90 p-4 shadow-sm backdrop-blur-sm"
                         style={{ maxHeight: 'min(56vh, 560px)' }}
                       >
                         <div className="mb-3 flex items-center justify-between gap-3 border-b border-brand-terracotta-light/15 pb-3">
@@ -2304,59 +2304,69 @@ export default function App() {
                         {lyricsLoading ? (
                           <p className="py-10 text-center text-xs text-brand-brown-light animate-pulse">Đang tải lời bài hát...</p>
                         ) : displayLyricLines.length > 0 ? (
-                          <div>
-                            <div className="mb-3 rounded-2xl border border-brand-terracotta-light/20 bg-brand-light/45 p-2">
-                              {isEstimatedLyrics && (
-                                <p className="mb-2 text-center text-[10px] font-bold text-brand-brown-light">
-                                  Bài này không có timestamp chuẩn, app đang tự cuộn theo thời lượng video.
-                                </p>
-                              )}
-                              <div className="grid grid-cols-3 gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => adjustLyricsOffset(1)}
-                                  className="rounded-xl bg-white px-2 py-2 text-[10px] font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-terracotta hover:text-white"
-                                  title="Dùng khi lời đang chạy trước nhạc"
-                                >
-                                  Chậm 1s
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => adjustLyricsOffset(-1)}
-                                  className="rounded-xl bg-white px-2 py-2 text-[10px] font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-terracotta hover:text-white"
-                                  title="Dùng khi lời đang chậm hơn nhạc"
-                                >
-                                  Sớm 1s
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setLyricsOffset(0);
-                                    if (currentVideo.id) localStorage.removeItem(`duhocmate_lyrics_offset_${currentVideo.id}`);
-                                  }}
-                                  className="rounded-xl bg-white px-2 py-2 text-[10px] font-black text-brand-brown-light shadow-sm transition hover:text-brand-terracotta"
-                                >
-                                  Reset
-                                </button>
-                              </div>
-                              <p className="mt-2 text-center text-[10px] font-bold text-brand-brown-light">
-                                Lệch: {lyricsOffset > 0 ? '+' : ''}{lyricsOffset.toFixed(0)}s · Thời lời: {formatTime(Math.floor(effectiveLyricTime))}
-                              </p>
+                          <div className="relative">
+                            <div className="sticky top-2 z-20 ml-auto mb-2 flex w-9 flex-col items-center gap-1 rounded-full border border-brand-terracotta-light/20 bg-white/95 p-1 shadow-sm backdrop-blur">
+                              <button
+                                type="button"
+                                onClick={() => adjustLyricsOffset(-1)}
+                                className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-brand-brown-dark transition hover:bg-brand-terracotta hover:text-white"
+                                title="Loi chay som hon 1 giay"
+                                aria-label="Loi chay som hon 1 giay"
+                              >
+                                ^
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => adjustLyricsOffset(1)}
+                                className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-brand-brown-dark transition hover:bg-brand-terracotta hover:text-white"
+                                title="Loi chay cham lai 1 giay"
+                                aria-label="Loi chay cham lai 1 giay"
+                              >
+                                v
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setLyricsOffset(0);
+                                  if (currentVideo.id) localStorage.removeItem(`duhocmate_lyrics_offset_${currentVideo.id}`);
+                                }}
+                                className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-black text-brand-brown-light transition hover:bg-brand-light hover:text-brand-terracotta"
+                                title="Reset lech loi"
+                                aria-label="Reset lech loi"
+                              >
+                                0
+                              </button>
                             </div>
-                            <div className="space-y-1.5 pb-6">
+                            {(isEstimatedLyrics || lyricsOffset !== 0) && (
+                              <p className="mb-2 pr-11 text-right text-[10px] font-bold text-brand-brown-light">
+                                {isEstimatedLyrics ? 'Uoc luong loi - ' : ''}
+                                Lech {lyricsOffset > 0 ? '+' : ''}{lyricsOffset.toFixed(0)}s
+                              </p>
+                            )}
+                            <div className="space-y-1.5 pb-6 pr-10">
                             {displayLyricLines.map((line: LyricLine, index: number) => {
                               const isActive = index === activeLyricIndex;
                               return (
                                 <p
                                   key={`${line.time}-${index}`}
                                   ref={isActive ? activeLyricRef : undefined}
-                                  className={`rounded-xl px-3 py-2 text-sm leading-relaxed transition ${
+                                  className={`relative px-3 py-2 text-sm leading-relaxed transition ${
                                     isActive
-                                      ? 'bg-brand-terracotta text-white shadow-sm'
-                                      : 'text-brand-brown-light hover:bg-brand-light/70'
+                                      ? 'font-black text-brand-terracotta'
+                                      : 'font-medium text-brand-brown-light hover:text-brand-brown-dark'
                                   }`}
                                 >
+                                  {isActive && (
+                                    <span className="pointer-events-none absolute inset-y-0 -left-1 flex items-center text-[13px] text-brand-terracotta">
+                                      &gt;
+                                    </span>
+                                  )}
                                   {line.text}
+                                  {isActive && (
+                                    <span className="pointer-events-none absolute inset-y-0 -right-1 flex items-center text-[13px] text-brand-terracotta">
+                                      &lt;
+                                    </span>
+                                  )}
                                 </p>
                               );
                             })}
