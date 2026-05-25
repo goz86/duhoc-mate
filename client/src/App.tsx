@@ -1005,6 +1005,10 @@ export default function App() {
     avatarUrl?: string
   ) => {
     if (!username.trim()) return alert("Vui lòng nhập tên của bạn trước!");
+    if (!socket || !socket.connected) {
+      alert("Đang kết nối tới server...");
+      return;
+    }
     const generatedId = Math.random().toString(36).substring(2, 8).toUpperCase();
     const nextRoomTitle = roomTitle || `Phòng của ${username}`;
     setRoomId(generatedId);
@@ -1073,6 +1077,11 @@ export default function App() {
     isGuestConfirmed?: boolean,
     guestUsername?: string
   ) => {
+    if (!socket || !socket.connected) {
+      alert("Đang kết nối tới server...");
+      return;
+    }
+
     let targetRoomId = roomId;
     if (typeof e === 'string') {
       targetRoomId = e;
