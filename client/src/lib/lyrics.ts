@@ -50,6 +50,21 @@ export const createEstimatedLyrics = (value: string, duration: number): LyricLin
   }));
 };
 
+export const getOffsetForLyricAnchor = ({
+  playbackTime,
+  lyricTime,
+  minOffset = -20,
+  maxOffset = 30,
+}: {
+  playbackTime: number;
+  lyricTime: number;
+  minOffset?: number;
+  maxOffset?: number;
+}) => {
+  const rawOffset = Number((playbackTime - lyricTime).toFixed(1));
+  return Math.max(minOffset, Math.min(maxOffset, rawOffset));
+};
+
 const unique = (values: string[]) => Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
 
 const normalizeForMatch = (value = '') =>

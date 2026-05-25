@@ -37,6 +37,7 @@ import { deletePersistentRoom, findPersistentRoom, hashRoomPassword, savePersist
 import {
   createEstimatedLyrics,
   findBestLyricsTrack,
+  getOffsetForLyricAnchor,
   getLyricsSearchCandidates,
   parseSyncedLyrics,
   type LyricLine
@@ -1619,6 +1620,20 @@ export default function App() {
     });
   };
 
+  const syncLyricsToLine = (line: LyricLine) => {
+    const playerTime = playerRef.current?.getCurrentTime?.();
+    const currentTime = typeof playerTime === 'number' ? playerTime : playbackTime;
+    const next = getOffsetForLyricAnchor({
+      playbackTime: currentTime,
+      lyricTime: line.time,
+    });
+    setPlaybackTime(currentTime);
+    setLyricsOffset(next);
+    if (currentVideo.id) {
+      localStorage.setItem(`duhocmate_lyrics_offset_${currentVideo.id}`, String(next));
+    }
+  };
+
   const effectiveLyricTime = Math.max(0, playbackTime - lyricsOffset);
   const estimatedLyrics = syncedLyrics.length ? [] : createEstimatedLyrics(lyrics, videoDuration);
   const displayLyricLines = syncedLyrics.length ? syncedLyrics : estimatedLyrics;
@@ -2343,6 +2358,8 @@ export default function App() {
                                 <p
                                   key={`${line.time}-${index}`}
                                   ref={isActive ? activeLyricRef : undefined}
+                                  onDoubleClick={() => syncLyricsToLine(line)}
+                                  title="Double click de dong bo dong nay voi video"
                                   className={`relative px-3 py-2 text-sm leading-relaxed transition ${
                                     isActive
                                       ? 'font-black text-brand-terracotta'
