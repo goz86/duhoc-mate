@@ -63,6 +63,10 @@ const ROOM_DIR_FILE = './room-directory.json';
 let _savedDir = {};
 try { _savedDir = JSON.parse(readFileSync(ROOM_DIR_FILE, 'utf8')); } catch {}
 const roomDirectory = new Map(Object.entries(_savedDir));
+const ROOM_STATE_FILE = './room-state.json';
+let _savedRoomState = {};
+try { _savedRoomState = JSON.parse(readFileSync(ROOM_STATE_FILE, 'utf8')); } catch {}
+const savedRoomState = new Map(Object.entries(_savedRoomState));
 
 const saveRoomDirectory = () => {
   try {
@@ -72,6 +76,33 @@ const saveRoomDirectory = () => {
   } catch (e) { console.error('saveRoomDirectory error:', e.message); }
 };
 const onlineUsers = new Map(); // socket.id -> { socketId, friendCode, username, currentRoomId, currentSong }
+
+const serializeRoomState = (room) => ({
+  playlist: room.playlist || [],
+  videoState: room.videoState || { id: '', time: 0, playing: false, pausedByHost: false, lastUpdated: Date.now() },
+  pomodoro: room.pomodoro || createDefaultPomodoro(),
+  chatMessages: room.chatMessages || [],
+  ideaTasks: room.ideaTasks || [],
+  roomTitle: room.roomTitle || '',
+  isPrivate: !!room.isPrivate,
+  password: room.password || '',
+  hostAvatarUrl: room.hostAvatarUrl || '',
+  tiktokVideoId: room.tiktokVideoId || '',
+});
+
+const saveRoomState = () => {
+  try {
+    const obj = {};
+    for (const [k, v] of savedRoomState.entries()) obj[k] = v;
+    writeFileSync(ROOM_STATE_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) { console.error('saveRoomState error:', e.message); }
+};
+
+const rememberRoomState = (room) => {
+  if (!room?.roomId) return;
+  savedRoomState.set(room.roomId, serializeRoomState(room));
+  saveRoomState();
+};
 
 const cancelEmptyRoomCleanup = (roomId) => {
   const timer = emptyRoomCleanupTimers.get(roomId);
@@ -202,6 +233,7 @@ const sendSystemMessage = (roomId, text) => {
 
   if (!room.chatMessages) room.chatMessages = [];
   room.chatMessages.push(systemMsg);
+  rememberRoomState(room);
   if (room.chatMessages.length > 100) {
     room.chatMessages.shift();
   }
@@ -241,26 +273,28 @@ io.on('connection', (socket) => {
   // 1. Tham gia phòng
   socket.on('join-room', ({ roomId, username, ideaTasks = [], roomTitle, isPrivate, password, hostAvatarUrl, friendCode }) => {
     const rememberedRoom = roomDirectory.get(roomId);
+    const restoredState = savedRoomState.get(roomId) || {};
     // Khởi tạo phòng nếu chưa tồn tại
     if (!rooms.has(roomId)) {
       rooms.set(roomId, {
         roomId,
         members: [],
-        playlist: [],
-        videoState: {
+        playlist: Array.isArray(restoredState.playlist) ? restoredState.playlist : [],
+        videoState: restoredState.videoState || {
           id: '', // Không có video mặc định — chờ người dùng chọn
           time: 0,
           playing: false,
           pausedByHost: false, // Host đã tạm dừng toàn phòng
           lastUpdated: Date.now()
         },
-        pomodoro: createDefaultPomodoro(),
-        chatMessages: [],
-        ideaTasks: Array.isArray(ideaTasks) ? ideaTasks : [],
+        pomodoro: restoredState.pomodoro || createDefaultPomodoro(),
+        chatMessages: Array.isArray(restoredState.chatMessages) ? restoredState.chatMessages : [],
+        ideaTasks: Array.isArray(restoredState.ideaTasks) ? restoredState.ideaTasks : (Array.isArray(ideaTasks) ? ideaTasks : []),
         roomTitle: roomTitle || `Phòng của ${username}`,
-        isPrivate: isPrivate !== undefined ? !!isPrivate : !!rememberedRoom?.isPrivate,
-        password: password || rememberedRoom?.password || '',
-        hostAvatarUrl: hostAvatarUrl || rememberedRoom?.hostAvatarUrl || '',
+        isPrivate: isPrivate !== undefined ? !!isPrivate : !!restoredState.isPrivate || !!rememberedRoom?.isPrivate,
+        password: password || restoredState.password || rememberedRoom?.password || '',
+        hostAvatarUrl: hostAvatarUrl || restoredState.hostAvatarUrl || rememberedRoom?.hostAvatarUrl || '',
+        tiktokVideoId: restoredState.tiktokVideoId || '',
         voiceUsers: {}  // { [socketId]: { muted, speaking } }
       });
     }
@@ -299,6 +333,7 @@ io.on('connection', (socket) => {
       room.hostAvatarUrl = hostAvatarUrl;
     }
     rememberRoom(room, room.members.find(m => m.isHost)?.username || newMember.username);
+    rememberRoomState(room);
 
     // Cập nhật thông tin phòng & bài hát của user trong onlineUsers
     const user = onlineUsers.get(socket.id);
@@ -408,6 +443,7 @@ io.on('connection', (socket) => {
 
     if (!room.chatMessages) room.chatMessages = [];
     room.chatMessages.push(chatMsg);
+    rememberRoomState(room);
     if (room.chatMessages.length > 100) {
       room.chatMessages.shift();
     }
@@ -452,6 +488,7 @@ io.on('connection', (socket) => {
       room.videoState.pausedByHost = true; // Host dừng → đánh dấu toàn phòng
     }
     room.videoState.lastUpdated = Date.now();
+    rememberRoomState(room);
 
     // Gửi lại trạng thái video mới cho các thành viên khác trong phòng (ngoại trừ người gửi)
     socket.to(roomId).emit('video-sync', {
@@ -497,6 +534,7 @@ io.on('connection', (socket) => {
 
     // Sắp xếp playlist theo số vote giảm dần
     room.playlist.sort((a, b) => b.votes - a.votes);
+    rememberRoomState(room);
 
     sendSystemMessage(roomId, `Bạn học ${addedBy} đã thêm bài: "${title}".`);
 
@@ -507,6 +545,7 @@ io.on('connection', (socket) => {
       room.videoState.playing = true;
       room.videoState.lastUpdated = Date.now();
       room.playlist = room.playlist.filter(item => item.id !== newItem.id);
+      rememberRoomState(room);
       // Emit playlist và video-sync cùng lúc để tránh race condition
       io.to(roomId).emit('update-playlist', room.playlist);
       io.to(roomId).emit('video-sync', {
@@ -543,6 +582,7 @@ io.on('connection', (socket) => {
 
     // Sắp xếp lại playlist
     room.playlist.sort((a, b) => b.votes - a.votes);
+    rememberRoomState(room);
 
     io.to(roomId).emit('update-playlist', room.playlist);
     updateRoomMembersSongs(roomId, room.playlist[0]?.title || 'Đang nghe nhạc Lofi');
@@ -554,6 +594,7 @@ io.on('connection', (socket) => {
     if (!room) return;
 
     room.playlist = room.playlist.filter(item => item.id !== songId);
+    rememberRoomState(room);
     io.to(roomId).emit('update-playlist', room.playlist);
     updateRoomMembersSongs(roomId, room.playlist[0]?.title || 'Đang nghe nhạc Lofi');
   });
@@ -582,6 +623,7 @@ io.on('connection', (socket) => {
     }
 
     io.to(roomId).emit('pomodoro-sync', p);
+    rememberRoomState(room);
   });
 
   // 7. Đồng bộ TOPIK Study giữa thành viên phòng
@@ -594,6 +636,7 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomId);
     if (!room) return;
     room.ideaTasks = Array.isArray(tasks) ? tasks : [];
+    rememberRoomState(room);
     socket.to(roomId).emit('idea-board-sync', room.ideaTasks);
   });
 
@@ -602,6 +645,7 @@ io.on('connection', (socket) => {
     if (!room) return;
     // Lưu state TikTok vào room để members join sau cũng nhận được
     room.tiktokVideoId = videoId;
+    rememberRoomState(room);
     socket.to(roomId).emit('tiktok-sync', { videoId });
   });
 
@@ -616,6 +660,7 @@ io.on('connection', (socket) => {
     if (typeof isPrivate === 'boolean') room.isPrivate = isPrivate;
     if (password !== undefined) room.password = password || '';
     rememberRoom(room, room.members.find(m => m.isHost)?.username || sender.username);
+    rememberRoomState(room);
 
     io.to(roomId).emit('room-settings-updated', {
       roomTitle: room.roomTitle,
