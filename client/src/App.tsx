@@ -279,6 +279,7 @@ export default function App() {
   // StageMode controls the main room module: media, focus timer, TOPIK, or idea board.
   const [stageMode, setStageMode] = useState<StageMode>('youtube');
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'playlist' | 'members'>('playlist');
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [ideaTasks, setIdeaTasks] = useState<IdeaTask[]>([]);
   const [roomCollapsed, setRoomCollapsed] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -538,6 +539,12 @@ export default function App() {
 
     socket.on('receive-message', (msg: Message) => {
       setChatMessages(prev => [...prev, msg]);
+      // Increment unread count if not viewing chat
+      setUnreadChatCount(prev => {
+        // Nếu user không đang xem chat, increment counter
+        // Nếu đang xem, không increment
+        return sidebarTab !== 'chat' ? prev + 1 : 0;
+      });
       setTimeout(scrollToBottom, 50);
     });
 
@@ -3087,14 +3094,20 @@ export default function App() {
                   <ListMusic size={16} className="shrink-0" /> <span className="truncate">Playlist ({playlist.length})</span>
                 </button>
                 <button
-                  onClick={() => setSidebarTab('chat')}
+                  onClick={() => {
+                    setSidebarTab('chat');
+                    setUnreadChatCount(0); // Reset counter when viewing chat
+                  }}
                   className={`h-10 min-w-0 rounded-xl px-1.5 font-bold text-xs xl:h-11 xl:px-2 xl:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     sidebarTab === 'chat'
                       ? 'bg-brand-terracotta text-white shadow-sm'
                       : 'hover:bg-brand-light text-brand-brown-light'
                   }`}
                 >
-                  <MessageCircle size={16} className="shrink-0" /> <span className="truncate">Chat ({chatMessages.length})</span>
+                  <MessageCircle size={16} className="shrink-0" />
+                  <span className="truncate">
+                    Chat ({unreadChatCount > 0 ? unreadChatCount : chatMessages.length})
+                  </span>
                 </button>
                 <button
                   onClick={() => setSidebarTab('members')}
@@ -3348,7 +3361,7 @@ export default function App() {
 
                 {/* 2. CHAT TAB */}
                 {sidebarTab === 'chat' && (
-                  <div className="flex h-full lg:h-full lg:min-h-0 min-h-[calc(100vh-235px)] flex-col gap-0 flex-1">
+                  <div className="flex h-full lg:h-full lg:min-h-0 min-h-0 max-h-[calc(100vh-320px)] sm:max-h-[calc(100vh-280px)] lg:max-h-none flex-col gap-0 flex-1">
                     {/* Messages Area */}
                     <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain space-y-4 pr-1 mb-3 custom-scrollbar">
                       {chatMessages.length === 0 ? (
