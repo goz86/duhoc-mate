@@ -27,11 +27,13 @@ interface UseVoiceChatReturn {
   isInVoice: boolean;
   isMuted: boolean;
   isSpeaking: boolean;
+  isDeafened: boolean;     // Tắt hết tiếng người khác (tai nghe bị tắt)
   voiceUsers: Map<string, VoiceUserState>;
   masterVolume: number;
   joinVoice: () => Promise<void>;
   leaveVoice: () => void;
   toggleMute: () => void;
+  toggleDeafen: () => void;   // Bật/tắt deafen (tắt hết tai nghe)
   setMasterVolume: (v: number) => void;
   setUserVolume: (userId: string, v: number) => void;
   hostMuteUser: (targetId: string, muted: boolean) => void;
@@ -58,6 +60,7 @@ export function useVoiceChat(
   const [isInVoice, setIsInVoice] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isDeafened, setIsDeafened] = useState(false);  // Tắt hết tai nghe (deafen)
   const [voiceUsers, setVoiceUsers] = useState<Map<string, VoiceUserState>>(new Map());
   const [masterVolume, setMasterVolumeState] = useState(1);
 
@@ -70,13 +73,16 @@ export function useVoiceChat(
   const vadTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMutedRef = useRef(false);
   const isInVoiceRef = useRef(false);
+  const isDeafenedRef = useRef(false);
   const roomIdRef = useRef(roomId);
   const isSpeakingRef = useRef(false);
+  const masterVolumeBeforeDeafenRef = useRef(1); // Lưu volume trước khi deafen
 
   // Sync refs
   useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
   useEffect(() => { isInVoiceRef.current = isInVoice; }, [isInVoice]);
+  useEffect(() => { isDeafenedRef.current = isDeafened; }, [isDeafened]);
 
   // ── Helper: tạo AudioContext nếu chưa có ──────────────────────────────────
   const getAudioContext = useCallback((): AudioContext => {
@@ -265,13 +271,46 @@ export function useVoiceChat(
     socket.emit('voice-mute-changed', { roomId: roomIdRef.current, muted: newMuted });
   }, [socket]);
 
+  // ── toggleDeafen: tắt/bật hết âm thanh từ người khác (như Discord deafen) ──
+  const toggleDeafen = useCallback(() => {
+    const newDeafened = !isDeafenedRef.current;
+    setIsDeafened(newDeafened);
+    isDeafenedRef.current = newDeafened;
+
+    if (masterGainRef.current) {
+      if (newDeafened) {
+        // Lưu volume hiện tại trước khi deafen
+        masterVolumeBeforeDeafenRef.current = masterGainRef.current.gain.value;
+        masterGainRef.current.gain.value = 0;
+      } else {
+        // Khôi phục volume trước khi deafen
+        masterGainRef.current.gain.value = masterVolumeBeforeDeafenRef.current;
+      }
+    }
+
+    // Khi deafen, tự động mute mic luôn (như Discord)
+    if (newDeafened) {
+      const stream = localStreamRef.current;
+      if (stream && !isMutedRef.current) {
+        stream.getAudioTracks().forEach(track => { track.enabled = false; });
+        setIsMuted(true);
+        isMutedRef.current = true;
+        if (isSpeakingRef.current) { isSpeakingRef.current = false; setIsSpeaking(false); }
+      }
+    }
+    // Khi bỏ deafen, không tự unmute mic (giống Discord – user tự unmute)
+  }, []);
+
   // ── setMasterVolume ───────────────────────────────────────────────────────
   const setMasterVolume = useCallback((v: number) => {
     const clamped = Math.max(0, Math.min(1, v));
-    setMasterVolumeState(clamped);
-    if (masterGainRef.current) {
+    // Chỉ update gain nếu không đang deafen
+    if (!isDeafenedRef.current && masterGainRef.current) {
       masterGainRef.current.gain.value = clamped;
     }
+    // Luôn lưu giá trị (để khôi phục khi bỏ deafen)
+    setMasterVolumeState(clamped);
+    masterVolumeBeforeDeafenRef.current = clamped;
   }, []);
 
   // ── setUserVolume (per-user local volume) ─────────────────────────────────
@@ -435,11 +474,13 @@ export function useVoiceChat(
     isInVoice,
     isMuted,
     isSpeaking,
+    isDeafened,
     voiceUsers,
     masterVolume,
     joinVoice,
     leaveVoice,
     toggleMute,
+    toggleDeafen,
     setMasterVolume,
     setUserVolume,
     hostMuteUser,

@@ -2408,54 +2408,63 @@ export default function App() {
                           />
                         </div>
 
-                        {/* ── Mic / Voice Chat Button ── */}
-                        <button
-                          type="button"
-                          title={voiceChat.isInVoice ? (voiceChat.isMuted ? 'Bỏ tắt mic' : 'Rời voice') : 'Bật mic (voice chat)'}
-                          onClick={() => {
-                            if (voiceChat.isInVoice) {
-                              voiceChat.leaveVoice();
-                            } else {
-                              voiceChat.joinVoice();
-                            }
-                          }}
-                          className={`relative flex-shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold shadow-sm transition ${
-                            voiceChat.isInVoice
-                              ? voiceChat.isMuted
-                                ? 'bg-red-100 text-red-500 border border-red-200'
-                                : 'bg-green-100 text-green-700 border border-green-200'
-                              : 'border border-brand-terracotta-light/30 bg-white text-brand-brown-dark hover:bg-brand-light'
-                          }`}
-                        >
-                          {voiceChat.isInVoice ? (
-                            voiceChat.isMuted ? <MicOff size={12} /> : <Mic size={12} />
-                          ) : (
-                            <Mic size={12} />
-                          )}
-                          <span className="hidden sm:inline">
-                            {voiceChat.isInVoice ? (voiceChat.isMuted ? 'Muted' : 'Mic on') : 'Mic'}
-                          </span>
-                          {/* Speaking indicator */}
-                          {voiceChat.isSpeaking && (
-                            <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-400 animate-ping" />
-                          )}
-                        </button>
-
-                        {/* Mute toggle (khi đang trong voice) */}
-                        {voiceChat.isInVoice && (
+                        {/* ── Voice Controls (Discord-style: Mic | Headphones | Hang-up) ── */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {/* Mic button: chưa vào voice → join; đang voice → toggle mute */}
                           <button
                             type="button"
-                            title={voiceChat.isMuted ? 'Bỏ tắt mic' : 'Tắt mic'}
-                            onClick={voiceChat.toggleMute}
-                            className={`flex-shrink-0 flex items-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-bold border transition ${
-                              voiceChat.isMuted
-                                ? 'bg-red-500 text-white border-red-500'
+                            title={voiceChat.isInVoice
+                              ? (voiceChat.isMuted ? 'Bỏ tắt mic' : 'Tắt mic')
+                              : 'Bật mic để chat voice'}
+                            onClick={() => voiceChat.isInVoice ? voiceChat.toggleMute() : voiceChat.joinVoice()}
+                            className={`relative flex-shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold shadow-sm transition border ${
+                              voiceChat.isInVoice
+                                ? voiceChat.isMuted
+                                  ? 'bg-red-500 text-white border-red-500'
+                                  : 'bg-green-100 text-green-700 border-green-300'
                                 : 'bg-white border-brand-terracotta-light/30 text-brand-brown-dark hover:bg-brand-light'
                             }`}
                           >
                             {voiceChat.isMuted ? <MicOff size={12} /> : <Mic size={12} />}
+                            <span className="hidden sm:inline">
+                              {voiceChat.isInVoice ? (voiceChat.isMuted ? 'Muted' : 'Mic') : 'Mic'}
+                            </span>
+                            {voiceChat.isSpeaking && !voiceChat.isMuted && (
+                              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-400 animate-ping" />
+                            )}
                           </button>
-                        )}
+
+                          {/* Headphone (Deafen) button – chỉ hiện khi đang trong voice */}
+                          {voiceChat.isInVoice && (
+                            <button
+                              type="button"
+                              title={voiceChat.isDeafened ? 'Bỏ tắt tai nghe' : 'Tắt tai nghe (không nghe ai)'}
+                              onClick={voiceChat.toggleDeafen}
+                              className={`relative flex-shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold shadow-sm transition border ${
+                                voiceChat.isDeafened
+                                  ? 'bg-red-500 text-white border-red-500'
+                                  : 'bg-white border-brand-terracotta-light/30 text-brand-brown-dark hover:bg-brand-light'
+                              }`}
+                            >
+                              <Headphones size={12} />
+                              <span className="hidden sm:inline">
+                                {voiceChat.isDeafened ? 'Deafened' : 'Nghe'}
+                              </span>
+                            </button>
+                          )}
+
+                          {/* Hang-up button – rời voice */}
+                          {voiceChat.isInVoice && (
+                            <button
+                              type="button"
+                              title="Rời voice chat"
+                              onClick={voiceChat.leaveVoice}
+                              className="flex-shrink-0 rounded-full p-1.5 bg-red-100 text-red-500 hover:bg-red-500 hover:text-white border border-red-200 transition"
+                            >
+                              <PhoneOff size={12} />
+                            </button>
+                          )}
+                        </div>
 
                         {(lyrics || lyricsLoading) && (
                           <button
@@ -3080,23 +3089,40 @@ export default function App() {
                       <span className="px-3 py-1 rounded-md text-xs font-bold bg-brand-terracotta-light/30 text-brand-terracotta">{members.length} đang online</span>
                     </div>
 
-                    {/* Voice channel header – hiển thị khi có người dùng voice */}
-                    {voiceChat.voiceUsers.size > 0 && (
+                    {/* Voice channel header – hiển thị khi đang trong voice */}
+                    {voiceChat.isInVoice && (
                       <div className="rounded-xl bg-green-50 border border-green-200 px-3 py-2 flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
-                        <span className="text-xs font-bold text-green-700">
+                        <span className="text-xs font-bold text-green-700 flex-1">
                           Voice Chat · {voiceChat.voiceUsers.size} người
                         </span>
-                        {voiceChat.isInVoice && (
-                          <button
-                            type="button"
-                            onClick={voiceChat.leaveVoice}
-                            className="ml-auto rounded-full bg-red-100 p-1 text-red-500 hover:bg-red-200 transition"
-                            title="Rời voice"
-                          >
-                            <PhoneOff size={12} />
-                          </button>
-                        )}
+                        {/* Mic toggle */}
+                        <button
+                          type="button"
+                          title={voiceChat.isMuted ? 'Bỏ tắt mic' : 'Tắt mic'}
+                          onClick={voiceChat.toggleMute}
+                          className={`rounded-full p-1.5 transition ${voiceChat.isMuted ? 'bg-red-500 text-white' : 'bg-green-200 text-green-700 hover:bg-green-300'}`}
+                        >
+                          {voiceChat.isMuted ? <MicOff size={11} /> : <Mic size={11} />}
+                        </button>
+                        {/* Headphone / Deafen toggle */}
+                        <button
+                          type="button"
+                          title={voiceChat.isDeafened ? 'Bỏ tắt tai nghe' : 'Tắt tai nghe'}
+                          onClick={voiceChat.toggleDeafen}
+                          className={`rounded-full p-1.5 transition ${voiceChat.isDeafened ? 'bg-red-500 text-white' : 'bg-green-200 text-green-700 hover:bg-green-300'}`}
+                        >
+                          <Headphones size={11} />
+                        </button>
+                        {/* Leave voice */}
+                        <button
+                          type="button"
+                          onClick={voiceChat.leaveVoice}
+                          className="rounded-full bg-red-100 p-1.5 text-red-500 hover:bg-red-200 transition"
+                          title="Rời voice"
+                        >
+                          <PhoneOff size={11} />
+                        </button>
                       </div>
                     )}
 
@@ -3137,7 +3163,40 @@ export default function App() {
                               </div>
 
                               <div className="space-y-0.5 min-w-0">
-                                <p className="font-display font-extrabold text-sm text-brand-brown-dark truncate">{m.username}</p>
+                                {/* Tên + mic icon inline */}
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-display font-extrabold text-sm text-brand-brown-dark truncate">{m.username}</p>
+                                  {/* Mic icon cạnh tên – luôn hiển thị, click để join/toggle mute */}
+                                  <button
+                                    type="button"
+                                    title={
+                                      isMe
+                                        ? (voiceChat.isInVoice ? (voiceChat.isMuted ? 'Bỏ tắt mic' : 'Tắt mic') : 'Bật mic')
+                                        : (isInVoice ? (isMutedNow ? 'Đang muted' : 'Đang bật mic') : 'Chưa bật mic')
+                                    }
+                                    onClick={() => {
+                                      if (isMe) {
+                                        voiceChat.isInVoice ? voiceChat.toggleMute() : voiceChat.joinVoice();
+                                      } else if (isHost && isInVoice) {
+                                        voiceChat.hostMuteUser(m.id, !isMutedNow);
+                                      }
+                                    }}
+                                    className={`flex-shrink-0 rounded-full p-0.5 transition ${
+                                      isInVoice
+                                        ? isMutedNow
+                                          ? 'text-red-400 hover:bg-red-50'
+                                          : isSpeakingNow
+                                            ? 'text-green-500 animate-pulse'
+                                            : 'text-green-500 hover:bg-green-50'
+                                        : 'text-brand-brown-light/40 hover:text-brand-terracotta hover:bg-brand-light'
+                                    } ${isMe || (isHost && isInVoice) ? 'cursor-pointer' : 'cursor-default'}`}
+                                  >
+                                    {isInVoice
+                                      ? (isMutedNow ? <MicOff size={11} /> : <Mic size={11} />)
+                                      : <Mic size={11} />
+                                    }
+                                  </button>
+                                </div>
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-xs text-brand-brown-light font-medium">
                                     {isMe ? "Bạn" : "Bạn học"}
@@ -3149,27 +3208,21 @@ export default function App() {
                               </div>
                             </div>
 
-                            {/* Right side: badges + voice controls */}
+                            {/* Right side: badges + headphone control cho bản thân */}
                             <div className="flex items-center gap-1.5 flex-shrink-0">
-                              {/* Mic status */}
-                              {isInVoice && (
-                                <span title={isMutedNow ? 'Đã tắt mic' : 'Đang bật mic'}>
-                                  {isMutedNow
-                                    ? <MicOff size={13} className="text-red-400" />
-                                    : <Mic size={13} className="text-green-500" />
-                                  }
-                                </span>
-                              )}
-
-                              {/* Host can mute others */}
-                              {isHost && !isMe && isInVoice && (
+                              {/* Headphone (deafen) button – chỉ hiện với bản thân khi đang trong voice */}
+                              {isMe && isInVoice && (
                                 <button
                                   type="button"
-                                  title={isMutedNow ? 'Bỏ mute' : 'Mute người này'}
-                                  onClick={() => voiceChat.hostMuteUser(m.id, !isMutedNow)}
-                                  className={`rounded-full p-1 transition text-xs ${isMutedNow ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-red-100 text-red-500 hover:bg-red-200'}`}
+                                  title={voiceChat.isDeafened ? 'Bỏ tắt tai nghe' : 'Tắt tai nghe (không nghe ai)'}
+                                  onClick={voiceChat.toggleDeafen}
+                                  className={`rounded-full p-1.5 transition ${
+                                    voiceChat.isDeafened
+                                      ? 'bg-red-500 text-white'
+                                      : 'bg-brand-light text-brand-brown-light hover:text-brand-terracotta'
+                                  }`}
                                 >
-                                  {isMutedNow ? <Mic size={11} /> : <MicOff size={11} />}
+                                  <Headphones size={12} />
                                 </button>
                               )}
 
