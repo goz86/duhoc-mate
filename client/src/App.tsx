@@ -40,7 +40,7 @@ import {
   type LyricLine
 } from './lib/lyrics';
 
-// Káº¿t ná»‘i Socket Server â€” Ä‘á»c tá»« env var khi deploy, fallback localhost khi dev
+// Kết nối Socket Server — đọc từ env var khi deploy, fallback localhost khi dev
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 const LOCAL_API_BASE_URL = 'http://localhost:3001';
 const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : LOCAL_API_BASE_URL);
@@ -166,7 +166,7 @@ export default function App() {
   const [roomId, setRoomId] = useState('');
   const [currentRoomTitle, setCurrentRoomTitle] = useState('');
   const [username, setUsername] = useState(() => {
-    // DÃ¹ng profile.username náº¿u Ä‘Ã£ Ä‘Äƒng nháº­p, khÃ´ng thÃ¬ dÃ¹ng localStorage
+    // Dùng profile.username nếu đã đăng nhập, không thì dùng localStorage
     return localStorage.getItem('duhocmate_username') || '';
   });
   const [isHost, setIsHost] = useState(false);
@@ -190,7 +190,7 @@ export default function App() {
   const [showHelpBoard, setShowHelpBoard] = useState(false);
 
   // Lobby (landing card) states
-  // lobbyTab removed â€” new design uses sections instead of tabs
+  // lobbyTab removed — new design uses sections instead of tabs
   const [activeRooms, setActiveRooms] = useState<any[]>([]);
   const [recentRooms, setRecentRooms] = useState<any[]>(() => {
     try {
@@ -313,13 +313,13 @@ export default function App() {
     loadTemplates().then(setTemplates);
   }, []);
 
-  // 1. Káº¿t ná»‘i socket & Khá»Ÿi táº¡o
+  // 1. Kết nối socket & Khởi tạo
   useEffect(() => {
     socket = io(SOCKET_URL);
 
     socket.on('room-users', (users: Member[]) => {
       setMembers(users);
-      // TÃ¬m xem mÃ¬nh cÃ³ pháº£i host má»›i khÃ´ng (trong trÆ°á»ng há»£p host cÅ© rá»i phÃ²ng)
+      // Tìm xem mình có phải host mới không (trong trường hợp host cũ rời phòng)
       const me = users.find(u => u.id === socket.id);
       if (me) setIsHost(me.isHost);
     });
@@ -384,9 +384,9 @@ export default function App() {
 
     socket.on('update-playlist', (updatedList: PlaylistItem[]) => {
       setPlaylist(updatedList);
-      // Tá»± Ä‘á»™ng phÃ¡t bÃ i Ä‘áº§u tiÃªn náº¿u playlist cÃ³ bÃ i vÃ  hiá»‡n táº¡i Ä‘ang phÃ¡t bÃ i máº·c Ä‘á»‹nh hoáº·c bÃ i hÃ¡t Ä‘Ã£ háº¿t
+      // Tự động phát bài đầu tiên nếu playlist có bài và hiện tại đang phát bài mặc định hoặc bài hát đã hết
       if (updatedList.length > 0 && currentVideo.id !== updatedList[0].videoId) {
-        // CÃ³ bÃ i hÃ¡t má»›i Ä‘Æ°á»£c Ä‘áº©y lÃªn Ä‘áº§u
+        // Có bài hát mới được đẩy lên đầu
       }
     });
 
@@ -459,15 +459,15 @@ export default function App() {
     socket.on('pomodoro-done', ({ isBreak }) => {
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-200.wav');
       audio.play().catch(() => {});
-      alert(isBreak ? "ÄÃ£ háº¿t giá» há»c! Äáº¿n giá» nghá»‰ giáº£i lao 5 phÃºt rá»“i." : "Háº¿t giá» giáº£i lao! Báº¯t Ä‘áº§u táº­p trung há»c tiáº¿p nÃ o.");
+      alert(isBreak ? "Đã hết giờ học! Đến giờ nghỉ giải lao 5 phút rồi." : "Hết giờ giải lao! Bắt đầu tập trung học tiếp nào.");
     });
 
-    // Äá»“ng bá»™ chuyá»ƒn trang PDF qua Socket (sá»­ dá»¥ng sá»± kiá»‡n video-action táº¡m thá»i cho Ä‘Æ¡n giáº£n)
+    // Đồng bộ chuyển trang PDF qua Socket (sử dụng sự kiện video-action tạm thời cho đơn giản)
     socket.on('pdf-page-sync', (page: number) => {
       setPdfPage(page);
     });
 
-    // Nháº­n danh sÃ¡ch phÃ²ng hoáº¡t Ä‘á»™ng
+    // Nhận danh sách phòng hoạt động
     socket.on('active-rooms-list', (rooms: any[]) => {
       setActiveRooms(rooms);
     });
@@ -477,7 +477,7 @@ export default function App() {
       setTiktokVideoId(videoId);
     });
 
-    // Nháº­n danh sÃ¡ch user online Ä‘á»ƒ xem báº¡n bÃ¨ cÃ³ online khÃ´ng
+    // Nhận danh sách user online để xem bạn bè có online không
     socket.on('online-users-changed', (users: any[]) => {
       setOnlineUsers(users);
     });
@@ -487,7 +487,7 @@ export default function App() {
       setView('landing');
     });
 
-    // ÄÄƒng kÃ½ thÃ´ng tin cá»§a báº£n thÃ¢n vÃ  yÃªu cáº§u danh sÃ¡ch phÃ²ng ban Ä‘áº§u
+    // Đăng ký thông tin của bản thân và yêu cầu danh sách phòng ban đầu
     const localUsername = localStorage.getItem('duhocmate_username') || '';
     const localFriendCode = localStorage.getItem('duhocmate_friend_code') || '';
     socket.emit('register-user', { friendCode: localFriendCode, username: localUsername });
@@ -498,7 +498,7 @@ export default function App() {
     };
   }, []);
 
-  // Sync username tá»« Supabase profile khi login
+  // Sync username từ Supabase profile khi login
   useEffect(() => {
     if (profile?.username && profile.username !== username) {
       setUsername(profile.username);
@@ -516,7 +516,7 @@ export default function App() {
     });
   }, [view, roomId]);
 
-  // Theo dÃµi cáº­p nháº­t tÃªn / mÃ£ báº¡n bÃ¨ lÃªn server
+  // Theo dõi cập nhật tên / mã bạn bè lên server
   useEffect(() => {
     if (username.trim()) {
       localStorage.setItem('duhocmate_username', username);
@@ -526,7 +526,7 @@ export default function App() {
     }
   }, [username, friendCode]);
 
-  // === YouTube IFrame API â€“ Khá�  // Init or update player when currentVideo.id becomes available
+  // === YouTube IFrame API – Khá�  // Init or update player when currentVideo.id becomes available
   useEffect(() => {
     if (view !== 'room') return;
     void playerReinitTrigger;
@@ -627,19 +627,32 @@ export default function App() {
             }
 
             // Chỉ host mới đồng bộ video cho cả phòng
-            // Dùng flag hostWantsToPlayRef để CHẶN HOÀN TOÀN spurious state=1 từ YouTube
+            // Differentiate 2 cases of state=1 sau khi pause:
+            // - Spurious từ YouTube (sau buffer/seek/ad) thường < 2s sau pause → CHẶN
+            // - User explicitly click YouTube native play → ALLOW (sincePause > 2s)
             if (state === 1 && !cvr.playing) {
-              if (!hostWantsToPlayRef.current) {
-                console.log('[YT-STATE] HOST blocked spurious state=1 - flag is false');
+              const sincePause = Date.now() - (hostLastPauseAtRef.current || 0);
+              // Chặn spurious state=1 nếu trong vòng 2s sau pause VÀ flag không bật
+              if (!hostWantsToPlayRef.current && sincePause < 2000) {
+                console.log(`[YT-STATE] HOST blocked spurious state=1 (sincePause=${sincePause}ms)`);
                 event.target.pauseVideo();
                 return;
               }
-              console.log('[YT-STATE] HOST emit PLAY');
-              socket.emit('video-action', { roomId: roomIdRef.current, action: 'play', time: curTime });
+              console.log('[YT-STATE] HOST emit PLAY (userInitiated)');
+              // OPTIMISTIC: update local state ngay → cvr.playing = true → interval emit play đúng
+              hostWantsToPlayRef.current = true;
+              hostLastPauseAtRef.current = 0;
+              setCurrentVideo(prev => ({ ...prev, playing: true, time: curTime }));
+              socket.emit('video-action', { roomId: roomIdRef.current, action: 'play', time: curTime, userInitiated: true });
             } else if (state === 2 && cvr.playing) {
               console.log('[YT-STATE] HOST emit PAUSE');
               hostWantsToPlayRef.current = false;
-              socket.emit('video-action', { roomId: roomIdRef.current, action: 'pause', time: curTime });
+              hostLastPauseAtRef.current = Date.now(); // Track thời điểm pause để chặn spurious play < 2s
+              // OPTIMISTIC: update local state ngay → cvr.playing = false → interval KHÔNG emit play nữa
+              // Đây là FIX chính: nếu không update, interval mỗi 5s sẽ emit play với cvr.playing=true cũ
+              // → server unset pausedByHost → non-host tự phát lại
+              setCurrentVideo(prev => ({ ...prev, playing: false, time: curTime }));
+              socket.emit('video-action', { roomId: roomIdRef.current, action: 'pause', time: curTime, userInitiated: true });
             }
           }
         }
@@ -760,7 +773,7 @@ export default function App() {
     setJitsiActive(prev => !prev);
   };
 
-  // 2. Chá»©c nÄƒng PhÃ²ng (Táº¡o/Tham Gia)
+  // 2. Chức năng Phòng (Tạo/Tham Gia)
   const handleCreateRoom = (
     seedTasks: IdeaTask[] = [],
     roomTitle?: string,
@@ -768,9 +781,9 @@ export default function App() {
     password?: string,
     avatarUrl?: string
   ) => {
-    if (!username.trim()) return alert("Vui lÃ²ng nháº­p tÃªn cá»§a báº¡n trÆ°á»›c!");
+    if (!username.trim()) return alert("Vui lòng nhập tên của bạn trước!");
     const generatedId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const nextRoomTitle = roomTitle || `PhÃ²ng cá»§a ${username}`;
+    const nextRoomTitle = roomTitle || `Phòng của ${username}`;
     setRoomId(generatedId);
     setCurrentRoomTitle(nextRoomTitle);
     setRoomSettingsName(nextRoomTitle);
@@ -778,13 +791,13 @@ export default function App() {
     setRoomSettingsPassword(password || '');
     setIdeaTasks(seedTasks);
     
-    // LÆ°u vÃ o phÃ²ng gáº§n Ä‘Ã¢y
+    // Lưu vào phòng gần đây
     const newRecent = [
       { 
         id: generatedId, 
         hostName: username, 
-        currentSong: 'PhÃ²ng má»›i táº¡o',
-        roomTitle: roomTitle || `PhÃ²ng cá»§a ${username}`,
+        currentSong: 'Phòng mới tạo',
+        roomTitle: roomTitle || `Phòng của ${username}`,
         isPrivate: !!isPrivate,
         hostAvatarUrl: avatarUrl || profile?.avatar_url || ''
       },
@@ -793,7 +806,7 @@ export default function App() {
     setRecentRooms(newRecent);
     localStorage.setItem('duhocmate_recent_rooms', JSON.stringify(newRecent));
 
-    // LÆ°u máº­t kháº©u phÃ²ng cá»¥c bá»™ Ä‘á»ƒ khÃ´ng cáº§n nháº­p láº¡i khi vÃ o láº¡i
+    // Lưu mật khẩu phòng cục bộ để không cần nhập lại khi vào lại
     if (isPrivate && password) {
       try {
         const roomPasswordsRaw = localStorage.getItem('duhocmate_room_passwords');
@@ -805,10 +818,10 @@ export default function App() {
       }
     }
 
-    // LÆ°u thÃ´ng tin phÃ²ng persistent
+    // Lưu thông tin phòng persistent
     savePersistentRoom({
       id: generatedId,
-      title: roomTitle || `PhÃ²ng cá»§a ${username}`,
+      title: roomTitle || `Phòng của ${username}`,
       hostName: username,
       hostAvatarUrl: avatarUrl || profile?.avatar_url || '',
       isPrivate: !!isPrivate,
@@ -821,7 +834,7 @@ export default function App() {
       roomId: generatedId, 
       username, 
       ideaTasks: seedTasks,
-      roomTitle: roomTitle || `PhÃ²ng cá»§a ${username}`,
+      roomTitle: roomTitle || `Phòng của ${username}`,
       isPrivate: !!isPrivate,
       password: password || '',
       hostAvatarUrl: avatarUrl || profile?.avatar_url || '',
@@ -843,12 +856,12 @@ export default function App() {
       e.preventDefault();
     }
 
-    if (!targetRoomId.trim()) return alert("Vui lÃ²ng nháº­p mÃ£ phÃ²ng!");
+    if (!targetRoomId.trim()) return alert("Vui lòng nhập mã phòng!");
     
     const formattedId = targetRoomId.trim().toUpperCase();
     setRoomId(formattedId);
 
-    // Náº¿u chÆ°a Ä‘Äƒng nháº­p, báº¯t buá»™c hiá»‡n popup nháº­p tÃªn khÃ¡ch / Ä‘Äƒng nháº­p Google
+    // Nếu chưa đăng nhập, bắt buộc hiện popup nhập tên khách / đăng nhập Google
     if (!user && !isGuestConfirmed) {
       setGuestJoinRoomId(formattedId);
       setGuestJoinTemplate(null);
@@ -858,7 +871,7 @@ export default function App() {
     }
     setRoomId(formattedId);
 
-    // Láº¥y thÃ´ng tin phÃ²ng hiá»‡n táº¡i náº¿u nÃ³ Ä‘ang active Ä‘á»ƒ lÆ°u thÃ´ng tin chÃ­nh xÃ¡c
+    // Lấy thông tin phòng hiện tại nếu nó đang active để lưu thông tin chính xác
     const matchedActive = activeRooms.find(r => r.id === formattedId);
     let isPrivate = matchedActive?.isPrivate || false;
     let storedRoomRecord: PersistentRoom | null = null;
@@ -873,15 +886,15 @@ export default function App() {
       // Fallback
     }
 
-    // Kiá»ƒm tra phÃ²ng cÃ³ tá»“n táº¡i hay khÃ´ng
+    // Kiểm tra phòng có tồn tại hay không
     const isTemplateRoom = seedRoomIds.has(formattedId) || templates.some(t => getTemplateRoomId(t) === formattedId);
     if (!matchedActive && !storedRoomRecord && !isTemplateRoom) {
-      alert("PhÃ²ng khÃ´ng tá»“n táº¡i hoáº·c mÃ£ phÃ²ng khÃ´ng chÃ­nh xÃ¡c!");
+      alert("Phòng không tồn tại hoặc mã phòng không chính xác!");
       return;
     }
 
     if (isPrivate && !enteredPassword) {
-      // XÃ¡c Ä‘á»‹nh xem user hiá»‡n táº¡i cÃ³ pháº£i lÃ  chá»§ phÃ²ng (host) cá»§a phÃ²ng nÃ y khÃ´ng
+      // Xác định xem user hiện tại có phải là chủ phòng (host) của phòng này không
       let isHostOfRoom = false;
       let savedPassword = '';
       try {
@@ -898,7 +911,7 @@ export default function App() {
       }
 
       if (isHostOfRoom && savedPassword) {
-        // ÄÃ£ cÃ³ máº­t kháº©u lÆ°u cá»¥c bá»™ cá»§a chá»§ phÃ²ng, tá»± Ä‘á»™ng dÃ¹ng nÃ³
+        // Đã có mật khẩu lưu cục bộ của chủ phòng, tự động dùng nó
         enteredPassword = savedPassword;
       } else {
         setPasswordModalRoomId(formattedId);
@@ -910,7 +923,7 @@ export default function App() {
     }
 
     if (isPrivate && enteredPassword) {
-      // XÃ¡c Ä‘á»‹nh xem user hiá»‡n táº¡i cÃ³ pháº£i lÃ  chá»§ phÃ²ng (host) cá»§a phÃ²ng nÃ y khÃ´ng
+      // Xác định xem user hiện tại có phải là chủ phòng (host) của phòng này không
       let isHostOfRoom = false;
       try {
         const roomPasswordsRaw = localStorage.getItem('duhocmate_room_passwords');
@@ -946,13 +959,13 @@ export default function App() {
       }
     }
 
-    // LÆ°u vÃ o phÃ²ng gáº§n Ä‘Ã¢y
+    // Lưu vào phòng gần đây
     const newRecent = [
       { 
         id: formattedId, 
-        hostName: matchedActive?.hostName || storedRoomRecord?.hostName || 'Báº¡n há»c', 
-        currentSong: 'PhÃ²ng há»c táº­p',
-        roomTitle: matchedActive?.roomTitle || storedRoomRecord?.title || 'PhÃ²ng há»c táº­p',
+        hostName: matchedActive?.hostName || storedRoomRecord?.hostName || 'Bạn học', 
+        currentSong: 'Phòng học tập',
+        roomTitle: matchedActive?.roomTitle || storedRoomRecord?.title || 'Phòng học tập',
         isPrivate: isPrivate,
         hostAvatarUrl: matchedActive?.hostAvatarUrl || storedRoomRecord?.hostAvatarUrl || ''
       },
@@ -960,7 +973,7 @@ export default function App() {
     ].slice(0, 5);
     setRecentRooms(newRecent);
     localStorage.setItem('duhocmate_recent_rooms', JSON.stringify(newRecent));
-    const joinedRoomTitle = matchedActive?.roomTitle || storedRoomRecord?.title || 'PhÃ²ng há»c táº­p';
+    const joinedRoomTitle = matchedActive?.roomTitle || storedRoomRecord?.title || 'Phòng học tập';
     setCurrentRoomTitle(joinedRoomTitle);
     setRoomSettingsName(joinedRoomTitle);
     setRoomSettingsPublic(!isPrivate);
@@ -992,7 +1005,7 @@ export default function App() {
   ) => {
     const fixedRoomId = getTemplateRoomId(template);
 
-    // Náº¿u chÆ°a Ä‘Äƒng nháº­p, báº¯t buá»™c hiá»‡n popup nháº­p tÃªn khÃ¡ch / Ä‘Äƒng nháº­p Google
+    // Nếu chưa đăng nhập, bắt buộc hiện popup nhập tên khách / đăng nhập Google
     if (!user && !isGuestConfirmed) {
       setGuestJoinRoomId(fixedRoomId);
       setGuestJoinTemplate(template);
@@ -1016,7 +1029,7 @@ export default function App() {
     setStageMode('ideas');
 
     const newRecent = [
-      { id: fixedRoomId, hostName: template.title, currentSong: 'PhÃ²ng má»Ÿ 24/24' },
+      { id: fixedRoomId, hostName: template.title, currentSong: 'Phòng mở 24/24' },
       ...recentRooms.filter(r => r.id !== fixedRoomId)
     ].slice(0, 5);
     setRecentRooms(newRecent);
@@ -1029,7 +1042,7 @@ export default function App() {
   const handleGuestJoinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestNameInput.trim()) {
-      alert("Vui lÃ²ng nháº­p tÃªn hiá»ƒn thá»‹ cá»§a báº¡n!");
+      alert("Vui lòng nhập tên hiển thị của bạn!");
       return;
     }
     const cleanName = guestNameInput.trim();
@@ -1061,8 +1074,8 @@ export default function App() {
     e.preventDefault();
     const code = friendInputCode.trim().toUpperCase();
     if (!code) return;
-    if (code === friendCode) return alert("Báº¡n khÃ´ng thá»ƒ káº¿t báº¡n vá»›i chÃ­nh mÃ¬nh!");
-    if (friendsList.includes(code)) return alert("MÃ£ báº¡n bÃ¨ nÃ y Ä‘Ã£ cÃ³ trong danh sÃ¡ch!");
+    if (code === friendCode) return alert("Bạn không thể kết bạn với chính mình!");
+    if (friendsList.includes(code)) return alert("Mã bạn bè này đã có trong danh sách!");
     
     const newList = [...friendsList, code];
     setFriendsList(newList);
@@ -1086,7 +1099,7 @@ export default function App() {
     if (longMatch) {
       videoId = longMatch[1];
     } else if (shortMatch) {
-      // Short URL â€“ we just use the slug, not ideal but workable
+      // Short URL – we just use the slug, not ideal but workable
       videoId = shortMatch[1];
     } else if (/^\d{15,20}$/.test(url)) {
       // Already a raw video ID
@@ -1094,7 +1107,7 @@ export default function App() {
     }
 
     if (!videoId) {
-      alert('Link TikTok khÃ´ng há»£p lá»‡. Vui lÃ²ng dÃ¡n link Ä‘áº§y Ä‘á»§ tá»« TikTok.');
+      alert('Link TikTok không hợp lệ. Vui lòng dán link đầy đủ từ TikTok.');
       return;
     }
 
@@ -1245,7 +1258,7 @@ export default function App() {
     socket.emit('request-active-rooms');
   };
 
-  // 3. Chá»©c nÄƒng Chat
+  // 3. Chức năng Chat
   const sendChatMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -1254,8 +1267,8 @@ export default function App() {
     setChatInput('');
   };
 
-  // 4. Chá»©c nÄƒng Playlist & Jukebox
-  // ThÃªm bÃ i qua link trá»±c tiáº¿p (URL hoáº·c ID)
+  // 4. Chức năng Playlist & Jukebox
+  // Thêm bài qua link trực tiếp (URL hoặc ID)
   const handleAddSongDirect = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!songSearch.trim()) return;
@@ -1267,7 +1280,7 @@ export default function App() {
     if (match && match[2].length === 11) {
       videoId = match[2];
     } else if (input.length !== 11) {
-      // KhÃ´ng pháº£i link/ID â†’ trigger search
+      // Không phải link/ID → trigger search
       handleSearchMusic();
       return;
     }
@@ -1278,13 +1291,13 @@ export default function App() {
       const title = data.title || `Video YouTube (${videoId})`;
       socket.emit('add-to-playlist', { roomId, videoId, title, duration: '04:30' });
     } catch {
-      socket.emit('add-to-playlist', { roomId, videoId, title: `BÃ i hÃ¡t (${videoId})`, duration: '05:00' });
+      socket.emit('add-to-playlist', { roomId, videoId, title: `Bài hát (${videoId})`, duration: '05:00' });
     }
     setSongSearch('');
     setShowSearchResults(false);
   };
 
-  // TÃ¬m kiáº¿m nháº¡c qua Invidious API (proxy server)
+  // Tìm kiếm nhạc qua Invidious API (proxy server)
   const handleSearchMusic = async () => {
     if (!songSearch.trim()) return;
     setMusicSearchLoading(true);
@@ -1310,7 +1323,7 @@ export default function App() {
     }
   };
 
-  // ThÃªm bÃ i tá»« káº¿t quáº£ tÃ¬m kiáº¿m
+  // Thêm bài từ kết quả tìm kiếm
   const addSongFromResult = (result: any) => {
     socket.emit('add-to-playlist', {
       roomId,
@@ -1342,30 +1355,30 @@ export default function App() {
   };
 
   const playSong = (item: PlaylistItem) => {
-    // Cáº­p nháº­t state local ngay láº­p tá»©c (khÃ´ng chá» server echo láº¡i)
+    // Cập nhật state local ngay lập tức (không chờ server echo lại)
     const newVideoState = { id: item.videoId, time: 0, playing: true };
     setCurrentVideo(newVideoState);
 
-    // Náº¿u player Ä‘Ã£ tá»“n táº¡i â†’ loadVideoById trá»±c tiáº¿p
+    // Nếu player đã tồn tại → loadVideoById trực tiếp
     if (playerRef.current && playerRef.current.loadVideoById) {
       playerRef.current.loadVideoById(item.videoId, 0);
     } else {
-      // Player chÆ°a sáºµn sÃ ng â†’ destroy vÃ  re-init qua useEffect (trigger bá»Ÿi currentVideo.id thay Ä‘á»•i)
+      // Player chưa sẵn sàng → destroy và re-init qua useEffect (trigger bởi currentVideo.id thay đổi)
       playerRef.current = null;
     }
 
-    // Äá»“ng bá»™ cho nhá»¯ng ngÆ°á»i khÃ¡c trong phÃ²ng
+    // Đồng bộ cho những người khác trong phòng
     socket.emit('video-action', { 
       roomId, 
       action: 'play', 
       time: 0, 
       videoId: item.videoId 
     });
-    // XÃ³a bÃ i Ä‘Ã³ ra khá»i hÃ ng Ä‘á»£i
+    // Xóa bài đó ra khỏi hàng đợi
     socket.emit('remove-song', { roomId, songId: item.id });
   };
 
-  // 5. Chá»©c nÄƒng Pomodoro
+  // 5. Chức năng Pomodoro
   const controlPomodoro = (action: 'start' | 'pause' | 'reset', isBreak = false) => {
     socket.emit('pomodoro-control', { roomId, action, isBreak });
   };
@@ -1406,7 +1419,7 @@ export default function App() {
         setPdfPage(1);
         renderPdfPage(1);
       } catch (err) {
-        alert("Lá»—i Ä‘á»c file PDF!");
+        alert("Lỗi đọc file PDF!");
       }
     };
     fileReader.readAsArrayBuffer(file);
@@ -1468,17 +1481,17 @@ export default function App() {
 
     if (newPage !== pdfPage) {
       setPdfPage(newPage);
-      // Äá»“ng bá»™ trang sang cÃ¡c client khÃ¡c qua Socket
+      // Đồng bộ trang sang các client khác qua Socket
       socket.emit('pdf-page-sync', { roomId, page: newPage });
     }
   };
 
-  // TÃ¬m kiáº¿m tráº¡ng thÃ¡i online cá»§a báº¡n bÃ¨
+  // Tìm kiếm trạng thái online của bạn bè
   const friendsWithStatus = friendsList.map(code => {
     const onlineUser = onlineUsers.find(u => u.friendCode === code);
     return {
       code,
-      username: onlineUser?.username || 'Báº¡n há»c',
+      username: onlineUser?.username || 'Bạn học',
       online: !!onlineUser,
       currentRoomId: onlineUser?.currentRoomId || null,
       currentSong: onlineUser?.currentSong || null
@@ -1601,7 +1614,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-brand-cream text-brand-brown-dark font-sans selection:bg-brand-accent selection:text-white flex flex-col items-center">
       
-      {/* LANDING PAGE â€” LOBBY-FIRST DESIGN */}
+      {/* LANDING PAGE — LOBBY-FIRST DESIGN */}
       {view === 'landing' && (
         <LandingPage
           username={username}
@@ -2078,7 +2091,7 @@ export default function App() {
 
           </div>
 
-          {/* Core Content Grid â€” adaptive columns based on stageMode */}
+          {/* Core Content Grid — adaptive columns based on stageMode */}
           {(() => {
             const mainSpan = roomCollapsed ? 'lg:col-span-12' : 'lg:col-span-9';
             const sideSpan = roomCollapsed ? 'hidden' : 'lg:col-span-3';
@@ -2090,7 +2103,7 @@ export default function App() {
 
               {!roomCollapsed && <StageSelector stageMode={stageMode} onChange={setStageMode} />}
 
-              {/* â”€â”€ STAGE DISPLAY AREA â€“ adapts per stageMode â”€â”€ */}
+              {/* ── STAGE DISPLAY AREA – adapts per stageMode ── */}
               <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : 'flex-1 glass-panel rounded-3xl p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col'} relative overflow-hidden`}>
 
                 {roomCollapsed && (
@@ -2123,7 +2136,7 @@ export default function App() {
                           type="button"
                           onClick={() => playerRef.current?.seekTo?.((playerRef.current?.getCurrentTime?.() || 0) + 15, true)}
                           className="grid h-9 w-9 place-items-center rounded-full border border-brand-terracotta-light/25 bg-white text-brand-brown-light transition hover:text-brand-terracotta"
-                          aria-label="Tua tiáº¿p"
+                          aria-label="Tua tiếp"
                         >
                           <SkipForward size={16} />
                         </button>
@@ -2143,7 +2156,7 @@ export default function App() {
                   </div>
                 )}
 
-                {/* â”€â”€ 1. YOUTUBE STAGE (16:9) â”€â”€ */}
+                {/* ── 1. YOUTUBE STAGE (16:9) ── */}
                 <div className={`${stageMode === 'youtube' && !roomCollapsed ? 'flex flex-1 flex-col gap-3 h-full justify-start overflow-y-auto pr-1' : 'absolute h-px w-px overflow-hidden opacity-0 pointer-events-none'}`} aria-hidden={stageMode !== 'youtube' || roomCollapsed}>
                     <div className={`mx-auto grid w-full max-w-[1180px] gap-3 ${showLyrics && (lyrics || lyricsLoading) ? 'xl:grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1'}`}>
                     <div
@@ -2157,7 +2170,7 @@ export default function App() {
                       <div className="w-full h-full" ref={iframeContainerRef}>
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center pointer-events-none z-0">
                           <Clock className="text-white/20 animate-spin" size={32} />
-                          <p className="text-xs text-white/40">Äang táº£i YouTube Player...</p>
+                          <p className="text-xs text-white/40">Đang tải YouTube Player...</p>
                         </div>
                       </div>
                       {/* Man hinh cho khi chua co video — cũng hiện khi lỗi + playlist rỗng */}
@@ -2231,7 +2244,7 @@ export default function App() {
                               onClick={() => { setVideoError(false); if (playerRef.current?.playVideo) playerRef.current.playVideo(); }}
                               className="px-5 py-2.5 rounded-full bg-brand-terracotta hover:bg-brand-brown-dark text-white font-bold text-sm transition cursor-pointer"
                             >
-                              PhÃ¡t láº¡i
+                              Phát lại
                             </button>
                             <a
                               href={`https://www.youtube.com/watch?v=${currentVideo.id}`}
@@ -2239,7 +2252,7 @@ export default function App() {
                               rel="noopener noreferrer"
                               className="px-5 py-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-sm transition cursor-pointer"
                             >
-                              Má»Ÿ YouTube
+                              Mở YouTube
                             </a>
                           </div>
                         </div>
