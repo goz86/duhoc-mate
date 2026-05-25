@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
+import { VOICE_ICE_SERVERS } from './voiceIceServers';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -21,6 +22,8 @@ export interface VoiceUserState {
 interface PeerData {
   pc: RTCPeerConnection;
   gainNode: GainNode | null;
+  sourceNode: MediaStreamAudioSourceNode | null;
+  remoteStream: MediaStream | null;
 }
 
 interface UseVoiceChatReturn {
@@ -40,11 +43,6 @@ interface UseVoiceChatReturn {
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-
-const ICE_SERVERS: RTCIceServer[] = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-];
 
 const VAD_THRESHOLD = 20;       // Ngưỡng âm lượng tính là "đang nói"
 const VAD_INTERVAL_MS = 150;    // Kiểm tra mỗi 150ms
@@ -66,6 +64,7 @@ export function useVoiceChat(
 
   // ── Refs ───────────────────────────────────────────────────────────────────
   const peersRef = useRef<Map<string, PeerData>>(new Map());
+  const pendingIceCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
@@ -95,9 +94,23 @@ export function useVoiceChat(
     return audioCtxRef.current;
   }, [masterVolume]);
 
+  const flushPendingIceCandidates = useCallback(async (targetId: string, pc: RTCPeerConnection) => {
+    const pending = pendingIceCandidatesRef.current.get(targetId);
+    if (!pending?.length || !pc.remoteDescription) return;
+
+    pendingIceCandidatesRef.current.delete(targetId);
+    for (const candidate of pending) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (err) {
+        console.warn('[VoiceChat] Failed to apply queued ICE candidate:', targetId, err);
+      }
+    }
+  }, []);
+
   // ── Helper: tạo RTCPeerConnection ─────────────────────────────────────────
   const createPeerConnection = useCallback((targetId: string): RTCPeerConnection => {
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    const pc = new RTCPeerConnection({ iceServers: VOICE_ICE_SERVERS });
 
     // ICE candidate → gửi qua signaling server
     pc.onicecandidate = (event) => {
@@ -109,7 +122,7 @@ export function useVoiceChat(
     // Nhận audio track từ remote peer
     pc.ontrack = (event) => {
       const ctx = getAudioContext();
-      const remoteStream = event.streams[0];
+      const remoteStream = event.streams[0] ?? new MediaStream([event.track]);
       const source = ctx.createMediaStreamSource(remoteStream);
       const gainNode = ctx.createGain();
 
@@ -121,11 +134,20 @@ export function useVoiceChat(
       // Cập nhật gainNode reference
       const existingPeer = peersRef.current.get(targetId);
       if (existingPeer) {
+        existingPeer.sourceNode?.disconnect();
+        existingPeer.gainNode?.disconnect();
+        existingPeer.sourceNode = source;
         existingPeer.gainNode = gainNode;
+        existingPeer.remoteStream = remoteStream;
       }
     };
 
+    pc.oniceconnectionstatechange = () => {
+      console.info('[VoiceChat] ICE state:', targetId, pc.iceConnectionState);
+    };
+
     pc.onconnectionstatechange = () => {
+      console.info('[VoiceChat] Peer state:', targetId, pc.connectionState);
       if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
         peersRef.current.delete(targetId);
       }
@@ -229,8 +251,13 @@ export function useVoiceChat(
     }
 
     // Đóng tất cả peer connections
-    peersRef.current.forEach(({ pc }) => pc.close());
+    peersRef.current.forEach(({ pc, sourceNode, gainNode }) => {
+      sourceNode?.disconnect();
+      gainNode?.disconnect();
+      pc.close();
+    });
     peersRef.current.clear();
+    pendingIceCandidatesRef.current.clear();
 
     // Dừng local stream
     localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -334,6 +361,15 @@ export function useVoiceChat(
     socket.emit('voice-host-mute', { roomId: roomIdRef.current, targetId, muted });
   }, [socket, isHost]);
 
+  const registerPeer = useCallback((targetId: string, pc: RTCPeerConnection) => {
+    peersRef.current.set(targetId, {
+      pc,
+      gainNode: null,
+      sourceNode: null,
+      remoteStream: null,
+    });
+  }, []);
+
   // ── Socket event handlers ─────────────────────────────────────────────────
   useEffect(() => {
     if (!socket) return;
@@ -357,9 +393,12 @@ export function useVoiceChat(
 
       if (!isInVoiceRef.current) return; // Ta chưa vào voice, không cần kết nối
 
+      const existingPeer = peersRef.current.get(userId);
+      if (existingPeer && existingPeer.pc.signalingState !== 'closed') return;
+
       const pc = createPeerConnection(userId);
       addLocalTracks(pc);
-      peersRef.current.set(userId, { pc, gainNode: null });
+      registerPeer(userId, pc);
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -370,11 +409,15 @@ export function useVoiceChat(
     const onVoiceOffer = async ({ fromId, offer }: { fromId: string; offer: RTCSessionDescriptionInit }) => {
       if (!isInVoiceRef.current) return;
 
+      const existingPeer = peersRef.current.get(fromId);
+      if (existingPeer) existingPeer.pc.close();
+
       const pc = createPeerConnection(fromId);
       addLocalTracks(pc);
-      peersRef.current.set(fromId, { pc, gainNode: null });
+      registerPeer(fromId, pc);
 
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      await flushPendingIceCandidates(fromId, pc);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       socket.emit('voice-answer', { targetId: fromId, answer });
@@ -385,12 +428,18 @@ export function useVoiceChat(
       const peer = peersRef.current.get(fromId);
       if (!peer) return;
       await peer.pc.setRemoteDescription(new RTCSessionDescription(answer));
+      await flushPendingIceCandidates(fromId, peer.pc);
     };
 
     // Nhận ICE candidate
     const onVoiceIce = async ({ fromId, candidate }: { fromId: string; candidate: RTCIceCandidateInit }) => {
       const peer = peersRef.current.get(fromId);
-      if (!peer) return;
+      if (!peer || !peer.pc.remoteDescription) {
+        const pending = pendingIceCandidatesRef.current.get(fromId) ?? [];
+        pending.push(candidate);
+        pendingIceCandidatesRef.current.set(fromId, pending);
+        return;
+      }
       try {
         await peer.pc.addIceCandidate(new RTCIceCandidate(candidate));
       } catch (e) {
@@ -402,9 +451,12 @@ export function useVoiceChat(
     const onVoiceUserLeft = ({ userId }: { userId: string }) => {
       const peer = peersRef.current.get(userId);
       if (peer) {
+        peer.sourceNode?.disconnect();
+        peer.gainNode?.disconnect();
         peer.pc.close();
         peersRef.current.delete(userId);
       }
+      pendingIceCandidatesRef.current.delete(userId);
       setVoiceUsers(prev => {
         const next = new Map(prev);
         next.delete(userId);
@@ -461,7 +513,7 @@ export function useVoiceChat(
       socket.off('voice-host-muted', onVoiceHostMuted);
       socket.off('voice-speaking', onVoiceSpeaking);
     };
-  }, [socket, createPeerConnection, addLocalTracks]);
+  }, [socket, createPeerConnection, addLocalTracks, flushPendingIceCandidates, registerPeer]);
 
   // ── Cleanup khi unmount ───────────────────────────────────────────────────
   useEffect(() => {
