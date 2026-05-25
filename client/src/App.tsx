@@ -99,48 +99,37 @@ interface PomodoroState {
 
 const trendingVideoSuggestions = [
   {
-    videoId: 'NonjeHnelXo',
-    title: 'Một Đường Nở Hoa (Lời Việt) - Linh Nhi',
-    duration: '03:33',
-    category: 'V-Pop',
+    videoId: 'jfKfPfyJRdk',
+    title: 'Lofi Hip Hop Radio - Beats to Relax/Study (LIVE)',
+    duration: 'LIVE',
+    category: 'Lo-fi',
   },
   {
-    videoId: 'e1R2yS8v-2o',
-    title: 'Nhất Lộ Sinh Hoa (一路生花) - Ôn Dịch Tâm',
-    duration: '03:35',
-    category: 'C-Pop',
+    videoId: 'lTRiuFIWV54',
+    title: '1 A.M Study Session 📚 [lofi hip hop/chill beats]',
+    duration: '1:00:30',
+    category: 'Lo-fi',
   },
   {
-    videoId: 'X-D51N8k26Y',
-    title: 'Nổi Gió Rồi (起风了) - Ngô Thanh Phong',
-    duration: '05:13',
-    category: 'C-Pop',
+    videoId: 'rC5Y808g0n0',
+    title: '3-Hour Study With Me 📝 (Real Time, Pomodoro) - Merve',
+    duration: '3:00:00',
+    category: 'Study With Me',
   },
   {
-    videoId: '5-ZiKXrnvog',
-    title: 'Dynasty - MIIA',
-    duration: '03:45',
-    category: 'US-UK',
+    videoId: '0UN_HbOTTcI',
+    title: 'Classical Music for Brain Power 🧠 (Mozart, Beethoven...)',
+    duration: '2:19:10',
+    category: 'Classical',
   },
   {
-    videoId: 'F8n-p9sXWpQ',
-    title: '10 Năm Nhân Gian (十年人间) - Lý Thường Siêu',
-    duration: '03:37',
-    category: 'C-Pop',
-  },
-  {
-    videoId: '7C2z4GqqS5E',
-    title: 'FAKE LOVE - BTS',
-    duration: '05:18',
-    category: 'K-Pop',
-  },
-  {
-    videoId: 'pDl50C1n0qg',
-    title: 'Star Sky - Two Steps From Hell',
-    duration: '05:30',
-    category: 'Epic Music',
+    videoId: 'TURbeWK2wwg',
+    title: 'Korean Listening Practice for Beginners 🇰🇷',
+    duration: '25:00',
+    category: 'Korean',
   },
 ];
+
 
 
 export default function App() {
