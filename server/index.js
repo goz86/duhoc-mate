@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import yts from 'yt-search';
+import ytsr from 'ytsr';
 import { readFileSync, writeFileSync } from 'fs';
 
 const app = express();
@@ -30,6 +31,7 @@ app.get('/api/search-music', async (req, res) => {
   if (!query) return res.json({ results: [] });
 
   try {
+    // 1. Thử dùng yt-search trước
     const searchResult = await yts(String(query));
     const results = (searchResult.videos || []).slice(0, 10).map(v => ({
       videoId: v.videoId,
@@ -41,8 +43,33 @@ app.get('/api/search-music', async (req, res) => {
     }));
     return res.json({ results });
   } catch (err) {
-    console.error('yt-search error:', err.message);
-    return res.json({ results: [], error: 'Không tìm được kết quả. Hãy thử lại hoặc dán link YouTube trực tiếp.' });
+    console.warn('yt-search failed, trying ytsr fallback...', err.message);
+    try {
+      // 2. Dự phòng: dùng ytsr với custom User-Agent để giả lập trình duyệt và tránh bị YouTube chặn TLS/IP
+      const searchResult = await ytsr(String(query), {
+        limit: 10,
+        requestOptions: {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          }
+        }
+      });
+      
+      const results = (searchResult.items || [])
+        .filter(item => item.type === 'video')
+        .map(v => ({
+          videoId: v.id,
+          title: v.title,
+          author: v.author?.name || '',
+          duration: v.duration || '0:00',
+          thumbnail: v.bestThumbnail?.url || `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`,
+          views: v.views || 0,
+        }));
+      return res.json({ results });
+    } catch (fallbackErr) {
+      console.error('ytsr fallback error:', fallbackErr.message);
+      return res.json({ results: [], error: 'Không tìm được kết quả. Hãy thử lại hoặc dán link YouTube trực tiếp.' });
+    }
   }
 });
 
