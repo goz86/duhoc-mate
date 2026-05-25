@@ -66,12 +66,20 @@ export default function RoomHeader({
             </span>
             <span className="hidden -space-x-2 sm:flex">
               {members.slice(0, 3).map(member => (
-                <span
-                  key={member.id}
-                  className="grid h-6 w-6 place-items-center rounded-full border-2 border-white bg-brand-terracotta-light text-[9px] font-black text-brand-brown-dark"
-                  title={member.username}
-                >
-                  {initials(member.username)}
+                <span key={member.id} className="relative">
+                  <span
+                    className={`grid h-6 w-6 place-items-center rounded-full border-2 border-white bg-brand-terracotta-light text-[9px] font-black text-brand-brown-dark ${
+                      member.isHost ? 'ring-1 ring-amber-400' : ''
+                    }`}
+                    title={member.username + (member.isHost ? ' (Host)' : '')}
+                  >
+                    {initials(member.username)}
+                  </span>
+                  {member.isHost && (
+                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-amber-400 text-[6px]">
+                      👑
+                    </span>
+                  )}
                 </span>
               ))}
             </span>
@@ -89,13 +97,27 @@ export default function RoomHeader({
                 {members.map(member => (
                   <div key={member.id} className="flex items-center justify-between gap-3 rounded-2xl border border-brand-terracotta-light/10 bg-brand-light/35 p-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="grid h-10 w-10 place-items-center rounded-full bg-white font-display text-xs font-black text-brand-brown-dark shadow-sm">
-                        {initials(member.username)}
+                      <div className="relative">
+                        <div className="grid h-10 w-10 place-items-center rounded-full bg-white font-display text-xs font-black text-brand-brown-dark shadow-sm">
+                          {initials(member.username)}
+                        </div>
+                        {member.isHost && (
+                          <span className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-amber-400 text-[10px] text-white shadow-sm ring-1 ring-white">
+                            👑
+                          </span>
+                        )}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-brand-brown-dark">{member.username}</p>
+                        <div className="flex items-center gap-1">
+                          <p className="truncate text-sm font-black text-brand-brown-dark">{member.username}</p>
+                          {member.isHost && (
+                            <Crown size={12} className="text-amber-500 shrink-0" />
+                          )}
+                        </div>
                         <p className="text-[11px] font-bold text-brand-brown-light">
-                          {member.id === currentSocketId ? 'Bạn' : member.isHost ? 'Host' : 'Bạn học'}
+                          {member.id === currentSocketId
+                            ? (member.isHost ? 'Bạn (Host)' : 'Bạn')
+                            : member.isHost ? 'Host' : 'Bạn học'}
                         </p>
                       </div>
                     </div>

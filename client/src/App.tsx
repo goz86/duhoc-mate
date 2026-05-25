@@ -468,7 +468,14 @@ export default function App() {
     socket = io(SOCKET_URL);
 
     socket.on('room-users', (users: Member[]) => {
-      setMembers(users);
+      setMembers(prev => {
+        const oldHost = prev.find(m => m.isHost);
+        const newHost = users.find(m => m.isHost);
+        if (oldHost && newHost && oldHost.id !== newHost.id && newHost.id !== socket?.id) {
+          setCustomAlert({ message: `${newHost.username} đã trở thành chủ phòng học!`, show: true });
+        }
+        return users;
+      });
       // Tìm xem mình có phải host mới không (trong trường hợp host cũ rời phòng)
       const me = users.find(u => u.id === socket.id);
       if (me) setIsHost(me.isHost);
@@ -507,6 +514,7 @@ export default function App() {
       // Khi được assign làm host mới → sync flag theo trạng thái video hiện tại
       if (val) {
         hostWantsToPlayRef.current = !!currentVideoRef.current?.playing;
+        setCustomAlert({ message: 'Bạn đã trở thành chủ phòng học!', show: true });
       }
     });
 
@@ -2397,9 +2405,11 @@ export default function App() {
             <button onClick={() => setShowRoomSettings(true)} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
               <Settings size={14} /> Cài đặt phòng
             </button>
-            <button onClick={() => transferHost()} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
-              <Crown size={14} /> Chuyển host
-            </button>
+            {isHost && (
+              <button onClick={() => transferHost()} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
+                <Crown size={14} /> Chuyển host
+              </button>
+            )}
 
           </div>
 
@@ -3509,13 +3519,24 @@ export default function App() {
                                 {isInVoice && !isSpeakingNow && (
                                   <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white ${isMutedNow ? 'bg-red-400' : 'bg-green-400'}`} />
                                 )}
+                                {/* Host crown badge on avatar */}
+                                {m.isHost && (
+                                  <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-amber-400 text-[10px] text-white shadow-sm ring-1 ring-white">
+                                    👑
+                                  </span>
+                                )}
                               </div>
 
                               <div className="space-y-0.5 min-w-0">
-                                <p className="font-display font-extrabold text-sm text-brand-brown-dark truncate">{m.username}</p>
+                                <div className="flex items-center gap-1">
+                                  <p className="font-display font-extrabold text-sm text-brand-brown-dark truncate">{m.username}</p>
+                                  {m.isHost && (
+                                    <Crown size={12} className="text-amber-500 shrink-0" />
+                                  )}
+                                </div>
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-xs text-brand-brown-light font-medium">
-                                    {isMe ? "Bạn" : "Bạn học"}
+                                    {isMe ? (m.isHost ? "Bạn (Host)" : "Bạn") : (m.isHost ? "Host" : "Bạn học")}
                                   </span>
                                   {isSpeakingNow && (
                                     <span className="text-[10px] font-bold text-green-600 animate-pulse">đang nói...</span>
