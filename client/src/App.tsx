@@ -342,6 +342,29 @@ export default function App() {
   const [showYoutubeCaptions, setShowYoutubeCaptions] = useState(false);
   const activeLyricRef = useRef<HTMLParagraphElement>(null);
 
+  const advanceToNextPlaylistItem = (player?: any) => {
+    if (!isHostRef.current || advancingPlaylistRef.current) return false;
+
+    const nextItem = getNextPlaylistItem(playlistRef.current);
+    if (!nextItem) return false;
+
+    advancingPlaylistRef.current = true;
+    hostWantsToPlayRef.current = true;
+    hostLastPauseAtRef.current = 0;
+    const nextVideoState = { id: nextItem.videoId, time: 0, playing: true };
+    setVideoError(false);
+    setCurrentVideo(nextVideoState);
+    (player || playerRef.current)?.loadVideoById?.(nextItem.videoId, 0);
+    socket.emit('video-action', {
+      roomId: roomIdRef.current,
+      action: 'play',
+      time: 0,
+      videoId: nextItem.videoId,
+      userInitiated: true,
+    });
+    return true;
+  };
+
   // ── Voice Chat (WebRTC) ────────────────────────────────────────────────────
   // socket là module-level let, có thể undefined trên first render → cast an toàn
   const voiceChat = useVoiceChat((socket as Socket | null) ?? null, roomId, isHost);
@@ -749,23 +772,7 @@ export default function App() {
             }
 
             if (state === 0 && !advancingPlaylistRef.current) {
-              const nextItem = getNextPlaylistItem(playlistRef.current);
-              if (nextItem) {
-                advancingPlaylistRef.current = true;
-                hostWantsToPlayRef.current = true;
-                hostLastPauseAtRef.current = 0;
-                const nextVideoState = { id: nextItem.videoId, time: 0, playing: true };
-                setVideoError(false);
-                setCurrentVideo(nextVideoState);
-                event.target.loadVideoById?.(nextItem.videoId, 0);
-                socket.emit('video-action', {
-                  roomId: roomIdRef.current,
-                  action: 'play',
-                  time: 0,
-                  videoId: nextItem.videoId,
-                  userInitiated: true,
-                });
-              }
+              advanceToNextPlaylistItem(event.target);
               return;
             }
 
@@ -830,6 +837,15 @@ export default function App() {
         currentVideoRef.current.playing
       ) {
         const time = playerRef.current.getCurrentTime();
+        const duration = playerRef.current.getDuration?.();
+        if (
+          typeof duration === 'number' &&
+          duration > 5 &&
+          time >= duration - 1.5 &&
+          advanceToNextPlaylistItem(playerRef.current)
+        ) {
+          return;
+        }
         socket.emit('video-action', {
           roomId: roomIdRef.current,
           action: 'play',
