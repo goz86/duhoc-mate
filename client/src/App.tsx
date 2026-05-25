@@ -433,11 +433,12 @@ export default function App() {
       }
 
       if (action === 'play') {
-        playerRef.current.playVideo();
-        // Chỉ seek khi đang play - tránh YouTube auto-play sau khi buffer xong seek
-        if (time !== undefined && Math.abs(playerRef.current.getCurrentTime() - time) > 2) {
+        // Seek trước để đảm bảo guest sync đúng vị trí với host
+        // Ngưỡng > 1s (thay vì > 2s cũ) để catch drift nhỏ hơn
+        if (time !== undefined && Math.abs(playerRef.current.getCurrentTime() - time) > 1) {
           playerRef.current.seekTo(time, true);
         }
+        playerRef.current.playVideo();
       } else if (action === 'pause') {
         playerRef.current.pauseVideo();
         // KHÔNG seek khi pause - seekTo trên video đã pause vẫn có thể trigger buffer → auto-play
@@ -609,11 +610,12 @@ export default function App() {
 
             // Non-host: chỉ cập nhật local state, KHÔNG emit socket
             if (!isHostRef.current) {
-              // state=1 (playing) hoặc state=3 (buffering) khi host đã pause → STOP ngay lập tức
+              // state=1 (playing) hoặc state=3 (buffering) khi host đã pause → PAUSE ngay lập tức
+              // Dùng pauseVideo() thay vì stopVideo() để giữ nguyên vị trí video
+              // → khi host resume, guest play ngay từ đúng vị trí, không cần tạo lại player
               if (isHostPausedRef.current && (state === 1 || state === 3)) {
-                console.log('[YT-STATE] NON-HOST blocked - stopVideo');
-                event.target.stopVideo();
-                event.target.mute();
+                console.log('[YT-STATE] NON-HOST blocked - pauseVideo (host paused)');
+                event.target.pauseVideo();
                 return;
               }
               if (state === 2) {
@@ -736,35 +738,27 @@ export default function App() {
     }
   }, [currentVideo.id]);
 
-  // NUCLEAR OPTION: khi host pause → DESTROY player hoàn toàn
-  // Khi host resume → re-init player từ đầu (qua useEffect [view, currentVideo.id])
+  // ENFORCE: khi host pause → chỉ PAUSE player guest (giữ player sống để resume nhanh)
+  // Khi host resume → video-sync handler đã gọi playVideo() trực tiếp → không cần reinit
+  // FIX: không destroy player nữa vì reinit mất 2-3s → guest phát chậm 2s so với host
   useEffect(() => {
     if (isHost) return; // Host không bị ảnh hưởng
 
     if (isHostPaused) {
-      console.log('[ENFORCE] Host paused - DESTROY player completely');
-      // Destroy player - không thể tự phát được nữa vì không còn iframe
-      if (playerRef.current?.destroy) {
+      console.log('[ENFORCE] Host paused - pause guest player (keep alive for quick resume)');
+      // Chỉ pause, không destroy → giữ nguyên vị trí video, player sẵn sàng resume ngay
+      if (playerRef.current?.pauseVideo) {
         try {
-          playerRef.current.destroy();
+          playerRef.current.pauseVideo();
         } catch (e) {
-          console.error('[ENFORCE] destroy error', e);
+          console.error('[ENFORCE] pauseVideo error', e);
         }
-        playerRef.current = null;
       }
-      // Clear container - xóa iframe khỏi DOM
-      if (iframeContainerRef.current) {
-        iframeContainerRef.current.innerHTML = '';
-      }
-    } else {
-      console.log('[ENFORCE] Host resumed - trigger player re-init');
-      // Trigger re-init bằng cách set playerRef = null
-      // useEffect [view, currentVideo.id] sẽ check và tạo player mới
-      // KHÔNG cần làm gì thêm vì playerRef đã là null từ destroy ở trên
-      // Nếu vẫn còn (do user pause/resume nhanh), force null
-      playerRef.current = null;
-      setPlayerReinitTrigger(t => t + 1);
+      // onStateChange guard sẽ chặn mọi spurious state=1 trong khi isHostPaused=true
     }
+    // Khi host resume (isHostPaused = false):
+    // → video-sync handler nhận action='play' → gọi playerRef.current.playVideo() ngay lập tức
+    // → player đã sẵn sàng, không cần tạo lại → KHÔNG có độ trễ 2s nữa
   }, [isHostPaused, isHost]);
 
   // Toggle only the study-table presence state. A polished call layer can be
