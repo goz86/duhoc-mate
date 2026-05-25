@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
+import { getRemoteAudioVolume } from './voiceAudioPlayback';
 import { VOICE_RTC_CONFIG } from './voiceIceServers';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -24,6 +25,7 @@ interface PeerData {
   gainNode: GainNode | null;
   sourceNode: MediaStreamAudioSourceNode | null;
   remoteStream: MediaStream | null;
+  audioElement: HTMLAudioElement | null;
 }
 
 interface UseVoiceChatReturn {
@@ -77,6 +79,14 @@ export function useVoiceChat(
   const isSpeakingRef = useRef(false);
   const masterVolumeBeforeDeafenRef = useRef(1); // Lưu volume trước khi deafen
 
+  const updateRemoteAudioElements = useCallback(() => {
+    peersRef.current.forEach((peer, userId) => {
+      if (!peer.audioElement) return;
+      const userVolume = voiceUsers.get(userId)?.volume ?? 1;
+      peer.audioElement.volume = getRemoteAudioVolume(userVolume, masterVolume, isDeafenedRef.current);
+    });
+  }, [masterVolume, voiceUsers]);
+
   // Sync refs
   useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
@@ -125,20 +135,35 @@ export function useVoiceChat(
       const remoteStream = event.streams[0] ?? new MediaStream([event.track]);
       const source = ctx.createMediaStreamSource(remoteStream);
       const gainNode = ctx.createGain();
+      const userVolume = voiceUsers.get(targetId)?.volume ?? 1;
+      const audioElement = document.createElement('audio');
 
       // Per-user volume (default 1)
-      gainNode.gain.value = voiceUsers.get(targetId)?.volume ?? 1;
+      gainNode.gain.value = userVolume;
       source.connect(gainNode);
       gainNode.connect(masterGainRef.current!);
+
+      audioElement.autoplay = true;
+      audioElement.setAttribute('playsinline', 'true');
+      audioElement.srcObject = remoteStream;
+      audioElement.volume = getRemoteAudioVolume(userVolume, masterVolume, isDeafenedRef.current);
+      audioElement.dataset.voicePeerId = targetId;
+      audioElement.style.display = 'none';
+      document.body.appendChild(audioElement);
+      audioElement.play().catch(err => {
+        console.warn('[VoiceChat] Remote audio playback needs user interaction:', targetId, err);
+      });
 
       // Cập nhật gainNode reference
       const existingPeer = peersRef.current.get(targetId);
       if (existingPeer) {
         existingPeer.sourceNode?.disconnect();
         existingPeer.gainNode?.disconnect();
+        existingPeer.audioElement?.remove();
         existingPeer.sourceNode = source;
         existingPeer.gainNode = gainNode;
         existingPeer.remoteStream = remoteStream;
+        existingPeer.audioElement = audioElement;
       }
     };
 
@@ -251,9 +276,10 @@ export function useVoiceChat(
     }
 
     // Đóng tất cả peer connections
-    peersRef.current.forEach(({ pc, sourceNode, gainNode }) => {
+    peersRef.current.forEach(({ pc, sourceNode, gainNode, audioElement }) => {
       sourceNode?.disconnect();
       gainNode?.disconnect();
+      audioElement?.remove();
       pc.close();
     });
     peersRef.current.clear();
@@ -314,6 +340,7 @@ export function useVoiceChat(
         masterGainRef.current.gain.value = masterVolumeBeforeDeafenRef.current;
       }
     }
+    updateRemoteAudioElements();
 
     // Khi deafen, tự động mute mic luôn (như Discord)
     if (newDeafened) {
@@ -338,7 +365,12 @@ export function useVoiceChat(
     // Luôn lưu giá trị (để khôi phục khi bỏ deafen)
     setMasterVolumeState(clamped);
     masterVolumeBeforeDeafenRef.current = clamped;
-  }, []);
+    peersRef.current.forEach((peer, userId) => {
+      if (!peer.audioElement) return;
+      const userVolume = voiceUsers.get(userId)?.volume ?? 1;
+      peer.audioElement.volume = getRemoteAudioVolume(userVolume, clamped, isDeafenedRef.current);
+    });
+  }, [voiceUsers]);
 
   // ── setUserVolume (per-user local volume) ─────────────────────────────────
   const setUserVolume = useCallback((userId: string, v: number) => {
@@ -346,6 +378,9 @@ export function useVoiceChat(
     const peerData = peersRef.current.get(userId);
     if (peerData?.gainNode) {
       peerData.gainNode.gain.value = clamped;
+    }
+    if (peerData?.audioElement) {
+      peerData.audioElement.volume = getRemoteAudioVolume(clamped, masterVolume, isDeafenedRef.current);
     }
     setVoiceUsers(prev => {
       const next = new Map(prev);
@@ -367,6 +402,7 @@ export function useVoiceChat(
       gainNode: null,
       sourceNode: null,
       remoteStream: null,
+      audioElement: null,
     });
   }, []);
 
@@ -453,6 +489,7 @@ export function useVoiceChat(
       if (peer) {
         peer.sourceNode?.disconnect();
         peer.gainNode?.disconnect();
+        peer.audioElement?.remove();
         peer.pc.close();
         peersRef.current.delete(userId);
       }
