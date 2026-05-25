@@ -421,11 +421,9 @@ export default function App() {
   // socket là module-level let, có thể undefined trên first render → cast an toàn
   const voiceChat = useVoiceChat((socket as Socket | null) ?? null, roomId, isHost);
 
-  // PDF states
-  const [pdfPage, setPdfPage] = useState(1);
-  const [pdfTotalPages, setPdfTotalPages] = useState(1);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const pdfDocRef = useRef<any>(null);
+  // Slide URL states (Google Slides / Canva embed)
+  const [slideUrl, setSlideUrl] = useState('');
+  const [slideInputUrl, setSlideInputUrl] = useState('');
 
   // Pomodoro states
   const [pomodoro, setPomodoro] = useState<PomodoroState>({
@@ -482,7 +480,7 @@ export default function App() {
       if (me) setIsHost(me.isHost);
     });
 
-    socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost, tiktokVideoId, ideaTasks }) => {
+    socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost, tiktokVideoId, ideaTasks, slideUrl: initSlideUrl }) => {
       setPlaylist(playlist);
       setCurrentVideo(videoState);
       setVideoError(false);
@@ -493,6 +491,7 @@ export default function App() {
       setPomodoro(pomodoro);
       setChatMessages(chatMessages || []);
       setIdeaTasks(ideaTasks || []);
+      if (initSlideUrl) { setSlideUrl(initSlideUrl); setSlideInputUrl(initSlideUrl); }
       setIsHost(isHost);
       // Khởi tạo trạng thái host pause khi vào phòng
       const hostPaused = !!videoState?.pausedByHost;
@@ -651,9 +650,10 @@ export default function App() {
       alert(isBreak ? "Đã hết giờ học! Đến giờ nghỉ giải lao 5 phút rồi." : "Hết giờ giải lao! Bắt đầu tập trung học tiếp nào.");
     });
 
-    // Đồng bộ chuyển trang PDF qua Socket (sử dụng sự kiện video-action tạm thời cho đơn giản)
-    socket.on('pdf-page-sync', (page: number) => {
-      setPdfPage(page);
+    // Đồng bộ Slide URL (Google Slides / Canva embed)
+    socket.on('slide-url-sync', ({ url }: { url: string }) => {
+      setSlideUrl(url);
+      setSlideInputUrl(url);
     });
 
     // Nhận danh sách phòng hoạt động
@@ -1669,102 +1669,48 @@ export default function App() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // 6. PDF Rendering & Sync
-  const loadPdfJs = () => {
-    if ((window as any).pdfjsLib) return Promise.resolve();
-    return new Promise((resolve) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
-      script.onload = () => {
-        (window as any).pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-        resolve(null);
-      };
-      document.head.appendChild(script);
-    });
-  };
-
-  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    await loadPdfJs();
-    const fileReader = new FileReader();
-    fileReader.onload = async function () {
-      const typedarray = new Uint8Array(this.result as ArrayBuffer);
-      const pdfjsLib = (window as any).pdfjsLib;
-      try {
-        const pdf = await pdfjsLib.getDocument(typedarray).promise;
-        pdfDocRef.current = pdf;
-        setPdfTotalPages(pdf.numPages);
-        setPdfPage(1);
-        renderPdfPage(1);
-      } catch (err) {
-        alert("Lỗi đọc file PDF!");
-      }
-    };
-    fileReader.readAsArrayBuffer(file);
-  };
-
-  const renderPdfPage = async (pageNum: number) => {
-    if (!pdfDocRef.current || !canvasRef.current) return;
+  // 6. Slide URL (Google Slides / Canva embed) - sync tới tất cả người trong phòng
+  const convertToEmbedUrl = (rawUrl: string): string => {
     try {
-      const page = await pdfDocRef.current.getPage(pageNum);
-      const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900;
-      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1440;
-      const scale = viewportHeight < 760 ? 0.9 : viewportWidth < 1440 ? 1.1 : 1.35;
-      const viewport = page.getViewport({ scale });
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      if (!context) return;
-
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-
-      const renderContext = {
-        canvasContext: context,
-        viewport: viewport
-      };
-      await page.render(renderContext).promise;
-    } catch (err) {
-      console.error("PDF page render error:", err);
+      const url = rawUrl.trim();
+      // Google Slides: /edit, /pub, /present → /embed
+      const gSlides = url.match(/docs\.google\.com\/presentation\/d\/([^/]+)/);
+      if (gSlides) {
+        return `https://docs.google.com/presentation/d/${gSlides[1]}/embed?start=false&loop=false&delayms=3000`;
+      }
+      // Google Drive PDF: /view → /preview
+      const gDrive = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+      if (gDrive) {
+        return `https://drive.google.com/file/d/${gDrive[1]}/preview`;
+      }
+      // Canva: thêm ?embed nếu chưa có
+      if (url.includes('canva.com')) {
+        return url.includes('?') ? url : url + '?embed';
+      }
+      // Giữ nguyên các URL khác (iframe-friendly)
+      return url;
+    } catch {
+      return rawUrl;
     }
   };
 
-  useEffect(() => {
-    if (stageMode === 'pdf' && pdfDocRef.current) {
-      renderPdfPage(pdfPage);
-    }
-  }, [pdfPage, stageMode]);
+  const handleSlideUrlSubmit = () => {
+    if (!isHost) return;
+    const embedUrl = convertToEmbedUrl(slideInputUrl);
+    socket.emit('slide-url-set', { roomId, url: embedUrl });
+  };
 
-  useEffect(() => {
-    if (stageMode !== 'pdf') return;
-    const handleResize = () => {
-      if (pdfDocRef.current) renderPdfPage(pdfPage);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [pdfPage, stageMode]);
+  const handleClearSlide = () => {
+    if (!isHost) return;
+    setSlideInputUrl('');
+    socket.emit('slide-url-set', { roomId, url: '' });
+  };
 
   useEffect(() => {
     if (sidebarTab === 'chat') {
       setTimeout(scrollToBottom, 50);
     }
   }, [chatMessages, sidebarTab]);
-
-  const changePdfPage = (dir: 'next' | 'prev') => {
-    let newPage = pdfPage;
-    if (dir === 'next' && pdfPage < pdfTotalPages) {
-      newPage += 1;
-    } else if (dir === 'prev' && pdfPage > 1) {
-      newPage -= 1;
-    }
-
-    if (newPage !== pdfPage) {
-      setPdfPage(newPage);
-      // Đồng bộ trang sang các client khác qua Socket
-      socket.emit('pdf-page-sync', { roomId, page: newPage });
-    }
-  };
 
   // Tìm kiếm trạng thái online của bạn bè
   const friendsWithStatus = friendsList.map(code => {
@@ -2978,36 +2924,68 @@ export default function App() {
                   </div>
                 )}
 
-                {/* ── 4. PDF STAGE ── */}
+                {/* ── 4. SLIDE STAGE (Google Slides / Canva embed) ── */}
                 {stageMode === 'pdf' && (
-                  <div className="flex-1 flex flex-col gap-3 justify-start h-full items-center overflow-y-auto pr-1">
-                    <div className="w-full flex justify-between items-center gap-4 bg-brand-light/60 p-3 rounded-2xl border border-brand-terracotta-light/20">
-                      <input
-                        type="file"
-                        accept=".pdf"
-                        onChange={handlePdfUpload}
-                        className="text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-terracotta file:text-white hover:file:bg-brand-brown-dark file:cursor-pointer"
-                      />
-                      {pdfDocRef.current && (
-                        <div className="flex items-center gap-3 flex-shrink-0">
-                          <button onClick={() => changePdfPage('prev')} disabled={pdfPage <= 1} className="px-3 py-1.5 rounded-lg bg-white border border-brand-terracotta-light/20 font-bold text-xs disabled:opacity-50 cursor-pointer">
-                            Trước
+                  <div className="flex-1 flex flex-col gap-3 h-full min-h-0">
+                    {/* URL Input bar - chỉ host thấy */}
+                    {isHost && (
+                      <div className="w-full flex items-center gap-2 bg-brand-light/60 p-2.5 rounded-2xl border border-brand-terracotta-light/20 flex-shrink-0">
+                        <Link2 size={14} className="text-brand-brown-light shrink-0" />
+                        <input
+                          type="text"
+                          value={slideInputUrl}
+                          onChange={e => setSlideInputUrl(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && handleSlideUrlSubmit()}
+                          placeholder="Paste link Google Slides, Canva, Google Drive PDF..."
+                          className="flex-1 text-xs bg-transparent outline-none text-brand-brown-dark placeholder:text-brand-brown-light/50 min-w-0"
+                        />
+                        {slideUrl && (
+                          <button onClick={handleClearSlide} className="text-xs text-red-400 hover:text-red-600 font-bold shrink-0 cursor-pointer px-1">
+                            ✕
                           </button>
-                          <span className="text-xs font-bold whitespace-nowrap">Trang {pdfPage} / {pdfTotalPages}</span>
-                          <button onClick={() => changePdfPage('next')} disabled={pdfPage >= pdfTotalPages} className="px-3 py-1.5 rounded-lg bg-white border border-brand-terracotta-light/20 font-bold text-xs disabled:opacity-50 cursor-pointer">
-                            Sau
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 w-full flex items-start justify-center min-h-[240px] max-h-[calc(100vh-300px)] border border-dashed border-brand-terracotta-light/30 rounded-2xl p-4 bg-white/30 overflow-auto xl:min-h-[300px]">
-                      {pdfDocRef.current ? (
-                        <canvas ref={canvasRef} className="shadow-lg rounded-xl max-h-full max-w-full bg-white object-contain" />
+                        )}
+                        <button
+                          onClick={handleSlideUrlSubmit}
+                          disabled={!slideInputUrl.trim()}
+                          className="shrink-0 px-3 py-1.5 rounded-xl bg-brand-terracotta text-white text-xs font-bold hover:bg-brand-brown-dark disabled:opacity-40 transition cursor-pointer"
+                        >
+                          Chia sẻ
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Embed area */}
+                    <div className="flex-1 w-full rounded-2xl overflow-hidden border border-brand-terracotta-light/20 bg-white/20 min-h-0">
+                      {slideUrl ? (
+                        <iframe
+                          src={slideUrl}
+                          className="w-full h-full min-h-[300px]"
+                          style={{ border: 'none' }}
+                          allow="autoplay"
+                          allowFullScreen
+                          title="Slide trình chiếu"
+                        />
                       ) : (
-                        <div className="text-center space-y-2 max-w-sm">
-                          <FileText size={40} className="mx-auto text-brand-terracotta-light" />
-                          <h4 className="font-display font-extrabold text-sm">Chưa có Slide PDF nào</h4>
-                          <p className="text-xs text-brand-brown-light">Tải file PDF bài học lên. Host chuyển trang → tất cả tự động nhảy theo.</p>
+                        <div className="flex flex-col items-center justify-center h-full min-h-[300px] gap-4 p-6 text-center">
+                          <div className="w-16 h-16 rounded-full bg-brand-terracotta/10 border-2 border-brand-terracotta/20 flex items-center justify-center">
+                            <FileText size={28} className="text-brand-terracotta/60" />
+                          </div>
+                          <div className="space-y-1.5 max-w-xs">
+                            <h4 className="font-display font-extrabold text-sm text-brand-brown-dark">Chưa có Slide nào</h4>
+                            <p className="text-xs text-brand-brown-light leading-relaxed">
+                              {isHost
+                                ? 'Paste link Google Slides hoặc Canva vào ô phía trên → tất cả trong phòng cùng xem!'
+                                : 'Host chưa chia sẻ slide. Hãy chờ host paste link Google Slides / Canva.'}
+                            </p>
+                          </div>
+                          {isHost && (
+                            <div className="flex flex-col gap-1.5 text-xs text-brand-brown-light/70 bg-brand-light/60 rounded-xl p-3 w-full max-w-xs text-left">
+                              <p className="font-bold text-brand-brown-dark mb-1">Hỗ trợ:</p>
+                              <p>📊 <span className="font-medium">Google Slides</span> — docs.google.com/presentation/...</p>
+                              <p>🎨 <span className="font-medium">Canva</span> — canva.com/design/...</p>
+                              <p>📄 <span className="font-medium">Google Drive PDF</span> — drive.google.com/file/...</p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

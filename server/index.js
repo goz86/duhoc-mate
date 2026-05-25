@@ -704,7 +704,8 @@ io.on('connection', (socket) => {
       isHost,
       tiktokVideoId: room.tiktokVideoId || null,
       ideaTasks: room.ideaTasks || [],
-      voiceUsers: room.voiceUsers || {}
+      voiceUsers: room.voiceUsers || {},
+      slideUrl: room.slideUrl || ''
     });
 
     // Nếu phòng đang có TikTok video, gửi sync cho member mới
@@ -849,6 +850,15 @@ io.on('connection', (socket) => {
       io.to(roomId).emit('update-playlist', room.playlist);
       updateRoomMembersSongs(roomId, activeItem ? activeItem.title : `Đang phát video (${videoId})`);
     }
+  });
+
+  // 4b. Slide URL Sync (Google Slides / Canva embed)
+  socket.on('slide-url-set', ({ roomId, url }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    room.slideUrl = url || '';
+    // Broadcast tới tất cả người trong phòng (kể cả người gửi để confirm)
+    io.to(roomId).emit('slide-url-sync', { url: room.slideUrl });
   });
 
   // 4. Playlist & Upvote Jukebox
