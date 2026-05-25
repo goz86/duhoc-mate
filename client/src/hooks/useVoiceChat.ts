@@ -144,6 +144,7 @@ export function useVoiceChat(
       gainNode.connect(masterGainRef.current!);
 
       audioElement.autoplay = true;
+      audioElement.muted = true; // Mute để vượt qua chính sách chặn autoplay của trình duyệt (âm thanh thực tế phát qua Web Audio API)
       audioElement.setAttribute('playsinline', 'true');
       audioElement.srcObject = remoteStream;
       audioElement.volume = getRemoteAudioVolume(userVolume, masterVolume, isDeafenedRef.current);
