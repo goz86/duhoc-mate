@@ -37,7 +37,6 @@ import type { HelpPost } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { repairHelpPostText } from '../lib/textEncoding'
 
-type AuthMode = 'login' | 'register'
 
 type ActiveRoom = {
   id: string
@@ -69,8 +68,6 @@ type LandingPageProps = {
   user: unknown
   profile: { username?: string; city?: string; avatar_url?: string } | null
   signOut: () => void
-  setAuthMode: (mode: AuthMode) => void
-  setShowAuthModal: (show: boolean) => void
   getAvatarColor: (name: string) => string
   handleCreateRoom: (
     seedTasks?: any[],
@@ -105,8 +102,6 @@ export default function LandingPage({
   user,
   profile,
   signOut,
-  setAuthMode,
-  setShowAuthModal,
   getAvatarColor,
   handleCreateRoom,
   handleJoinRoom,
@@ -451,20 +446,15 @@ export default function LandingPage({
                 )}
               </div>
             ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { setAuthMode('login'); setShowAuthModal(true) }}
-                  className="whitespace-nowrap rounded-full border border-black/[0.08] bg-white px-4 py-2 text-xs font-black text-brand-brown-dark shadow-sm hover:border-brand-terracotta-light"
-                >
-                  {t('nav.login')}
-                </button>
-                <button
-                  onClick={() => { setAuthMode('register'); setShowAuthModal(true) }}
-                  className="hidden rounded-full bg-brand-brown-dark px-4 py-2 text-xs font-black text-white shadow-sm hover:bg-brand-terracotta sm:block"
-                >
-                  {t('nav.register')}
-                </button>
-              </div>
+              <button
+                onClick={async () => {
+                  const { error } = await signInWithGoogle()
+                  if (error) alert('Lỗi đăng nhập Google: ' + error.message)
+                }}
+                className="whitespace-nowrap rounded-full border border-black/[0.08] bg-white px-4 py-2 text-xs font-black text-brand-brown-dark shadow-sm hover:border-brand-terracotta-light"
+              >
+                {t('nav.login')}
+              </button>
             )}
           </div>
         </div>

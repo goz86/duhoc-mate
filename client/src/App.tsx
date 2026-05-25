@@ -1822,8 +1822,6 @@ export default function App() {
           user={user}
           profile={profile}
           signOut={signOut}
-          setAuthMode={setAuthMode}
-          setShowAuthModal={setShowAuthModal}
           getAvatarColor={getAvatarColor}
           handleCreateRoom={handleCreateRoom}
           handleJoinRoom={handleJoinRoom}
