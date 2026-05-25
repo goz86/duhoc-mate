@@ -72,6 +72,8 @@ interface PlaylistItem {
   votes: number;
   votedUsers: string[];
   addedBy: string;
+  status?: 'queued' | 'playing' | 'played';
+  playedAt?: string;
 }
 
 interface VideoState {
@@ -763,7 +765,6 @@ export default function App() {
                   videoId: nextItem.videoId,
                   userInitiated: true,
                 });
-                socket.emit('remove-song', { roomId: roomIdRef.current, songId: nextItem.id });
               }
               return;
             }
@@ -1529,7 +1530,6 @@ export default function App() {
       videoId: item.videoId 
     });
     // Xóa bài đó ra khỏi hàng đợi
-    socket.emit('remove-song', { roomId, songId: item.id });
   };
 
   // 5. Chức năng Pomodoro
@@ -3153,16 +3153,29 @@ export default function App() {
                           </div>
                         </div>
                       ) : (
-                        playlist.map((item, idx) => (
+                        playlist.map((item, idx) => {
+                          const isPlaying = item.status === 'playing' || item.videoId === currentVideo.id;
+                          const isPlayed = item.status === 'played';
+                          return (
                           <div
                             key={item.id}
                             className={`p-4 rounded-2xl bg-white/60 border border-brand-terracotta-light/10 flex justify-between items-center shadow-sm hover:shadow transition ${
-                              idx === 0 ? 'ring-2 ring-brand-terracotta/20 bg-brand-light/30' : ''
+                              isPlaying
+                                ? 'ring-2 ring-brand-terracotta/30 bg-brand-light/35'
+                                : isPlayed
+                                  ? 'opacity-80'
+                                  : idx === 0 ? 'ring-2 ring-brand-terracotta/20 bg-brand-light/30' : ''
                             }`}
                           >
                             <div className="space-y-1.5 min-w-0 flex-1 pr-3">
                               <div className="flex items-center gap-2">
-                                {idx === 0 && <span className="px-2 py-1 rounded-md text-xs font-black bg-brand-terracotta text-white uppercase">TOP</span>}
+                                {isPlaying ? (
+                                  <span className="px-2 py-1 rounded-md text-xs font-black bg-brand-terracotta text-white uppercase">Đang phát</span>
+                                ) : isPlayed ? (
+                                  <span className="px-2 py-1 rounded-md text-xs font-black bg-brand-light text-brand-brown-light uppercase">Đã phát</span>
+                                ) : idx === 0 && (
+                                  <span className="px-2 py-1 rounded-md text-xs font-black bg-brand-terracotta text-white uppercase">TOP</span>
+                                )}
                                 <p className="font-display font-extrabold text-sm truncate text-brand-brown-dark">{item.title}</p>
                               </div>
                               <p className="text-xs text-brand-brown-light font-medium">Gợi ý bởi: <span className="font-bold">{item.addedBy}</span></p>
@@ -3193,7 +3206,8 @@ export default function App() {
                               )}
                             </div>
                           </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </div>

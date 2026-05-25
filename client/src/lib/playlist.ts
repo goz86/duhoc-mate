@@ -3,7 +3,8 @@ export interface QueuedPlaylistItem {
   videoId: string;
   title: string;
   votes?: number;
+  status?: 'queued' | 'playing' | 'played';
 }
 
 export const getNextPlaylistItem = <T extends QueuedPlaylistItem>(playlist: T[]): T | null =>
-  playlist.length > 0 ? playlist[0] : null;
+  playlist.find((item) => item.status !== 'playing' && item.status !== 'played') || null;
