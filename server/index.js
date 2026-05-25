@@ -225,7 +225,8 @@ io.on('connection', (socket) => {
         roomTitle: roomTitle || `Phòng của ${username}`,
         isPrivate: isPrivate !== undefined ? !!isPrivate : !!rememberedRoom?.isPrivate,
         password: password || rememberedRoom?.password || '',
-        hostAvatarUrl: hostAvatarUrl || rememberedRoom?.hostAvatarUrl || ''
+        hostAvatarUrl: hostAvatarUrl || rememberedRoom?.hostAvatarUrl || '',
+        voiceUsers: {}  // { [socketId]: { muted, speaking } }
       });
     }
 
@@ -291,7 +292,8 @@ io.on('connection', (socket) => {
       chatMessages: room.chatMessages || [],
       isHost,
       tiktokVideoId: room.tiktokVideoId || null,
-      ideaTasks: room.ideaTasks || []
+      ideaTasks: room.ideaTasks || [],
+      voiceUsers: room.voiceUsers || {}
     });
 
     // Nếu phòng đang có TikTok video, gửi sync cho member mới
@@ -576,6 +578,79 @@ io.on('connection', (socket) => {
     broadcastRoomDirectory();
   });
 
+  // ─── VOICE CHAT SIGNALING (WebRTC P2P) ─────────────────────────────────────
+
+  // User bật mic → join voice channel
+  socket.on('voice-join', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    if (!room.voiceUsers) room.voiceUsers = {};
+    const member = room.members.find(m => m.id === socket.id);
+    if (!member) return;
+
+    room.voiceUsers[socket.id] = { muted: false, speaking: false };
+
+    // Gửi danh sách voice users hiện tại cho người vừa join (để biết ai đang ở đây)
+    socket.emit('voice-users', { users: room.voiceUsers });
+
+    // Thông báo cho các người còn lại → họ sẽ khởi tạo kết nối WebRTC đến user mới
+    socket.to(roomId).emit('voice-user-joined', { userId: socket.id, username: member.username });
+  });
+
+  // User tắt mic / rời voice channel
+  socket.on('voice-leave', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room || !room.voiceUsers) return;
+    delete room.voiceUsers[socket.id];
+    socket.to(roomId).emit('voice-user-left', { userId: socket.id });
+  });
+
+  // Relay WebRTC SDP Offer (initiator → target)
+  socket.on('voice-offer', ({ targetId, offer }) => {
+    io.to(targetId).emit('voice-offer', { fromId: socket.id, offer });
+  });
+
+  // Relay WebRTC SDP Answer (target → initiator)
+  socket.on('voice-answer', ({ targetId, answer }) => {
+    io.to(targetId).emit('voice-answer', { fromId: socket.id, answer });
+  });
+
+  // Relay ICE Candidate
+  socket.on('voice-ice-candidate', ({ targetId, candidate }) => {
+    io.to(targetId).emit('voice-ice-candidate', { fromId: socket.id, candidate });
+  });
+
+  // User thay đổi trạng thái mute (tự mute/unmute)
+  socket.on('voice-mute-changed', ({ roomId, muted }) => {
+    const room = rooms.get(roomId);
+    if (!room || !room.voiceUsers) return;
+    if (room.voiceUsers[socket.id]) room.voiceUsers[socket.id].muted = muted;
+    socket.to(roomId).emit('voice-mute-changed', { userId: socket.id, muted });
+  });
+
+  // Host mute/unmute một user khác
+  socket.on('voice-host-mute', ({ roomId, targetId, muted }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const requester = room.members.find(m => m.id === socket.id);
+    if (!requester?.isHost) return;
+    if (room.voiceUsers && room.voiceUsers[targetId]) {
+      room.voiceUsers[targetId].muted = muted;
+    }
+    io.to(targetId).emit('voice-host-muted', { muted });
+    socket.to(roomId).emit('voice-mute-changed', { userId: targetId, muted });
+  });
+
+  // VAD: User đang nói / ngừng nói
+  socket.on('voice-speaking', ({ roomId, speaking }) => {
+    const room = rooms.get(roomId);
+    if (!room || !room.voiceUsers) return;
+    if (room.voiceUsers[socket.id]) room.voiceUsers[socket.id].speaking = speaking;
+    socket.to(roomId).emit('voice-speaking', { userId: socket.id, speaking });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
     onlineUsers.delete(socket.id);
@@ -588,6 +663,12 @@ io.on('connection', (socket) => {
       if (index !== -1) {
         const removedMember = room.members.splice(index, 1)[0];
         console.log(`${removedMember.username} left room: ${roomId}`);
+
+        // Cleanup voice chat khi user rời phòng
+        if (room.voiceUsers && room.voiceUsers[socket.id]) {
+          delete room.voiceUsers[socket.id];
+          io.to(roomId).emit('voice-user-left', { userId: socket.id });
+        }
 
         if (room.members.length === 0) {
           // Xóa phòng nếu không còn ai

@@ -8,8 +8,10 @@ import {
   Clock, FileText, Video,
   Headphones, Music2, ChevronRight, Search, Sparkles,
   Minimize2, Palette, Settings, Crown,
-  Link2, Volume2, SkipForward, Plus, Share2, X
+  Link2, Volume2, VolumeX, SkipForward, Plus, Share2, X,
+  Mic, MicOff, PhoneOff
 } from 'lucide-react';
+import { useVoiceChat } from './hooks/useVoiceChat';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './contexts/AuthContext';
 import AuthModal from './components/AuthModal';
@@ -274,8 +276,8 @@ export default function App() {
   // Mục đích: chặn YouTube tự fire state=1 sau buffer/seek/ad khi host đã pause
   // false = host đã pause, không cho phép emit play từ onStateChange spurious
   const hostWantsToPlayRef = useRef<boolean>(false);
-  // Trigger để force re-init YouTube player (dùng khi destroy/recreate sau host resume)
-  const [playerReinitTrigger, setPlayerReinitTrigger] = useState(0);
+  // Trigger để force re-init YouTube player (không còn dùng setPlayerReinitTrigger sau fix NUCLEAR OPTION)
+  const [playerReinitTrigger] = useState(0);
   const [playerVideoTitle, setPlayerVideoTitle] = useState('');
   const [lyrics, setLyrics] = useState<string>('');
   const [syncedLyrics, setSyncedLyrics] = useState<LyricLine[]>([]);
@@ -285,6 +287,10 @@ export default function App() {
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const activeLyricRef = useRef<HTMLParagraphElement>(null);
+
+  // ── Voice Chat (WebRTC) ────────────────────────────────────────────────────
+  // socket là module-level let, có thể undefined trên first render → cast an toàn
+  const voiceChat = useVoiceChat((socket as Socket | null) ?? null, roomId, isHost);
 
   // PDF states
   const [pdfPage, setPdfPage] = useState(1);
@@ -2382,6 +2388,75 @@ export default function App() {
                             }
                           </button>
                         )}
+                        {/* ── Volume Control ── */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            type="button"
+                            title={voiceChat.masterVolume === 0 ? 'Bật âm' : 'Tắt âm'}
+                            onClick={() => voiceChat.setMasterVolume(voiceChat.masterVolume === 0 ? 1 : 0)}
+                            className="rounded-full p-1 text-brand-brown-light transition hover:text-brand-terracotta"
+                          >
+                            {voiceChat.masterVolume === 0 ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                          </button>
+                          <input
+                            type="range"
+                            min="0" max="1" step="0.05"
+                            value={voiceChat.masterVolume}
+                            onChange={e => voiceChat.setMasterVolume(parseFloat(e.target.value))}
+                            className="hidden sm:block w-16 h-1 accent-brand-terracotta cursor-pointer"
+                            title="Âm lượng"
+                          />
+                        </div>
+
+                        {/* ── Mic / Voice Chat Button ── */}
+                        <button
+                          type="button"
+                          title={voiceChat.isInVoice ? (voiceChat.isMuted ? 'Bỏ tắt mic' : 'Rời voice') : 'Bật mic (voice chat)'}
+                          onClick={() => {
+                            if (voiceChat.isInVoice) {
+                              voiceChat.leaveVoice();
+                            } else {
+                              voiceChat.joinVoice();
+                            }
+                          }}
+                          className={`relative flex-shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold shadow-sm transition ${
+                            voiceChat.isInVoice
+                              ? voiceChat.isMuted
+                                ? 'bg-red-100 text-red-500 border border-red-200'
+                                : 'bg-green-100 text-green-700 border border-green-200'
+                              : 'border border-brand-terracotta-light/30 bg-white text-brand-brown-dark hover:bg-brand-light'
+                          }`}
+                        >
+                          {voiceChat.isInVoice ? (
+                            voiceChat.isMuted ? <MicOff size={12} /> : <Mic size={12} />
+                          ) : (
+                            <Mic size={12} />
+                          )}
+                          <span className="hidden sm:inline">
+                            {voiceChat.isInVoice ? (voiceChat.isMuted ? 'Muted' : 'Mic on') : 'Mic'}
+                          </span>
+                          {/* Speaking indicator */}
+                          {voiceChat.isSpeaking && (
+                            <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-400 animate-ping" />
+                          )}
+                        </button>
+
+                        {/* Mute toggle (khi đang trong voice) */}
+                        {voiceChat.isInVoice && (
+                          <button
+                            type="button"
+                            title={voiceChat.isMuted ? 'Bỏ tắt mic' : 'Tắt mic'}
+                            onClick={voiceChat.toggleMute}
+                            className={`flex-shrink-0 flex items-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-bold border transition ${
+                              voiceChat.isMuted
+                                ? 'bg-red-500 text-white border-red-500'
+                                : 'bg-white border-brand-terracotta-light/30 text-brand-brown-dark hover:bg-brand-light'
+                            }`}
+                          >
+                            {voiceChat.isMuted ? <MicOff size={12} /> : <Mic size={12} />}
+                          </button>
+                        )}
+
                         {(lyrics || lyricsLoading) && (
                           <button
                             type="button"
@@ -2997,7 +3072,7 @@ export default function App() {
                   </div>
                 )}
 
-                {/* 3. MEMBERS TAB */}
+                {/* 3. MEMBERS TAB – Discord-style with voice indicators */}
                 {sidebarTab === 'members' && (
                   <div className="flex-1 space-y-3">
                     <div className="flex justify-between items-center pb-3 border-b border-brand-terracotta-light/10 mb-2">
@@ -3005,24 +3080,120 @@ export default function App() {
                       <span className="px-3 py-1 rounded-md text-xs font-bold bg-brand-terracotta-light/30 text-brand-terracotta">{members.length} đang online</span>
                     </div>
 
+                    {/* Voice channel header – hiển thị khi có người dùng voice */}
+                    {voiceChat.voiceUsers.size > 0 && (
+                      <div className="rounded-xl bg-green-50 border border-green-200 px-3 py-2 flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                        <span className="text-xs font-bold text-green-700">
+                          Voice Chat · {voiceChat.voiceUsers.size} người
+                        </span>
+                        {voiceChat.isInVoice && (
+                          <button
+                            type="button"
+                            onClick={voiceChat.leaveVoice}
+                            className="ml-auto rounded-full bg-red-100 p-1 text-red-500 hover:bg-red-200 transition"
+                            title="Rời voice"
+                          >
+                            <PhoneOff size={12} />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
                     <div className="space-y-2">
-                      {members.map((m) => (
-                        <div key={m.id} className="p-3 rounded-2xl bg-white/60 border border-brand-terracotta-light/10 flex justify-between items-center shadow-sm">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-brand-terracotta-light/40 flex items-center justify-center font-display font-extrabold text-sm text-brand-brown-dark uppercase">
-                              {m.username.substring(0, 2)}
+                      {members.map((m) => {
+                        const vUser = voiceChat.voiceUsers.get(m.id);
+                        const isInVoice = !!vUser;
+                        const isSpeakingNow = vUser?.speaking ?? false;
+                        const isMutedNow = vUser?.muted ?? false;
+                        const isMe = m.id === socket?.id;
+
+                        return (
+                          <div
+                            key={m.id}
+                            className={`relative p-3 rounded-2xl border flex justify-between items-center shadow-sm transition-all duration-300 ${
+                              isSpeakingNow
+                                ? 'bg-green-50/80 border-green-400 shadow-[0_0_0_2px_rgba(74,222,128,0.25)]'
+                                : 'bg-white/60 border-brand-terracotta-light/10'
+                            }`}
+                          >
+                            {/* Speaking ping dot */}
+                            {isSpeakingNow && (
+                              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-400 animate-ping" />
+                            )}
+
+                            <div className="flex items-center gap-3 min-w-0">
+                              {/* Avatar with speaking ring */}
+                              <div className={`relative w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-display font-extrabold text-sm uppercase transition-all ${
+                                isSpeakingNow
+                                  ? 'bg-green-100 text-green-800 ring-2 ring-green-400 ring-offset-1'
+                                  : 'bg-brand-terracotta-light/40 text-brand-brown-dark'
+                              }`}>
+                                {m.username.substring(0, 2)}
+                                {/* In-voice indicator (small dot on avatar) */}
+                                {isInVoice && !isSpeakingNow && (
+                                  <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white ${isMutedNow ? 'bg-red-400' : 'bg-green-400'}`} />
+                                )}
+                              </div>
+
+                              <div className="space-y-0.5 min-w-0">
+                                <p className="font-display font-extrabold text-sm text-brand-brown-dark truncate">{m.username}</p>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs text-brand-brown-light font-medium">
+                                    {isMe ? "Bạn" : "Bạn học"}
+                                  </span>
+                                  {isSpeakingNow && (
+                                    <span className="text-[10px] font-bold text-green-600 animate-pulse">đang nói...</span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            <div className="space-y-1">
-                              <p className="font-display font-extrabold text-sm text-brand-brown-dark">{m.username}</p>
-                              <span className="text-xs text-brand-brown-light font-medium">{m.id === socket.id ? "Bạn" : "Bạn học"}</span>
+
+                            {/* Right side: badges + voice controls */}
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              {/* Mic status */}
+                              {isInVoice && (
+                                <span title={isMutedNow ? 'Đã tắt mic' : 'Đang bật mic'}>
+                                  {isMutedNow
+                                    ? <MicOff size={13} className="text-red-400" />
+                                    : <Mic size={13} className="text-green-500" />
+                                  }
+                                </span>
+                              )}
+
+                              {/* Host can mute others */}
+                              {isHost && !isMe && isInVoice && (
+                                <button
+                                  type="button"
+                                  title={isMutedNow ? 'Bỏ mute' : 'Mute người này'}
+                                  onClick={() => voiceChat.hostMuteUser(m.id, !isMutedNow)}
+                                  className={`rounded-full p-1 transition text-xs ${isMutedNow ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-red-100 text-red-500 hover:bg-red-200'}`}
+                                >
+                                  {isMutedNow ? <Mic size={11} /> : <MicOff size={11} />}
+                                </button>
+                              )}
+
+                              {/* Host badge */}
+                              {m.isHost && (
+                                <span className="px-2 py-1 rounded-md text-xs font-bold bg-amber-500/20 text-amber-700 uppercase border border-amber-500/10">Host</span>
+                              )}
                             </div>
                           </div>
-                          {m.isHost && (
-                            <span className="px-2 py-1 rounded-md text-xs font-bold bg-amber-500/20 text-amber-700 uppercase border border-amber-500/10">Host</span>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
+
+                    {/* Join voice CTA nếu chưa vào voice */}
+                    {!voiceChat.isInVoice && (
+                      <button
+                        type="button"
+                        onClick={voiceChat.joinVoice}
+                        className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl border border-dashed border-green-300 bg-green-50/50 py-2.5 text-xs font-bold text-green-700 transition hover:bg-green-50"
+                      >
+                        <Mic size={13} />
+                        Bật mic để hát karaoke cùng nhau
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
