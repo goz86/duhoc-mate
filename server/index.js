@@ -24,14 +24,112 @@ app.get('/health', (req, res) => {
 });
 
 // ============================================================
-// REST API: Tìm kiếm nhạc YouTube qua yt-search (không cần API key)
+// REST API: Tìm kiếm nhạc YouTube qua yt-search / ytsr / Invidious / YouTube API
 // ============================================================
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
+
+// 1. Tìm kiếm bằng official YouTube API v3 (nếu có Key)
+const searchWithOfficialApi = async (query) => {
+  if (!YOUTUBE_API_KEY) throw new Error('No YOUTUBE_API_KEY configured');
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(query)}&type=video&key=${YOUTUBE_API_KEY}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`YouTube API error (${response.status}): ${errorText}`);
+  }
+  const data = await response.json();
+  return (data.items || []).map(v => ({
+    videoId: v.id.videoId,
+    title: v.snippet.title,
+    author: v.snippet.channelTitle || '',
+    duration: '0:00',
+    thumbnail: v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url || `https://img.youtube.com/vi/${v.id.videoId}/mqdefault.jpg`,
+    views: 0,
+  }));
+};
+
+// 2. Tìm kiếm bằng các instance Invidious healthy
+const searchWithInvidious = async (query) => {
+  try {
+    const listRes = await fetch("https://api.invidious.io/instances.json?sort_by=type,health", { signal: AbortSignal.timeout(3000) });
+    if (!listRes.ok) throw new Error("Failed to fetch Invidious list");
+    const list = await listRes.json();
+    
+    const healthyInstances = list
+      .map(item => item[1])
+      .filter(details => {
+        return details.type === 'https' && 
+               details.api === true &&
+               details.monitor &&
+               details.monitor.down === false;
+      })
+      .map(details => details.uri)
+      .filter(Boolean);
+
+    const fallbacks = [
+      'https://inv.thepixora.com',
+      'https://yewtu.be',
+      'https://invidious.projectsegfau.lt',
+      'https://invidious.privacydev.net'
+    ];
+    const targetInstances = [...new Set([...healthyInstances, ...fallbacks])];
+
+    for (const uri of targetInstances.slice(0, 5)) {
+      try {
+        const url = `${uri}/api/v1/search?q=${encodeURIComponent(query)}&type=video`;
+        const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+        if (res.ok) {
+          const items = await res.json();
+          if (Array.isArray(items) && items.length > 0) {
+            return items.map(v => ({
+              videoId: v.videoId,
+              title: v.title,
+              author: v.author || '',
+              duration: typeof v.lengthSeconds === 'number' 
+                ? `${Math.floor(v.lengthSeconds / 60)}:${String(v.lengthSeconds % 60).padStart(2, '0')}`
+                : '0:00',
+              thumbnail: v.videoThumbnails?.[0]?.url || `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`,
+              views: v.viewCount || 0,
+            }));
+          }
+        }
+      } catch (e) {
+        console.warn(`Invidious instance ${uri} failed:`, e.message);
+      }
+    }
+  } catch (err) {
+    console.warn("Invidious fetching failed:", err.message);
+  }
+  throw new Error("All Invidious searches failed or no instances available");
+};
+
 app.get('/api/search-music', async (req, res) => {
   const query = req.query.q;
   if (!query) return res.json({ results: [] });
 
+  // Tầng 1: Official YouTube API v3
+  if (YOUTUBE_API_KEY) {
+    try {
+      console.log('Searching via Official YouTube API...');
+      const results = await searchWithOfficialApi(query);
+      return res.json({ results });
+    } catch (err) {
+      console.warn('Official YouTube API failed:', err.message);
+    }
+  }
+
+  // Tầng 2: Invidious Proxy instances
   try {
-    // 1. Thử dùng yt-search trước
+    console.log('Searching via Invidious instances...');
+    const results = await searchWithInvidious(query);
+    return res.json({ results });
+  } catch (err) {
+    console.warn('Invidious search failed:', err.message);
+  }
+
+  // Tầng 3: yt-search
+  try {
+    console.log('Searching via yt-search...');
     const searchResult = await yts(String(query));
     const results = (searchResult.videos || []).slice(0, 10).map(v => ({
       videoId: v.videoId,
@@ -44,8 +142,9 @@ app.get('/api/search-music', async (req, res) => {
     return res.json({ results });
   } catch (err) {
     console.warn('yt-search failed, trying ytsr fallback...', err.message);
+    // Tầng 4: ytsr với Chrome User-Agent
     try {
-      // 2. Dự phòng: dùng ytsr với custom User-Agent để giả lập trình duyệt và tránh bị YouTube chặn TLS/IP
+      console.log('Searching via ytsr with custom User-Agent...');
       const searchResult = await ytsr(String(query), {
         limit: 10,
         requestOptions: {
@@ -67,8 +166,8 @@ app.get('/api/search-music', async (req, res) => {
         }));
       return res.json({ results });
     } catch (fallbackErr) {
-      console.error('ytsr fallback error:', fallbackErr.message);
-      return res.json({ results: [], error: 'Không tìm được kết quả. Hãy thử lại hoặc dán link YouTube trực tiếp.' });
+      console.error('All YouTube search methods failed on this server:', fallbackErr.message);
+      return res.json({ results: [], error: 'Không tìm được kết quả do server bị chặn kết nối YouTube. Bạn có thể tự dán link video trực tiếp để phát.' });
     }
   }
 });
