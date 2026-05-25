@@ -1814,7 +1814,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-brand-cream text-brand-brown-dark font-sans selection:bg-brand-accent selection:text-white flex flex-col items-center">
-      
+      <style>{`
+        @keyframes playlistEqualizer {
+          0% { transform: scaleY(0.45); opacity: 0.65; }
+          100% { transform: scaleY(1.25); opacity: 1; }
+        }
+      `}</style>
+
       {/* LANDING PAGE — LOBBY-FIRST DESIGN */}
       {view === 'landing' && (
         <LandingPage
@@ -3159,6 +3165,7 @@ export default function App() {
                       ) : (
                         playlist.map((item, idx) => {
                           const isPlaying = item.status === 'playing' || item.videoId === currentVideo.id;
+                          const isActivelyPlaying = isPlaying && currentVideo.playing;
                           const isPlayed = item.status === 'played';
                           return (
                           <div
@@ -3175,10 +3182,17 @@ export default function App() {
                               <div className="flex items-center gap-2">
                                 {isPlaying ? (
                                   <span className="flex h-7 w-8 shrink-0 items-end justify-center gap-0.5 rounded-md bg-brand-light text-brand-terracotta" title="Đang phát">
-                                    <span className="h-2 w-1 rounded-full bg-brand-terracotta/70" />
-                                    <span className="h-4 w-1 rounded-full bg-brand-terracotta" />
-                                    <span className="h-2.5 w-1 rounded-full bg-brand-terracotta/70" />
-                                    <span className="h-3.5 w-1 rounded-full bg-brand-terracotta/80" />
+                                    {[0.42, 0.68, 0.5, 0.6].map((duration, barIndex) => (
+                                      <span
+                                        key={barIndex}
+                                        className="w-1 rounded-full bg-brand-terracotta/80"
+                                        style={{
+                                          height: `${8 + barIndex * 2}px`,
+                                          animation: isActivelyPlaying ? `playlistEqualizer ${duration}s ease-in-out infinite alternate` : 'none',
+                                          animationDelay: `${barIndex * 0.08}s`,
+                                        }}
+                                      />
+                                    ))}
                                   </span>
                                 ) : isPlayed ? (
                                   <span className="px-2 py-1 rounded-md text-xs font-black bg-brand-light text-brand-brown-light uppercase">Đã phát</span>
