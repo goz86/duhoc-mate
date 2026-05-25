@@ -660,6 +660,18 @@ export default function App() {
     }
   }, [username, friendCode]);
 
+  // Tự động cuộn danh sách phát để đưa bài đang phát vào chính giữa
+  useEffect(() => {
+    if (currentVideo.id && view === 'room') {
+      setTimeout(() => {
+        const element = document.querySelector('.playing-item-container');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        }
+      }, 200);
+    }
+  }, [currentVideo.id, playlist, view]);
+
   // === YouTube IFrame API – Khá�  // Init or update player when currentVideo.id becomes available
   useEffect(() => {
     if (view !== 'room') return;
@@ -3188,9 +3200,9 @@ export default function App() {
                             key={item.id}
                             className={`p-4 rounded-2xl bg-white/60 border border-brand-terracotta-light/10 flex justify-between items-center shadow-sm hover:shadow transition ${
                               isPlaying
-                                ? 'ring-2 ring-brand-terracotta/30 bg-brand-light/35'
+                                ? 'ring-2 ring-brand-terracotta/30 bg-brand-light/35 playing-item-container'
                                 : isPlayed
-                                  ? 'opacity-80'
+                                  ? 'opacity-40 grayscale-[30%]'
                                   : idx === 0 ? 'ring-2 ring-brand-terracotta/20 bg-brand-light/30' : ''
                             }`}
                           >
@@ -3211,7 +3223,7 @@ export default function App() {
                                     ))}
                                   </span>
                                 ) : isPlayed ? (
-                                  <span className="px-2 py-1 rounded-md text-xs font-black bg-brand-light text-brand-brown-light uppercase">Đã phát</span>
+                                  <span className="px-2 py-1 rounded-md text-xs font-black bg-brand-light text-brand-brown-light uppercase whitespace-nowrap shrink-0">Đã phát</span>
                                 ) : idx === 0 && (
                                   <span className="px-2 py-1 rounded-md text-xs font-black bg-brand-terracotta text-white uppercase">TOP</span>
                                 )}
