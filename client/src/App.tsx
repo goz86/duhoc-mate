@@ -2410,6 +2410,9 @@ export default function App() {
                                 </p>
                               );
                             })}
+                              <p className="px-3 pt-4 text-center text-[11px] font-bold text-brand-brown-light/70">
+                                Nhấn đúp vào một dòng để chỉnh lời bài hát khớp với video.
+                              </p>
                             </div>
                           </div>
                         ) : lyrics ? (
