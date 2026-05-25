@@ -293,6 +293,7 @@ export default function App() {
   const [lyricsOffset, setLyricsOffset] = useState(0);
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [showYoutubeCaptions, setShowYoutubeCaptions] = useState(false);
   const activeLyricRef = useRef<HTMLParagraphElement>(null);
 
   // ── Voice Chat (WebRTC) ────────────────────────────────────────────────────
@@ -1640,6 +1641,23 @@ export default function App() {
     setLyricsOffset(Number.isFinite(saved) ? saved : 0);
   }, [currentVideo.id]);
 
+  React.useEffect(() => {
+    const player = playerRef.current;
+    if (!player) return;
+
+    try {
+      if (showYoutubeCaptions) {
+        player.loadModule?.('captions');
+        player.setOption?.('captions', 'track', {});
+        player.setOption?.('captions', 'fontSize', 1);
+      } else {
+        player.unloadModule?.('captions');
+      }
+    } catch (error) {
+      console.warn('[YouTube Captions] Unable to toggle captions:', error);
+    }
+  }, [showYoutubeCaptions, currentVideo.id, playerReinitTrigger]);
+
   const adjustLyricsOffset = (delta: number) => {
     setLyricsOffset((prev) => {
       const next = Math.max(-20, Math.min(30, Number((prev + delta).toFixed(1))));
@@ -2550,6 +2568,13 @@ export default function App() {
                             <Music2 size={12} /> Lời bài hát
                           </button>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => setShowYoutubeCaptions(v => !v)}
+                          className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold shadow-sm transition ${showYoutubeCaptions ? 'border-brand-terracotta bg-brand-terracotta text-white' : 'border-brand-terracotta-light/30 bg-white text-brand-brown-dark hover:bg-brand-light'}`}
+                        >
+                          <FileText size={12} /> Phụ đề YouTube
+                        </button>
                         <span className="h-2 w-2 rounded-full bg-green-500 animate-ping"></span>
                         <span className="text-[10px] font-bold text-brand-brown-light uppercase hidden sm:block">Live Sync</span>
                       </div>
