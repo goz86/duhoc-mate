@@ -2489,7 +2489,7 @@ export default function App() {
                 <div className={`${stageMode === 'youtube' && !roomCollapsed ? 'flex flex-1 flex-col gap-3 h-full justify-start overflow-y-auto pr-1' : 'absolute h-px w-px overflow-hidden opacity-0 pointer-events-none'}`} aria-hidden={stageMode !== 'youtube' || roomCollapsed}>
                     <div className={`mx-auto grid w-full max-w-[1180px] gap-3 ${showLyrics && (lyrics || lyricsLoading) ? 'xl:grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1'}`}>
                     <div
-                      className="relative flex-none rounded-2xl overflow-hidden border border-brand-terracotta-light/10 bg-black"
+                      className="relative flex-none mx-auto rounded-2xl overflow-hidden border border-brand-terracotta-light/10 bg-black"
                       style={{
                         width: showLyrics && (lyrics || lyricsLoading) ? '100%' : 'min(100%, 99.5vh, 1180px)',
                         aspectRatio: '16 / 9',
