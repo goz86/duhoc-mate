@@ -1622,7 +1622,6 @@ export default function App() {
   const effectiveLyricTime = Math.max(0, playbackTime - lyricsOffset);
   const estimatedLyrics = syncedLyrics.length ? [] : createEstimatedLyrics(lyrics, videoDuration);
   const displayLyricLines = syncedLyrics.length ? syncedLyrics : estimatedLyrics;
-  const isEstimatedLyrics = syncedLyrics.length === 0 && displayLyricLines.length > 0;
   const activeLyricIndex = displayLyricLines.reduce((activeIndex: number, line: LyricLine, index: number) => (
     effectiveLyricTime + 0.15 >= line.time ? index : activeIndex
   ), -1);
@@ -2305,7 +2304,7 @@ export default function App() {
                           <p className="py-10 text-center text-xs text-brand-brown-light animate-pulse">Đang tải lời bài hát...</p>
                         ) : displayLyricLines.length > 0 ? (
                           <div className="relative">
-                            <div className="sticky top-2 z-20 ml-auto mb-2 flex w-9 flex-col items-center gap-1 rounded-full border border-brand-terracotta-light/20 bg-white/95 p-1 shadow-sm backdrop-blur">
+                            <div className="sticky top-2 z-20 ml-auto mb-2 flex w-10 flex-col items-center rounded-full border border-brand-terracotta-light/20 bg-white/95 p-1 shadow-sm backdrop-blur">
                               <button
                                 type="button"
                                 onClick={() => adjustLyricsOffset(-1)}
@@ -2317,6 +2316,18 @@ export default function App() {
                               </button>
                               <button
                                 type="button"
+                                onClick={() => {
+                                  setLyricsOffset(0);
+                                  if (currentVideo.id) localStorage.removeItem(`duhocmate_lyrics_offset_${currentVideo.id}`);
+                                }}
+                                className="flex min-h-7 w-full items-center justify-center rounded-full px-1 text-[10px] font-black text-brand-terracotta transition hover:bg-brand-light"
+                                title="Reset lech loi"
+                                aria-label="Reset lech loi"
+                              >
+                                {lyricsOffset > 0 ? '+' : ''}{lyricsOffset.toFixed(0)}s
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => adjustLyricsOffset(1)}
                                 className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-brand-brown-dark transition hover:bg-brand-terracotta hover:text-white"
                                 title="Loi chay cham lai 1 giay"
@@ -2324,25 +2335,7 @@ export default function App() {
                               >
                                 v
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setLyricsOffset(0);
-                                  if (currentVideo.id) localStorage.removeItem(`duhocmate_lyrics_offset_${currentVideo.id}`);
-                                }}
-                                className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-black text-brand-brown-light transition hover:bg-brand-light hover:text-brand-terracotta"
-                                title="Reset lech loi"
-                                aria-label="Reset lech loi"
-                              >
-                                0
-                              </button>
                             </div>
-                            {(isEstimatedLyrics || lyricsOffset !== 0) && (
-                              <p className="mb-2 pr-11 text-right text-[10px] font-bold text-brand-brown-light">
-                                {isEstimatedLyrics ? 'Uoc luong loi - ' : ''}
-                                Lech {lyricsOffset > 0 ? '+' : ''}{lyricsOffset.toFixed(0)}s
-                              </p>
-                            )}
                             <div className="space-y-1.5 pb-6 pr-10">
                             {displayLyricLines.map((line: LyricLine, index: number) => {
                               const isActive = index === activeLyricIndex;
