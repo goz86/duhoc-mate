@@ -3361,7 +3361,7 @@ export default function App() {
 
                 {/* 2. CHAT TAB */}
                 {sidebarTab === 'chat' && (
-                  <div className="flex h-full lg:h-full lg:min-h-0 min-h-0 max-h-[calc(100vh-320px)] sm:max-h-[calc(100vh-280px)] lg:max-h-none flex-col gap-0 flex-1">
+                  <div className="flex h-full lg:h-full lg:min-h-0 min-h-0 max-h-[calc(100vh-320px)] sm:max-h-[calc(100vh-280px)] lg:max-h-[calc(100vh-240px)] flex-col gap-0 flex-1">
                     {/* Messages Area */}
                     <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain space-y-4 pr-1 mb-3 custom-scrollbar">
                       {chatMessages.length === 0 ? (
