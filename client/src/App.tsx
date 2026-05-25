@@ -420,18 +420,34 @@ export default function App() {
       }
     });
 
-    socket.on('video-sync', ({ action, time, videoId, videoState }) => {
+    socket.on('video-sync', ({ action, time, videoId, userInitiated, videoState }) => {
       console.log('[SOCKET] video-sync received', {
         action,
         time,
         videoId,
+        userInitiated,
         pausedByHost: videoState?.pausedByHost,
         isHost: isHostRef.current
       });
       // Track số bài đã phát trong phiên
-      if (videoId && videoId !== currentVideoRef.current?.id) {
+      const isSongChange = videoId && videoId !== currentVideoRef.current?.id;
+      if (isSongChange) {
         songsPlayedRef.current += 1;
       }
+
+      // Khách tạm dừng riêng: KHÔNG tự động phát lại nếu đó chỉ là gói tin sync định kỳ từ host
+      // Chỉ khi host thực sự nhấn Play (userInitiated=true) hoặc đổi bài mới thì mới cho phép đồng bộ play
+      const shouldIgnorePlay = action === 'play' &&
+                               !isHostRef.current &&
+                               localPausedRef.current &&
+                               !userInitiated &&
+                               !isSongChange;
+
+      if (shouldIgnorePlay) {
+        console.log('[SOCKET] Ignoring periodic host sync play event because user is locally paused');
+        return;
+      }
+
       setCurrentVideo(videoState);
 
       // Cập nhật trạng thái "Host đã dừng"

@@ -390,6 +390,7 @@ io.on('connection', (socket) => {
       action,
       time,
       videoId,
+      userInitiated,
       videoState: room.videoState
     });
 
