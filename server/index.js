@@ -732,6 +732,21 @@ io.on('connection', (socket) => {
   });
 
   // 5. Đồng bộ đếm ngược Pomodoro
+  socket.on('delete-playlist-item', ({ roomId, songId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const sender = room.members.find(m => m.id === socket.id);
+    if (!sender?.isHost) return;
+
+    const item = room.playlist.find(song => song.id === songId);
+    if (!item || item.status === 'playing' || item.videoId === room.videoState.id) return;
+
+    room.playlist = room.playlist.filter(song => song.id !== songId);
+    rememberRoomState(room);
+    io.to(roomId).emit('update-playlist', room.playlist);
+    updateRoomMembersSongs(roomId, room.playlist.find(song => song.status === 'playing')?.title || room.playlist[0]?.title || 'Dang nghe nhac Lofi');
+  });
+
   socket.on('pomodoro-control', ({ roomId, action, duration, isBreak }) => {
     const room = rooms.get(roomId);
     if (!room) return;

@@ -8,7 +8,7 @@ import {
   Clock, FileText, Video,
   Headphones, Music2, ChevronRight, Search, Sparkles,
   Minimize2, Palette, Settings, Crown,
-  Link2, Volume2, VolumeX, SkipForward, Plus, Share2, X,
+  Link2, Volume2, VolumeX, SkipForward, Plus, Share2, X, Trash2,
   Mic, MicOff, PhoneOff
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
@@ -1507,6 +1507,10 @@ export default function App() {
 
   const voteSong = (songId: string) => {
     socket.emit('vote-song', { roomId, songId });
+  };
+
+  const deletePlaylistItem = (songId: string) => {
+    socket.emit('delete-playlist-item', { roomId, songId });
   };
 
   const playSong = (item: PlaylistItem) => {
@@ -3170,7 +3174,12 @@ export default function App() {
                             <div className="space-y-1.5 min-w-0 flex-1 pr-3">
                               <div className="flex items-center gap-2">
                                 {isPlaying ? (
-                                  <span className="px-2 py-1 rounded-md text-xs font-black bg-brand-terracotta text-white uppercase">Đang phát</span>
+                                  <span className="flex h-7 w-8 shrink-0 items-end justify-center gap-0.5 rounded-md bg-brand-light text-brand-terracotta" title="Đang phát">
+                                    <span className="h-2 w-1 rounded-full bg-brand-terracotta/70" />
+                                    <span className="h-4 w-1 rounded-full bg-brand-terracotta" />
+                                    <span className="h-2.5 w-1 rounded-full bg-brand-terracotta/70" />
+                                    <span className="h-3.5 w-1 rounded-full bg-brand-terracotta/80" />
+                                  </span>
                                 ) : isPlayed ? (
                                   <span className="px-2 py-1 rounded-md text-xs font-black bg-brand-light text-brand-brown-light uppercase">Đã phát</span>
                                 ) : idx === 0 && (
@@ -3202,6 +3211,15 @@ export default function App() {
                                   title="Phát bài này ngay"
                                 >
                                   <Play size={14} />
+                                </button>
+                              )}
+                              {isHost && !isPlaying && (
+                                <button
+                                  onClick={() => deletePlaylistItem(item.id)}
+                                  className="p-2 rounded-lg bg-white hover:bg-red-50 border border-brand-terracotta-light/10 transition cursor-pointer text-brand-brown-light hover:text-red-500"
+                                  title="Xóa khỏi danh sách"
+                                >
+                                  <Trash2 size={14} />
                                 </button>
                               )}
                             </div>
