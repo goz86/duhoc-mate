@@ -117,6 +117,16 @@ const onlineUsers = new Map(); // socket.id -> { socketId, friendCode, username,
 const HOST_RECONNECT_TTL_MS = 5 * 60 * 1000;
 const hostTransferTimers = new Map();
 
+const normalizeStr = (str) => {
+  if (!str) return '';
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 const clearHostTransferTimer = (roomId) => {
   const timer = hostTransferTimers.get(roomId);
   if (timer) clearTimeout(timer);
@@ -490,15 +500,16 @@ io.on('connection', (socket) => {
       room.ideaTasks = ideaTasks;
     }
     
-    // Kiểm tra xem user đã tồn tại trong phòng chưa (qua friendCode hoặc username)
+    // Kiểm tra xem user đã tồn tại trong phòng chưa (qua friendCode hoặc username đã chuẩn hóa)
     const memberFriendCode = friendCode || onlineUsers.get(socket.id)?.friendCode || '';
+    const normalizedNewUsername = normalizeStr(username);
     const existingMembers = room.members.filter(member => {
       // Nếu cả hai đều có friendCode, chỉ match nếu friendCode giống nhau
       if (memberFriendCode && member.friendCode) {
         return member.friendCode === memberFriendCode;
       }
-      // Nếu một trong hai không có friendCode, match bằng username
-      return member.username === username;
+      // Nếu một trong hai không có friendCode, match bằng username đã chuẩn hóa để tránh lỗi do gõ sai dấu tiếng Việt
+      return normalizeStr(member.username) === normalizedNewUsername;
     });
 
     if (existingMembers.length) {
@@ -516,7 +527,7 @@ io.on('connection', (socket) => {
 
     const reconnectDeadline = room.hostReconnectUntil ? new Date(room.hostReconnectUntil).getTime() : 0;
     const returningHost = (room.hostFriendCode && memberFriendCode && room.hostFriendCode === memberFriendCode) ||
-                          (!room.hostFriendCode && room.hostUsername && username && room.hostUsername === username);
+                          (!room.hostFriendCode && room.hostUsername && username && normalizeStr(room.hostUsername) === normalizedNewUsername);
     const waitingForHost = !!room.hostFriendCode && reconnectDeadline > Date.now();
     const isHost = room.members.length === 0 || returningHost || (!room.members.some(member => member.isHost) && !waitingForHost);
 
