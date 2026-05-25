@@ -490,12 +490,19 @@ io.on('connection', (socket) => {
       room.ideaTasks = ideaTasks;
     }
     
-    // Kiểm tra xem user có phải host đầu tiên của phòng không
+    // Kiểm tra xem user đã tồn tại trong phòng chưa (qua friendCode hoặc username)
     const memberFriendCode = friendCode || onlineUsers.get(socket.id)?.friendCode || '';
-    const existingMembers = memberFriendCode
-      ? room.members.filter(member => member.friendCode === memberFriendCode)
-      : [];
+    const existingMembers = room.members.filter(member => {
+      // Nếu cả hai đều có friendCode, chỉ match nếu friendCode giống nhau
+      if (memberFriendCode && member.friendCode) {
+        return member.friendCode === memberFriendCode;
+      }
+      // Nếu một trong hai không có friendCode, match bằng username
+      return member.username === username;
+    });
+
     if (existingMembers.length) {
+      const existingIds = new Set(existingMembers.map(m => m.id));
       existingMembers.forEach((existingMember) => {
         const oldSocket = io.sockets.sockets.get(existingMember.id);
         oldSocket?.leave(roomId);
@@ -504,11 +511,12 @@ io.on('connection', (socket) => {
           io.to(roomId).emit('voice-user-left', { userId: existingMember.id });
         }
       });
-      room.members = room.members.filter(member => member.friendCode !== memberFriendCode);
+      room.members = room.members.filter(member => !existingIds.has(member.id));
     }
 
     const reconnectDeadline = room.hostReconnectUntil ? new Date(room.hostReconnectUntil).getTime() : 0;
-    const returningHost = !!room.hostFriendCode && !!memberFriendCode && room.hostFriendCode === memberFriendCode;
+    const returningHost = (room.hostFriendCode && memberFriendCode && room.hostFriendCode === memberFriendCode) ||
+                          (!room.hostFriendCode && room.hostUsername && username && room.hostUsername === username);
     const waitingForHost = !!room.hostFriendCode && reconnectDeadline > Date.now();
     const isHost = room.members.length === 0 || returningHost || (!room.members.some(member => member.isHost) && !waitingForHost);
 
