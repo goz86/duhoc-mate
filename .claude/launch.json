@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev-server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "client",
+      "port": 5174
+    },
+    {
+      "name": "backend-server",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["index.js"],
+      "cwd": "server",
+      "port": 3001
+    }
+  ]
+}

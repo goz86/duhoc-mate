@@ -3,9 +3,14 @@
   "short_name": "Duhoc Mate",
   "description": "Không gian học cùng du học sinh Việt tại Hàn.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
   "background_color": "#fbf6ef",
   "theme_color": "#fbf6ef",
+  "prefer_related_applications": false,
+  "categories": ["education", "social"],
   "icons": [
     {
       "src": "/favicon.png",
@@ -21,7 +26,13 @@
       "src": "/logo-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

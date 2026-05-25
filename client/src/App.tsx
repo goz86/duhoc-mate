@@ -99,9 +99,9 @@ interface PomodoroState {
 
 const trendingVideoSuggestions = [
   {
-    videoId: 'jfKfPfyJRdk',
-    title: 'Lofi Hip Hop Radio - Beats to Relax/Study (LIVE)',
-    duration: 'LIVE',
+    videoId: '4oStw0r33so',
+    title: 'Lofi Girl - beats to sleep/chill to 🌙',
+    duration: '58:39',
     category: 'Lo-fi',
   },
   {
@@ -111,9 +111,21 @@ const trendingVideoSuggestions = [
     category: 'Lo-fi',
   },
   {
-    videoId: 'rC5Y808g0n0',
-    title: '3-Hour Study With Me 📝 (Real Time, Pomodoro) - Merve',
-    duration: '3:00:00',
+    videoId: 'S1ElLh_hf3k',
+    title: 'Study With Me 🌿',
+    duration: '',
+    category: 'Study With Me',
+  },
+  {
+    videoId: 'yYYO15hK730',
+    title: 'Study With Me ☕',
+    duration: '',
+    category: 'Study With Me',
+  },
+  {
+    videoId: 'n9iKoJ9ZE-Q',
+    title: 'Study With Me 📖',
+    duration: '',
     category: 'Study With Me',
   },
   {
@@ -168,8 +180,38 @@ export default function App() {
   }, [customAlert]);
 
   // Navigation & Auth states
-  const [view, setView] = useState<'landing' | 'room'>('landing');
-  const [roomId, setRoomId] = useState('');
+  // Hàm helper để điều hướng có URL sync
+  const navigateToRoom = (id: string) => {
+    window.location.hash = `room/${id}`;
+  };
+  const navigateToLanding = () => {
+    window.location.hash = '';
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  };
+
+  // Khởi tạo view từ URL hash (để hỗ trợ reload trong phòng)
+  const getInitialViewFromHash = (): { view: 'landing' | 'room'; roomId: string } => {
+    const hash = window.location.hash; // e.g. "#room/ABC123"
+    const hashMatch = hash.match(/^#room\/([A-Z0-9]+)$/i);
+    if (hashMatch) {
+      return { view: 'room', roomId: hashMatch[1].toUpperCase() };
+    }
+    // Fallback: support ?room=ABC123 (link mời cũ)
+    const searchParams = new URLSearchParams(window.location.search);
+    const qRoom = searchParams.get('room');
+    if (qRoom) {
+      const rid = qRoom.trim().toUpperCase();
+      // Chuyển sang hash routing và xóa query param
+      window.location.hash = `room/${rid}`;
+      window.history.replaceState(null, '', `${window.location.pathname}#room/${rid}`);
+      return { view: 'room', roomId: rid };
+    }
+    return { view: 'landing', roomId: '' };
+  };
+
+  const _initialNav = getInitialViewFromHash();
+  const [view, setView] = useState<'landing' | 'room'>(_initialNav.view);
+  const [roomId, setRoomId] = useState(_initialNav.roomId);
   const [currentRoomTitle, setCurrentRoomTitle] = useState('');
   const [username, setUsername] = useState(() => {
     // Dùng profile.username nếu đã đăng nhập, không thì dùng localStorage
@@ -406,6 +448,7 @@ export default function App() {
       setCustomAlert({ message: `Phòng ${closedRoomId} đã được host đóng.`, show: true });
       setView('landing');
       setRoomId('');
+      navigateToLanding();
       socket.emit('request-active-rooms');
     });
 
@@ -534,7 +577,24 @@ export default function App() {
     socket.on('join-room-error', (errorMessage: string) => {
       alert(errorMessage);
       setView('landing');
+      navigateToLanding();
     });
+
+    // Auto-rejoin room nếu URL hash có room ID (sau reload)
+    const initHash = window.location.hash;
+    const initMatch = initHash.match(/^#room\/([A-Z0-9]+)$/i);
+    if (initMatch) {
+      const initRoomId = initMatch[1].toUpperCase();
+      const savedUsername = localStorage.getItem('duhocmate_username') || '';
+      const savedFriendCode = localStorage.getItem('duhocmate_friend_code') || '';
+      if (savedUsername) {
+        socket.emit('join-room', {
+          roomId: initRoomId,
+          username: savedUsername,
+          friendCode: savedFriendCode
+        });
+      }
+    }
 
     // Đăng ký thông tin của bản thân và yêu cầu danh sách phòng ban đầu
     const localUsername = localStorage.getItem('duhocmate_username') || '';
@@ -911,6 +971,7 @@ export default function App() {
       friendCode
     });
     setView('room');
+    navigateToRoom(generatedId);
   };
 
   const handleJoinRoom = async (
@@ -1057,6 +1118,7 @@ export default function App() {
     });
     setShowPasswordModal(false);
     setView('room');
+    navigateToRoom(formattedId);
   };
 
   const handlePasswordModalSubmit = (e: React.FormEvent) => {
@@ -1107,6 +1169,7 @@ export default function App() {
 
     socket.emit('join-room', { roomId: fixedRoomId, username: guestUsername || username, ideaTasks: seedTasks, friendCode, roomTitle: template.title });
     setView('room');
+    navigateToRoom(fixedRoomId);
   };
 
   const handleGuestJoinSubmit = (e: React.FormEvent) => {
@@ -1200,7 +1263,27 @@ export default function App() {
   };
 
   const confirmLeaveRoom = () => {
-    window.location.reload();
+    // Rời phòng: ngắt socket khỏi phòng, reset state, về landing (KHÔNG reload page)
+    if (socket && roomId) {
+      socket.emit('leave-room', { roomId });
+    }
+    // Destroy YouTube player
+    if (playerRef.current?.destroy) {
+      try { playerRef.current.destroy(); } catch {}
+      playerRef.current = null;
+    }
+    setShowLeaveConfirm(false);
+    setView('landing');
+    setRoomId('');
+    setCurrentRoomTitle('');
+    setMembers([]);
+    setPlaylist([]);
+    setChatMessages([]);
+    setCurrentVideo({ id: '', time: 0, playing: false });
+    setIdeaTasks([]);
+    setPomodoro({ timeLeft: 25 * 60, duration: 25 * 60, isRunning: false, isBreak: false });
+    navigateToLanding();
+    socket.emit('request-active-rooms');
   };
 
   const copyRoomId = () => {
@@ -1210,7 +1293,8 @@ export default function App() {
   };
 
   const copyRoomInvite = () => {
-    const invite = `${window.location.origin}?room=${roomId}`;
+    // Dùng hash routing để invite link hoạt động đúng khi reload
+    const invite = `${window.location.origin}${window.location.pathname}#room/${roomId}`;
     navigator.clipboard.writeText(invite);
     setShowInviteModal(true);
     setCustomAlert({ message: 'Đã sao chép link mời vào phòng.', show: true });

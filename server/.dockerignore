@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+*.log
+dasu.response
+room-directory.json
+.git
+.gitignore
+.claude
+.mcp.json

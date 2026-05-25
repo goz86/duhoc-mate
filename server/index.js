@@ -320,6 +320,49 @@ io.on('connection', (socket) => {
     console.log(`${newMember.username} joined room: ${roomId} (Host: ${isHost})`);
   });
 
+  // 1b. Rời phòng chủ động (client navigate về landing mà không reload)
+  socket.on('leave-room', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+
+    const index = room.members.findIndex(m => m.id === socket.id);
+    if (index === -1) return;
+
+    const removedMember = room.members.splice(index, 1)[0];
+    socket.leave(roomId);
+
+    // Cleanup voice chat
+    if (room.voiceUsers && room.voiceUsers[socket.id]) {
+      delete room.voiceUsers[socket.id];
+      io.to(roomId).emit('voice-user-left', { userId: socket.id });
+    }
+
+    // Cập nhật online user
+    const user = onlineUsers.get(socket.id);
+    if (user) {
+      user.currentRoomId = null;
+      user.currentSong = 'Đang ở trang chủ KST';
+    }
+
+    if (room.members.length === 0) {
+      rememberRoom(room, removedMember.username);
+      rooms.delete(roomId);
+      console.log(`Deleted empty room after leave-room: ${roomId}`);
+    } else {
+      sendSystemMessage(roomId, `Bạn học ${removedMember.username} đã rời phòng.`);
+      if (removedMember.isHost) {
+        room.members[0].isHost = true;
+        io.to(room.members[0].id).emit('assigned-host', true);
+        sendSystemMessage(roomId, `Bạn học ${room.members[0].username} đã trở thành chủ phòng.`);
+      }
+      io.to(roomId).emit('room-users', room.members);
+    }
+
+    broadcastFriendsStatus();
+    broadcastRoomDirectory();
+    console.log(`${removedMember.username} left room (leave-room event): ${roomId}`);
+  });
+
   // 2. Chat thời gian thực
   socket.on('send-message', ({ roomId, message }) => {
     const room = rooms.get(roomId);
