@@ -3106,7 +3106,7 @@ export default function App() {
                 >
                   <MessageCircle size={16} className="shrink-0" />
                   <span className="truncate">
-                    Chat ({unreadChatCount > 0 ? unreadChatCount : chatMessages.length})
+                    Chat ({unreadChatCount})
                   </span>
                 </button>
                 <button
@@ -3117,7 +3117,7 @@ export default function App() {
                       : 'hover:bg-brand-light text-brand-brown-light'
                   }`}
                 >
-                  <Users size={16} /> Bạn học ({members.length})
+                  <Users size={16} /> <span className="truncate">Bạn học ({members.length})</span>
                 </button>
               </div>
 
