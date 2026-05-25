@@ -1898,7 +1898,7 @@ export default function App() {
   }, [activeLyricIndex]);
 
   return (
-    <div className="min-h-screen bg-brand-cream text-brand-brown-dark font-sans selection:bg-brand-accent selection:text-white flex flex-col items-center">
+    <div className={`min-h-screen bg-brand-cream text-brand-brown-dark font-sans selection:bg-brand-accent selection:text-white flex flex-col items-center ${view === 'room' ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
       <style>{`
         @keyframes playlistEqualizer {
           0% { transform: scaleY(0.45); opacity: 0.65; }
@@ -2339,7 +2339,7 @@ export default function App() {
       )}
 
       {view === 'room' && (
-        <div className={`w-full flex-1 flex flex-col ${
+        <div className={`w-full flex-1 flex flex-col lg:h-full lg:max-h-full lg:overflow-hidden ${
           roomTheme === 'midnight' ? 'bg-slate-950 text-white' :
           roomTheme === 'sakura' ? 'bg-pink-50' :
           roomTheme === 'ocean' ? 'bg-cyan-50' :
@@ -3111,7 +3111,6 @@ export default function App() {
                       <div className="flex flex-wrap gap-2">
                         {[
                           { icon: <Sparkles size={13} />, label: 'Lofi Girl', q: 'lofi girl study' },
-                          { icon: <Coffee size={13} />, label: 'K-Pop Học Bài', q: 'kpop study playlist 2024' },
                           { icon: <CloudRain size={13} />, label: 'Tiếng Mưa Cozy', q: 'rain cozy study music' },
                           { icon: <Music2 size={13} />, label: 'Piano Nhẹ', q: 'piano soft study music' },
                         ].map(tag => (
