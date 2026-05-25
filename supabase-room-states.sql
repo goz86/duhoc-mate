@@ -9,8 +9,16 @@ create table if not exists public.room_states (
   is_private boolean not null default false,
   host_avatar_url text not null default '',
   tiktok_video_id text not null default '',
+  host_friend_code text not null default '',
+  host_username text not null default '',
+  host_reconnect_until timestamptz,
   updated_at timestamptz not null default now()
 );
+
+alter table public.room_states
+  add column if not exists host_friend_code text not null default '',
+  add column if not exists host_username text not null default '',
+  add column if not exists host_reconnect_until timestamptz;
 
 alter table public.room_states enable row level security;
 

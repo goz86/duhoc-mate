@@ -114,6 +114,44 @@ const saveRoomDirectory = () => {
   } catch (e) { console.error('saveRoomDirectory error:', e.message); }
 };
 const onlineUsers = new Map(); // socket.id -> { socketId, friendCode, username, currentRoomId, currentSong }
+const HOST_RECONNECT_TTL_MS = 5 * 60 * 1000;
+const hostTransferTimers = new Map();
+
+const clearHostTransferTimer = (roomId) => {
+  const timer = hostTransferTimers.get(roomId);
+  if (timer) clearTimeout(timer);
+  hostTransferTimers.delete(roomId);
+};
+
+const setRoomHost = (room, targetId) => {
+  const target = room.members.find(member => member.id === targetId);
+  if (!target) return null;
+  room.members.forEach(member => {
+    member.isHost = member.id === targetId;
+  });
+  room.hostFriendCode = target.friendCode || '';
+  room.hostUsername = target.username || '';
+  room.hostReconnectUntil = null;
+  return target;
+};
+
+const scheduleHostTransfer = (roomId) => {
+  clearHostTransferTimer(roomId);
+  const timer = setTimeout(() => {
+    hostTransferTimers.delete(roomId);
+    const room = rooms.get(roomId);
+    if (!room || room.members.length === 0 || room.members.some(member => member.isHost)) return;
+    const nextHost = setRoomHost(room, room.members[0].id);
+    if (!nextHost) return;
+    io.to(nextHost.id).emit('assigned-host', true);
+    io.to(roomId).emit('room-users', room.members);
+    sendSystemMessage(roomId, `Bạn học ${nextHost.username} đã trở thành chủ phòng.`);
+    rememberRoom(room, nextHost.username);
+    rememberRoomState(room);
+    broadcastRoomDirectory();
+  }, HOST_RECONNECT_TTL_MS);
+  hostTransferTimers.set(roomId, timer);
+};
 
 const serializeRoomState = (room) => ({
   roomId: room.roomId,
@@ -127,6 +165,9 @@ const serializeRoomState = (room) => ({
   password: room.password || '',
   hostAvatarUrl: room.hostAvatarUrl || '',
   tiktokVideoId: room.tiktokVideoId || '',
+  hostFriendCode: room.hostFriendCode || '',
+  hostUsername: room.hostUsername || '',
+  hostReconnectUntil: room.hostReconnectUntil || null,
 });
 
 const saveRoomState = () => {
@@ -165,6 +206,9 @@ const saveRoomStateToSupabase = async (state) => {
         is_private: state.isPrivate,
         host_avatar_url: state.hostAvatarUrl,
         tiktok_video_id: state.tiktokVideoId,
+        host_friend_code: state.hostFriendCode,
+        host_username: state.hostUsername,
+        host_reconnect_until: state.hostReconnectUntil,
         updated_at: new Date().toISOString(),
       }),
     });
@@ -199,6 +243,9 @@ const loadRoomStateFromSupabase = async (roomId) => {
       isPrivate: !!row.is_private,
       hostAvatarUrl: row.host_avatar_url || '',
       tiktokVideoId: row.tiktok_video_id || '',
+      hostFriendCode: row.host_friend_code || '',
+      hostUsername: row.host_username || '',
+      hostReconnectUntil: row.host_reconnect_until || null,
     };
   } catch (error) {
     console.error('loadRoomStateFromSupabase error:', error.message);
@@ -417,6 +464,9 @@ io.on('connection', (socket) => {
         password: password || restoredState.password || rememberedRoom?.password || '',
         hostAvatarUrl: hostAvatarUrl || restoredState.hostAvatarUrl || rememberedRoom?.hostAvatarUrl || '',
         tiktokVideoId: restoredState.tiktokVideoId || '',
+        hostFriendCode: restoredState.hostFriendCode || '',
+        hostUsername: restoredState.hostUsername || rememberedRoom?.hostName || '',
+        hostReconnectUntil: restoredState.hostReconnectUntil || null,
         voiceUsers: {}  // { [socketId]: { muted, speaking } }
       });
     }
@@ -441,17 +491,40 @@ io.on('connection', (socket) => {
     }
     
     // Kiểm tra xem user có phải host đầu tiên của phòng không
-    const isHost = room.members.length === 0;
+    const memberFriendCode = friendCode || onlineUsers.get(socket.id)?.friendCode || '';
+    const existingMembers = memberFriendCode
+      ? room.members.filter(member => member.friendCode === memberFriendCode)
+      : [];
+    if (existingMembers.length) {
+      existingMembers.forEach((existingMember) => {
+        const oldSocket = io.sockets.sockets.get(existingMember.id);
+        oldSocket?.leave(roomId);
+        if (room.voiceUsers?.[existingMember.id]) {
+          delete room.voiceUsers[existingMember.id];
+          io.to(roomId).emit('voice-user-left', { userId: existingMember.id });
+        }
+      });
+      room.members = room.members.filter(member => member.friendCode !== memberFriendCode);
+    }
+
+    const reconnectDeadline = room.hostReconnectUntil ? new Date(room.hostReconnectUntil).getTime() : 0;
+    const returningHost = !!room.hostFriendCode && !!memberFriendCode && room.hostFriendCode === memberFriendCode;
+    const waitingForHost = !!room.hostFriendCode && reconnectDeadline > Date.now();
+    const isHost = room.members.length === 0 || returningHost || (!room.members.some(member => member.isHost) && !waitingForHost);
 
     const newMember = {
       id: socket.id,
       username: username || `Bạn học #${Math.floor(1000 + Math.random() * 9000)}`,
-      isHost,
-      friendCode: friendCode || onlineUsers.get(socket.id)?.friendCode || ''
+      isHost: false,
+      friendCode: memberFriendCode
     };
 
     room.members.push(newMember);
-    if (isHost && hostAvatarUrl) {
+    if (isHost) {
+      if (returningHost) clearHostTransferTimer(roomId);
+      setRoomHost(room, socket.id);
+    }
+    if (newMember.isHost && hostAvatarUrl) {
       room.hostAvatarUrl = hostAvatarUrl;
     }
     rememberRoom(room, room.members.find(m => m.isHost)?.username || newMember.username);
@@ -533,11 +606,12 @@ io.on('connection', (socket) => {
     } else {
       sendSystemMessage(roomId, `Bạn học ${removedMember.username} đã rời phòng.`);
       if (removedMember.isHost) {
-        room.members[0].isHost = true;
-        io.to(room.members[0].id).emit('assigned-host', true);
-        sendSystemMessage(roomId, `Bạn học ${room.members[0].username} đã trở thành chủ phòng.`);
+        const nextHost = setRoomHost(room, room.members[0].id);
+        io.to(nextHost.id).emit('assigned-host', true);
+        sendSystemMessage(roomId, `Bạn học ${nextHost.username} đã trở thành chủ phòng.`);
       }
       io.to(roomId).emit('room-users', room.members);
+      rememberRoomState(room);
     }
 
     broadcastFriendsStatus();
@@ -827,9 +901,14 @@ io.on('connection', (socket) => {
       member.isHost = member.id === targetId;
       io.to(member.id).emit('assigned-host', member.id === targetId);
     });
+    room.hostFriendCode = target.friendCode || '';
+    room.hostUsername = target.username || '';
+    room.hostReconnectUntil = null;
+    clearHostTransferTimer(roomId);
     io.to(roomId).emit('room-users', room.members);
     sendSystemMessage(roomId, `${target.username} đã trở thành host của phòng.`);
     rememberRoom(room, target.username);
+    rememberRoomState(room);
     broadcastRoomDirectory();
   });
 
@@ -845,6 +924,7 @@ io.on('connection', (socket) => {
       memberSocket?.leave(roomId);
     });
     rooms.delete(roomId);
+    clearHostTransferTimer(roomId);
     roomDirectory.delete(roomId);
     saveRoomDirectory();
     void deleteRoomStateFromSupabase(roomId);
@@ -953,10 +1033,11 @@ io.on('connection', (socket) => {
           
           // Nếu người rời đi là host, chuyển quyền host cho người kế tiếp
           if (removedMember.isHost) {
-            room.members[0].isHost = true;
-            // Gửi thông báo cho người được làm host mới
-            io.to(room.members[0].id).emit('assigned-host', true);
-            sendSystemMessage(roomId, `Bạn học ${room.members[0].username} đã trở thành chủ phòng.`);
+            room.hostFriendCode = removedMember.friendCode || room.hostFriendCode || '';
+            room.hostUsername = removedMember.username || room.hostUsername || '';
+            room.hostReconnectUntil = new Date(Date.now() + HOST_RECONNECT_TTL_MS).toISOString();
+            scheduleHostTransfer(roomId);
+            rememberRoomState(room);
           }
           // Cập nhật lại danh sách user cho những người còn lại
           io.to(roomId).emit('room-users', room.members);
