@@ -99,36 +99,49 @@ interface PomodoroState {
 
 const trendingVideoSuggestions = [
   {
-    videoId: 'TURbeWK2wwg',
-    title: 'Korean Listening Practice for Beginners',
-    duration: '25:00',
-    category: 'Korean',
+    videoId: 'NonjeHnelXo',
+    title: 'Một Đường Nở Hoa (Lời Việt) - Linh Nhi',
+    duration: '03:33',
+    category: 'V-Pop',
   },
   {
-    videoId: 'lTRiuFIWV54',
-    title: 'Study With Me Korea - Pomodoro',
-    duration: '50:00',
-    category: 'Study with me',
+    videoId: 'e1R2yS8v-2o',
+    title: 'Nhất Lộ Sinh Hoa (一路生花) - Ôn Dịch Tâm',
+    duration: '03:35',
+    category: 'C-Pop',
   },
   {
-    videoId: '4xDzrJKXOOY',
-    title: 'Lo-Fi Hip Hop Study Music Mix',
-    duration: '1:00:00',
-    category: 'Lo-fi',
+    videoId: 'X-D51N8k26Y',
+    title: 'Nổi Gió Rồi (起风了) - Ngô Thanh Phong',
+    duration: '05:13',
+    category: 'C-Pop',
   },
   {
-    videoId: '5qap5aO4i9A',
-    title: 'Lo-Fi Girl Study Beat',
-    duration: 'LIVE',
-    category: 'Lo-fi',
+    videoId: '5-ZiKXrnvog',
+    title: 'Dynasty - MIIA',
+    duration: '03:45',
+    category: 'US-UK',
   },
   {
-    videoId: 'jfKfPfyJRdk',
-    title: 'lofi hip hop radio - beats to relax/study to',
-    duration: 'LIVE',
-    category: 'Study music',
+    videoId: 'F8n-p9sXWpQ',
+    title: '10 Năm Nhân Gian (十年人间) - Lý Thường Siêu',
+    duration: '03:37',
+    category: 'C-Pop',
+  },
+  {
+    videoId: '7C2z4GqqS5E',
+    title: 'FAKE LOVE - BTS',
+    duration: '05:18',
+    category: 'K-Pop',
+  },
+  {
+    videoId: 'pDl50C1n0qg',
+    title: 'Star Sky - Two Steps From Hell',
+    duration: '05:30',
+    category: 'Epic Music',
   },
 ];
+
 
 export default function App() {
   const { t } = useTranslation();
