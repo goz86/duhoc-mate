@@ -55,6 +55,8 @@ const io = new Server(httpServer, socketOptions);
 // Lưu trữ dữ liệu các phòng trong memory
 // Cấu trúc room: { roomId, members: [], playlist: [], videoState: { id, time, playing }, pomodoro: {} }
 const rooms = new Map();
+const emptyRoomCleanupTimers = new Map();
+const EMPTY_ROOM_TTL_MS = 30 * 60 * 1000;
 
 // Persist roomDirectory sang file JSON để không mất dữ liệu sau restart
 const ROOM_DIR_FILE = './room-directory.json';
@@ -70,6 +72,28 @@ const saveRoomDirectory = () => {
   } catch (e) { console.error('saveRoomDirectory error:', e.message); }
 };
 const onlineUsers = new Map(); // socket.id -> { socketId, friendCode, username, currentRoomId, currentSong }
+
+const cancelEmptyRoomCleanup = (roomId) => {
+  const timer = emptyRoomCleanupTimers.get(roomId);
+  if (!timer) return;
+  clearTimeout(timer);
+  emptyRoomCleanupTimers.delete(roomId);
+};
+
+const scheduleEmptyRoomCleanup = (roomId) => {
+  cancelEmptyRoomCleanup(roomId);
+  const timer = setTimeout(() => {
+    const room = rooms.get(roomId);
+    if (room && room.members.length === 0) {
+      rememberRoom(room);
+      rooms.delete(roomId);
+      console.log(`Deleted inactive empty room after TTL: ${roomId}`);
+      broadcastRoomDirectory();
+    }
+    emptyRoomCleanupTimers.delete(roomId);
+  }, EMPTY_ROOM_TTL_MS);
+  emptyRoomCleanupTimers.set(roomId, timer);
+};
 
 // Trạng thái mặc định của đồng hồ Pomodoro
 const createDefaultPomodoro = () => ({
@@ -242,6 +266,7 @@ io.on('connection', (socket) => {
     }
 
     const room = rooms.get(roomId);
+    cancelEmptyRoomCleanup(roomId);
     if (rememberedRoom && !roomTitle) {
       room.roomTitle = rememberedRoom.roomTitle || room.roomTitle;
     }
@@ -726,10 +751,10 @@ io.on('connection', (socket) => {
         }
 
         if (room.members.length === 0) {
-          // Xóa phòng nếu không còn ai
+          // Keep state briefly so browser refresh/reconnect does not reset the room.
           rememberRoom(room, removedMember.username);
-          rooms.delete(roomId);
-          console.log(`Deleted empty room: ${roomId}`);
+          scheduleEmptyRoomCleanup(roomId);
+          console.log(`Room ${roomId} is empty; keeping state for quick reconnect.`);
         } else {
           sendSystemMessage(roomId, `Bạn học ${removedMember.username} đã rời phòng.`);
           

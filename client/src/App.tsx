@@ -1747,11 +1747,24 @@ export default function App() {
     const player = playerRef.current;
     if (!player) return;
 
+    const enableCaptions = () => {
+      player.loadModule?.('captions');
+      const preferredLanguages = [
+        ...navigator.languages.map((lang) => lang.split('-')[0]),
+        'vi',
+        'en',
+        'ko',
+      ];
+      const trackList = player.getOption?.('captions', 'tracklist') || [];
+      const track = trackList.find((item: any) => preferredLanguages.includes(item.languageCode)) || trackList[0];
+      player.setOption?.('captions', 'fontSize', 1);
+      player.setOption?.('captions', 'track', track || { languageCode: 'vi' });
+    };
+
     try {
       if (showYoutubeCaptions) {
-        player.loadModule?.('captions');
-        player.setOption?.('captions', 'track', {});
-        player.setOption?.('captions', 'fontSize', 1);
+        enableCaptions();
+        window.setTimeout(enableCaptions, 600);
       } else {
         player.unloadModule?.('captions');
       }
