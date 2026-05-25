@@ -3020,7 +3020,7 @@ export default function App() {
               </div>
 
               {/* Sidebar Content Panel */}
-              <div className="flex-1 lg:overflow-y-auto p-3 xl:p-4 flex flex-col min-h-0">
+              <div className={`flex-1 \${sidebarTab === 'chat' ? 'lg:overflow-hidden' : 'lg:overflow-y-auto'} p-3 xl:p-4 flex flex-col min-h-0`}>
                 
                 {/* 1. PLAYLIST & JUKEBOX TAB */}
                 {sidebarTab === 'playlist' && (
@@ -3275,7 +3275,7 @@ export default function App() {
 
                 {/* 2. CHAT TAB */}
                 {sidebarTab === 'chat' && (
-                  <div className="flex h-full min-h-[calc(100vh-235px)] flex-col gap-0">
+                  <div className="flex h-full lg:h-full lg:min-h-0 min-h-[calc(100vh-235px)] flex-col gap-0 flex-1">
                     {/* Messages Area */}
                     <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain space-y-4 pr-1 mb-3 custom-scrollbar">
                       {chatMessages.length === 0 ? (
@@ -3294,8 +3294,7 @@ export default function App() {
                             return (
                               <div key={msg.id} className="flex justify-center my-2">
                                 <div className="bg-brand-light/80 text-brand-brown-light/80 px-4 py-2 rounded-full text-xs font-bold border border-brand-terracotta-light/10 max-w-[90%] text-center shadow-sm select-none">
-                                  <span className="inline-flex items-center gap-1.5">
-                                    <Sparkles size={13} />
+                                  <span>
                                     {msg.text}
                                   </span>
                                 </div>
