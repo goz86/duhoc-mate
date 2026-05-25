@@ -99,9 +99,9 @@ interface PomodoroState {
 
 const trendingVideoSuggestions = [
   {
-    videoId: '4oStw0r33so',
-    title: 'Lofi Girl - beats to sleep/chill to 🌙',
-    duration: '58:39',
+    videoId: 'nZtFlrwCbs4',
+    title: 'Lofi Girl - beats to relax/study to 🌙',
+    duration: '',
     category: 'Lo-fi',
   },
   {
