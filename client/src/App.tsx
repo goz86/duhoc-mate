@@ -2505,12 +2505,12 @@ export default function App() {
                       {/* Man hinh cho khi chua co video — cũng hiện khi lỗi + playlist rỗng */}
                       {(!currentVideo.id && playlist.length === 0) && (
                         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 p-8 text-center bg-gradient-to-br from-brand-brown-dark/95 to-black/95">
-                          <div className="flex flex-col items-center gap-3">
+                          <div className="flex flex-col items-center gap-3 px-4">
                             <div className="w-20 h-20 rounded-full bg-brand-terracotta/20 border-2 border-brand-terracotta/30 flex items-center justify-center animate-pulse">
                               <Music2 size={34} className="text-brand-terracotta" />
                             </div>
                             <h3 className="font-display font-black text-white text-xl mt-1">Chưa có video nào</h3>
-                            <p className="text-white/50 text-sm max-w-xs leading-relaxed">
+                            <p className="text-white/50 text-sm max-w-sm leading-relaxed break-words">
                               Tìm và thêm bài nhạc vào playlist bên phải để bắt đầu học cùng nhau!
                             </p>
                           </div>
