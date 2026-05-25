@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
-import { VOICE_ICE_SERVERS } from './voiceIceServers';
+import { VOICE_RTC_CONFIG } from './voiceIceServers';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -110,7 +110,7 @@ export function useVoiceChat(
 
   // ── Helper: tạo RTCPeerConnection ─────────────────────────────────────────
   const createPeerConnection = useCallback((targetId: string): RTCPeerConnection => {
-    const pc = new RTCPeerConnection({ iceServers: VOICE_ICE_SERVERS });
+    const pc = new RTCPeerConnection(VOICE_RTC_CONFIG);
 
     // ICE candidate → gửi qua signaling server
     pc.onicecandidate = (event) => {
