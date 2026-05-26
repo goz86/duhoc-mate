@@ -108,6 +108,28 @@ interface PomodoroState {
   isBreak: boolean;
 }
 
+interface StudyTableSeat {
+  memberId: string;
+  username: string;
+  isHost: boolean;
+  joinedAt: number;
+  active: boolean;
+  status: string;
+  personalPomodoro: PomodoroState;
+}
+
+interface StudyTableReaction {
+  id: string;
+  memberId: string;
+  label: string;
+  createdAt: number;
+}
+
+interface StudyTableState {
+  seats: Record<string, StudyTableSeat>;
+  reactions: StudyTableReaction[];
+}
+
 const trendingVideoSuggestions = [
   {
     videoId: 'nZtFlrwCbs4',
@@ -487,6 +509,7 @@ export default function App() {
   // Study table state. Real Jitsi embed is intentionally disabled for now so
   // the virtual table does not get interrupted by a raw "Join meeting" iframe.
   const [jitsiActive, setJitsiActive] = useState(false);
+  const [studyTable, setStudyTable] = useState<StudyTableState>({ seats: {}, reactions: [] });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -541,7 +564,7 @@ export default function App() {
       if (me) setIsHost(me.isHost);
     });
 
-    socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost, tiktokVideoId, ideaTasks, slideUrl: initSlideUrl }) => {
+    socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost, tiktokVideoId, ideaTasks, slideUrl: initSlideUrl, studyTable }) => {
       setPlaylist(playlist);
       setCurrentVideo(videoState);
       setVideoError(false);
@@ -552,6 +575,7 @@ export default function App() {
       setPomodoro(pomodoro);
       setChatMessages(chatMessages || []);
       setIdeaTasks(ideaTasks || []);
+      setStudyTable(studyTable || { seats: {}, reactions: [] });
       if (initSlideUrl) { setSlideUrl(initSlideUrl); setSlideInputUrl(initSlideUrl); }
       setIsHost(isHost);
       // Khởi tạo trạng thái host pause khi vào phòng
@@ -700,6 +724,13 @@ export default function App() {
       setPomodoro(pState);
     });
 
+    socket.on('study-table-sync', (state: StudyTableState) => {
+      setStudyTable({
+        seats: state?.seats || {},
+        reactions: state?.reactions || []
+      });
+    });
+
     socket.on('idea-board-sync', (tasks: IdeaTask[]) => {
       const nextTasks = tasks || [];
       setIdeaTasks(nextTasks);
@@ -773,6 +804,7 @@ export default function App() {
         socket.off('update-playlist');
         socket.off('video-sync');
         socket.off('pomodoro-sync');
+        socket.off('study-table-sync');
         socket.off('idea-board-sync');
         socket.off('pomodoro-done');
         socket.off('slide-url-sync');
@@ -1127,7 +1159,35 @@ export default function App() {
   // Toggle only the study-table presence state. A polished call layer can be
   // added later without leaking the default Jitsi prejoin UI into the room.
   const toggleJitsi = () => {
-    setJitsiActive(prev => !prev);
+    setJitsiActive(prev => {
+      const next = !prev;
+      if (roomIdRef.current) {
+        socket.emit('study-table-action', {
+          roomId: roomIdRef.current,
+          type: 'presence',
+          payload: { active: next }
+        });
+      }
+      return next;
+    });
+  };
+
+  const sendStudyReaction = (label: string) => {
+    if (!roomIdRef.current) return;
+    socket.emit('study-table-action', {
+      roomId: roomIdRef.current,
+      type: 'reaction',
+      payload: { label }
+    });
+  };
+
+  const controlPersonalPomodoro = (action: 'start' | 'pause' | 'reset', isBreak = false) => {
+    if (!roomIdRef.current) return;
+    socket.emit('study-table-action', {
+      roomId: roomIdRef.current,
+      type: 'personal-pomodoro',
+      payload: { action, isBreak }
+    });
   };
 
   // 2. Chức năng Phòng (Tạo/Tham Gia)
@@ -3395,10 +3455,14 @@ export default function App() {
                   <StudyTableStage
                     members={members}
                     username={username}
+                    currentSocketId={socket?.id || ''}
+                    studyTable={studyTable}
                     jitsiActive={jitsiActive}
                     pomodoro={pomodoro}
                     onToggleJitsi={toggleJitsi}
                     onControlPomodoro={controlPomodoro}
+                    onStudyReaction={sendStudyReaction}
+                    onPersonalPomodoro={controlPersonalPomodoro}
                   />
                 )}
 

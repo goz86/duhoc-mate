@@ -1,7 +1,6 @@
 import {
   BookOpen,
   Brain,
-  CheckCircle2,
   Coffee,
   Crown,
   Flame,
@@ -15,7 +14,6 @@ import {
   Play,
   RotateCcw,
   SmilePlus,
-  Sparkles,
   Timer,
   Users,
   VolumeX,
@@ -35,23 +33,42 @@ type PomodoroState = {
   duration: number
   isRunning: boolean
   isBreak: boolean
+  lastUpdated?: number
+}
+
+type StudyTableSeat = {
+  memberId: string
+  username: string
+  isHost: boolean
+  joinedAt: number
+  active?: boolean
+  status?: string
+  personalPomodoro?: PomodoroState
+}
+
+type StudyTableReaction = {
+  id: string
+  memberId: string
+  label: string
+  createdAt: number
+}
+
+type StudyTableState = {
+  seats?: Record<string, StudyTableSeat>
+  reactions?: StudyTableReaction[]
 }
 
 type StudyTableStageProps = {
   members: StudyMember[]
   username: string
+  currentSocketId?: string
+  studyTable?: StudyTableState
   jitsiActive: boolean
   pomodoro: PomodoroState
   onToggleJitsi: () => void
   onControlPomodoro: (action: 'start' | 'pause' | 'reset', isBreak?: boolean) => void
-}
-
-type DeskReaction = {
-  id: string
-  memberId: string
-  label: string
-  Icon: LucideIcon
-  tone: string
+  onStudyReaction?: (label: string) => void
+  onPersonalPomodoro?: (action: 'start' | 'pause' | 'reset', isBreak?: boolean) => void
 }
 
 const seatPalette = [
@@ -71,14 +88,9 @@ const statusCycle: Array<{ label: string; Icon: LucideIcon; tone: string }> = [
 
 const reactionOptions: Array<{ label: string; Icon: LucideIcon; tone: string }> = [
   { label: 'Cố lên', Icon: Flame, tone: 'bg-orange-50 text-orange-700 border-orange-100' },
-  { label: 'Tuyệt', Icon: Sparkles, tone: 'bg-amber-50 text-amber-700 border-amber-100' },
-  { label: 'Ổn định', Icon: CheckCircle2, tone: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
   { label: 'Nghỉ chút', Icon: Coffee, tone: 'bg-sky-50 text-sky-700 border-sky-100' },
   { label: 'Thích', Icon: Heart, tone: 'bg-rose-50 text-rose-700 border-rose-100' },
 ]
-
-const hashString = (value: string) =>
-  value.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0)
 
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase() || 'DM'
 
@@ -100,24 +112,51 @@ const formatDeskTime = (seconds: number) => {
 export default function StudyTableStage({
   members,
   username,
+  currentSocketId = '',
+  studyTable,
   jitsiActive,
   pomodoro,
   onToggleJitsi,
   onControlPomodoro,
+  onStudyReaction,
+  onPersonalPomodoro,
 }: StudyTableStageProps) {
   const { t } = useTranslation()
   const [now, setNow] = useState(() => Date.now())
-  const [reactions, setReactions] = useState<DeskReaction[]>([])
-  const mountedAt = useMemo(() => Date.now(), [])
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(timer)
   }, [])
 
-  const seats = members.length > 0
-    ? members
-    : [{ id: 'local-preview', username: username || 'Bạn học', isHost: true }]
+  const seats = useMemo(() => {
+    const serverSeats = studyTable?.seats || {}
+    const baseMembers = members.length > 0
+      ? members
+      : [{ id: currentSocketId || 'local-preview', username: username || 'Bạn học', isHost: true }]
+
+    return baseMembers.map(member => {
+      const serverSeat = serverSeats[member.id]
+
+      return {
+        ...member,
+        study: serverSeat || {
+          memberId: member.id,
+          username: member.username,
+          isHost: member.isHost,
+          joinedAt: now,
+          active: true,
+          status: 'focus',
+          personalPomodoro: {
+            timeLeft: 25 * 60,
+            duration: 25 * 60,
+            isRunning: false,
+            isBreak: false,
+          },
+        },
+      }
+    }).filter(member => member.study.active !== false)
+  }, [currentSocketId, members, now, studyTable?.seats, username])
 
   const roomMood = pomodoro.isBreak
     ? { label: 'Break room', Icon: Coffee, tone: 'bg-amber-50 text-amber-700 border-amber-100' }
@@ -126,19 +165,13 @@ export default function StudyTableStage({
       : { label: 'Ready', Icon: Timer, tone: 'bg-brand-light text-brand-brown-dark border-brand-terracotta-light/20' }
   const isCrowded = seats.length > 6
 
-  const handleReaction = (memberId: string, option: typeof reactionOptions[number]) => {
-    const reaction = {
-      id: `${memberId}-${option.label}-${Date.now()}`,
-      memberId,
-      label: option.label,
-      Icon: option.Icon,
-      tone: option.tone,
-    }
+  const visibleReactions = useMemo(() => {
+    const cutoff = now - 3000
+    return (studyTable?.reactions || []).filter(reaction => reaction.createdAt >= cutoff)
+  }, [now, studyTable?.reactions])
 
-    setReactions(prev => [...prev.slice(-9), reaction])
-    window.setTimeout(() => {
-      setReactions(prev => prev.filter(item => item.id !== reaction.id))
-    }, 2600)
+  const handleReaction = (option: typeof reactionOptions[number]) => {
+    onStudyReaction?.(option.label)
   }
 
   const RoomMoodIcon = roomMood.Icon
@@ -209,19 +242,22 @@ export default function StudyTableStage({
               <div className="relative grid max-h-[min(62vh,620px)] w-full grid-cols-[repeat(auto-fill,minmax(min(100%,260px),320px))] content-start justify-start gap-3 overflow-y-auto pr-1 xl:gap-4">
                 {seats.map((member, index) => {
                   const palette = seatPalette[index % seatPalette.length]
-                  const seed = hashString(member.id || member.username)
-                  const elapsed = Math.floor((now - mountedAt) / 1000) + 420 + seed * 7 + index * 260
-                  const personalCycle = 30 * 60
-                  const cyclePosition = (elapsed + index * 137) % personalCycle
-                  const isPersonalBreak = cyclePosition >= 25 * 60
-                  const personalLeft = isPersonalBreak ? personalCycle - cyclePosition : 25 * 60 - cyclePosition
-                  const personalProgress = isPersonalBreak
-                    ? ((5 * 60 - personalLeft) / (5 * 60)) * 100
-                    : ((25 * 60 - personalLeft) / (25 * 60)) * 100
-                  const status = statusCycle[(index + Math.floor(elapsed / 300)) % statusCycle.length]
-                  const isLocal = member.username === username
+                  const elapsed = Math.max(0, Math.floor((now - (member.study.joinedAt || now)) / 1000))
+                  const personal = member.study.personalPomodoro || {
+                    timeLeft: 25 * 60,
+                    duration: 25 * 60,
+                    isRunning: false,
+                    isBreak: false,
+                  }
+                  const isPersonalBreak = personal.isBreak
+                  const personalLeft = Math.max(0, personal.timeLeft)
+                  const personalProgress = personal.duration > 0
+                    ? ((personal.duration - personalLeft) / personal.duration) * 100
+                    : 0
+                  const status = statusCycle[index % statusCycle.length]
+                  const isLocal = member.id === currentSocketId || member.username === username
                   const StatusIcon = status.Icon
-                  const activeReactions = reactions.filter(item => item.memberId === member.id)
+                  const activeReactions = visibleReactions.filter(item => item.memberId === member.id)
 
                   return (
                     <article
@@ -235,12 +271,13 @@ export default function StudyTableStage({
                       <div className="relative">
                         <div className="absolute left-1/2 top-0 z-20 flex -translate-x-1/2 -translate-y-2 flex-col items-center gap-1">
                           {activeReactions.map((reaction, reactionIndex) => {
-                            const ReactionIcon = reaction.Icon
+                            const reactionMeta = reactionOptions.find(option => option.label === reaction.label) || reactionOptions[0]
+                            const ReactionIcon = reactionMeta.Icon
 
                             return (
                               <span
                                 key={reaction.id}
-                                className={`study-reaction-bubble inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black shadow-sm ${reaction.tone}`}
+                                className={`study-reaction-bubble inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black shadow-sm ${reactionMeta.tone}`}
                                 style={{ animationDelay: `${reactionIndex * 80}ms` }}
                               >
                                 <ReactionIcon size={11} />
@@ -310,6 +347,27 @@ export default function StudyTableStage({
                           />
                         </div>
 
+                        {isLocal && onPersonalPomodoro && (
+                          <div className="mt-2 flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => onPersonalPomodoro(personal.isRunning ? 'pause' : 'start')}
+                              className="inline-flex flex-1 items-center justify-center gap-1 rounded-full border border-brand-terracotta-light/20 bg-white/75 px-2 py-1 text-[9px] font-black text-brand-brown-dark transition hover:bg-brand-light"
+                            >
+                              {personal.isRunning ? <Pause size={10} /> : <Play size={10} />}
+                              {personal.isRunning ? 'Tạm dừng' : 'Bắt đầu'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onPersonalPomodoro('reset', false)}
+                              className="inline-flex items-center justify-center rounded-full border border-brand-terracotta-light/20 bg-white/75 px-2 py-1 text-[9px] font-black text-brand-brown-light transition hover:bg-brand-light"
+                              title="Reset Pomodoro riêng"
+                            >
+                              <RotateCcw size={10} />
+                            </button>
+                          </div>
+                        )}
+
                         <div className={`mt-3 flex flex-wrap gap-1.5 ${isCrowded ? 'max-h-8 overflow-hidden' : ''}`}>
                           {reactionOptions.map(option => {
                             const OptionIcon = option.Icon
@@ -318,7 +376,7 @@ export default function StudyTableStage({
                               <button
                                 key={option.label}
                                 type="button"
-                                onClick={() => handleReaction(member.id, option)}
+                                onClick={() => handleReaction(option)}
                                 className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-black transition hover:-translate-y-0.5 hover:shadow-sm ${option.tone}`}
                                 title={`Gửi biểu cảm: ${option.label}`}
                               >
@@ -384,12 +442,6 @@ export default function StudyTableStage({
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-700">
               <Users size={13} className="mr-1 inline" />
               {seats.length} bạn đang hiện diện trong bàn học.
-            </div>
-            <div className="rounded-2xl border border-brand-terracotta-light/20 bg-brand-light/45 px-3 py-3">
-              <p className="text-[11px] font-black uppercase text-brand-brown-light">Ý tưởng tiếp theo</p>
-              <p className="mt-1 text-xs font-bold leading-relaxed text-brand-brown-dark">
-                Khi duyệt UI này, mình có thể nối backend để lưu giờ ngồi bàn, Pomodoro riêng và biểu cảm realtime cho mọi người.
-              </p>
             </div>
           </div>
         </aside>

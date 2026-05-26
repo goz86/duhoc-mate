@@ -330,6 +330,63 @@ const scheduleHostTransfer = (roomId) => {
   hostTransferTimers.set(roomId, timer);
 };
 
+const createDefaultStudyTable = () => ({
+  seats: {},
+  reactions: [],
+});
+
+const createPersonalPomodoro = () => ({
+  timeLeft: 25 * 60,
+  duration: 25 * 60,
+  isRunning: false,
+  isBreak: false,
+  lastUpdated: Date.now(),
+});
+
+const getStudyTable = (room) => {
+  if (!room.studyTable || typeof room.studyTable !== 'object') {
+    room.studyTable = createDefaultStudyTable();
+  }
+  if (!room.studyTable.seats || typeof room.studyTable.seats !== 'object') {
+    room.studyTable.seats = {};
+  }
+  if (!Array.isArray(room.studyTable.reactions)) {
+    room.studyTable.reactions = [];
+  }
+  return room.studyTable;
+};
+
+const ensureStudySeat = (room, member) => {
+  const studyTable = getStudyTable(room);
+  const existing = studyTable.seats[member.id] || {};
+  studyTable.seats[member.id] = {
+    memberId: member.id,
+    username: member.username,
+    isHost: !!member.isHost,
+    joinedAt: existing.joinedAt || Date.now(),
+    active: existing.active !== false,
+    status: existing.status || 'focus',
+    personalPomodoro: existing.personalPomodoro || createPersonalPomodoro(),
+  };
+  return studyTable.seats[member.id];
+};
+
+const syncStudyMembers = (room) => {
+  const studyTable = getStudyTable(room);
+  const memberIds = new Set(room.members.map(member => member.id));
+  for (const key of Object.keys(studyTable.seats)) {
+    if (!memberIds.has(key)) delete studyTable.seats[key];
+  }
+  room.members.forEach(member => ensureStudySeat(room, member));
+  return studyTable;
+};
+
+const emitStudyTable = (roomId) => {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  io.to(roomId).emit('study-table-sync', syncStudyMembers(room));
+};
+
 const serializeRoomState = (room) => ({
   roomId: room.roomId,
   playlist: room.playlist || [],
@@ -345,6 +402,7 @@ const serializeRoomState = (room) => ({
   hostFriendCode: room.hostFriendCode || '',
   hostUsername: room.hostUsername || '',
   hostReconnectUntil: room.hostReconnectUntil || null,
+  studyTable: room.studyTable || createDefaultStudyTable(),
 });
 
 const saveRoomState = () => {
@@ -386,6 +444,7 @@ const saveRoomStateToSupabase = async (state) => {
         host_friend_code: state.hostFriendCode,
         host_username: state.hostUsername,
         host_reconnect_until: state.hostReconnectUntil,
+        study_table: state.studyTable,
         updated_at: new Date().toISOString(),
       }),
     });
@@ -423,6 +482,7 @@ const loadRoomStateFromSupabase = async (roomId) => {
       hostFriendCode: row.host_friend_code || '',
       hostUsername: row.host_username || '',
       hostReconnectUntil: row.host_reconnect_until || null,
+      studyTable: row.study_table || createDefaultStudyTable(),
     };
   } catch (error) {
     console.error('loadRoomStateFromSupabase error:', error.message);
@@ -645,6 +705,7 @@ io.on('connection', (socket) => {
         hostFriendCode: restoredState.hostFriendCode || '',
         hostUsername: restoredState.hostUsername || rememberedRoom?.hostName || '',
         hostReconnectUntil: restoredState.hostReconnectUntil || null,
+        studyTable: restoredState.studyTable || createDefaultStudyTable(),
         voiceUsers: {}  // { [socketId]: { muted, speaking } }
       });
     }
@@ -714,6 +775,7 @@ io.on('connection', (socket) => {
     if (newMember.isHost && hostAvatarUrl) {
       room.hostAvatarUrl = hostAvatarUrl;
     }
+    ensureStudySeat(room, newMember);
     rememberRoom(room, room.members.find(m => m.isHost)?.username || newMember.username);
     rememberRoomState(room);
 
@@ -747,8 +809,10 @@ io.on('connection', (socket) => {
       tiktokVideoId: room.tiktokVideoId || null,
       ideaTasks: room.ideaTasks || [],
       voiceUsers: room.voiceUsers || {},
-      slideUrl: room.slideUrl || ''
+      slideUrl: room.slideUrl || '',
+      studyTable: syncStudyMembers(room)
     });
+    emitStudyTable(roomId);
 
     // Nếu phòng đang có TikTok video, gửi sync cho member mới
     if (room.tiktokVideoId) {
@@ -778,6 +842,10 @@ io.on('connection', (socket) => {
     if (room.voiceUsers && room.voiceUsers[socket.id]) {
       delete room.voiceUsers[socket.id];
       io.to(roomId).emit('voice-user-left', { userId: socket.id });
+    }
+    if (room.studyTable?.seats) {
+      delete room.studyTable.seats[socket.id];
+      emitStudyTable(roomId);
     }
 
     // Cập nhật online user
@@ -1115,6 +1183,58 @@ io.on('connection', (socket) => {
     rememberRoomState(room);
   });
 
+  socket.on('study-table-action', ({ roomId, type, payload = {} }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const member = room.members.find(m => m.id === socket.id);
+    if (!member) return;
+
+    const studyTable = syncStudyMembers(room);
+    const seat = ensureStudySeat(room, member);
+
+    if (type === 'presence') {
+      seat.active = payload.active !== false;
+    }
+
+    if (type === 'status' && typeof payload.status === 'string') {
+      seat.status = payload.status.slice(0, 40);
+    }
+
+    if (type === 'personal-pomodoro') {
+      const pomo = seat.personalPomodoro || createPersonalPomodoro();
+      if (payload.action === 'start') {
+        pomo.isRunning = true;
+      } else if (payload.action === 'pause') {
+        pomo.isRunning = false;
+      } else if (payload.action === 'reset') {
+        pomo.isRunning = false;
+        pomo.isBreak = !!payload.isBreak;
+        pomo.duration = pomo.isBreak ? 5 * 60 : 25 * 60;
+        pomo.timeLeft = pomo.duration;
+      }
+      pomo.lastUpdated = Date.now();
+      seat.personalPomodoro = pomo;
+    }
+
+    if (type === 'reaction') {
+      const label = typeof payload.label === 'string' ? payload.label.slice(0, 24) : '';
+      if (label) {
+        studyTable.reactions = [
+          ...studyTable.reactions.slice(-12),
+          {
+            id: `${socket.id}-${Date.now()}`,
+            memberId: socket.id,
+            label,
+            createdAt: Date.now(),
+          }
+        ];
+      }
+    }
+
+    rememberRoomState(room);
+    emitStudyTable(roomId);
+  });
+
   // 7. Đồng bộ TOPIK Study giữa thành viên phòng
   socket.on('topik-action', ({ roomId, level, index }) => {
     socket.to(roomId).emit('topik-sync', { level, index });
@@ -1290,6 +1410,10 @@ io.on('connection', (socket) => {
           delete room.voiceUsers[socket.id];
           io.to(roomId).emit('voice-user-left', { userId: socket.id });
         }
+        if (room.studyTable?.seats) {
+          delete room.studyTable.seats[socket.id];
+          emitStudyTable(roomId);
+        }
 
         if (room.members.length === 0) {
           // Keep state briefly so browser refresh/reconnect does not reset the room.
@@ -1320,6 +1444,26 @@ io.on('connection', (socket) => {
 // Chạy một tiến trình ticker đếm ngược Pomodoro ở server cứ mỗi 1 giây
 setInterval(() => {
   for (const [roomId, room] of rooms.entries()) {
+    const studyTable = room.studyTable;
+    if (studyTable?.seats) {
+      let changed = false;
+      for (const seat of Object.values(studyTable.seats)) {
+        const personal = seat.personalPomodoro;
+        if (personal?.isRunning && personal.timeLeft > 0) {
+          personal.timeLeft -= 1;
+          personal.lastUpdated = Date.now();
+          changed = true;
+          if (personal.timeLeft === 0) {
+            personal.isRunning = false;
+            personal.isBreak = !personal.isBreak;
+            personal.duration = personal.isBreak ? 5 * 60 : 25 * 60;
+            personal.timeLeft = personal.duration;
+          }
+        }
+      }
+      if (changed) io.to(roomId).emit('study-table-sync', studyTable);
+    }
+
     const p = room.pomodoro;
     if (p.isRunning && p.timeLeft > 0) {
       p.timeLeft -= 1;
