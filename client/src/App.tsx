@@ -2628,12 +2628,12 @@ export default function App() {
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 lg:overflow-hidden lg:max-h-[calc(100vh-108px)] xl:max-h-[calc(100vh-96px)]">
 
             {/* LEFT / CENTER: Stage workspace */}
-            <main className={`${mainSpan} p-4 xl:p-6 flex flex-col gap-4 lg:overflow-y-auto transition-all duration-300`}>
+            <main className={`${mainSpan} p-2 sm:p-4 xl:p-6 flex flex-col gap-4 lg:overflow-y-auto transition-all duration-300`}>
 
               {!roomCollapsed && <StageSelector stageMode={stageMode} onChange={setStageMode} />}
 
               {/* ── STAGE DISPLAY AREA – adapts per stageMode ── */}
-              <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : 'flex-1 glass-panel rounded-3xl p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col'} relative ${stageMode === 'pdf' ? 'overflow-visible' : 'overflow-hidden'}`}>
+              <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : 'flex-1 glass-panel rounded-3xl p-2.5 sm:p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col'} relative ${stageMode === 'pdf' ? 'overflow-visible' : 'overflow-hidden'}`}>
 
                 {roomCollapsed && (
                   <div className="w-full max-w-xl space-y-5 text-center">
@@ -2884,7 +2884,7 @@ export default function App() {
                     {/* Info bar + local pause cho non-host — ẩn khi chưa có video */}
                     {showLyrics && (lyrics || lyricsLoading) && (
                       <aside
-                        className="relative min-h-[220px] overflow-y-auto rounded-2xl border border-brand-terracotta-light/20 bg-white/90 p-4 shadow-sm backdrop-blur-sm"
+                        className="relative min-h-[220px] w-full overflow-y-auto rounded-2xl border border-brand-terracotta-light/20 bg-white/90 p-3.5 shadow-sm backdrop-blur-sm sm:p-4"
                         style={{ height: 'min(35vw, 560px)', maxHeight: 'min(56vh, 560px)' }}
                       >
                         <div className="sticky top-0 z-30 -mx-4 -mt-4 mb-3 border-b border-brand-terracotta-light/15 bg-white/95 px-4 pb-3 pt-4 backdrop-blur">
