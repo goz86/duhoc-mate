@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon --ignore room-directory.json --ignore room-state.json index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

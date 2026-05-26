@@ -203,31 +203,72 @@ let _savedRoomState = {};
 try { _savedRoomState = JSON.parse(readFileSync(ROOM_STATE_FILE, 'utf8')); } catch {}
 const savedRoomState = new Map(Object.entries(_savedRoomState));
 
-const normalizePlaylist = (playlist = [], currentVideoId = '') => playlist.map((item) => {
-  const status = item.status || (item.videoId === currentVideoId ? 'playing' : 'queued');
+const normalizePlaylist = (playlist = [], currentVideoId = '', playlistItemId = '') => playlist.map((item) => {
+  let status = item.status;
+  if (!status) {
+    if (playlistItemId && item.id === playlistItemId) {
+      status = 'playing';
+    } else if (!playlistItemId && currentVideoId && item.videoId === currentVideoId) {
+      status = 'playing';
+    } else {
+      status = 'queued';
+    }
+  }
   return { ...item, status };
 });
 
-const setPlaylistPlaying = (room, videoId) => {
+const setPlaylistPlaying = (room, playlistItemId, videoId, prevItemId, prevVideoId) => {
   const now = new Date().toISOString();
   room.playlist = room.playlist.map((item) => {
-    if (item.status === 'playing' && item.videoId !== videoId) {
-      return { ...item, status: 'played', playedAt: item.playedAt || now };
-    }
-    if (item.videoId === videoId) {
-      return { ...item, status: 'playing', playedAt: undefined };
+    if (playlistItemId) {
+      // Mark bài mới là 'playing'
+      if (item.id === playlistItemId) {
+        return { ...item, status: 'playing', playedAt: undefined };
+      }
+      // Mark bài cũ là 'played': theo status hoặc theo prevItemId/prevVideoId
+      const isOldItem = (item.status === 'playing') ||
+        (prevItemId && item.id === prevItemId) ||
+        (prevVideoId && item.videoId === prevVideoId && item.id !== playlistItemId);
+      if (isOldItem) {
+        return { ...item, status: 'played', playedAt: item.playedAt || now };
+      }
+    } else if (videoId) {
+      if (item.videoId === videoId) {
+        return { ...item, status: 'playing', playedAt: undefined };
+      }
+      const isOldItem = (item.status === 'playing') ||
+        (prevVideoId && item.videoId === prevVideoId && item.videoId !== videoId);
+      if (isOldItem) {
+        return { ...item, status: 'played', playedAt: item.playedAt || now };
+      }
     }
     return item;
   });
 };
 
 const sortPlaylist = (playlist = []) => {
-  const rank = { played: 0, playing: 1, queued: 2 };
+  const rank = { playing: 0, queued: 1, played: 2 };
   return [...playlist].sort((a, b) => {
     const statusA = a.status || 'queued';
     const statusB = b.status || 'queued';
     if (rank[statusA] !== rank[statusB]) return rank[statusA] - rank[statusB];
-    if (statusA === 'queued') return (b.votes || 0) - (a.votes || 0);
+    
+    if (statusA === 'queued') {
+      if (a.queueOrder !== undefined && b.queueOrder !== undefined) {
+        return a.queueOrder - b.queueOrder;
+      }
+      if (a.queueOrder !== undefined) return -1;
+      if (b.queueOrder !== undefined) return 1;
+      
+      if ((b.votes || 0) !== (a.votes || 0)) {
+        return (b.votes || 0) - (a.votes || 0);
+      }
+      return (a.id || '').localeCompare(b.id || '');
+    }
+    
+    if (statusA === 'played') {
+      return (a.playedAt || '').localeCompare(b.playedAt || '');
+    }
     return 0;
   });
 };
@@ -583,7 +624,8 @@ io.on('connection', (socket) => {
         members: [],
         playlist: sortPlaylist(normalizePlaylist(
           Array.isArray(restoredState.playlist) ? restoredState.playlist : [],
-          restoredState.videoState?.id
+          restoredState.videoState?.id,
+          restoredState.videoState?.playlistItemId
         )),
         videoState: restoredState.videoState || {
           id: '', // Không có video mặc định — chờ người dùng chọn
@@ -794,7 +836,7 @@ io.on('connection', (socket) => {
   });
 
   // 3. Đồng bộ Video YouTube
-  socket.on('video-action', ({ roomId, action, time, videoId, userInitiated }) => {
+  socket.on('video-action', ({ roomId, action, time, videoId, playlistItemId, userInitiated }) => {
     const room = rooms.get(roomId);
     if (!room) return;
 
@@ -815,8 +857,13 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Lưu video/item cũ TRƯỚC KHI cập nhật để truyền vào setPlaylistPlaying
+    const prevVideoId = room.videoState.id;
+    const prevItemId = room.videoState.playlistItemId;
+
     // Cập nhật trạng thái video của phòng
     if (videoId) room.videoState.id = videoId;
+    if (playlistItemId) room.videoState.playlistItemId = playlistItemId;
     if (time !== undefined) room.videoState.time = time;
     if (action === 'play') {
       room.videoState.playing = true;
@@ -831,7 +878,7 @@ io.on('connection', (socket) => {
     }
     room.videoState.lastUpdated = Date.now();
     if (videoId) {
-      setPlaylistPlaying(room, videoId);
+      setPlaylistPlaying(room, playlistItemId, videoId, prevItemId, prevVideoId);
       room.playlist = sortPlaylist(room.playlist);
     }
     rememberRoomState(room);
@@ -869,9 +916,12 @@ io.on('connection', (socket) => {
     const sender = room.members.find(m => m.id === socket.id);
     const addedBy = sender ? sender.username : 'Ẩn danh';
 
-    // Kiểm tra xem bài hát đã tồn tại trong hàng đợi chưa
-    const exists = room.playlist.some(item => item.videoId === videoId);
-    if (exists) return;
+    const queuedItems = room.playlist.filter(item => item.status === 'queued' && item.queueOrder !== undefined);
+    let nextQueueOrder = undefined;
+    if (queuedItems.length > 0) {
+      const maxOrder = Math.max(...queuedItems.map(item => item.queueOrder));
+      nextQueueOrder = maxOrder + 1;
+    }
 
     const newItem = {
       id: `${Date.now()}-${Math.random()}`,
@@ -881,7 +931,8 @@ io.on('connection', (socket) => {
       votes: 1, // Bắt đầu bằng 1 vote từ người thêm
       votedUsers: [socket.id],
       addedBy,
-      status: 'queued'
+      status: 'queued',
+      queueOrder: nextQueueOrder
     };
 
     // wasEmpty: playlist trống VÀ không có video nào đang phát (kể cả video mặc định cũ đang lỗi)
@@ -898,10 +949,11 @@ io.on('connection', (socket) => {
     // Nếu phòng chưa có video nào đang phát → tự động phát bài vừa thêm
     if (wasEmpty) {
       room.videoState.id = newItem.videoId;
+      room.videoState.playlistItemId = newItem.id;
       room.videoState.time = 0;
       room.videoState.playing = true;
       room.videoState.lastUpdated = Date.now();
-      setPlaylistPlaying(room, newItem.videoId);
+      setPlaylistPlaying(room, newItem.id, newItem.videoId);
       room.playlist = sortPlaylist(room.playlist);
       rememberRoomState(room);
       // Emit playlist và video-sync cùng lúc để tránh race condition
@@ -974,6 +1026,67 @@ io.on('connection', (socket) => {
     rememberRoomState(room);
     io.to(roomId).emit('update-playlist', room.playlist);
     updateRoomMembersSongs(roomId, room.playlist.find(song => song.status === 'playing')?.title || room.playlist[0]?.title || 'Dang nghe nhac Lofi');
+  });
+
+  // Reset playlist: đưa tất cả bài 'played' về 'queued' để phát lại
+  socket.on('reset-playlist', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const sender = room.members.find(m => m.id === socket.id);
+    if (!sender?.isHost) return;
+
+    const now = Date.now();
+    room.playlist = room.playlist.map((item, idx) => {
+      if (item.status === 'played') {
+        return {
+          ...item,
+          status: 'queued',
+          playedAt: undefined,
+          votes: 0,
+          votedUsers: [],
+          queueOrder: 1000 + idx, // đặt sau các bài queued hiện tại
+        };
+      }
+      return item;
+    });
+    room.playlist = sortPlaylist(room.playlist);
+    rememberRoomState(room);
+    io.to(roomId).emit('update-playlist', room.playlist);
+    sendSystemMessage(roomId, `${sender.username} đã reset danh sách phát. Tất cả bài hát có thể phát lại!`);
+  });
+
+  socket.on('reorder-playlist', ({ roomId, orderedIds }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+
+    const sender = room.members.find(m => m.id === socket.id);
+    if (!sender?.isHost) return;
+
+    const playlistMap = new Map(room.playlist.map(item => [item.id, item]));
+    const newPlaylist = [];
+
+    orderedIds.forEach(id => {
+      const item = playlistMap.get(id);
+      if (item) {
+        newPlaylist.push(item);
+        playlistMap.delete(id);
+      }
+    });
+
+    playlistMap.forEach(item => {
+      newPlaylist.push(item);
+    });
+
+    let queuedIndex = 0;
+    room.playlist = newPlaylist.map(item => {
+      if (item.status === 'queued') {
+        return { ...item, queueOrder: queuedIndex++ };
+      }
+      return { ...item, queueOrder: undefined };
+    });
+
+    rememberRoomState(room);
+    io.to(roomId).emit('update-playlist', room.playlist);
   });
 
   socket.on('pomodoro-control', ({ roomId, action, duration, isBreak }) => {

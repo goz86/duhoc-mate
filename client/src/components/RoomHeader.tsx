@@ -1,5 +1,5 @@
 import { Crown, LogOut, Share2, UserPlus, Users } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import duhocMateLogo from '../assets/duhoc-mate-logo-new.png'
 import LanguageSwitcher from './LanguageSwitcher'
@@ -38,6 +38,19 @@ export default function RoomHeader({
 }: RoomHeaderProps) {
   const { t } = useTranslation()
   const [showMembers, setShowMembers] = useState(false)
+  const membersRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (membersRef.current && !membersRef.current.contains(event.target as Node)) {
+        setShowMembers(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between border-b border-brand-terracotta-light/20 bg-white/75 px-5 py-3 backdrop-blur-md">
@@ -53,7 +66,7 @@ export default function RoomHeader({
           </span>
         </div>
 
-        <div className="relative">
+        <div className="relative" ref={membersRef}>
           <button
             type="button"
             onClick={() => setShowMembers(prev => !prev)}

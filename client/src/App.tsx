@@ -9,10 +9,11 @@ import {
   Headphones, Music2, ChevronRight, Search, Sparkles,
   Minimize2, Palette, Settings, Crown,
   Link2, Volume2, VolumeX, SkipForward, Plus, Share2, X, Trash2,
-  Mic, MicOff, PhoneOff
+  Mic, MicOff, PhoneOff, GripVertical
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
 import { useTranslation } from 'react-i18next';
+import QRCode from 'qrcode';
 import { useAuth } from './contexts/AuthContext';
 import AuthModal from './components/AuthModal';
 import TopikStudy from './components/TopikStudy';
@@ -55,6 +56,13 @@ const getApiBaseCandidates = () => {
 };
 
 let socket: Socket;
+if (typeof window !== 'undefined') {
+  const globalAny = window as any;
+  if (!globalAny._socket) {
+    globalAny._socket = io(SOCKET_URL, { autoConnect: true });
+  }
+  socket = globalAny._socket;
+}
 
 
 interface Member {
@@ -80,6 +88,7 @@ interface VideoState {
   id: string;
   time: number;
   playing: boolean;
+  playlistItemId?: string;
 }
 
 interface Message {
@@ -282,7 +291,35 @@ export default function App() {
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [ideaTasks, setIdeaTasks] = useState<IdeaTask[]>([]);
   const [roomCollapsed, setRoomCollapsed] = useState(false);
+  useEffect(() => {
+    if (stageMode !== 'youtube') {
+      setRoomCollapsed(false);
+    }
+  }, [stageMode]);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const loadingNewVideoRef = useRef(false);
+
+  useEffect(() => {
+    if (showInviteModal && roomId) {
+      const inviteUrl = `${window.location.origin}${window.location.pathname}#room/${roomId}`;
+      QRCode.toDataURL(inviteUrl, {
+        width: 220,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      })
+      .then(url => {
+        setQrCodeUrl(url);
+      })
+      .catch(err => {
+        console.error('Failed to generate QR code:', err);
+      });
+    }
+  }, [showInviteModal, roomId]);
+
   const [showRoomSettings, setShowRoomSettings] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [roomTheme, setRoomTheme] = useState<'cream' | 'midnight' | 'sakura' | 'ocean' | 'forest' | 'sunset' | 'neon' | 'arctic'>('cream');
@@ -313,6 +350,7 @@ export default function App() {
   const playlistRef = useRef<PlaylistItem[]>(playlist);
   useEffect(() => { playlistRef.current = playlist; }, [playlist]);
   const advancingPlaylistRef = useRef(false);
+  const playlistScrollRef = useRef<HTMLDivElement>(null);
   const roomIdRef = useRef(roomId);
   useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
   const isHostRef = useRef(isHost);
@@ -343,6 +381,8 @@ export default function App() {
   const [showYoutubeCaptions, setShowYoutubeCaptions] = useState(false);
   const activeLyricRef = useRef<HTMLParagraphElement>(null);
   const lastSearchQueryRef = useRef('');
+  const dragItemRef = useRef<number | null>(null);
+  const dragOverItemRef = useRef<number | null>(null);
 
   useEffect(() => {
     const trimmed = songSearch.trim();
@@ -403,15 +443,21 @@ export default function App() {
     advancingPlaylistRef.current = true;
     hostWantsToPlayRef.current = true;
     hostLastPauseAtRef.current = 0;
-    const nextVideoState = { id: nextItem.videoId, time: 0, playing: true };
+    const nextVideoState = { id: nextItem.videoId, time: 0, playing: true, playlistItemId: nextItem.id };
     setVideoError(false);
     setCurrentVideo(nextVideoState);
-    (player || playerRef.current)?.loadVideoById?.(nextItem.videoId, 0);
+    const activePlayer = player || playerRef.current;
+    const currentVideoIdInPlayer = activePlayer?.getVideoData?.()?.video_id;
+    if (currentVideoIdInPlayer !== nextItem.videoId) {
+      loadingNewVideoRef.current = true;
+      activePlayer?.loadVideoById?.(nextItem.videoId, 0);
+    }
     socket.emit('video-action', {
       roomId: roomIdRef.current,
       action: 'play',
       time: 0,
       videoId: nextItem.videoId,
+      playlistItemId: nextItem.id,
       userInitiated: true,
     });
     return true;
@@ -464,7 +510,17 @@ export default function App() {
 
   // 1. Kết nối socket & Khởi tạo
   useEffect(() => {
-    socket = io(SOCKET_URL);
+    if (typeof window !== 'undefined') {
+      const globalAny = window as any;
+      if (!globalAny._socket) {
+        globalAny._socket = io(SOCKET_URL);
+      }
+      socket = globalAny._socket;
+    }
+
+    if (socket && !socket.connected) {
+      socket.connect();
+    }
 
     socket.on('room-users', (users: Member[]) => {
       setMembers(prev => {
@@ -612,7 +668,9 @@ export default function App() {
 
       if (!playerRef.current) return;
 
-      if (videoId && playerRef.current.getVideoData?.().video_id !== videoId) {
+      const currentVideoIdInPlayer = playerRef.current.getVideoData?.()?.video_id;
+      if (videoId && currentVideoIdInPlayer !== videoId) {
+        loadingNewVideoRef.current = true;
         playerRef.current.loadVideoById(videoId, time || 0);
       }
 
@@ -700,7 +758,26 @@ export default function App() {
     socket.emit('request-active-rooms');
 
     return () => {
-      socket.disconnect();
+      if (socket) {
+        socket.off('room-users');
+        socket.off('init-room-state');
+        socket.off('assigned-host');
+        socket.off('room-settings-updated');
+        socket.off('room-closed');
+        socket.off('receive-message');
+        socket.off('update-playlist');
+        socket.off('video-sync');
+        socket.off('pomodoro-sync');
+        socket.off('idea-board-sync');
+        socket.off('pomodoro-done');
+        socket.off('slide-url-sync');
+        socket.off('active-rooms-list');
+        socket.off('tiktok-sync');
+        socket.off('online-users-changed');
+        socket.off('join-room-error');
+        // Không disconnect socket vì được share qua window._socket
+        // socket.disconnect() sẽ cắt kết nối WebSocket thật → update-playlist không nhận được
+      }
     };
   }, []);
 
@@ -731,6 +808,22 @@ export default function App() {
       }
     }
   }, [username, friendCode]);
+
+  // Tự động cuộn xuống cuối khi có bài mới được thêm vào danh sách
+  const prevPlaylistLengthRef = useRef(0);
+  useEffect(() => {
+    const newLen = playlist.length;
+    const prevLen = prevPlaylistLengthRef.current;
+    if (newLen > prevLen && playlistScrollRef.current) {
+      // Delay nhỏ để DOM render xong rồi mới scroll
+      setTimeout(() => {
+        if (playlistScrollRef.current) {
+          playlistScrollRef.current.scrollTo({ top: playlistScrollRef.current.scrollHeight, behavior: 'smooth' });
+        }
+      }, 80);
+    }
+    prevPlaylistLengthRef.current = newLen;
+  }, [playlist.length]);
 
   // Tự động cuộn danh sách phát để đưa bài đang phát vào chính giữa
   useEffect(() => {
@@ -834,6 +927,22 @@ export default function App() {
               cvrPlaying: cvr.playing
             });
 
+            // 1. Reset loading flag when the video successfully starts playing
+            if (state === 1) {
+              loadingNewVideoRef.current = false;
+              advancingPlaylistRef.current = false;
+            }
+
+            // 2. Autoplay enforcement during transition / load
+            if (loadingNewVideoRef.current && (state === 2 || state === 5 || state === -1)) {
+              const wantsToPlay = isHostRef.current ? cvr.playing : !isHostPausedRef.current;
+              if (wantsToPlay) {
+                console.log(`[YT-STATE] ${isHostRef.current ? 'HOST' : 'NON-HOST'} forcing play during video transition (state=${state})`);
+                event.target.playVideo();
+                return;
+              }
+            }
+
             // Non-host: chỉ cập nhật local state, KHÔNG emit socket
             if (!isHostRef.current) {
               // state=1 (playing) hoặc state=3 (buffering) khi host đã pause → PAUSE ngay lập tức
@@ -858,9 +967,6 @@ export default function App() {
             // Differentiate 2 cases of state=1 sau khi pause:
             // - Spurious từ YouTube (sau buffer/seek/ad) thường < 2s sau pause → CHẶN
             // - User explicitly click YouTube native play → ALLOW (sincePause > 2s)
-            if (state === 1) {
-              advancingPlaylistRef.current = false;
-            }
 
             if (state === 0 && !advancingPlaylistRef.current) {
               advanceToNextPlaylistItem(event.target);
@@ -907,15 +1013,19 @@ export default function App() {
       }
     } else {
       if (playerRef.current.loadVideoById) {
-        setPlayerVideoTitle('');
-        setVideoDuration(0);
-        playerRef.current.loadVideoById(currentVideo.id, currentVideo.time || 0);
-        setTimeout(() => {
-          const title = playerRef.current?.getVideoData?.()?.title;
-          if (title) setPlayerVideoTitle(title);
-          const duration = playerRef.current?.getDuration?.();
-          if (typeof duration === 'number' && duration > 0) setVideoDuration(duration);
-        }, 700);
+        const currentVideoIdInPlayer = playerRef.current.getVideoData?.()?.video_id;
+        if (currentVideoIdInPlayer !== currentVideo.id) {
+          loadingNewVideoRef.current = true;
+          setPlayerVideoTitle('');
+          setVideoDuration(0);
+          playerRef.current.loadVideoById(currentVideo.id, currentVideo.time || 0);
+          setTimeout(() => {
+            const title = playerRef.current?.getVideoData?.()?.title;
+            if (title) setPlayerVideoTitle(title);
+            const duration = playerRef.current?.getDuration?.();
+            if (typeof duration === 'number' && duration > 0) setVideoDuration(duration);
+          }, 700);
+        }
       }
     }
 
@@ -966,15 +1076,19 @@ export default function App() {
     if (!currentVideo.id) return;
 
     if (playerRef.current.loadVideoById) {
-      setPlayerVideoTitle('');
-      setVideoDuration(0);
-      playerRef.current.loadVideoById(currentVideo.id, currentVideo.time || 0);
-      setTimeout(() => {
-        const title = playerRef.current?.getVideoData?.()?.title;
-        if (title) setPlayerVideoTitle(title);
-        const duration = playerRef.current?.getDuration?.();
-        if (typeof duration === 'number' && duration > 0) setVideoDuration(duration);
-      }, 700);
+      const currentVideoIdInPlayer = playerRef.current.getVideoData?.()?.video_id;
+      if (currentVideoIdInPlayer !== currentVideo.id) {
+        loadingNewVideoRef.current = true;
+        setPlayerVideoTitle('');
+        setVideoDuration(0);
+        playerRef.current.loadVideoById(currentVideo.id, currentVideo.time || 0);
+        setTimeout(() => {
+          const title = playerRef.current?.getVideoData?.()?.title;
+          if (title) setPlayerVideoTitle(title);
+          const duration = playerRef.current?.getDuration?.();
+          if (typeof duration === 'number' && duration > 0) setVideoDuration(duration);
+        }, 700);
+      }
       // Nếu host đang pause toàn phòng và ta là non-host → pause ngay sau khi load
       if (isHostPausedRef.current && !isHostRef.current) {
         setTimeout(() => playerRef.current?.pauseVideo?.(), 300);
@@ -1560,13 +1674,39 @@ export default function App() {
       const response = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
       const data = await response.json();
       const title = data.title || `Video YouTube (${videoId})`;
+      // Optimistic update: hiện bài ngay lập tức
+      const optimisticItem: PlaylistItem = {
+        id: `optimistic-${Date.now()}`,
+        videoId,
+        title,
+        duration: '04:30',
+        votes: 1,
+        votedUsers: [],
+        addedBy: username,
+        status: 'queued',
+      };
+      setPlaylist(prev => [...prev, optimisticItem]);
       socket.emit('add-to-playlist', { roomId, videoId, title, duration: '04:30' });
     } catch {
-      socket.emit('add-to-playlist', { roomId, videoId, title: `Bài hát (${videoId})`, duration: '05:00' });
+      const title = `Bài hát (${videoId})`;
+      // Optimistic update khi không lấy được title
+      const optimisticItem: PlaylistItem = {
+        id: `optimistic-${Date.now()}`,
+        videoId,
+        title,
+        duration: '05:00',
+        votes: 1,
+        votedUsers: [],
+        addedBy: username,
+        status: 'queued',
+      };
+      setPlaylist(prev => [...prev, optimisticItem]);
+      socket.emit('add-to-playlist', { roomId, videoId, title, duration: '05:00' });
     }
     setSongSearch('');
     setShowSearchResults(false);
   };
+
 
   // Tìm kiếm nhạc qua Invidious API (proxy server)
   const handleSearchMusic = async () => {
@@ -1602,6 +1742,18 @@ export default function App() {
 
   // Thêm bài từ kết quả tìm kiếm
   const addSongFromResult = (result: any) => {
+    // Optimistic update: hiện ngay trong playlist
+    const optimisticItem: PlaylistItem = {
+      id: `optimistic-${Date.now()}`,
+      videoId: result.videoId,
+      title: result.title,
+      duration: result.duration || '00:00',
+      votes: 1,
+      votedUsers: [],
+      addedBy: username,
+      status: 'queued',
+    };
+    setPlaylist(prev => [...prev, optimisticItem]);
     socket.emit('add-to-playlist', {
       roomId,
       videoId: result.videoId,
@@ -1614,7 +1766,20 @@ export default function App() {
     setSidebarTab('playlist');
   };
 
+
   const addSuggestedVideo = (suggestion: typeof trendingVideoSuggestions[number]) => {
+    // Optimistic update: hiện ngay trong playlist
+    const optimisticItem: PlaylistItem = {
+      id: `optimistic-${Date.now()}`,
+      videoId: suggestion.videoId,
+      title: suggestion.title,
+      duration: suggestion.duration || '00:00',
+      votes: 1,
+      votedUsers: [],
+      addedBy: username,
+      status: 'queued',
+    };
+    setPlaylist(prev => [...prev, optimisticItem]);
     socket.emit('add-to-playlist', {
       roomId,
       videoId: suggestion.videoId,
@@ -1627,6 +1792,45 @@ export default function App() {
   };
 
 
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    if (!isHost) return;
+    dragItemRef.current = index;
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    if (!isHost) return;
+    e.preventDefault();
+    dragOverItemRef.current = index;
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!isHost) return;
+    e.preventDefault();
+    const dragIndex = dragItemRef.current;
+    const hoverIndex = dragOverItemRef.current;
+    if (dragIndex === null || hoverIndex === null || dragIndex === hoverIndex) return;
+
+    const dragItem = playlist[dragIndex];
+    const hoverItem = playlist[hoverIndex];
+    if (!dragItem || !hoverItem || dragItem.status !== 'queued' || hoverItem.status !== 'queued') {
+      return;
+    }
+
+    const newPlaylist = [...playlist];
+    const [removed] = newPlaylist.splice(dragIndex, 1);
+    newPlaylist.splice(hoverIndex, 0, removed);
+
+    const orderedIds = newPlaylist.map(item => item.id);
+    socket?.emit('reorder-playlist', { roomId, orderedIds });
+    setPlaylist(newPlaylist);
+  };
+
+  const handleDragEnd = () => {
+    dragItemRef.current = null;
+    dragOverItemRef.current = null;
+  };
+
   const voteSong = (songId: string) => {
     socket.emit('vote-song', { roomId, songId });
   };
@@ -1637,12 +1841,16 @@ export default function App() {
 
   const playSong = (item: PlaylistItem) => {
     // Cập nhật state local ngay lập tức (không chờ server echo lại)
-    const newVideoState = { id: item.videoId, time: 0, playing: true };
+    const newVideoState = { id: item.videoId, time: 0, playing: true, playlistItemId: item.id };
     setCurrentVideo(newVideoState);
 
     // Nếu player đã tồn tại → loadVideoById trực tiếp
     if (playerRef.current && playerRef.current.loadVideoById) {
-      playerRef.current.loadVideoById(item.videoId, 0);
+      const currentVideoIdInPlayer = playerRef.current.getVideoData?.()?.video_id;
+      if (currentVideoIdInPlayer !== item.videoId) {
+        loadingNewVideoRef.current = true;
+        playerRef.current.loadVideoById(item.videoId, 0);
+      }
     } else {
       // Player chưa sẵn sàng → destroy và re-init qua useEffect (trigger bởi currentVideo.id thay đổi)
       playerRef.current = null;
@@ -1653,7 +1861,8 @@ export default function App() {
       roomId, 
       action: 'play', 
       time: 0, 
-      videoId: item.videoId 
+      videoId: item.videoId,
+      playlistItemId: item.id
     });
     // Xóa bài đó ra khỏi hàng đợi
   };
@@ -1697,13 +1906,13 @@ export default function App() {
   const handleSlideUrlSubmit = () => {
     if (!isHost) return;
     const embedUrl = convertToEmbedUrl(slideInputUrl);
-    socket.emit('slide-url-set', { roomId, url: embedUrl });
+    socket?.emit('slide-url-set', { roomId, url: embedUrl });
   };
 
   const handleClearSlide = () => {
     if (!isHost) return;
     setSlideInputUrl('');
-    socket.emit('slide-url-set', { roomId, url: '' });
+    socket?.emit('slide-url-set', { roomId, url: '' });
   };
 
   useEffect(() => {
@@ -2070,11 +2279,17 @@ export default function App() {
               </button>
             </div>
             <div className="mt-6 rounded-3xl border border-brand-terracotta-light/25 bg-brand-light/35 p-5 text-center">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`${window.location.origin}?room=${roomId}`)}`}
-                alt="QR mời vào phòng"
-                className="mx-auto h-56 w-56 rounded-2xl bg-white p-3"
-              />
+              {qrCodeUrl ? (
+                <img
+                  src={qrCodeUrl}
+                  alt="QR mời vào phòng"
+                  className="mx-auto h-56 w-56 rounded-2xl bg-white p-3"
+                />
+              ) : (
+                <div className="mx-auto h-56 w-56 rounded-2xl bg-white p-3 flex items-center justify-center text-brand-brown-light text-xs font-bold animate-pulse">
+                  Đang tạo mã QR...
+                </div>
+              )}
             </div>
             <div className="mt-5 text-center">
               <p className="text-xs font-bold text-brand-brown-light">Mã phòng</p>
@@ -2084,7 +2299,8 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}?room=${roomId}`);
+                  const inviteUrl = `${window.location.origin}${window.location.pathname}#room/${roomId}`;
+                  navigator.clipboard.writeText(inviteUrl);
                   setCustomAlert({ message: 'Đã sao chép link mời vào phòng.', show: true });
                 }}
                 className="flex-1 rounded-2xl bg-brand-terracotta py-3 text-sm font-black text-white shadow-md shadow-brand-terracotta/20 transition hover:bg-brand-brown-dark"
@@ -2093,7 +2309,10 @@ export default function App() {
               </button>
               <button
                 type="button"
-                onClick={() => navigator.share?.({ title: 'Duhoc Mate', text: `Vào phòng ${roomId}`, url: `${window.location.origin}?room=${roomId}` })}
+                onClick={() => {
+                  const inviteUrl = `${window.location.origin}${window.location.pathname}#room/${roomId}`;
+                  navigator.share?.({ title: 'Duhoc Mate', text: `Vào phòng ${roomId}`, url: inviteUrl });
+                }}
                 className="rounded-2xl border border-brand-terracotta-light/25 bg-white px-4 text-brand-brown-dark transition hover:bg-brand-light"
               >
                 <Share2 size={18} />
@@ -2375,12 +2594,13 @@ export default function App() {
           />
 
           <div className="flex flex-wrap items-center gap-2 border-b border-brand-terracotta-light/15 bg-white/55 px-5 py-3 backdrop-blur">
-            <button onClick={() => setRoomCollapsed(prev => !prev)} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
-              <Minimize2 size={14} /> {roomCollapsed ? 'Trở lại phòng' : 'Thu gọn player'}
-            </button>
+            {stageMode === 'youtube' && (
+              <button onClick={() => setRoomCollapsed(prev => !prev)} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
+                <Minimize2 size={14} /> {roomCollapsed ? 'Trở lại phòng' : 'Thu gọn player'}
+              </button>
+            )}
             <button onClick={copyRoomInvite} className="inline-flex items-center gap-2 rounded-full border border-brand-terracotta/20 bg-brand-terracotta px-4 py-2 text-xs font-black text-white shadow-md shadow-brand-terracotta/15 transition hover:bg-brand-brown-dark">
-              <Link2 size={14} /> Mời vào phòng
-              <span className="rounded-full bg-white/18 px-2 py-0.5 font-mono text-[10px]">{roomId}</span>
+              <Link2 size={14} /> Link mời
             </button>
             <button onClick={() => setShowThemeModal(true)} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
               <Palette size={14} /> Giao diện
@@ -2952,7 +3172,10 @@ export default function App() {
                             className="absolute rounded-full border border-white/15"
                             style={{
                               inset: `${i * 14}%`,
-                              animation: `ping ${1.2 + i * 0.5}s cubic-bezier(0,0,0.2,1) infinite`,
+                              animationName: 'ping',
+                              animationDuration: `${1.2 + i * 0.5}s`,
+                              animationTimingFunction: 'cubic-bezier(0,0,0.2,1)',
+                              animationIterationCount: 'infinite',
                               animationDelay: `${i * 0.4}s`
                             }}
                           />
@@ -3212,7 +3435,7 @@ export default function App() {
                       </div>
 
                       {/* Quick Tags */}
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 items-center">
                         {[
                           { icon: <Sparkles size={13} />, label: 'Lofi Girl', q: 'lofi girl study' },
                           { icon: <CloudRain size={13} />, label: 'Tiếng Mưa Cozy', q: 'rain cozy study music' },
@@ -3294,10 +3517,26 @@ export default function App() {
                       )}
                     </div>
 
-                    <div className="h-[1px] bg-brand-terracotta-light/10 my-0 shrink-0" />
+                    {/* Playlist Header + Reset Button */}
+                    <div className="flex items-center justify-between px-1 py-1.5 shrink-0">
+                      <span className="text-[11px] font-black uppercase tracking-wide text-brand-brown-light/60">
+                        Danh sách phát · {playlist.length} bài
+                      </span>
+                      {isHost && playlist.some(item => item.status === 'played') && (
+                        <button
+                          type="button"
+                          onClick={() => socket.emit('reset-playlist', { roomId })}
+                          title="Đưa tất cả bài đã phát về lại danh sách chờ"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300/60 text-[11px] font-bold text-amber-700 transition-all hover:shadow-sm active:scale-95 group"
+                        >
+                          <RotateCcw size={12} className="transition-transform duration-500 group-hover:rotate-[-180deg]" />
+                          Reset DS
+                        </button>
+                      )}
+                    </div>
 
                     {/* Playlist Queue */}
-                    <div className="overflow-y-auto overscroll-y-contain space-y-3 pr-1 flex-1 min-h-0 custom-scrollbar">
+                    <div ref={playlistScrollRef} className="overflow-y-auto overscroll-y-contain space-y-3 pr-1 flex-1 min-h-0 max-h-[420px] lg:max-h-[calc(100vh-330px)] custom-scrollbar">
                       {playlist.length === 0 ? (
                         <div className="py-4 text-brand-brown-light space-y-3">
                           <div className="rounded-2xl border border-dashed border-brand-terracotta-light/40 bg-white/60 p-4 text-center">
@@ -3337,20 +3576,31 @@ export default function App() {
                         </div>
                       ) : (
                         playlist.map((item, idx) => {
-                          const isPlaying = item.status === 'playing' || item.videoId === currentVideo.id;
+                          const isPlaying = currentVideo.playlistItemId
+                            ? item.id === currentVideo.playlistItemId
+                            : (item.status === 'playing' || item.videoId === currentVideo.id);
                           const isActivelyPlaying = isPlaying && currentVideo.playing;
                           const isPlayed = item.status === 'played';
+                          const isQueued = item.status === 'queued';
                           return (
                           <div
                             key={item.id}
+                            draggable={isHost && isQueued}
+                            onDragStart={(e) => handleDragStart(e, idx)}
+                            onDragOver={(e) => handleDragOver(e, idx)}
+                            onDrop={handleDrop}
+                            onDragEnd={handleDragEnd}
                             className={`p-4 rounded-2xl bg-white/60 border border-brand-terracotta-light/10 flex justify-between items-center shadow-sm hover:shadow transition ${
                               isPlaying
                                 ? 'ring-2 ring-brand-terracotta/30 bg-brand-light/35 playing-item-container'
                                 : isPlayed
                                   ? 'opacity-40 grayscale-[30%]'
                                   : idx === 0 ? 'ring-2 ring-brand-terracotta/20 bg-brand-light/30' : ''
-                            }`}
+                            } ${isHost && isQueued ? 'cursor-grab active:cursor-grabbing hover:border-brand-terracotta/30' : ''}`}
                           >
+                            {isHost && isQueued && (
+                              <GripVertical size={14} className="text-brand-brown-light/40 mr-2 shrink-0 cursor-grab" />
+                            )}
                             <div className="space-y-1.5 min-w-0 flex-1 pr-3">
                               <div className="flex items-center gap-2">
                                 {isPlaying ? (
@@ -3361,7 +3611,11 @@ export default function App() {
                                         className="w-1 rounded-full bg-brand-terracotta/80"
                                         style={{
                                           height: `${8 + barIndex * 2}px`,
-                                          animation: isActivelyPlaying ? `playlistEqualizer ${duration}s ease-in-out infinite alternate` : 'none',
+                                          animationName: isActivelyPlaying ? 'playlistEqualizer' : 'none',
+                                          animationDuration: isActivelyPlaying ? `${duration}s` : '0s',
+                                          animationTimingFunction: isActivelyPlaying ? 'ease-in-out' : 'ease',
+                                          animationIterationCount: isActivelyPlaying ? 'infinite' : '1',
+                                          animationDirection: isActivelyPlaying ? 'alternate' : 'normal',
                                           animationDelay: `${barIndex * 0.08}s`,
                                         }}
                                       />
