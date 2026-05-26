@@ -1172,12 +1172,26 @@ export default function App() {
     });
   };
 
-  const sendStudyReaction = (label: string) => {
+  // Dừng timer khi tab bị ẩn, tiếp tục khi tab hiện lại
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!roomIdRef.current || !jitsiActive) return;
+      socket.emit('study-table-action', {
+        roomId: roomIdRef.current,
+        type: 'presence',
+        payload: { active: !document.hidden }
+      });
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [jitsiActive]);
+
+  const sendStudyReaction = (label: string, targetMemberId?: string) => {
     if (!roomIdRef.current) return;
     socket.emit('study-table-action', {
       roomId: roomIdRef.current,
       type: 'reaction',
-      payload: { label }
+      payload: { label, targetMemberId }
     });
   };
 
@@ -3459,6 +3473,7 @@ export default function App() {
                     studyTable={studyTable}
                     jitsiActive={jitsiActive}
                     pomodoro={pomodoro}
+                    chatMessages={chatMessages}
                     onToggleJitsi={toggleJitsi}
                     onControlPomodoro={controlPomodoro}
                     onStudyReaction={sendStudyReaction}

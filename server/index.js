@@ -1193,7 +1193,18 @@ io.on('connection', (socket) => {
     const seat = ensureStudySeat(room, member);
 
     if (type === 'presence') {
-      seat.active = payload.active !== false;
+      const isActive = payload.active !== false;
+      if (isActive && !seat.active) {
+        // Quay lại bàn: cộng dồn thời gian nghỉ
+        if (seat.pausedSince) {
+          seat.totalPausedMs = (seat.totalPausedMs || 0) + (Date.now() - seat.pausedSince);
+          seat.pausedSince = null;
+        }
+      } else if (!isActive && seat.active) {
+        // Rời bàn: đánh dấu thời điểm bắt đầu nghỉ
+        seat.pausedSince = Date.now();
+      }
+      seat.active = isActive;
     }
 
     if (type === 'status' && typeof payload.status === 'string') {
@@ -1218,12 +1229,17 @@ io.on('connection', (socket) => {
 
     if (type === 'reaction') {
       const label = typeof payload.label === 'string' ? payload.label.slice(0, 24) : '';
+      // targetMemberId = người NHẬN reaction; nếu không truyền thì về người gửi
+      const targetMemberId = typeof payload.targetMemberId === 'string' && payload.targetMemberId
+        ? payload.targetMemberId
+        : socket.id;
       if (label) {
         studyTable.reactions = [
-          ...studyTable.reactions.slice(-12),
+          ...studyTable.reactions.slice(-20),
           {
             id: `${socket.id}-${Date.now()}`,
-            memberId: socket.id,
+            memberId: targetMemberId,   // hiển thị trên card của người NHẬN
+            senderId: socket.id,        // ai gửi
             label,
             createdAt: Date.now(),
           }

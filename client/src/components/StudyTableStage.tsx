@@ -58,6 +58,14 @@ type StudyTableState = {
   reactions?: StudyTableReaction[]
 }
 
+type ChatMessage = {
+  id: string
+  sender: string
+  senderId?: string
+  text: string
+  timestamp: string
+}
+
 type StudyTableStageProps = {
   members: StudyMember[]
   username: string
@@ -65,9 +73,10 @@ type StudyTableStageProps = {
   studyTable?: StudyTableState
   jitsiActive: boolean
   pomodoro: PomodoroState
+  chatMessages?: ChatMessage[]
   onToggleJitsi: () => void
   onControlPomodoro: (action: 'start' | 'pause' | 'reset', isBreak?: boolean) => void
-  onStudyReaction?: (label: string) => void
+  onStudyReaction?: (label: string, targetMemberId?: string) => void
   onPersonalPomodoro?: (action: 'start' | 'pause' | 'reset', isBreak?: boolean) => void
 }
 
@@ -116,6 +125,7 @@ export default function StudyTableStage({
   studyTable,
   jitsiActive,
   pomodoro,
+  chatMessages = [],
   onToggleJitsi,
   onControlPomodoro,
   onStudyReaction,
@@ -170,8 +180,22 @@ export default function StudyTableStage({
     return (studyTable?.reactions || []).filter(reaction => reaction.createdAt >= cutoff)
   }, [now, studyTable?.reactions])
 
-  const handleReaction = (option: typeof reactionOptions[number]) => {
-    onStudyReaction?.(option.label)
+  // Chat bubbles: show last message per sender for 2s
+  const chatBubbles = useMemo(() => {
+    const bubbles: Record<string, string> = {}
+    const cutoff = now - 2000
+    chatMessages.forEach(msg => {
+      if (!msg.senderId) return
+      const msgTime = new Date(msg.timestamp).getTime()
+      if (msgTime >= cutoff) {
+        bubbles[msg.senderId] = msg.text
+      }
+    })
+    return bubbles
+  }, [chatMessages, now])
+
+  const handleReaction = (option: typeof reactionOptions[number], targetMemberId: string) => {
+    onStudyReaction?.(option.label, targetMemberId)
   }
 
   const RoomMoodIcon = roomMood.Icon
@@ -242,7 +266,18 @@ export default function StudyTableStage({
               <div className="relative grid max-h-[min(62vh,620px)] w-full grid-cols-[repeat(auto-fill,minmax(min(100%,260px),320px))] content-start justify-start gap-3 overflow-y-auto pr-1 xl:gap-4">
                 {seats.map((member, index) => {
                   const palette = seatPalette[index % seatPalette.length]
-                  const elapsed = Math.max(0, Math.floor((now - (member.study.joinedAt || now)) / 1000))
+                  // Elapsed time: trừ đi tổng thời gian nghỉ (rời bàn / tab ẩn)
+                  const totalPausedMs = (member.study as any).totalPausedMs || 0
+                  const pausedSince = (member.study as any).pausedSince
+                  const isSeated = member.study.active !== false
+                  const rawMs = isSeated
+                    ? now - (member.study.joinedAt || now) - totalPausedMs
+                    : (pausedSince || now) - (member.study.joinedAt || now) - totalPausedMs
+                  const elapsed = Math.max(0, Math.floor(rawMs / 1000))
+
+                  // Chat bubble for this member
+                  const chatBubble = chatBubbles[member.id]
+
                   const personal = member.study.personalPomodoro || {
                     timeLeft: 25 * 60,
                     duration: 25 * 60,
@@ -269,6 +304,17 @@ export default function StudyTableStage({
                       <div className="absolute right-6 top-6 h-1.5 w-7 rounded-full bg-brand-terracotta-light/60" />
 
                       <div className="relative">
+                        {/* Chat bubble – hiện ~2s khi member gửi chat */}
+                        {chatBubble && (
+                          <div className="absolute left-1/2 top-0 z-30 -translate-x-1/2 -translate-y-full pb-1">
+                            <div className="relative max-w-[180px] rounded-2xl rounded-bl-sm border border-brand-terracotta-light/20 bg-white px-3 py-1.5 shadow-md">
+                              <p className="truncate text-[11px] font-bold text-brand-brown-dark">{chatBubble}</p>
+                              <span className="absolute -bottom-1.5 left-4 h-3 w-3 rotate-45 border-b border-r border-brand-terracotta-light/20 bg-white" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Reaction bubbles – hiện 3s khi nhận reaction */}
                         <div className="absolute left-1/2 top-0 z-20 flex -translate-x-1/2 -translate-y-2 flex-col items-center gap-1">
                           {activeReactions.map((reaction, reactionIndex) => {
                             const reactionMeta = reactionOptions.find(option => option.label === reaction.label) || reactionOptions[0]
@@ -330,62 +376,76 @@ export default function StudyTableStage({
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-2">
+                          {/* Ngồi bàn timer */}
                           <div className="rounded-xl border border-brand-terracotta-light/20 bg-white/70 px-3 py-2">
                             <p className="text-[9px] font-black uppercase text-brand-brown-light">Ngồi bàn</p>
-                            <p className="mt-0.5 font-display text-base font-black tabular-nums text-brand-brown-dark">{formatDeskTime(elapsed)}</p>
+                            <p className="mt-0.5 font-display text-base font-black tabular-nums text-brand-brown-dark">
+                              {isSeated ? formatDeskTime(elapsed) : <span className="text-slate-400">—</span>}
+                            </p>
                           </div>
+
+                          {/* Pomo riêng – controls bên trong box */}
                           <div className="rounded-xl border border-brand-terracotta-light/20 bg-white/70 px-3 py-2">
-                            <p className="text-[9px] font-black uppercase text-brand-brown-light">Pomo riêng</p>
-                            <p className="mt-0.5 font-display text-base font-black tabular-nums text-brand-brown-dark">{formatMinuteTime(personalLeft)}</p>
+                            <div className="flex items-center justify-between">
+                              <p className="text-[9px] font-black uppercase text-brand-brown-light">Pomo riêng</p>
+                              {isLocal && onPersonalPomodoro && (
+                                <div className="flex gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => onPersonalPomodoro(personal.isRunning ? 'pause' : 'start')}
+                                    className={`grid h-5 w-5 place-items-center rounded-full transition ${
+                                      personal.isRunning
+                                        ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                                        : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                    }`}
+                                    title={personal.isRunning ? 'Tạm dừng' : 'Bắt đầu'}
+                                  >
+                                    {personal.isRunning ? <Pause size={9} /> : <Play size={9} />}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => onPersonalPomodoro('reset', false)}
+                                    className="grid h-5 w-5 place-items-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+                                    title="Reset"
+                                  >
+                                    <RotateCcw size={9} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            <p className="mt-0.5 font-display text-base font-black tabular-nums text-brand-brown-dark">
+                              {formatMinuteTime(personalLeft)}
+                            </p>
                           </div>
                         </div>
 
                         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-brand-terracotta-light/25">
                           <div
-                            className={`h-full rounded-full ${isPersonalBreak ? 'bg-amber-400' : 'bg-emerald-400'}`}
+                            className={`h-full rounded-full transition-all duration-700 ${isPersonalBreak ? 'bg-amber-400' : 'bg-emerald-400'}`}
                             style={{ width: `${Math.max(6, personalProgress)}%` }}
                           />
                         </div>
 
-                        {isLocal && onPersonalPomodoro && (
-                          <div className="mt-2 flex gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => onPersonalPomodoro(personal.isRunning ? 'pause' : 'start')}
-                              className="inline-flex flex-1 items-center justify-center gap-1 rounded-full border border-brand-terracotta-light/20 bg-white/75 px-2 py-1 text-[9px] font-black text-brand-brown-dark transition hover:bg-brand-light"
-                            >
-                              {personal.isRunning ? <Pause size={10} /> : <Play size={10} />}
-                              {personal.isRunning ? 'Tạm dừng' : 'Bắt đầu'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => onPersonalPomodoro('reset', false)}
-                              className="inline-flex items-center justify-center rounded-full border border-brand-terracotta-light/20 bg-white/75 px-2 py-1 text-[9px] font-black text-brand-brown-light transition hover:bg-brand-light"
-                              title="Reset Pomodoro riêng"
-                            >
-                              <RotateCcw size={10} />
-                            </button>
+                        {/* Reactions — chỉ hiện trên card của NGƯỜI KHÁC */}
+                        {!isLocal && (
+                          <div className={`mt-3 flex flex-wrap gap-1.5 ${isCrowded ? 'max-h-8 overflow-hidden' : ''}`}>
+                            {reactionOptions.map(option => {
+                              const OptionIcon = option.Icon
+                              return (
+                                <button
+                                  key={option.label}
+                                  type="button"
+                                  onClick={() => handleReaction(option, member.id)}
+                                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-black transition hover:-translate-y-0.5 hover:shadow-sm active:scale-95 ${option.tone}`}
+                                  title={`Gửi ${option.label} cho ${member.username}`}
+                                >
+                                  <OptionIcon size={10} />
+                                  <span>{option.label}</span>
+                                </button>
+                              )
+                            })}
                           </div>
                         )}
-
-                        <div className={`mt-3 flex flex-wrap gap-1.5 ${isCrowded ? 'max-h-8 overflow-hidden' : ''}`}>
-                          {reactionOptions.map(option => {
-                            const OptionIcon = option.Icon
-
-                            return (
-                              <button
-                                key={option.label}
-                                type="button"
-                                onClick={() => handleReaction(option)}
-                                className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-black transition hover:-translate-y-0.5 hover:shadow-sm ${option.tone}`}
-                                title={`Gửi biểu cảm: ${option.label}`}
-                              >
-                                <OptionIcon size={10} />
-                                <span>{option.label}</span>
-                              </button>
-                            )
-                          })}
-                        </div>
                       </div>
                     </article>
                   )
