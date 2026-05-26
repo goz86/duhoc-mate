@@ -380,6 +380,7 @@ export default function App() {
   const [showLyrics, setShowLyrics] = useState(false);
   const [showYoutubeCaptions, setShowYoutubeCaptions] = useState(false);
   const activeLyricRef = useRef<HTMLParagraphElement>(null);
+  const miniActiveLyricRef = useRef<HTMLParagraphElement>(null);
   const lastSearchQueryRef = useRef('');
   const dragItemRef = useRef<number | null>(null);
   const dragOverItemRef = useRef<number | null>(null);
@@ -2121,6 +2122,7 @@ export default function App() {
 
   React.useEffect(() => {
     activeLyricRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    miniActiveLyricRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }, [activeLyricIndex]);
 
   return (
@@ -2714,6 +2716,7 @@ export default function App() {
                                   return (
                                     <p
                                       key={`mini-${line.time}-${index}`}
+                                      ref={isActive ? miniActiveLyricRef : undefined}
                                       onDoubleClick={() => syncLyricsToLine(line)}
                                       title="Nhấn đúp để đồng bộ dòng này với video"
                                       className={`rounded-xl px-3 py-2 text-sm leading-relaxed transition ${
