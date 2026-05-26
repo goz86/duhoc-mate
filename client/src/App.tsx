@@ -2636,7 +2636,7 @@ export default function App() {
               <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : 'flex-1 glass-panel rounded-3xl p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col'} relative ${stageMode === 'pdf' ? 'overflow-visible' : 'overflow-hidden'}`}>
 
                 {roomCollapsed && (
-                  <div className="w-full max-w-xl space-y-8 text-center">
+                  <div className="w-full max-w-xl space-y-5 text-center">
                     <h2 className="font-display text-lg font-black text-brand-brown-light">{activeVideoTitle}</h2>
                     <div className="rounded-3xl border border-brand-terracotta-light/25 bg-white/75 p-5 shadow-sm">
                       <div className="flex items-center gap-3 text-[11px] font-bold text-brand-brown-light">
@@ -2691,6 +2691,49 @@ export default function App() {
                         </button>
                       </div>
                     </div>
+                    {(lyrics || lyricsLoading) && (
+                      <div className="rounded-3xl border border-brand-terracotta-light/25 bg-white/80 p-4 text-left shadow-sm">
+                        <button
+                          type="button"
+                          onClick={() => setShowLyrics(v => !v)}
+                          className={`mx-auto flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-black shadow-sm transition ${showLyrics ? 'border-brand-terracotta bg-brand-terracotta text-white' : 'border-brand-terracotta-light/30 bg-white text-brand-brown-dark hover:bg-brand-light'}`}
+                        >
+                          <Music2 size={12} /> {showLyrics ? 'Ẩn lời video' : 'Hiện lời video'}
+                        </button>
+                        {showLyrics && (
+                          <div className="mt-4 max-h-56 overflow-y-auto pr-2">
+                            <p className="mb-3 text-center text-[11px] font-bold text-brand-brown-light/75">
+                              Nhấn đúp vào một dòng để chỉnh lời bài hát khớp với video.
+                            </p>
+                            {lyricsLoading ? (
+                              <p className="py-6 text-center text-xs font-bold text-brand-brown-light animate-pulse">Đang tải lời bài hát...</p>
+                            ) : displayLyricLines.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {displayLyricLines.map((line: LyricLine, index: number) => {
+                                  const isActive = index === activeLyricIndex;
+                                  return (
+                                    <p
+                                      key={`mini-${line.time}-${index}`}
+                                      onDoubleClick={() => syncLyricsToLine(line)}
+                                      title="Nhấn đúp để đồng bộ dòng này với video"
+                                      className={`rounded-xl px-3 py-2 text-sm leading-relaxed transition ${
+                                        isActive
+                                          ? 'bg-brand-terracotta/10 font-black text-brand-terracotta'
+                                          : 'font-semibold text-brand-brown-light'
+                                      }`}
+                                    >
+                                      {line.text}
+                                    </p>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-brand-brown-dark">{lyrics}</pre>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => setRoomCollapsed(false)}
@@ -2707,7 +2750,7 @@ export default function App() {
 
                 {/* ── 1. YOUTUBE STAGE (16:9) ── */}
                 <div className={`${stageMode === 'youtube' && !roomCollapsed ? 'flex flex-1 flex-col gap-3 h-full justify-start overflow-y-auto pr-1' : 'absolute h-px w-px overflow-hidden opacity-0 pointer-events-none'}`} aria-hidden={stageMode !== 'youtube' || roomCollapsed}>
-                    <div className={`mx-auto grid w-full max-w-[1180px] gap-3 ${showLyrics && (lyrics || lyricsLoading) ? 'xl:grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1'}`}>
+                    <div className={`mx-auto grid w-full max-w-[1180px] items-start gap-3 ${showLyrics && (lyrics || lyricsLoading) ? 'xl:grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1'}`}>
                     <div
                       className="relative flex-none mx-auto rounded-2xl overflow-hidden border border-brand-terracotta-light/10 bg-black"
                       style={{
@@ -2842,7 +2885,7 @@ export default function App() {
                     {showLyrics && (lyrics || lyricsLoading) && (
                       <aside
                         className="relative min-h-[220px] overflow-y-auto rounded-2xl border border-brand-terracotta-light/20 bg-white/90 p-4 shadow-sm backdrop-blur-sm"
-                        style={{ maxHeight: 'min(56vh, 560px)' }}
+                        style={{ height: 'min(35vw, 560px)', maxHeight: 'min(56vh, 560px)' }}
                       >
                         <div className="sticky top-0 z-30 -mx-4 -mt-4 mb-3 border-b border-brand-terracotta-light/15 bg-white/95 px-4 pb-3 pt-4 backdrop-blur">
                           <div className="flex items-center justify-between gap-3">
@@ -3061,17 +3104,21 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => setShowLyrics(v => !v)}
-                            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold shadow-sm transition ${showLyrics ? 'border-brand-terracotta bg-brand-terracotta text-white' : 'border-brand-terracotta-light/30 bg-white text-brand-brown-dark hover:bg-brand-light'}`}
+                            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1.5 text-[11px] font-bold shadow-sm transition sm:px-3 ${showLyrics ? 'border-brand-terracotta bg-brand-terracotta text-white' : 'border-brand-terracotta-light/30 bg-white text-brand-brown-dark hover:bg-brand-light'}`}
                           >
-                            <Music2 size={12} /> Lời bài hát
+                            <Music2 size={12} />
+                            <span className="sm:hidden">Lời</span>
+                            <span className="hidden sm:inline">Lời bài hát</span>
                           </button>
                         )}
                         <button
                           type="button"
                           onClick={() => setShowYoutubeCaptions(v => !v)}
-                          className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold shadow-sm transition ${showYoutubeCaptions ? 'border-brand-terracotta bg-brand-terracotta text-white' : 'border-brand-terracotta-light/30 bg-white text-brand-brown-dark hover:bg-brand-light'}`}
+                          className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1.5 text-[11px] font-bold shadow-sm transition sm:px-3 ${showYoutubeCaptions ? 'border-brand-terracotta bg-brand-terracotta text-white' : 'border-brand-terracotta-light/30 bg-white text-brand-brown-dark hover:bg-brand-light'}`}
                         >
-                          <FileText size={12} /> Phụ đề YouTube
+                          <FileText size={12} />
+                          <span className="sm:hidden">Phụ đề</span>
+                          <span className="hidden sm:inline">Phụ đề YouTube</span>
                         </button>
                         <span className="h-2 w-2 rounded-full bg-green-500 animate-ping"></span>
                         <span className="text-[10px] font-bold text-brand-brown-light uppercase hidden sm:block">Live Sync</span>
