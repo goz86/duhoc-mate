@@ -102,6 +102,29 @@ input, select, textarea {
   animation: customScaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
+@keyframes studyReactionFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+  }
+  16% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  76% {
+    opacity: 1;
+    transform: translateY(-16px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-26px) scale(0.96);
+  }
+}
+
+.study-reaction-bubble {
+  animation: studyReactionFloat 2.6s ease-out forwards;
+}
+
 /* ── Activity Ticker ── */
 .activity-ticker {
   height: 24px;
