@@ -1,6 +1,5 @@
 import {
   BookOpen,
-  Brain,
   Coffee,
   Crown,
   Flame,
@@ -13,7 +12,6 @@ import {
   PhoneOff,
   Play,
   RotateCcw,
-  SmilePlus,
   Timer,
   Users,
   VolumeX,
@@ -169,11 +167,6 @@ export default function StudyTableStage({
     }).filter(member => member.study.active !== false)
   }, [currentSocketId, members, now, studyTable?.seats, username])
 
-  const roomMood = pomodoro.isBreak
-    ? { label: 'Break room', Icon: Coffee, tone: 'bg-amber-50 text-amber-700 border-amber-100' }
-    : pomodoro.isRunning
-      ? { label: 'Deep focus', Icon: Brain, tone: 'bg-emerald-50 text-emerald-700 border-emerald-100' }
-      : { label: 'Ready', Icon: Timer, tone: 'bg-brand-light text-brand-brown-dark border-brand-terracotta-light/20' }
   const isCrowded = seats.length > 6
 
   const visibleReactions = useMemo(() => {
@@ -199,8 +192,6 @@ export default function StudyTableStage({
   const handleReaction = (option: typeof reactionOptions[number], targetMemberId: string) => {
     onStudyReaction?.(option.label, targetMemberId)
   }
-
-  const RoomMoodIcon = roomMood.Icon
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -231,30 +222,15 @@ export default function StudyTableStage({
       </div>
 
       <div className="grid flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
-        <section className="relative min-h-[360px] overflow-hidden rounded-[28px] border border-brand-terracotta-light/20 bg-[#FDF8F0] p-3 shadow-[0_24px_70px_rgba(76,55,49,0.08)] sm:min-h-[430px] sm:p-5 xl:min-h-[460px]">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(125,211,199,0.22),transparent_28%),radial-gradient(circle_at_82%_16%,rgba(242,182,109,0.20),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.72),rgba(250,246,240,0.42))]" />
-          <div className="pointer-events-none absolute inset-x-4 bottom-4 top-20 rounded-[30px] border border-white/50 bg-white/20 [background-image:linear-gradient(rgba(167,122,108,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(167,122,108,0.07)_1px,transparent_1px)] [background-size:34px_34px]" />
-
-          <div className="pointer-events-none absolute right-4 top-4 hidden rounded-2xl border border-white/70 bg-white/55 px-3 py-2 shadow-sm md:block">
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_5px_rgba(52,211,153,0.16)]" />
-              <span className="text-[11px] font-black uppercase text-brand-brown-light">silent presence</span>
-            </div>
-          </div>
+        <section className="relative min-h-[360px] rounded-[28px] border border-brand-terracotta-light/20 bg-[#FDF8F0] p-3 shadow-[0_24px_70px_rgba(76,55,49,0.08)] sm:min-h-[430px] sm:p-5 xl:min-h-[460px]">
+          <div className="pointer-events-none absolute inset-0 rounded-[28px] bg-[radial-gradient(circle_at_20%_10%,rgba(125,211,199,0.22),transparent_28%),radial-gradient(circle_at_82%_16%,rgba(242,182,109,0.20),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.72),rgba(250,246,240,0.42))]" />
+          <div className="pointer-events-none absolute inset-x-4 bottom-4 top-8 rounded-[30px] border border-white/50 bg-white/20 [background-image:linear-gradient(rgba(167,122,108,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(167,122,108,0.07)_1px,transparent_1px)] [background-size:34px_34px]" />
 
           <div className="relative z-10 flex min-h-[330px] flex-col sm:min-h-[390px] xl:min-h-[420px]">
             <div className="mb-4 flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-black ${roomMood.tone}`}>
-                <RoomMoodIcon size={13} />
-                {roomMood.label}
-              </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white/70 px-3 py-1.5 text-[11px] font-black text-brand-brown-light">
                 <Users size={13} />
                 {seats.length} ghế đang học
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white/70 px-3 py-1.5 text-[11px] font-black text-brand-brown-light">
-                <SmilePlus size={13} />
-                Biểu cảm nhanh
               </span>
               {isCrowded && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-100 bg-amber-50 px-3 py-1.5 text-[11px] font-black text-amber-700">
@@ -265,7 +241,8 @@ export default function StudyTableStage({
             </div>
 
             <div className="relative min-h-0 flex-1">
-              <div className="relative grid max-h-[min(62vh,620px)] w-full grid-cols-[repeat(auto-fill,minmax(min(100%,260px),320px))] content-start justify-start gap-3 overflow-y-auto pr-1 xl:gap-4">
+              {/* overflow-visible để chat bubble không bị cắt bởi card bên trên */}
+              <div className="relative grid max-h-[min(62vh,620px)] w-full grid-cols-[repeat(auto-fill,minmax(min(100%,260px),320px))] content-start justify-start gap-3 overflow-y-auto overflow-x-visible pr-1 xl:gap-4">
                 {seats.map((member, index) => {
                   const palette = seatPalette[index % seatPalette.length]
                   // Elapsed time: trừ đi tổng thời gian nghỉ (rời bàn / tab ẩn)
@@ -299,7 +276,7 @@ export default function StudyTableStage({
                   return (
                     <article
                       key={member.id}
-                      className={`group relative w-full overflow-hidden rounded-[22px] border border-white/70 bg-white/86 shadow-[0_14px_32px_rgba(76,55,49,0.10)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(76,55,49,0.13)] ${isCrowded ? 'p-3' : 'p-3.5'}`}
+                      className={`group relative w-full rounded-[22px] border border-white/70 bg-white/86 shadow-[0_14px_32px_rgba(76,55,49,0.10)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(76,55,49,0.13)] ${isCrowded ? 'p-3' : 'p-3.5'}`}
                     >
                       <div className={`absolute inset-x-3 top-3 h-20 rounded-[20px] bg-gradient-to-br ${palette.desk} opacity-85`} />
                       <div className="absolute right-4 top-4 h-6 w-12 rounded-full border border-white/70 bg-white/65" />
