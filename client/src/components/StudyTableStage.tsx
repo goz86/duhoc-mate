@@ -276,14 +276,13 @@ export default function StudyTableStage({
                   return (
                     <article
                       key={member.id}
-                      className={`group relative w-full rounded-[22px] border border-white/70 bg-white/86 shadow-[0_14px_32px_rgba(76,55,49,0.10)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(76,55,49,0.13)] ${isCrowded ? 'p-3' : 'p-3.5'} ${chatBubble ? 'mt-9' : ''}`}
+                      className={`group relative w-full rounded-[22px] border border-white/70 bg-white/86 shadow-[0_14px_32px_rgba(76,55,49,0.10)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(76,55,49,0.13)] ${isCrowded ? 'p-3' : 'p-3.5'}`}
                     >
-                      {/* Chat bubble – nằm TRÊN card, cộng mt-9 để dành chỗ */}
+                      {/* Chat bubble – overlay bên trong card, không gây layout shift */}
                       {chatBubble && (
-                        <div className="absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2">
-                          <div className="relative whitespace-nowrap max-w-[200px] truncate rounded-2xl rounded-b-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-brand-brown-dark shadow-lg">
-                            {chatBubble}
-                            <span className="absolute left-5 top-full h-0 w-0 border-x-4 border-x-transparent border-t-4 border-t-white" />
+                        <div className="absolute inset-x-3 top-3 z-40 flex animate-fade-in items-center justify-center">
+                          <div className="max-w-full truncate rounded-2xl border border-white/80 bg-white/95 px-3 py-1.5 text-[11px] font-bold text-brand-brown-dark shadow-lg backdrop-blur-sm">
+                            💬 {chatBubble}
                           </div>
                         </div>
                       )}
