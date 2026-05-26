@@ -1750,6 +1750,36 @@ export default function App() {
   ] as const;
 
   const activeVideoTitle = playlist.find(item => item.videoId === currentVideo.id)?.title || playerVideoTitle || (currentVideo.id ? `Video YouTube (${currentVideo.id})` : 'Lo-Fi Girl Study Beat');
+  const miniPlayerTime = Math.max(0, Math.floor(playbackTime || currentVideo.time || 0));
+  const miniPlayerDuration = Math.max(0, Math.floor(videoDuration || 0));
+  const miniProgressPercent = miniPlayerDuration > 0
+    ? Math.min(100, Math.max(0, (miniPlayerTime / miniPlayerDuration) * 100))
+    : 0;
+
+  React.useEffect(() => {
+    if (view !== 'room' || !currentVideo.id) {
+      setPlaybackTime(0);
+      setVideoDuration(0);
+      return;
+    }
+
+    const updatePlaybackSnapshot = () => {
+      const time = playerRef.current?.getCurrentTime?.();
+      const duration = playerRef.current?.getDuration?.();
+      if (typeof time === 'number' && Number.isFinite(time)) {
+        setPlaybackTime(time);
+      } else {
+        setPlaybackTime(currentVideoRef.current?.time || 0);
+      }
+      if (typeof duration === 'number' && duration > 0 && Number.isFinite(duration)) {
+        setVideoDuration(duration);
+      }
+    };
+
+    updatePlaybackSnapshot();
+    const timer = window.setInterval(updatePlaybackSnapshot, 500);
+    return () => window.clearInterval(timer);
+  }, [view, currentVideo.id]);
 
   // Fetch lyrics khi video thay đổi
   React.useEffect(() => {
@@ -2386,19 +2416,39 @@ export default function App() {
                     <h2 className="font-display text-lg font-black text-brand-brown-light">{activeVideoTitle}</h2>
                     <div className="rounded-3xl border border-brand-terracotta-light/25 bg-white/75 p-5 shadow-sm">
                       <div className="flex items-center gap-3 text-[11px] font-bold text-brand-brown-light">
-                        <span>{formatTime(Math.floor(currentVideo.time || 0))}</span>
+                        <span>{formatTime(miniPlayerTime)}</span>
                         <div className="relative h-1 flex-1 rounded-full bg-brand-terracotta-light/30">
-                          <div className="absolute left-0 top-0 h-full w-1/2 rounded-full bg-brand-terracotta/55" />
-                          <span className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-terracotta" />
+                          <div
+                            className="absolute left-0 top-0 h-full rounded-full bg-brand-terracotta/55"
+                            style={{ width: `${miniProgressPercent}%` }}
+                          />
+                          <span
+                            className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-terracotta"
+                            style={{ left: `${miniProgressPercent}%` }}
+                          />
                         </div>
-                        <span>4:04</span>
+                        <span>{miniPlayerDuration > 0 ? formatTime(miniPlayerDuration) : '--:--'}</span>
                       </div>
                       <div className="mt-5 flex items-center justify-center gap-5">
-                        <Volume2 size={15} className="text-brand-brown-light" />
+                        <button
+                          type="button"
+                          onClick={() => setPlayerVolume(playerVolume === 0 ? 80 : 0)}
+                          className="text-brand-brown-light transition hover:text-brand-terracotta"
+                          aria-label={playerVolume === 0 ? 'Bật âm lượng' : 'Tắt tiếng'}
+                        >
+                          {playerVolume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                        </button>
                         <div className="h-1 w-24 rounded-full bg-brand-terracotta-light/30">
-                          <div className="h-full w-1/2 rounded-full bg-brand-terracotta" />
+                          <div className="h-full rounded-full bg-brand-terracotta" style={{ width: `${playerVolume}%` }} />
                         </div>
-                        <RotateCcw size={15} className="text-brand-brown-light" />
+                        <button
+                          type="button"
+                          onClick={() => playerRef.current?.seekTo?.(Math.max(0, (playerRef.current?.getCurrentTime?.() || miniPlayerTime) - 15), true)}
+                          className="text-brand-brown-light transition hover:text-brand-terracotta"
+                          aria-label="Tua lùi 15 giây"
+                        >
+                          <RotateCcw size={15} />
+                        </button>
                         <button
                           type="button"
                           onClick={toggleMiniPlayback}
