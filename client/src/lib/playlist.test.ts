@@ -24,4 +24,14 @@ describe('getNextPlaylistItem', () => {
 
     expect(next?.id).toBe('queued');
   });
+
+  it('continues after the current playlist item when earlier rows are still queued', () => {
+    const next = getNextPlaylistItem([
+      { id: 'first', videoId: 'a', title: 'First', votes: 4, status: 'queued' },
+      { id: 'current', videoId: 'b', title: 'Current', votes: 2, status: 'playing' },
+      { id: 'third', videoId: 'c', title: 'Third', votes: 1, status: 'queued' },
+    ], { playlistItemId: 'current', videoId: 'b' });
+
+    expect(next?.id).toBe('third');
+  });
 });

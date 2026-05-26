@@ -437,7 +437,11 @@ export default function App() {
   const advanceToNextPlaylistItem = (player?: any) => {
     if (!isHostRef.current || advancingPlaylistRef.current) return false;
 
-    const nextItem = getNextPlaylistItem(playlistRef.current);
+    const current = currentVideoRef.current;
+    const nextItem = getNextPlaylistItem(playlistRef.current, {
+      playlistItemId: current.playlistItemId,
+      videoId: current.id,
+    });
     if (!nextItem) return false;
 
     advancingPlaylistRef.current = true;
