@@ -221,7 +221,7 @@ export default function StudyTableStage({
         </div>
       </div>
 
-      <div className="grid flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+      <div className="grid flex-1 gap-4 2xl:grid-cols-[minmax(0,1fr)_280px]">
         <section className="relative min-h-[360px] rounded-[28px] border border-brand-terracotta-light/20 bg-[#FDF8F0] p-3 shadow-[0_24px_70px_rgba(76,55,49,0.08)] sm:min-h-[430px] sm:p-5 xl:min-h-[460px]">
           <div className="pointer-events-none absolute inset-0 rounded-[28px] bg-[radial-gradient(circle_at_20%_10%,rgba(125,211,199,0.22),transparent_28%),radial-gradient(circle_at_82%_16%,rgba(242,182,109,0.20),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.72),rgba(250,246,240,0.42))]" />
           <div className="pointer-events-none absolute inset-x-4 bottom-4 top-8 rounded-[30px] border border-white/50 bg-white/20 [background-image:linear-gradient(rgba(167,122,108,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(167,122,108,0.07)_1px,transparent_1px)] [background-size:34px_34px]" />
@@ -242,7 +242,7 @@ export default function StudyTableStage({
 
             <div className="relative min-h-0 flex-1">
               {/* overflow-visible để chat bubble không bị cắt bởi card bên trên */}
-              <div className="relative grid max-h-[min(62vh,620px)] w-full grid-cols-[repeat(auto-fill,minmax(min(100%,260px),320px))] content-start justify-start gap-3 overflow-y-auto overflow-x-visible pr-1 xl:gap-4">
+              <div className="relative grid max-h-[min(62vh,620px)] w-full grid-cols-[repeat(auto-fill,minmax(min(100%,220px),1fr))] content-start justify-start gap-3 overflow-y-auto overflow-x-visible pr-1 xl:gap-4">
                 {seats.map((member, index) => {
                   const palette = seatPalette[index % seatPalette.length]
                   // Elapsed time: trừ đi tổng thời gian nghỉ (rời bàn / tab ẩn)

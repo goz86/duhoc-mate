@@ -295,3 +295,21 @@ button.ticker-inner {
     max-width: 400px !important;
   }
 }
+
+/* Khung video phong cách polaroid: nền trắng bo tròn 4 góc, dày hơn ở dưới */
+.polaroid-corners {
+  position: relative;
+}
+.polaroid-corners::before {
+  /* Tấm nền trắng bo tròn 4 góc – ôm đều quanh video */
+  content: '';
+  position: absolute;
+  inset: -14px;
+  background: #FFFFFF;
+  border-radius: 22px;
+  box-shadow:
+    0 18px 38px -10px rgba(76, 55, 49, 0.18),
+    0 4px 10px rgba(76, 55, 49, 0.08);
+  z-index: -1;
+  pointer-events: none;
+}

@@ -2839,13 +2839,15 @@ export default function App() {
                 <div className={`${stageMode === 'youtube' && !roomCollapsed ? 'flex flex-1 flex-col gap-3 h-full justify-start overflow-y-auto pr-1' : 'absolute h-px w-px overflow-hidden opacity-0 pointer-events-none'}`} aria-hidden={stageMode !== 'youtube' || roomCollapsed}>
                     <div className={`mx-auto grid w-full max-w-[1180px] items-start gap-3 ${showLyrics && (lyrics || lyricsLoading) ? 'xl:grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1'}`}>
                     <div
-                      className="relative flex-none mx-auto rounded-2xl overflow-hidden border border-brand-terracotta-light/10 bg-black"
+                      className="polaroid-corners relative flex-none mx-auto self-center rounded-2xl border border-brand-terracotta-light/10 bg-black"
                       style={{
-                        width: showLyrics && (lyrics || lyricsLoading) ? '100%' : 'min(100%, 99.5vh, 1180px)',
+                        width: '100%',
+                        maxWidth: showLyrics && (lyrics || lyricsLoading) ? '720px' : 'min(99.5vh, 1180px)',
                         aspectRatio: '16 / 9',
                         minHeight: '220px'
                       }}
                     >
+                    <div className="relative h-full w-full overflow-hidden rounded-2xl">
                       <div className="w-full h-full" ref={iframeContainerRef}>
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center pointer-events-none z-0">
                           <Clock className="text-white/20 animate-spin" size={32} />
@@ -2967,6 +2969,7 @@ export default function App() {
                           </div>
                         </div>
                       )}
+                    </div>
                     </div>
                     {/* Info bar + local pause cho non-host — ẩn khi chưa có video */}
                     {showLyrics && (lyrics || lyricsLoading) && (
