@@ -46,7 +46,7 @@ export default function RoomHeader({
           <img
             src={duhocMateLogo}
             alt="Duhoc Mate"
-            className="h-9 w-9 rounded-[14px] object-cover shadow-sm ring-1 ring-black/[0.05]"
+            className="h-9 w-9 min-w-9 shrink-0 rounded-[14px] object-cover shadow-sm ring-1 ring-black/[0.05]"
           />
           <span className="hidden font-display text-lg font-black text-brand-brown-dark sm:inline">
             Duhoc Mate
