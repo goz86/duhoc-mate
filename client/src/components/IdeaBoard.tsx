@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { CheckCircle2, ClipboardList, Plus, Save, Sparkles, Trash2 } from 'lucide-react'
+import type { FormEvent } from 'react'
+import { CheckCircle2, ClipboardList, ListChecks, Plus, Save, Sparkles, Target, Trash2, UserRound } from 'lucide-react'
 import type { IdeaStatus, IdeaTask } from '../lib/communityTemplates'
 import { createIdeaTask } from '../lib/communityTemplates'
 
@@ -10,21 +11,32 @@ type Props = {
   onCreateTemplate: () => void
 }
 
-const columns: Array<{ key: IdeaStatus; title: string; hint: string }> = [
-  { key: 'todo', title: 'Cần làm', hint: 'Ý tưởng và việc mới' },
-  { key: 'doing', title: 'Đang làm', hint: 'Việc đang tập trung' },
-  { key: 'done', title: 'Hoàn thành', hint: 'Đã xong hoặc đã review' },
+const columns: Array<{ key: IdeaStatus; title: string; hint: string; tone: string }> = [
+  { key: 'todo', title: 'Cần làm', hint: 'Ý tưởng và việc mới', tone: 'border-slate-200 bg-slate-50/80' },
+  { key: 'doing', title: 'Đang làm', hint: 'Việc đang tập trung', tone: 'border-amber-200 bg-amber-50/80' },
+  { key: 'done', title: 'Hoàn thành', hint: 'Đã xong hoặc đã review', tone: 'border-emerald-200 bg-emerald-50/80' },
 ]
 
-const statusClass: Record<IdeaStatus, string> = {
-  todo: 'border-slate-200 bg-slate-50/80',
-  doing: 'border-amber-200 bg-amber-50/80',
-  done: 'border-emerald-200 bg-emerald-50/80',
-}
+const workflowSteps = [
+  'Ghi ý tưởng',
+  'Giao người làm',
+  'Đang làm',
+  'Review',
+  'Hoàn thành',
+]
+
+const quickIdeas = [
+  'Pomodoro 25 phút',
+  'Luyện nghe',
+  'Làm bài tập',
+  'Review CV',
+  'Ghi từ vựng',
+]
 
 export default function IdeaBoard({ tasks, members, onChange, onCreateTemplate }: Props) {
   const [title, setTitle] = useState('')
   const [owner, setOwner] = useState('')
+  const [activeColumn, setActiveColumn] = useState<IdeaStatus>('todo')
 
   const counts = useMemo(() => ({
     todo: tasks.filter(task => task.status === 'todo').length,
@@ -32,136 +44,292 @@ export default function IdeaBoard({ tasks, members, onChange, onCreateTemplate }
     done: tasks.filter(task => task.status === 'done').length,
   }), [tasks])
 
-  const addTask = (event: React.FormEvent) => {
-    event.preventDefault()
+  const activeStep = useMemo(() => {
+    if (counts.done > 0) return 4
+    if (counts.doing > 0) return 2
+    if (tasks.some(task => task.owner)) return 1
+    return tasks.length > 0 ? 1 : 0
+  }, [counts.doing, counts.done, tasks])
+
+  const completionPercent = tasks.length ? Math.round((counts.done / tasks.length) * 100) : 0
+
+  const addTask = (event?: FormEvent) => {
+    event?.preventDefault()
     if (!title.trim()) return
     onChange([createIdeaTask(title.trim(), 'todo', owner), ...tasks])
     setTitle('')
+    setActiveColumn('todo')
+  }
+
+  const addQuickTask = (idea: string) => {
+    onChange([createIdeaTask(idea, 'todo', owner), ...tasks])
+    setActiveColumn('todo')
   }
 
   const updateTask = (id: string, patch: Partial<IdeaTask>) => {
     onChange(tasks.map(task => task.id === id ? { ...task, ...patch } : task))
+    if (patch.status) setActiveColumn(patch.status)
   }
 
   const removeTask = (id: string) => {
     onChange(tasks.filter(task => task.id !== id))
   }
 
+  const visibleColumns = columns.filter(column => column.key === activeColumn)
+
   return (
-    <div className="flex-1 flex flex-col gap-4">
-      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display font-black text-xl text-brand-brown-dark flex items-center gap-2">
-            <ClipboardList size={22} className="text-brand-terracotta" />
-            Idea Board
-          </h2>
-          <p className="text-sm text-brand-brown-light mt-1">
-            Biến mục tiêu của phòng thành checklist, giao việc và lưu lại thành template cho cộng đồng.
-          </p>
-        </div>
+    <div className="flex-1 rounded-[28px] bg-[#FDF8F0] p-3 sm:p-5">
+      <div className="flex flex-col gap-4">
+        <div className="rounded-[28px] border border-brand-terracotta-light/25 bg-white/85 p-4 shadow-[0_24px_70px_rgba(76,55,49,0.10)] backdrop-blur sm:p-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div className="flex min-w-0 gap-3">
+              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-brand-terracotta text-white shadow-lg shadow-brand-terracotta/20">
+                <ClipboardList size={25} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-black uppercase text-brand-terracotta">Idea workflow</p>
+                <h2 className="mt-1 font-display text-xl font-black leading-tight text-brand-brown-dark sm:text-2xl">Bảng ý tưởng của phòng</h2>
+                <p className="mt-1 text-sm leading-relaxed text-brand-brown-light">
+                  Biến mục tiêu thành việc nhỏ, giao người làm và lưu lại thành template cho cộng đồng.
+                </p>
+              </div>
+            </div>
 
-        <button
-          onClick={onCreateTemplate}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-brown-dark px-4 py-2.5 text-sm font-black text-white shadow-sm hover:bg-brand-terracotta transition"
-        >
-          <Save size={16} />
-          Tạo template từ phòng
-        </button>
-      </div>
+            <button
+              type="button"
+              onClick={onCreateTemplate}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-brand-brown-dark px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-brand-terracotta"
+            >
+              <Save size={16} />
+              Tạo template từ phòng
+            </button>
+          </div>
 
-      <form onSubmit={addTask} className="grid grid-cols-1 md:grid-cols-[1fr_180px_auto] gap-2 rounded-xl border border-brand-light bg-white p-3 shadow-sm">
-        <input
-          value={title}
-          onChange={event => setTitle(event.target.value)}
-          placeholder="Thêm việc: ví dụ Luyện nghe 20 phút, làm ARC, viết CV..."
-          className="rounded-lg border border-brand-terracotta-light/30 bg-brand-cream px-3 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-brand-terracotta/30"
-        />
-        <select
-          value={owner}
-          onChange={event => setOwner(event.target.value)}
-          className="rounded-lg border border-brand-terracotta-light/30 bg-white px-3 py-2.5 text-sm font-bold text-brand-brown-light outline-none focus:ring-2 focus:ring-brand-terracotta/30"
-        >
-          <option value="">Chưa giao</option>
-          {members.map(member => (
-            <option key={member.username} value={member.username}>{member.username}</option>
-          ))}
-        </select>
-        <button className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-terracotta px-4 py-2.5 text-sm font-black text-white hover:bg-brand-brown-dark transition">
-          <Plus size={16} />
-          Thêm
-        </button>
-      </form>
+          <div className="mt-5 overflow-x-auto pb-1">
+            <div className="relative grid min-w-[560px] grid-cols-5 items-start gap-2 px-1 sm:min-w-0">
+              <div className="absolute left-[10%] right-[10%] top-5 h-1 rounded-full bg-brand-terracotta-light/35" />
+              <div
+                className="absolute left-[10%] top-5 h-1 rounded-full bg-brand-terracotta transition-all"
+                style={{ width: `${Math.min(activeStep, 4) * 20}%` }}
+              />
+              {workflowSteps.map((step, stepIndex) => {
+                const isDone = stepIndex < activeStep
+                const isActive = stepIndex === activeStep
 
-      {tasks.length === 0 ? (
-        <div className="flex-1 min-h-[300px] rounded-2xl border-2 border-dashed border-brand-terracotta-light/30 bg-white/60 flex flex-col items-center justify-center gap-3 text-center p-8">
-          <Sparkles size={36} className="text-brand-terracotta/40" />
-          <div>
-            <p className="font-display font-black text-brand-brown-dark">Chưa có ý tưởng nào trong phòng</p>
-            <p className="text-sm text-brand-brown-light mt-1">Thêm task đầu tiên hoặc dùng template từ trang chủ.</p>
+                return (
+                  <div key={step} className="relative z-10 flex flex-col items-center text-center">
+                    <span className={`grid h-11 w-11 place-items-center rounded-full border-4 shadow-sm ${isDone ? 'border-brand-terracotta bg-brand-terracotta text-white' : isActive ? 'border-brand-terracotta-light bg-white text-brand-terracotta shadow-[0_0_0_6px_rgba(167,122,108,0.12)]' : 'border-brand-terracotta-light/45 bg-white text-brand-brown-light'}`}>
+                      {isDone ? <CheckCircle2 size={17} /> : <span className="text-sm font-black">{stepIndex + 1}</span>}
+                    </span>
+                    <span className={`mt-2 text-[11px] font-black ${isActive ? 'text-brand-terracotta' : 'text-brand-brown-light'}`}>
+                      {step}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
-          {columns.map(column => (
-            <section key={column.key} className={`rounded-xl border p-3 ${statusClass[column.key]}`}>
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <div>
-                  <h3 className="font-display font-black text-sm text-brand-brown-dark">{column.title}</h3>
-                  <p className="text-[11px] font-medium text-brand-brown-light">{column.hint}</p>
-                </div>
-                <span className="rounded-md bg-white px-2 py-1 text-xs font-black text-brand-brown-light border border-white/80">
-                  {counts[column.key]}
-                </span>
-              </div>
 
-              <div className="space-y-2 min-h-[220px]">
-                {tasks.filter(task => task.status === column.key).map(task => (
-                  <article key={task.id} className="rounded-lg border border-white/80 bg-white p-3 shadow-sm">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h4 className="font-bold text-sm text-brand-brown-dark leading-snug">{task.title}</h4>
-                        {task.note && <p className="text-xs text-brand-brown-light mt-1">{task.note}</p>}
-                      </div>
-                      <button
-                        onClick={() => removeTask(task.id)}
-                        className="p-1 rounded-md text-brand-brown-light hover:bg-red-50 hover:text-red-600 transition"
-                        title="Xóa task"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+        <form onSubmit={addTask} className="grid grid-cols-1 gap-2 rounded-2xl border border-brand-terracotta-light/20 bg-white/85 p-3 shadow-sm md:grid-cols-[1fr_180px_auto]">
+          <input
+            value={title}
+            onChange={event => setTitle(event.target.value)}
+            placeholder="Thêm mục tiêu học: làm ARC, nghe 20 phút, viết CV..."
+            className="rounded-xl border border-brand-terracotta-light/30 bg-brand-cream px-3 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-brand-terracotta/30"
+          />
+          <select
+            value={owner}
+            onChange={event => setOwner(event.target.value)}
+            className="rounded-xl border border-brand-terracotta-light/30 bg-white px-3 py-3 text-sm font-bold text-brand-brown-light outline-none focus:ring-2 focus:ring-brand-terracotta/30"
+          >
+            <option value="">Chưa giao</option>
+            {members.map(member => (
+              <option key={member.username} value={member.username}>{member.username}</option>
+            ))}
+          </select>
+          <button className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-terracotta px-4 py-3 text-sm font-black text-white transition hover:bg-brand-brown-dark">
+            <Plus size={16} />
+            Thêm
+          </button>
+        </form>
 
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <select
-                        value={task.status}
-                        onChange={event => updateTask(task.id, { status: event.target.value as IdeaStatus })}
-                        className="rounded-md border border-brand-light bg-brand-cream px-2 py-1.5 text-[11px] font-black text-brand-brown-light outline-none"
-                      >
-                        <option value="todo">Cần làm</option>
-                        <option value="doing">Đang làm</option>
-                        <option value="done">Hoàn thành</option>
-                      </select>
-                      <input
-                        value={task.owner || ''}
-                        onChange={event => updateTask(task.id, { owner: event.target.value })}
-                        placeholder="Người phụ trách"
-                        className="min-w-0 flex-1 rounded-md border border-brand-light bg-white px-2 py-1.5 text-[11px] font-bold text-brand-brown-light outline-none"
-                      />
-                    </div>
-
-                    {task.status === 'done' && (
-                      <div className="mt-2 inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
-                        <CheckCircle2 size={12} />
-                        Đã hoàn thành
-                      </div>
-                    )}
-                  </article>
-                ))}
-              </div>
-            </section>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {quickIdeas.map(idea => (
+            <button
+              key={idea}
+              type="button"
+              onClick={() => addQuickTask(idea)}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white/80 px-3 py-2 text-xs font-black text-brand-brown-light shadow-sm transition hover:border-brand-terracotta/35 hover:text-brand-terracotta"
+            >
+              <Plus size={13} />
+              {idea}
+            </button>
           ))}
         </div>
-      )}
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-brand-terracotta-light/20 bg-white/85 p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-xs font-black uppercase text-brand-brown-light">
+              <ListChecks size={15} /> Tổng việc
+            </div>
+            <p className="mt-2 font-display text-2xl font-black text-brand-brown-dark">{tasks.length}</p>
+          </div>
+          <div className="rounded-2xl border border-brand-terracotta-light/20 bg-white/85 p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-xs font-black uppercase text-brand-brown-light">
+              <Target size={15} /> Đang làm
+            </div>
+            <p className="mt-2 font-display text-2xl font-black text-brand-brown-dark">{counts.doing}</p>
+          </div>
+          <div className="rounded-2xl border border-brand-terracotta-light/20 bg-white/85 p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-black uppercase text-brand-brown-light">
+                <Sparkles size={15} /> Hoàn thành
+              </div>
+              <span className="text-xs font-black text-brand-terracotta">{completionPercent}%</span>
+            </div>
+            <div className="mt-3 h-2 rounded-full bg-brand-terracotta-light/30">
+              <div className="h-full rounded-full bg-brand-terracotta transition-all" style={{ width: `${completionPercent}%` }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-1 xl:hidden">
+          {columns.map(column => (
+            <button
+              key={column.key}
+              type="button"
+              onClick={() => setActiveColumn(column.key)}
+              className={`shrink-0 rounded-full px-4 py-2 text-xs font-black transition ${activeColumn === column.key ? 'bg-brand-terracotta text-white shadow-sm' : 'bg-white/85 text-brand-brown-light'}`}
+            >
+              {column.title} ({counts[column.key]})
+            </button>
+          ))}
+        </div>
+
+        {tasks.length === 0 ? (
+          <div className="flex min-h-[260px] flex-1 flex-col items-center justify-center gap-3 rounded-[28px] border-2 border-dashed border-brand-terracotta-light/30 bg-white/70 p-8 text-center">
+            <Sparkles size={36} className="text-brand-terracotta/45" />
+            <div>
+              <p className="font-display font-black text-brand-brown-dark">Chưa có ý tưởng nào trong phòng</p>
+              <p className="mt-1 text-sm text-brand-brown-light">Thêm task đầu tiên hoặc chọn chip gợi ý ở trên.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 xl:hidden">
+            {visibleColumns.map(column => (
+              <BoardColumn
+                key={column.key}
+                column={column}
+                tasks={tasks}
+                count={counts[column.key]}
+                updateTask={updateTask}
+                removeTask={removeTask}
+              />
+            ))}
+          </div>
+        )}
+
+        {tasks.length > 0 && (
+          <div className="hidden gap-3 xl:grid xl:grid-cols-3">
+            {columns.map(column => (
+              <BoardColumn
+                key={column.key}
+                column={column}
+                tasks={tasks}
+                count={counts[column.key]}
+                updateTask={updateTask}
+                removeTask={removeTask}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
+  )
+}
+
+function BoardColumn({
+  column,
+  tasks,
+  count,
+  updateTask,
+  removeTask,
+}: {
+  column: typeof columns[number]
+  tasks: IdeaTask[]
+  count: number
+  updateTask: (id: string, patch: Partial<IdeaTask>) => void
+  removeTask: (id: string) => void
+}) {
+  const columnTasks = tasks.filter(task => task.status === column.key)
+
+  return (
+              <section key={column.key} className={`rounded-2xl border p-3 ${column.tone}`}>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-display text-sm font-black text-brand-brown-dark">{column.title}</h3>
+                    <p className="text-[11px] font-medium text-brand-brown-light">{column.hint}</p>
+                  </div>
+                  <span className="rounded-lg border border-white/80 bg-white px-2 py-1 text-xs font-black text-brand-brown-light">
+                    {count}
+                  </span>
+                </div>
+
+                <div className="min-h-[220px] space-y-2">
+                  {columnTasks.length === 0 && (
+                    <div className="flex min-h-[120px] items-center justify-center rounded-xl border border-dashed border-white bg-white/45 p-4 text-center text-xs font-bold text-brand-brown-light">
+                      Chưa có việc ở bước này
+                    </div>
+                  )}
+
+                  {columnTasks.map(task => (
+                    <article key={task.id} className="rounded-xl border border-white/80 bg-white p-3 shadow-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-bold leading-snug text-brand-brown-dark">{task.title}</h4>
+                          {task.note && <p className="mt-1 text-xs text-brand-brown-light">{task.note}</p>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeTask(task.id)}
+                          className="rounded-md p-1 text-brand-brown-light transition hover:bg-red-50 hover:text-red-600"
+                          title="Xóa task"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <select
+                          value={task.status}
+                          onChange={event => updateTask(task.id, { status: event.target.value as IdeaStatus })}
+                          className="rounded-lg border border-brand-light bg-brand-cream px-2 py-1.5 text-[11px] font-black text-brand-brown-light outline-none"
+                        >
+                          <option value="todo">Cần làm</option>
+                          <option value="doing">Đang làm</option>
+                          <option value="done">Hoàn thành</option>
+                        </select>
+                        <label className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-brand-light bg-white px-2 py-1.5 text-[11px] font-bold text-brand-brown-light">
+                          <UserRound size={12} className="shrink-0" />
+                          <input
+                            value={task.owner || ''}
+                            onChange={event => updateTask(task.id, { owner: event.target.value })}
+                            placeholder="Người phụ trách"
+                            className="min-w-0 flex-1 bg-transparent outline-none"
+                          />
+                        </label>
+                      </div>
+
+                      {task.status === 'done' && (
+                        <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
+                          <CheckCircle2 size={12} />
+                          Đã hoàn thành
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              </section>
   )
 }
