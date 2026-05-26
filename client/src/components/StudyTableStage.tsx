@@ -24,6 +24,7 @@ type StudyMember = {
   id: string
   username: string
   isHost: boolean
+  avatarUrl?: string
 }
 
 type PomodoroState = {
@@ -323,7 +324,23 @@ export default function StudyTableStage({
                                 background: `conic-gradient(${palette.accent} ${personalProgress * 3.6}deg, rgba(228,193,181,0.32) 0deg)`,
                               }}
                             >
-                              <div className={`grid h-full w-full place-items-center rounded-[18px] bg-gradient-to-br ${palette.avatar} font-display text-2xl font-black text-white shadow-inner`}>
+                              {member.avatarUrl ? (
+                                <img
+                                  src={member.avatarUrl}
+                                  alt={member.username}
+                                  className="h-full w-full rounded-[18px] object-cover"
+                                  onError={e => {
+                                    const img = e.target as HTMLImageElement
+                                    img.style.display = 'none'
+                                    const fb = img.nextElementSibling as HTMLElement | null
+                                    if (fb) fb.style.display = 'grid'
+                                  }}
+                                />
+                              ) : null}
+                              <div
+                                className={`grid h-full w-full place-items-center rounded-[18px] bg-gradient-to-br ${palette.avatar} font-display text-2xl font-black text-white shadow-inner`}
+                                style={{ display: member.avatarUrl ? 'none' : 'grid' }}
+                              >
                                 {initials(member.username)}
                               </div>
                             </div>

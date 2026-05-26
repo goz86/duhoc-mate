@@ -9,12 +9,13 @@ import {
   Headphones, Music2, ChevronRight, Search, Sparkles,
   Minimize2, Palette, Settings, Crown,
   Link2, Volume2, VolumeX, SkipForward, Plus, Share2, X, Trash2,
-  Mic, MicOff, PhoneOff, GripVertical
+  Mic, MicOff, PhoneOff, GripVertical, Camera
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'qrcode';
 import { useAuth } from './contexts/AuthContext';
+import { supabase } from './lib/supabase';
 import AuthModal from './components/AuthModal';
 import TopikStudy from './components/TopikStudy';
 import IdeaBoard from './components/IdeaBoard';
@@ -70,6 +71,7 @@ interface Member {
   username: string;
   isHost: boolean;
   friendCode?: string;
+  avatarUrl?: string;
 }
 
 interface PlaylistItem {
@@ -350,6 +352,11 @@ export default function App() {
   const [roomSettingsPublic, setRoomSettingsPublic] = useState(true);
   const [roomSettingsPassword, setRoomSettingsPassword] = useState('');
   const [roomBackgroundUrl, setRoomBackgroundUrl] = useState('');
+  const [roomAvatarUrl, setRoomAvatarUrl] = useState('');
+  const [currentRoomAvatarUrl, setCurrentRoomAvatarUrl] = useState('');
+  const [roomAvatarFile, setRoomAvatarFile] = useState<File | null>(null);
+  const [roomAvatarPreview, setRoomAvatarPreview] = useState('');
+  const [roomAvatarUploading, setRoomAvatarUploading] = useState(false);
 
   // TikTok states
   const [tiktokUrl, setTiktokUrl] = useState('');
@@ -785,7 +792,8 @@ export default function App() {
         socket.emit('join-room', {
           roomId: initRoomId,
           username: savedUsername,
-          friendCode: savedFriendCode
+          friendCode: savedFriendCode,
+          avatarUrl: profile?.avatar_url || ''
         });
       }
     }
@@ -1268,14 +1276,15 @@ export default function App() {
     }).catch(err => console.error("Error saving persistent room:", err));
 
     if (seedTasks.length) saveRoomTasks(generatedId, seedTasks);
-    socket.emit('join-room', { 
-      roomId: generatedId, 
-      username, 
+    socket.emit('join-room', {
+      roomId: generatedId,
+      username,
       ideaTasks: seedTasks,
       roomTitle: roomTitle || `Phòng của ${username}`,
       isPrivate: !!isPrivate,
       password: password || '',
       hostAvatarUrl: avatarUrl || profile?.avatar_url || '',
+      avatarUrl: profile?.avatar_url || '',
       friendCode
     });
     setView('room');
@@ -1423,11 +1432,12 @@ export default function App() {
     setRoomSettingsPublic(!isPrivate);
     setRoomSettingsPassword(enteredPassword || '');
 
-    socket.emit('join-room', { 
-      roomId: formattedId, 
+    socket.emit('join-room', {
+      roomId: formattedId,
       username: guestUsername || username,
       password: enteredPassword || '',
-      friendCode
+      friendCode,
+      avatarUrl: profile?.avatar_url || ''
     });
     setShowPasswordModal(false);
     setView('room');
@@ -1480,7 +1490,7 @@ export default function App() {
     setRecentRooms(newRecent);
     localStorage.setItem('duhocmate_recent_rooms', JSON.stringify(newRecent));
 
-    socket.emit('join-room', { roomId: fixedRoomId, username: guestUsername || username, ideaTasks: seedTasks, friendCode, roomTitle: template.title });
+    socket.emit('join-room', { roomId: fixedRoomId, username: guestUsername || username, ideaTasks: seedTasks, friendCode, roomTitle: template.title, avatarUrl: profile?.avatar_url || '' });
     setView('room');
     navigateToRoom(fixedRoomId);
   };
@@ -1686,14 +1696,35 @@ export default function App() {
     socket.emit('transfer-host', { roomId, targetId: target.id });
   };
 
-  const saveRoomSettings = () => {
+  const saveRoomSettings = async () => {
     const nextName = roomSettingsName.trim() || currentRoomTitle || `Phòng ${roomId}`;
     setCurrentRoomTitle(nextName);
+    setRoomAvatarUploading(true);
+    let finalAvatarUrl = roomAvatarUrl || currentRoomAvatarUrl;
+    // Upload ảnh đại diện phòng lên Supabase Storage nếu có file mới
+    if (roomAvatarFile && supabase) {
+      try {
+        const ext = roomAvatarFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const path = `rooms/${roomId}/${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(path, roomAvatarFile, { cacheControl: '3600', upsert: true });
+        if (!uploadError) {
+          const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+          finalAvatarUrl = data.publicUrl;
+        }
+      } catch (e) {
+        console.error('Upload room avatar error:', e);
+      }
+    }
+    setRoomAvatarUploading(false);
+    if (finalAvatarUrl) setCurrentRoomAvatarUrl(finalAvatarUrl);
     socket.emit('room-settings-update', {
       roomId,
       roomTitle: nextName,
       isPrivate: !roomSettingsPublic,
       password: roomSettingsPassword,
+      roomAvatarUrl: finalAvatarUrl,
     });
     savePersistentRoom({
       id: roomId,
@@ -1705,6 +1736,7 @@ export default function App() {
       userId: user?.id,
     }).catch(err => console.error('Error saving room settings:', err));
     setShowRoomSettings(false);
+    setRoomAvatarFile(null);
     setCustomAlert({ message: 'Đã lưu cài đặt phòng.', show: true });
   };
 
@@ -2527,6 +2559,69 @@ export default function App() {
                 />
               </div>
 
+              {/* Ảnh đại diện phòng — upload từ thiết bị */}
+              <div>
+                <p className="text-xs font-bold text-brand-brown-light uppercase block mb-2">Ảnh đại diện phòng</p>
+                <div className="flex items-center gap-4">
+                  {/* Preview avatar */}
+                  <div className="relative shrink-0">
+                    <div className="h-20 w-20 overflow-hidden rounded-2xl border-2 border-brand-terracotta-light/30 bg-brand-light shadow-sm">
+                      {(roomAvatarPreview || currentRoomAvatarUrl) ? (
+                        <img
+                          src={roomAvatarPreview || currentRoomAvatarUrl}
+                          alt="room avatar"
+                          className="h-full w-full object-cover"
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-3xl">🏠</div>
+                      )}
+                    </div>
+                    {isHost && (
+                      <label className="absolute -bottom-1.5 -right-1.5 grid h-7 w-7 cursor-pointer place-items-center rounded-full bg-brand-terracotta text-white shadow-md transition hover:bg-brand-brown-dark">
+                        <Camera size={13} />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 3 * 1024 * 1024) { setCustomAlert({ message: 'Ảnh tối đa 3MB.', show: true }); return; }
+                            setRoomAvatarFile(file);
+                            setRoomAvatarPreview(URL.createObjectURL(file));
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                  {/* Upload button */}
+                  <div className="flex-1">
+                    {isHost ? (
+                      <label className="flex h-12 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-brand-terracotta-light bg-brand-light text-sm font-black text-brand-terracotta transition hover:bg-white hover:border-brand-terracotta">
+                        <Plus size={16} />
+                        {roomAvatarPreview ? 'Đổi ảnh khác' : 'Tải ảnh lên'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 3 * 1024 * 1024) { setCustomAlert({ message: 'Ảnh tối đa 3MB.', show: true }); return; }
+                            setRoomAvatarFile(file);
+                            setRoomAvatarPreview(URL.createObjectURL(file));
+                          }}
+                        />
+                      </label>
+                    ) : (
+                      <p className="text-xs text-brand-brown-light font-medium">Chỉ host mới có thể thay ảnh đại diện phòng.</p>
+                    )}
+                    <p className="mt-1.5 text-[10px] text-brand-brown-light/70 font-medium">PNG, JPG, WEBP · Tối đa 3MB</p>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="text-xs font-bold text-brand-brown-light uppercase block mb-1">Hình nền phòng (URL)</label>
                 <input
@@ -2579,9 +2674,10 @@ export default function App() {
                   {isHost && (
                     <button
                       type="submit"
-                      className="flex-1 rounded-2xl bg-brand-terracotta py-3 text-sm font-black text-white shadow-md shadow-brand-terracotta/20 transition hover:bg-brand-brown-dark"
+                      disabled={roomAvatarUploading}
+                      className="flex-1 rounded-2xl bg-brand-terracotta py-3 text-sm font-black text-white shadow-md shadow-brand-terracotta/20 transition hover:bg-brand-brown-dark disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Lưu cấu hình
+                      {roomAvatarUploading ? 'Đang tải ảnh...' : 'Lưu cấu hình'}
                     </button>
                   )}
                 </div>

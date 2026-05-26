@@ -677,7 +677,7 @@ io.on('connection', (socket) => {
   });
 
   // 1. Tham gia phòng
-  socket.on('join-room', async ({ roomId, username, ideaTasks = [], roomTitle, isPrivate, password, hostAvatarUrl, friendCode }) => {
+  socket.on('join-room', async ({ roomId, username, ideaTasks = [], roomTitle, isPrivate, password, hostAvatarUrl, friendCode, avatarUrl }) => {
     const rememberedRoom = roomDirectory.get(roomId);
     const restoredState = savedRoomState.get(roomId) || await loadRoomStateFromSupabase(roomId) || {};
     // Khởi tạo phòng nếu chưa tồn tại
@@ -767,7 +767,8 @@ io.on('connection', (socket) => {
       id: socket.id,
       username: username || `Bạn học #${Math.floor(1000 + Math.random() * 9000)}`,
       isHost: false,
-      friendCode: memberFriendCode
+      friendCode: memberFriendCode,
+      avatarUrl: avatarUrl || ''
     };
 
     room.members.push(newMember);
