@@ -2717,9 +2717,9 @@ export default function App() {
                       </aside>
                     )}
                     </div>
-                    <div className={`mx-auto flex w-full max-w-[1180px] items-center justify-between px-4 py-3 bg-brand-light/40 border border-brand-terracotta-light/20 rounded-2xl transition-all duration-300 ${!currentVideo.id ? 'opacity-0 pointer-events-none h-0 py-0 overflow-hidden' : ''}`}>
-                      <div className="space-y-0.5 min-w-0 flex-1">
-                        <span className="text-[10px] font-bold text-brand-terracotta uppercase">
+                    <div className={`mx-auto flex w-full max-w-[1180px] flex-col gap-2 rounded-2xl border border-brand-terracotta-light/20 bg-brand-light/40 px-4 py-3 transition-all duration-300 sm:flex-row sm:items-center sm:justify-between ${!currentVideo.id ? 'opacity-0 pointer-events-none h-0 py-0 overflow-hidden' : ''}`}>
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <span className="block truncate whitespace-nowrap text-[10px] font-bold uppercase text-brand-terracotta">
                           {isHost ? '★ Host · Đang đồng bộ' : isHostPaused ? '⏸ Host đã tạm dừng' : localPaused ? '⏸ Tạm dừng riêng' : '· Đang đồng bộ'}
                         </span>
                         <h4 className="font-display font-extrabold text-sm truncate text-brand-brown-dark">
