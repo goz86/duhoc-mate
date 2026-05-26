@@ -99,6 +99,7 @@ interface Message {
   type?: 'user' | 'system';
   text: string;
   timestamp: string;
+  sentAt?: number;  // unix ms — dùng cho chat bubble
 }
 
 interface PomodoroState {
@@ -2706,7 +2707,16 @@ export default function App() {
             {/* LEFT / CENTER: Stage workspace */}
             <main className={`${mainSpan} p-2 sm:p-4 xl:p-6 flex flex-col gap-4 lg:overflow-y-auto transition-all duration-300`}>
 
-              {!roomCollapsed && <StageSelector stageMode={stageMode} onChange={setStageMode} />}
+              {!roomCollapsed && <StageSelector stageMode={stageMode} onChange={(mode) => {
+                setStageMode(mode);
+                // Tự động ngồi vào bàn khi chuyển sang tab Bàn học
+                if (mode === 'video' && !jitsiActive) {
+                  setJitsiActive(true);
+                  if (roomIdRef.current) {
+                    socket.emit('study-table-action', { roomId: roomIdRef.current, type: 'presence', payload: { active: true } });
+                  }
+                }
+              }} />}
 
               {/* ── STAGE DISPLAY AREA – adapts per stageMode ── */}
               <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : 'flex-1 glass-panel rounded-3xl p-2.5 sm:p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col'} relative ${stageMode === 'pdf' ? 'overflow-visible' : 'overflow-hidden'}`}>

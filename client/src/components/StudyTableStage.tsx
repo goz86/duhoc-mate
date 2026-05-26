@@ -64,6 +64,7 @@ type ChatMessage = {
   senderId?: string
   text: string
   timestamp: string
+  sentAt?: number  // unix ms
 }
 
 type StudyTableStageProps = {
@@ -180,13 +181,14 @@ export default function StudyTableStage({
     return (studyTable?.reactions || []).filter(reaction => reaction.createdAt >= cutoff)
   }, [now, studyTable?.reactions])
 
-  // Chat bubbles: show last message per sender for 2s
+  // Chat bubbles: show last message per sender for 3s (dùng sentAt ms, fallback id prefix)
   const chatBubbles = useMemo(() => {
     const bubbles: Record<string, string> = {}
-    const cutoff = now - 2000
+    const cutoff = now - 3000
     chatMessages.forEach(msg => {
       if (!msg.senderId) return
-      const msgTime = new Date(msg.timestamp).getTime()
+      // sentAt là unix ms từ server; nếu không có thì parse từ id "timestamp-random"
+      const msgTime = msg.sentAt ?? parseInt(msg.id?.split('-')[0] ?? '0', 10)
       if (msgTime >= cutoff) {
         bubbles[msg.senderId] = msg.text
       }

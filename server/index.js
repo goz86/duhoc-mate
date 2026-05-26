@@ -367,6 +367,9 @@ const ensureStudySeat = (room, member) => {
     active: existing.active !== false,
     status: existing.status || 'focus',
     personalPomodoro: existing.personalPomodoro || createPersonalPomodoro(),
+    // Giữ lại tracking thời gian nghỉ để timer client tính đúng
+    pausedSince: existing.pausedSince || null,
+    totalPausedMs: existing.totalPausedMs || 0,
   };
   return studyTable.seats[member.id];
 };
@@ -883,14 +886,16 @@ io.on('connection', (socket) => {
     const sender = room.members.find(m => m.id === socket.id);
     if (!sender) return;
 
+    const now = Date.now();
     const chatMsg = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: `${now}-${Math.random()}`,
       sender: sender.username,
       senderId: socket.id,
       isHost: sender.isHost,
       text: message,
       type: 'user',
-      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      sentAt: now,   // unix ms — dùng cho chat bubble
     };
 
     if (!room.chatMessages) room.chatMessages = [];
