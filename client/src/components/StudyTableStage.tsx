@@ -276,22 +276,23 @@ export default function StudyTableStage({
                   return (
                     <article
                       key={member.id}
-                      className={`group relative w-full rounded-[22px] border border-white/70 bg-white/86 shadow-[0_14px_32px_rgba(76,55,49,0.10)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(76,55,49,0.13)] ${isCrowded ? 'p-3' : 'p-3.5'}`}
+                      className={`group relative w-full rounded-[22px] border border-white/70 bg-white/86 shadow-[0_14px_32px_rgba(76,55,49,0.10)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(76,55,49,0.13)] ${isCrowded ? 'p-3' : 'p-3.5'} ${chatBubble ? 'mt-9' : ''}`}
                     >
+                      {/* Chat bubble – nằm TRÊN card, cộng mt-9 để dành chỗ */}
+                      {chatBubble && (
+                        <div className="absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2">
+                          <div className="relative whitespace-nowrap max-w-[200px] truncate rounded-2xl rounded-b-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-brand-brown-dark shadow-lg">
+                            {chatBubble}
+                            <span className="absolute left-5 top-full h-0 w-0 border-x-4 border-x-transparent border-t-4 border-t-white" />
+                          </div>
+                        </div>
+                      )}
+
                       <div className={`absolute inset-x-3 top-3 h-20 rounded-[20px] bg-gradient-to-br ${palette.desk} opacity-85`} />
                       <div className="absolute right-4 top-4 h-6 w-12 rounded-full border border-white/70 bg-white/65" />
                       <div className="absolute right-6 top-6 h-1.5 w-7 rounded-full bg-brand-terracotta-light/60" />
 
                       <div className="relative">
-                        {/* Chat bubble – hiện ~2s khi member gửi chat */}
-                        {chatBubble && (
-                          <div className="absolute left-1/2 top-0 z-30 -translate-x-1/2 -translate-y-full pb-1">
-                            <div className="relative max-w-[180px] rounded-2xl rounded-bl-sm border border-brand-terracotta-light/20 bg-white px-3 py-1.5 shadow-md">
-                              <p className="truncate text-[11px] font-bold text-brand-brown-dark">{chatBubble}</p>
-                              <span className="absolute -bottom-1.5 left-4 h-3 w-3 rotate-45 border-b border-r border-brand-terracotta-light/20 bg-white" />
-                            </div>
-                          </div>
-                        )}
 
                         {/* Reaction bubbles – hiện 3s khi nhận reaction */}
                         <div className="absolute left-1/2 top-0 z-20 flex -translate-x-1/2 -translate-y-2 flex-col items-center gap-1">
