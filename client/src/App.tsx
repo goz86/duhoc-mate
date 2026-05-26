@@ -2974,24 +2974,40 @@ export default function App() {
                         className="relative min-h-[220px] w-full overflow-y-auto rounded-2xl border border-brand-terracotta-light/20 bg-white/90 p-3.5 shadow-sm backdrop-blur-sm sm:p-4"
                         style={{ height: 'min(35vw, 560px)', maxHeight: 'min(56vh, 560px)' }}
                       >
-                        <div className="sticky top-0 z-30 -mx-4 -mt-4 mb-3 border-b border-brand-terracotta-light/15 bg-white/95 px-4 pb-3 pt-4 backdrop-blur">
-                          <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-black uppercase tracking-wide text-brand-terracotta">
-                              {syncedLyrics.length ? 'Đồng bộ lời bài hát' : 'Lời bài hát'}
+                        <div className="sticky top-0 z-30 -mx-4 -mt-4 mb-3 border-b border-brand-terracotta-light/15 bg-white/95 px-4 pb-2 pt-3 backdrop-blur">
+                          {/* Tiêu đề + nút đóng — ẩn trên mobile để tiết kiệm chỗ */}
+                          <div className="hidden sm:flex items-center justify-between gap-3 mb-1.5">
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-black uppercase tracking-wide text-brand-terracotta">
+                                {syncedLyrics.length ? 'Đồng bộ lời bài hát' : 'Lời bài hát'}
+                              </p>
+                              <h4 className="truncate text-sm font-black text-brand-brown-dark">{activeVideoTitle}</h4>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowLyrics(false)}
+                              className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-brand-terracotta-light/20 bg-white text-brand-brown-light transition hover:text-brand-terracotta"
+                              aria-label="Đóng lời bài hát"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                          {/* Mobile: chỉ hiện hint + nút đóng nhỏ */}
+                          <div className="flex items-center justify-between gap-2 sm:hidden">
+                            <p className="text-[11px] font-bold text-brand-brown-light/75">
+                              Nhấn đúp vào một dòng để chỉnh lời bài hát khớp với video.
                             </p>
-                            <h4 className="truncate text-sm font-black text-brand-brown-dark">{activeVideoTitle}</h4>
+                            <button
+                              type="button"
+                              onClick={() => setShowLyrics(false)}
+                              className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-brand-terracotta-light/20 bg-white text-brand-brown-light transition hover:text-brand-terracotta"
+                              aria-label="Đóng lời bài hát"
+                            >
+                              <X size={12} />
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setShowLyrics(false)}
-                            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-brand-terracotta-light/20 bg-white text-brand-brown-light transition hover:text-brand-terracotta"
-                            aria-label="Đóng lời bài hát"
-                          >
-                            <X size={14} />
-                          </button>
-                          </div>
-                          <p className="mt-2 text-[11px] font-bold text-brand-brown-light/75">
+                          {/* Desktop: hint text bên dưới tiêu đề */}
+                          <p className="hidden sm:block text-[11px] font-bold text-brand-brown-light/75">
                             Nhấn đúp vào một dòng để chỉnh lời bài hát khớp với video.
                           </p>
                         </div>

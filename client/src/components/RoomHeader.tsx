@@ -1,4 +1,4 @@
-import { Crown, LogOut, Share2, UserPlus, Users } from 'lucide-react'
+import { Crown, LogOut, Share2, UserPlus, Users, X, Home } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import duhocMateLogo from '../assets/duhoc-mate-logo-new.png'
@@ -38,6 +38,7 @@ export default function RoomHeader({
 }: RoomHeaderProps) {
   const { t } = useTranslation()
   const [showMembers, setShowMembers] = useState(false)
+  const [showLogoConfirm, setShowLogoConfirm] = useState(false)
   const membersRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -53,9 +54,43 @@ export default function RoomHeader({
   }, [])
 
   return (
+    <>
+    {/* Logo click confirm popup */}
+    {showLogoConfirm && (
+      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xs overflow-hidden">
+          <div className="bg-gradient-to-br from-brand-terracotta/10 to-brand-light p-5 text-center">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
+              <Home size={24} className="text-brand-terracotta" />
+            </div>
+            <p className="text-base font-black text-brand-brown-dark">Về trang chủ?</p>
+            <p className="mt-1 text-xs font-bold text-brand-brown-light">Bạn sẽ rời khỏi phòng học này.</p>
+          </div>
+          <div className="flex gap-2 p-4">
+            <button
+              onClick={() => setShowLogoConfirm(false)}
+              className="flex-1 rounded-2xl border border-brand-terracotta-light/20 bg-brand-light px-4 py-2.5 text-sm font-bold text-brand-brown-dark transition hover:bg-brand-terracotta-light/20"
+            >
+              Ở lại
+            </button>
+            <button
+              onClick={() => { setShowLogoConfirm(false); onLeaveRoom(); }}
+              className="flex-1 rounded-2xl bg-brand-terracotta px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-brown-dark"
+            >
+              Về trang chủ
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <header className="sticky top-0 z-50 flex items-center justify-between border-b border-brand-terracotta-light/20 bg-white/75 px-5 py-3 backdrop-blur-md">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowLogoConfirm(true)}
+          className="flex items-center gap-2 rounded-xl transition hover:opacity-75"
+          aria-label="Về trang chủ"
+        >
           <img
             src={duhocMateLogo}
             alt="Duhoc Mate"
@@ -64,7 +99,7 @@ export default function RoomHeader({
           <span className="hidden font-display text-lg font-black text-brand-brown-dark sm:inline">
             Duhoc Mate
           </span>
-        </div>
+        </button>
 
         <div className="relative" ref={membersRef}>
           <button
@@ -179,7 +214,9 @@ export default function RoomHeader({
       </div>
 
       <div className="flex items-center gap-2">
-        <LanguageSwitcher compact />
+        <div className="hidden sm:block">
+          <LanguageSwitcher compact />
+        </div>
         <button
           onClick={onLeaveRoom}
           className="flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-brand-light px-4 py-2.5 text-sm font-bold text-brand-brown-dark transition hover:bg-brand-terracotta-light/40"
@@ -189,5 +226,6 @@ export default function RoomHeader({
         </button>
       </div>
     </header>
+    </>
   )
 }
