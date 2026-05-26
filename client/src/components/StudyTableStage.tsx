@@ -274,7 +274,6 @@ export default function StudyTableStage({
                       ? { label: 'Giải lao', Icon: statusCycle[3].Icon, tone: 'text-amber-700 bg-amber-50 border-amber-100' }
                       : { label: 'Sẵn sàng', Icon: statusCycle[0].Icon, tone: 'text-emerald-700 bg-emerald-50 border-emerald-100' }
                   const isLocal = member.id === currentSocketId || member.username === username
-                  const StatusIcon = status.Icon
                   const activeReactions = visibleReactions.filter(item => item.memberId === member.id)
 
                   return (
