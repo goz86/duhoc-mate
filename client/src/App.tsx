@@ -2500,39 +2500,70 @@ export default function App() {
                       </div>
                       {/* Man hinh cho khi chua co video — cũng hiện khi lỗi + playlist rỗng */}
                       {(!currentVideo.id && playlist.length === 0) && (
-                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 p-8 text-center bg-gradient-to-br from-brand-brown-dark/95 to-black/95">
-                          <div className="flex flex-col items-center gap-3 px-4">
-                            <div className="w-20 h-20 rounded-full bg-brand-terracotta/20 border-2 border-brand-terracotta/30 flex items-center justify-center animate-pulse">
-                              <Music2 size={34} className="text-brand-terracotta" />
+                        <div className="absolute inset-0 z-10 overflow-y-auto bg-[#FDF8F0] p-3 text-center text-brand-brown-dark sm:p-6">
+                          <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col justify-center gap-4">
+                            <div className="rounded-[28px] border border-brand-terracotta-light/25 bg-white/85 p-4 shadow-[0_24px_70px_rgba(76,55,49,0.10)] backdrop-blur sm:p-6">
+                          <div className="flex flex-col items-center gap-3 px-2 sm:px-4 [&>h3]:hidden [&>p:last-child]:hidden">
+                            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-terracotta text-white shadow-lg shadow-brand-terracotta/20">
+                              <Music2 size={25} />
                             </div>
-                            <h3 className="font-display font-black text-white text-xl mt-1">Chưa có video nào</h3>
-                            <p className="text-white/50 text-sm max-w-sm leading-relaxed break-words">
-                              Tìm và thêm bài nhạc vào playlist bên phải để bắt đầu học cùng nhau!
-                            </p>
+                            <div className="max-w-2xl">
+                              <p className="text-[11px] font-black uppercase text-brand-terracotta">YouTube setup</p>
+                              <h3 className="mt-1 font-display text-xl font-black leading-tight text-brand-brown-dark sm:text-2xl">Chưa có video nào trong phòng</h3>
+                              <p className="mt-1 text-sm leading-relaxed text-brand-brown-light">
+                                Chọn một bài để tạo playlist chung. Khi thêm video, player sẽ tự liên kết với YouTube và đồng bộ cho cả phòng.
+                              </p>
+                            </div>
                           </div>
-                          <div className="w-full max-w-sm space-y-2">
-                            <p className="text-white/30 text-xs font-bold uppercase tracking-wider mb-3">Gợi ý phổ biến</p>
+                          <div className="mt-5 overflow-x-auto pb-1">
+                            <div className="relative grid min-w-[560px] grid-cols-5 items-start gap-2 px-1 sm:min-w-0">
+                              <div className="absolute left-[10%] right-[10%] top-5 h-1 rounded-full bg-brand-terracotta-light/35" />
+                              <div className="absolute left-[10%] top-5 h-1 w-[10%] rounded-full bg-brand-terracotta" />
+                              {[
+                                { label: 'Tìm nhạc', Icon: Search, done: true },
+                                { label: 'Chọn video', Icon: Play, done: false },
+                                { label: 'Thêm playlist', Icon: Plus, done: false },
+                                { label: 'Sẵn sàng', Icon: ListMusic, done: false },
+                                { label: 'Phát cùng nhau', Icon: Sparkles, done: false },
+                              ].map((step, stepIndex) => {
+                                const StepIcon = step.Icon;
+                                const isActive = stepIndex === 1;
+
+                                return (
+                                  <div key={step.label} className="relative z-10 flex flex-col items-center text-center">
+                                    <span className={`grid h-11 w-11 place-items-center rounded-full border-4 shadow-sm ${step.done ? 'border-brand-terracotta bg-brand-terracotta text-white' : isActive ? 'border-brand-terracotta-light bg-white text-brand-terracotta shadow-[0_0_0_6px_rgba(167,122,108,0.12)]' : 'border-brand-terracotta-light/45 bg-white text-brand-brown-light'}`}>
+                                      <StepIcon size={16} />
+                                    </span>
+                                    <span className={`mt-2 text-[11px] font-black ${isActive ? 'text-brand-terracotta' : 'text-brand-brown-light'}`}>
+                                      {step.label}
+                                    </span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-3">
                             {trendingVideoSuggestions.slice(0, 3).map(s => (
                               <button
                                 key={s.videoId}
                                 type="button"
-                                onClick={() => {
-                                  socket.emit('add-to-playlist', { roomId, videoId: s.videoId, title: s.title, duration: s.duration });
-                                }}
-                                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-white/10 bg-white/10 hover:bg-white/20 hover:border-brand-terracotta/40 transition text-left cursor-pointer"
+                                onClick={() => addSuggestedVideo(s)}
+                                className="group flex min-w-0 items-center gap-3 rounded-2xl border border-brand-terracotta-light/20 bg-white/80 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-terracotta/35 hover:bg-white hover:shadow-md"
                                 title="Thêm vào playlist"
                               >
-                                <div className="w-9 h-9 rounded-xl bg-brand-terracotta/20 flex items-center justify-center shrink-0">
-                                  <Play size={14} className="text-brand-terracotta ml-0.5" />
+                                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-light text-brand-terracotta transition group-hover:bg-brand-terracotta group-hover:text-white">
+                                  <Play size={14} className="ml-0.5" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-white/90 text-xs font-bold truncate">{s.title}</p>
-                                  <p className="text-white/40 text-[10px] mt-0.5">{s.category} · {s.duration}</p>
+                                  <p className="truncate text-xs font-black text-brand-brown-dark">{s.title}</p>
+                                  <p className="mt-0.5 text-[10px] font-bold text-brand-brown-light">{s.category} · {s.duration}</p>
                                 </div>
-                                <Plus size={14} className="text-white/40 shrink-0" />
+                                <Plus size={14} className="shrink-0 text-brand-brown-light transition group-hover:text-brand-terracotta" />
                               </button>
                             ))}
                           </div>
+                        </div>
                         </div>
                       )}
 
