@@ -1,4 +1,4 @@
-import { Crown, LogOut, Share2, UserPlus, Users, X, Home } from 'lucide-react'
+import { Crown, LogOut, Share2, UserPlus, Users, Home } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import duhocMateLogo from '../assets/duhoc-mate-logo-new.png'

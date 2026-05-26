@@ -404,6 +404,8 @@ export default function App() {
   const [showYoutubeCaptions, setShowYoutubeCaptions] = useState(false);
   const activeLyricRef = useRef<HTMLParagraphElement>(null);
   const miniActiveLyricRef = useRef<HTMLParagraphElement>(null);
+  const lyricsScrollRef = useRef<HTMLDivElement>(null);
+  const miniLyricsScrollRef = useRef<HTMLDivElement>(null);
   const lastSearchQueryRef = useRef('');
   const dragItemRef = useRef<number | null>(null);
   const dragOverItemRef = useRef<number | null>(null);
@@ -2196,8 +2198,18 @@ export default function App() {
   ), -1);
 
   React.useEffect(() => {
-    activeLyricRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    miniActiveLyricRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    // Cuộn trong đúng container lyrics — không dùng scrollIntoView để tránh cuộn nhầm
+    const scrollWithin = (container: HTMLDivElement | null, el: HTMLParagraphElement | null) => {
+      if (!container || !el) return;
+      const containerTop = container.scrollTop;
+      const containerHeight = container.clientHeight;
+      const elTop = el.offsetTop;
+      const elHeight = el.clientHeight;
+      const target = elTop - containerHeight / 2 + elHeight / 2;
+      container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+    };
+    scrollWithin(lyricsScrollRef.current, activeLyricRef.current);
+    scrollWithin(miniLyricsScrollRef.current, miniActiveLyricRef.current);
   }, [activeLyricIndex]);
 
   return (
@@ -2787,7 +2799,7 @@ export default function App() {
                           <Music2 size={12} /> {showLyrics ? 'Ẩn lời video' : 'Hiện lời video'}
                         </button>
                         {showLyrics && (
-                          <div className="mt-4 max-h-56 overflow-y-auto pr-2">
+                          <div ref={miniLyricsScrollRef} className="mt-4 max-h-56 overflow-y-auto pr-2">
                             <p className="mb-3 text-center text-[11px] font-bold text-brand-brown-light/75">
                               Nhấn đúp vào một dòng để chỉnh lời bài hát khớp với video.
                             </p>
@@ -3014,7 +3026,7 @@ export default function App() {
                         </div>
 
                         {/* Vùng cuộn lời bài hát */}
-                        <div className="relative flex-1 overflow-y-auto p-3.5 sm:p-4">
+                        <div ref={lyricsScrollRef} className="relative flex-1 overflow-y-auto p-3.5 sm:p-4">
                         {lyricsLoading ? (
                           <p className="py-10 text-center text-xs text-brand-brown-light animate-pulse">Đang tải lời bài hát...</p>
                         ) : displayLyricLines.length > 0 ? (
