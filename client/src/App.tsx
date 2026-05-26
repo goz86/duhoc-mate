@@ -2971,10 +2971,11 @@ export default function App() {
                     {/* Info bar + local pause cho non-host — ẩn khi chưa có video */}
                     {showLyrics && (lyrics || lyricsLoading) && (
                       <aside
-                        className="relative min-h-[220px] w-full overflow-y-auto rounded-2xl border border-brand-terracotta-light/20 bg-white/90 p-3.5 shadow-sm backdrop-blur-sm sm:p-4"
-                        style={{ height: 'min(35vw, 560px)', maxHeight: 'min(56vh, 560px)' }}
+                        className="flex flex-col w-full rounded-2xl border border-brand-terracotta-light/20 bg-white/90 shadow-sm backdrop-blur-sm overflow-hidden"
+                        style={{ height: 'min(35vw, 560px)', maxHeight: 'min(56vh, 560px)', minHeight: '220px' }}
                       >
-                        <div className="sticky top-0 z-30 -mx-3.5 -mt-3.5 mb-3 border-b border-brand-terracotta-light/15 bg-white/95 px-3.5 pb-2 pt-3 backdrop-blur sm:-mx-4 sm:-mt-4 sm:px-4">
+                        {/* Header — nằm ngoài vùng cuộn, luôn khít với viền */}
+                        <div className="shrink-0 border-b border-brand-terracotta-light/15 bg-white/95 px-3.5 pb-2 pt-3 backdrop-blur sm:px-4">
                           {/* Tiêu đề + nút đóng — ẩn trên mobile để tiết kiệm chỗ */}
                           <div className="hidden sm:flex items-center justify-between gap-3 mb-1.5">
                             <div className="min-w-0">
@@ -3012,6 +3013,8 @@ export default function App() {
                           </p>
                         </div>
 
+                        {/* Vùng cuộn lời bài hát */}
+                        <div className="relative flex-1 overflow-y-auto p-3.5 sm:p-4">
                         {lyricsLoading ? (
                           <p className="py-10 text-center text-xs text-brand-brown-light animate-pulse">Đang tải lời bài hát...</p>
                         ) : displayLyricLines.length > 0 ? (
@@ -3084,6 +3087,7 @@ export default function App() {
                         ) : (
                           <p className="py-10 text-center text-xs text-brand-brown-light">Không tìm thấy lời bài hát.</p>
                         )}
+                        </div>
                       </aside>
                     )}
                     </div>
