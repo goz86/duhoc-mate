@@ -177,10 +177,11 @@ export default function CommunityForum({
 
   // Increment views when post is selected (atomic via RPC)
   useEffect(() => {
-    if (!selectedPost || !supabase) return
+    const client = supabase
+    if (!selectedPost || !client) return
     const incrementViews = async () => {
       try {
-        const { error } = await supabase.rpc('increment_post_views', { post_id: selectedPost.id })
+        const { error } = await client.rpc('increment_post_views', { post_id: selectedPost.id })
         if (error) throw error
         setSelectedPost(prev => prev ? { ...prev, views_count: prev.views_count + 1 } : null)
         setPosts(prev => prev.map(p => p.id === selectedPost.id ? { ...p, views_count: p.views_count + 1 } : p))
@@ -456,10 +457,11 @@ export default function CommunityForum({
   }
 
   const handleDeletePost = async (postId: string) => {
-    if (!supabase || (!isAdmin && posts.find(p => p.id === postId)?.user_id !== currentUserId)) return
+    const client = supabase
+    if (!client || (!isAdmin && posts.find(p => p.id === postId)?.user_id !== currentUserId)) return
     showConfirm('Bạn có chắc chắn muốn xóa bài viết này không?', async () => {
     try {
-      const { error } = await supabase.from('community_posts').delete().eq('id', postId)
+      const { error } = await client.from('community_posts').delete().eq('id', postId)
       if (error) throw error
       setPosts(prev => prev.filter(p => p.id !== postId))
       if (selectedPost?.id === postId) setSelectedPost(null)
@@ -579,10 +581,11 @@ export default function CommunityForum({
   }
 
   const handleDeleteComment = (commentId: string) => {
-    if (!supabase || !selectedPost) return
+    const client = supabase
+    if (!client || !selectedPost) return
     showConfirm('Bạn có chắc chắn muốn xóa bình luận này không?', async () => {
       try {
-        const { error } = await supabase.from('community_comments').delete().eq('id', commentId)
+        const { error } = await client.from('community_comments').delete().eq('id', commentId)
         if (error) throw error
         setComments(prev => prev.filter(c => c.id !== commentId))
         setSelectedPost(prev => prev ? { ...prev, comments_count: Math.max(0, prev.comments_count - 1) } : null)
