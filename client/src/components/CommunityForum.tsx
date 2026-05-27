@@ -128,6 +128,11 @@ export default function CommunityForum({
   const [isAnon, setIsAnon] = useState(true)
   const [submittingPost, setSubmittingPost] = useState(false)
 
+  // Edit mode
+  const [isEditing, setIsEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editContent, setEditContent] = useState('')
+
   // Comments
   const [newComment, setNewComment] = useState('')
   const [isAnonComment, setIsAnonComment] = useState(true)
@@ -339,6 +344,36 @@ export default function CommunityForum({
     setTimeout(() => setCopiedPostId(null), 2500)
   }
 
+  const handleEditPost = async (postId: string) => {
+    if (!supabase || (!isAdmin && posts.find(p => p.id === postId)?.user_id !== currentUserId)) return
+    if (!editTitle.trim() || !editContent.trim()) {
+      alert('Vui lòng nhập tiêu đề và nội dung')
+      return
+    }
+    try {
+      const { error } = await supabase
+        .from('community_posts')
+        .update({ title: editTitle.trim(), content: editContent.trim(), updated_at: new Date().toISOString() })
+        .eq('id', postId)
+      if (error) throw error
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, title: editTitle.trim(), content: editContent.trim(), updated_at: new Date().toISOString() } : p))
+      if (selectedPost?.id === postId) {
+        setSelectedPost({ ...selectedPost, title: editTitle.trim(), content: editContent.trim(), updated_at: new Date().toISOString() })
+      }
+      setIsEditing(false)
+      setEditTitle('')
+      setEditContent('')
+    } catch (err) {
+      console.error('Error editing post:', err)
+    }
+  }
+
+  const startEditPost = (post: CommunityPost) => {
+    setEditTitle(post.title)
+    setEditContent(post.content)
+    setIsEditing(true)
+  }
+
   const handleDeletePost = async (postId: string) => {
     if (!supabase || (!isAdmin && posts.find(p => p.id === postId)?.user_id !== currentUserId)) return
     if (!confirm('Bạn có chắc chắn muốn xóa bài viết này không?')) return
@@ -484,47 +519,92 @@ export default function CommunityForum({
           >
             <Bookmark size={17} fill={bookmarkedPosts.has(selectedPost.id) ? 'currentColor' : 'none'} />
           </button>
-          {(isAdmin || selectedPost.user_id === currentUserId) && (
-            <button
-              onClick={() => handleDeletePost(selectedPost.id)}
-              className="grid h-10 w-10 place-items-center rounded-full text-red-500 hover:bg-red-50 transition active:scale-95"
-              aria-label="Xóa"
-            >
-              <Trash2 size={16} />
-            </button>
+          {(isAdmin || selectedPost.user_id === currentUserId) && !isEditing && (
+            <>
+              <button
+                onClick={() => startEditPost(selectedPost)}
+                className="grid h-10 w-10 place-items-center rounded-full text-brand-terracotta hover:bg-brand-terracotta/10 transition active:scale-95"
+                aria-label="Sửa"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+              </button>
+              <button
+                onClick={() => handleDeletePost(selectedPost.id)}
+                className="grid h-10 w-10 place-items-center rounded-full text-red-500 hover:bg-red-50 transition active:scale-95"
+                aria-label="Xóa"
+              >
+                <Trash2 size={16} />
+              </button>
+            </>
           )}
         </header>
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-32">
           <article className="px-4 sm:px-6 pt-5 pb-6">
-            {/* Author row */}
-            <div className="flex items-center gap-2 text-xs text-brand-brown-light mb-3">
-              <span className="inline-flex items-center gap-1.5">
-                {selectedPost.is_anonymous
-                  ? <ShieldCheck size={13} className="text-emerald-500" />
-                  : <User size={13} className="text-brand-brown-light" />}
-                <span className="font-bold text-brand-brown-dark">{selectedPost.display_name}</span>
-              </span>
-              <span>·</span>
-              <span>{new Date(selectedPost.created_at).toLocaleDateString('vi-VN')}</span>
-              <span>·</span>
-              <span className="inline-flex items-center gap-1">
-                <Eye size={11} /> {selectedPost.views_count}
-              </span>
-            </div>
+            {isEditing ? (
+              <div className="space-y-3 mb-6">
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={e => setEditTitle(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-brand-terracotta-light/25 bg-brand-light/50 text-sm font-black text-brand-brown-dark placeholder:text-brand-brown-light/50 outline-none focus:ring-2 focus:ring-brand-terracotta/30"
+                  placeholder="Tiêu đề"
+                />
+                <textarea
+                  value={editContent}
+                  onChange={e => setEditContent(e.target.value)}
+                  rows={6}
+                  className="w-full px-4 py-3 rounded-xl border border-brand-terracotta-light/25 bg-brand-light/50 text-sm font-medium text-brand-brown-dark placeholder:text-brand-brown-light/50 outline-none focus:ring-2 focus:ring-brand-terracotta/30 resize-none"
+                  placeholder="Nội dung"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button
+                    onClick={() => { setIsEditing(false); setEditTitle(''); setEditContent(''); }}
+                    className="px-4 py-2 rounded-full bg-brand-light text-xs font-black text-brand-brown-dark hover:bg-brand-terracotta-light/20 transition"
+                  >
+                    Huỷ
+                  </button>
+                  <button
+                    onClick={() => handleEditPost(selectedPost.id)}
+                    className="px-4 py-2 rounded-full bg-brand-terracotta text-xs font-black text-white hover:bg-brand-brown-dark transition"
+                  >
+                    Lưu
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Author row */}
+                <div className="flex items-center gap-2 text-xs text-brand-brown-light mb-3">
+                  <span className="inline-flex items-center gap-1.5">
+                    {selectedPost.is_anonymous
+                      ? <ShieldCheck size={13} className="text-emerald-500" />
+                      : <User size={13} className="text-brand-brown-light" />}
+                    <span className="font-bold text-brand-brown-dark">{selectedPost.display_name}</span>
+                  </span>
+                  <span>·</span>
+                  <span>{new Date(selectedPost.created_at).toLocaleDateString('vi-VN')}</span>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Eye size={11} /> {selectedPost.views_count}
+                  </span>
+                </div>
 
-            {/* Title */}
-            <h1 className="font-display text-xl sm:text-2xl font-black text-brand-brown-dark leading-tight mb-4">
-              {selectedPost.title}
-            </h1>
+                {/* Title */}
+                <h1 className="font-display text-xl sm:text-2xl font-black text-brand-brown-dark leading-tight mb-4">
+                  {selectedPost.title}
+                </h1>
 
-            {/* Content */}
-            <div className="text-[15px] leading-relaxed text-brand-brown-dark/95 whitespace-pre-wrap mb-6">
-              {selectedPost.content}
-            </div>
+                {/* Content */}
+                <div className="text-[15px] leading-relaxed text-brand-brown-dark/95 whitespace-pre-wrap mb-6">
+                  {selectedPost.content}
+                </div>
+              </>
+            )}
 
             {/* Action pills */}
+            {!isEditing && (
             <div className="flex flex-wrap items-center gap-2 pb-5 border-b border-brand-terracotta-light/20">
               <button
                 onClick={() => handleLikePost(selectedPost.id, true)}
@@ -548,6 +628,7 @@ export default function CommunityForum({
                 <span>{copiedPostId === selectedPost.id ? 'Đã copy' : 'Chia sẻ'}</span>
               </button>
             </div>
+            )}
           </article>
 
           {/* Comments */}
