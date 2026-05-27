@@ -844,6 +844,7 @@ export default function LandingPage({
                   src={studyLounge3d}
                   alt="Minh họa học tập"
                   className="aspect-[1.22/1] w-full rounded-[26px] border border-black/[0.04] object-cover shadow-[0_22px_56px_rgba(76,55,49,0.12)]"
+                  style={{ filter: 'brightness(1.08) saturate(0.82)' }}
                 />
               </div>
             </div>
