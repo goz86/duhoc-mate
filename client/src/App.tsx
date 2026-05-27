@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import QRCode from 'qrcode';
 import { useAuth } from './contexts/AuthContext';
 import { supabase } from './lib/supabase';
+import duhocMateLogo from './assets/duhoc-mate-logo-new.png';
 import AuthModal from './components/AuthModal';
 import TopikStudy from './components/TopikStudy';
 import IdeaBoard from './components/IdeaBoard';
@@ -184,7 +185,7 @@ const trendingVideoSuggestions = [
 
 export default function App() {
   const { t } = useTranslation();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, loading } = useAuth();
 
   const [customAlert, setCustomAlert] = useState<{ message: string; show: boolean } | null>(null);
 
@@ -272,6 +273,38 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
+
+  // PWA Back Button & History Interceptor
+  useEffect(() => {
+    // 1. Pushing dummy state on Landing Page to prevent immediate app exit on Android back button
+    if (view === 'landing') {
+      if (window.history.state?.page !== 'landing') {
+        window.history.pushState({ page: 'landing' }, '');
+      }
+    }
+
+    const handlePopState = () => {
+      const hash = window.location.hash;
+
+      if (view === 'room') {
+        const currentRoomHash = `#room/${roomId}`;
+        if (hash !== currentRoomHash) {
+          // Block navigation: force the hash back to the room hash immediately
+          window.history.pushState({ page: 'room', roomId }, '', currentRoomHash);
+          // Show leaving confirmation dialog
+          handleLeaveRoom();
+        }
+      } else if (view === 'forum' || view === 'admin') {
+        setView('landing');
+        navigateToLanding();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [view, roomId]);
 
   // Auth modal
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -2281,6 +2314,41 @@ export default function App() {
     scrollWithin(lyricsScrollRef.current, activeLyricRef.current);
     scrollWithin(miniLyricsScrollRef.current, miniActiveLyricRef.current);
   }, [activeLyricIndex]);
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#fbf6ef] p-6 animate-custom-fade-in select-none">
+        <div className="flex flex-col items-center max-w-xs text-center space-y-6">
+          {/* Animated pulsing cozy logo */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-brand-terracotta/20 rounded-[24px] blur-xl animate-pulse" />
+            <img
+              src={duhocMateLogo}
+              alt="Duhoc Mate"
+              className="relative h-24 w-24 rounded-[24px] object-cover shadow-md shadow-brand-terracotta/10 border-2 border-white animate-[bounce_2s_infinite]"
+            />
+          </div>
+
+          {/* Styled Typography brand name and description */}
+          <div className="space-y-1">
+            <h1 className="font-display text-3xl font-black text-brand-brown-dark tracking-wide drop-shadow-sm">
+              Duhoc Mate
+            </h1>
+            <p className="text-xs font-black uppercase tracking-widest text-brand-terracotta">
+              Cùng nhau học · vững tương lai
+            </p>
+          </div>
+
+          {/* Cozy Bouncing Dots Loader */}
+          <div className="flex items-center gap-1.5 pt-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-brand-terracotta animate-bounce [animation-delay:-0.3s]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-brand-terracotta/85 animate-bounce [animation-delay:-0.15s]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-brand-terracotta/60 animate-bounce" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen bg-transparent text-brand-brown-dark font-sans selection:bg-brand-accent selection:text-white flex flex-col items-center ${view === 'room' ? 'lg:h-screen lg:overflow-hidden bg-brand-cream' : ''}`}>
