@@ -2024,6 +2024,26 @@ export default function App() {
     dragOverItemRef.current = null;
   };
 
+  const movePlaylistItem = (index: number, direction: 'up' | 'down') => {
+    if (!isHost) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= playlist.length) return;
+
+    const dragItem = playlist[index];
+    const hoverItem = playlist[targetIndex];
+    if (!dragItem || !hoverItem || dragItem.status !== 'queued' || hoverItem.status !== 'queued') {
+      return;
+    }
+
+    const newPlaylist = [...playlist];
+    const [removed] = newPlaylist.splice(index, 1);
+    newPlaylist.splice(targetIndex, 0, removed);
+
+    const orderedIds = newPlaylist.map(item => item.id);
+    socket?.emit('reorder-playlist', { roomId, orderedIds });
+    setPlaylist(newPlaylist);
+  };
+
   const voteSong = (songId: string) => {
     socket.emit('vote-song', { roomId, songId });
   };
@@ -4025,7 +4045,7 @@ export default function App() {
                             onDragOver={(e) => handleDragOver(e, idx)}
                             onDrop={handleDrop}
                             onDragEnd={handleDragEnd}
-                            className={`p-4 rounded-2xl bg-white/60 border border-brand-terracotta-light/10 flex justify-between items-center shadow-sm hover:shadow transition ${
+                            className={`p-4 rounded-2xl bg-white/60 border border-brand-terracotta-light/10 flex justify-between items-center shadow-sm hover:shadow transition group ${
                               isPlaying
                                 ? 'ring-2 ring-brand-terracotta/30 bg-brand-light/35 playing-item-container'
                                 : isPlayed
@@ -4034,7 +4054,27 @@ export default function App() {
                             } ${isHost && isQueued ? 'cursor-grab active:cursor-grabbing hover:border-brand-terracotta/30' : ''}`}
                           >
                             {isHost && isQueued && (
-                              <GripVertical size={14} className="text-brand-brown-light/40 mr-2 shrink-0 cursor-grab" />
+                              <div className="flex flex-col items-center gap-0.5 mr-2 shrink-0">
+                                {idx > 0 && playlist[idx - 1]?.status === 'queued' && (
+                                  <button
+                                    onClick={() => movePlaylistItem(idx, 'up')}
+                                    className="p-1 rounded-md text-brand-brown-light/40 hover:text-brand-terracotta hover:bg-brand-terracotta/5 transition active:scale-95 cursor-pointer md:opacity-0 md:group-hover:opacity-100 shrink-0"
+                                    title="Di chuyển lên"
+                                  >
+                                    <ChevronRight size={12} className="-rotate-90" />
+                                  </button>
+                                )}
+                                <GripVertical size={12} className="text-brand-brown-light/40 cursor-grab hidden md:block shrink-0" />
+                                {idx < playlist.length - 1 && playlist[idx + 1]?.status === 'queued' && (
+                                  <button
+                                    onClick={() => movePlaylistItem(idx, 'down')}
+                                    className="p-1 rounded-md text-brand-brown-light/40 hover:text-brand-terracotta hover:bg-brand-terracotta/5 transition active:scale-95 cursor-pointer md:opacity-0 md:group-hover:opacity-100 shrink-0"
+                                    title="Di chuyển xuống"
+                                  >
+                                    <ChevronRight size={12} className="rotate-90" />
+                                  </button>
+                                )}
+                              </div>
                             )}
                             <div className="space-y-1.5 min-w-0 flex-1 pr-3">
                               <div className="flex items-center gap-2">
