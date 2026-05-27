@@ -197,7 +197,29 @@ export default function CommunityForum({
       }
       const { data, error } = await query.order('created_at', { ascending: false })
       if (error) throw error
-      setPosts(data || [])
+
+      let result = data || []
+
+      // Guest: apply local reaction count deltas so counts show correctly after reload
+      if (!currentUserId) {
+        try {
+          const saved = localStorage.getItem('forum_guest_reactions')
+          if (saved) {
+            const { liked = [], disliked = [] } = JSON.parse(saved)
+            const likedSet = new Set<string>(liked)
+            const dislikedSet = new Set<string>(disliked)
+            if (likedSet.size > 0 || dislikedSet.size > 0) {
+              result = result.map(p => ({
+                ...p,
+                likes_count: p.likes_count + (likedSet.has(p.id) ? 1 : 0),
+                dislikes_count: p.dislikes_count + (dislikedSet.has(p.id) ? 1 : 0)
+              }))
+            }
+          }
+        } catch {}
+      }
+
+      setPosts(result)
     } catch (err) {
       console.error('Error fetching posts:', err)
     } finally {
@@ -244,7 +266,22 @@ export default function CommunityForum({
   }
 
   const handlePostClick = (post: CommunityPost) => {
-    setSelectedPost(post)
+    // Guest: apply local reaction delta to selectedPost count too
+    let displayPost = post
+    if (!currentUserId) {
+      try {
+        const saved = localStorage.getItem('forum_guest_reactions')
+        if (saved) {
+          const { liked = [], disliked = [] } = JSON.parse(saved)
+          displayPost = {
+            ...post,
+            likes_count: post.likes_count + (liked.includes(post.id) ? 1 : 0),
+            dislikes_count: post.dislikes_count + (disliked.includes(post.id) ? 1 : 0)
+          }
+        }
+      } catch {}
+    }
+    setSelectedPost(displayPost)
     fetchComments(post.id)
     // View counting handled by the useEffect watching selectedPost?.id
   }

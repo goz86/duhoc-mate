@@ -326,8 +326,13 @@ export default function App() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [sessionStats, setSessionStats] = useState({ minutes: 0, songs: 0, messages: 0 });
 
-  // Help board
-  const [showHelpBoard, setShowHelpBoard] = useState(false);
+  // Help board – persists tab across page reloads
+  const [showHelpBoard, setShowHelpBoard] = useState<boolean>(() => {
+    try { return localStorage.getItem('duhocmate_show_forum') === 'true' } catch { return false }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('duhocmate_show_forum', String(showHelpBoard)) } catch {}
+  }, [showHelpBoard]);
 
   // Lobby (landing card) states
   // lobbyTab removed — new design uses sections instead of tabs
