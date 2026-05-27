@@ -284,6 +284,11 @@ export default function App() {
     }
 
     const handlePopState = () => {
+      if (isProgrammaticNavRef.current) {
+        isProgrammaticNavRef.current = false;
+        return;
+      }
+
       const hash = window.location.hash;
 
       if (view === 'room') {
@@ -315,6 +320,7 @@ export default function App() {
 
   // Session tracking cho popup tổng kết
   const joinTimeRef = useRef<number>(Date.now());
+  const isProgrammaticNavRef = useRef(false);
   const songsPlayedRef = useRef<number>(0);
   const messagesSentRef = useRef<number>(0);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
@@ -1657,6 +1663,7 @@ export default function App() {
     setCurrentVideo({ id: '', time: 0, playing: false });
     setIdeaTasks([]);
     setPomodoro({ timeLeft: 25 * 60, duration: 25 * 60, isRunning: false, isBreak: false });
+    isProgrammaticNavRef.current = true;
     navigateToLanding();
     socket.emit('request-active-rooms');
   };
@@ -2930,7 +2937,7 @@ export default function App() {
             isHost={isHost}
             onCopyRoomId={copyRoomId}
             onLeaveRoom={handleLeaveRoom}
-            onMinimizeRoom={() => { setView('landing'); navigateToLanding(); }}
+            onMinimizeRoom={() => { isProgrammaticNavRef.current = true; setView('landing'); navigateToLanding(); }}
             onAddFriend={addFriendFromMember}
             onTransferHost={transferHost}
           />
@@ -4388,7 +4395,7 @@ export default function App() {
         <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 bg-[#FAF6F0]/90 dark:bg-slate-900/90 backdrop-blur-md border border-brand-terracotta/20 rounded-2xl p-3 shadow-[0_12px_40px_rgba(76,55,49,0.15)] animate-custom-fade-in w-72 sm:w-80 group transition-all duration-300 hover:border-brand-terracotta/40">
           {/* Animated vinyl / CD visualizer */}
           <div 
-            onClick={() => { setView('room'); navigateToRoom(roomId); }}
+            onClick={() => { isProgrammaticNavRef.current = true; setView('room'); navigateToRoom(roomId); }}
             className="relative w-12 h-12 rounded-full bg-brand-brown-dark flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 shadow-md ring-2 ring-brand-terracotta/20 group-hover:ring-brand-terracotta/40 transition"
           >
             {currentVideo.id ? (
@@ -4407,7 +4414,7 @@ export default function App() {
 
           {/* Song text area */}
           <div 
-            onClick={() => { setView('room'); navigateToRoom(roomId); }}
+            onClick={() => { isProgrammaticNavRef.current = true; setView('room'); navigateToRoom(roomId); }}
             className="flex-1 min-w-0 cursor-pointer space-y-0.5"
           >
             <p className="text-xs font-bold text-brand-terracotta uppercase tracking-wider select-none">Đang học nhóm</p>
@@ -4439,7 +4446,7 @@ export default function App() {
 
             {/* Expand / Maximize button */}
             <button
-              onClick={() => { setView('room'); navigateToRoom(roomId); }}
+              onClick={() => { isProgrammaticNavRef.current = true; setView('room'); navigateToRoom(roomId); }}
               className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 text-brand-brown-dark dark:text-white border border-brand-terracotta/20 flex items-center justify-center hover:bg-brand-light transition cursor-pointer active:scale-90 shadow-sm"
               title="Quay lại phòng"
             >
