@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, Clock, MapPin, Phone, Plus, X, Heart, Share2, Send } from 'lucide-react'
+import { AlertCircle, Clock, MapPin, Phone, Plus, X, Heart, Share2, Send, MessageCircle, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { HelpPost } from '../lib/supabase'
 import { repairHelpPostText } from '../lib/textEncoding'
@@ -45,6 +45,17 @@ function getAvatarBg(name: string): string {
   return AVATAR_BGS[index]
 }
 
+interface HelpComment {
+  id: string
+  post_id: string
+  user_id: string | null
+  content: string
+  is_anonymous: boolean
+  display_name: string
+  expires_at: string | null
+  created_at: string
+}
+
 const SAMPLE_POSTS: HelpPost[] = [
   {
     id: '1',
@@ -81,6 +92,29 @@ const SAMPLE_POSTS: HelpPost[] = [
   },
 ]
 
+const SAMPLE_COMMENTS: HelpComment[] = [
+  {
+    id: 'c1',
+    post_id: '1',
+    user_id: null,
+    content: 'Mình cũng đi gia hạn visa ngày đó nè! Đi chung nhé bạn ơi.',
+    is_anonymous: true,
+    display_name: 'Ẩn danh (Khách) 15',
+    expires_at: new Date(Date.now() + 2 * 3600 * 1000 + 45 * 60000).toISOString(),
+    created_at: new Date(Date.now() - 15 * 60000).toISOString()
+  },
+  {
+    id: 'c2',
+    post_id: '2',
+    user_id: 'user1',
+    content: 'Itaewon nhiều quán bán gia vị Việt đầy đủ lắm, mua chung share ship siêu rẻ luôn á.',
+    is_anonymous: false,
+    display_name: 'Hoàng Long',
+    expires_at: null,
+    created_at: new Date(Date.now() - 30 * 60000).toISOString()
+  }
+]
+
 type QuickHelpBoardProps = {
   initialExpandedPostId?: string | null
 }
@@ -98,6 +132,14 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
   const [likedCounts, setLikedCounts] = useState<Record<string, number>>({})
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null)
 
+  // Comments states
+  const [commentsByPost, setCommentsByPost] = useState<Record<string, HelpComment[]>>({})
+  const [commentsCount, setCommentsCount] = useState<Record<string, number>>({})
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set())
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({})
+  const [isAnonCommentInputs, setIsAnonCommentInputs] = useState<Record<string, boolean>>({})
+  const [submittingCommentPosts, setSubmittingCommentPosts] = useState<Set<string>>(new Set())
+
   // Form states
   const [formTitle, setFormTitle] = useState('')
   const [formContent, setFormContent] = useState('')
@@ -107,6 +149,7 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
 
   useEffect(() => {
     fetchPosts()
+    fetchAllCommentsCount()
   }, [])
 
   useEffect(() => {
@@ -117,6 +160,8 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
           el.classList.add('ring-2', 'ring-brand-terracotta/40')
         }
+        // Expand comments of target post automatically if requested
+        toggleComments(initialExpandedPostId)
       }, 300)
     }
   }, [initialExpandedPostId])
@@ -136,17 +181,185 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
         // Initialize random likes for visual richness
         const initialLikes: Record<string, number> = {}
         list.forEach(p => {
-          // Semi-random deterministic likes based on created date timestamp
           const timestamp = new Date(p.created_at).getTime()
-          initialLikes[p.id] = (timestamp % 12) + 1
+          initialLikes[p.id] = (timestamp % 8) + 1
         })
         setLikedCounts(initialLikes)
       } else {
-        // Fallback demo posts likes
-        setLikedCounts({ '1': 5, '2': 8, '3': 12 })
+        setLikedCounts({ '1': 4, '2': 7, '3': 11 })
       }
     } catch {
-      setLikedCounts({ '1': 5, '2': 8, '3': 12 })
+      setLikedCounts({ '1': 4, '2': 7, '3': 11 })
+    }
+  }
+
+  const fetchAllCommentsCount = async () => {
+    const defaultCounts: Record<string, number> = { '1': 1, '2': 1, '3': 0 }
+    if (!supabase) {
+      setCommentsCount(defaultCounts)
+      return
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('help_comments')
+        .select('post_id')
+      
+      if (!error && data) {
+        const counts: Record<string, number> = {}
+        data.forEach(item => {
+          counts[item.post_id] = (counts[item.post_id] || 0) + 1
+        })
+        setCommentsCount(prev => ({ ...prev, ...defaultCounts, ...counts }))
+      } else {
+        setCommentsCount(defaultCounts)
+      }
+    } catch {
+      setCommentsCount(defaultCounts)
+    }
+  }
+
+  const fetchComments = async (postId: string) => {
+    const list = SAMPLE_COMMENTS.filter(c => c.post_id === postId)
+    if (!supabase) {
+      setCommentsByPost(prev => ({ ...prev, [postId]: list }))
+      return
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('help_comments')
+        .select('*')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true })
+
+      if (!error && data) {
+        // Merge with seed comments if matches post
+        const dbComments = data as HelpComment[]
+        const combined = [...list.filter(sc => !dbComments.some(dc => dc.id === sc.id)), ...dbComments]
+        setCommentsByPost(prev => ({ ...prev, [postId]: combined }))
+        setCommentsCount(prev => ({ ...prev, [postId]: combined.length }))
+      } else {
+        setCommentsByPost(prev => ({ ...prev, [postId]: list }))
+      }
+    } catch {
+      setCommentsByPost(prev => ({ ...prev, [postId]: list }))
+    }
+  }
+
+  const toggleComments = (postId: string) => {
+    setExpandedComments(prev => {
+      const s = new Set(prev)
+      if (s.has(postId)) {
+        s.delete(postId)
+      } else {
+        s.add(postId)
+        // Fetch comments on expand
+        fetchComments(postId)
+      }
+      return s
+    })
+  }
+
+  const handleSubmitComment = async (postId: string, event: React.FormEvent) => {
+    event.preventDefault()
+    const text = commentInputs[postId]?.trim()
+    if (!text || submittingCommentPosts.has(postId)) return
+
+    setSubmittingCommentPosts(prev => new Set([...prev, postId]))
+    
+    // Check anonymity logic
+    const isAnon = !user ? true : (isAnonCommentInputs[postId] ?? true)
+    
+    const expiresAt = isAnon 
+      ? new Date(Date.now() + 3 * 3600 * 1000).toISOString() // 3 Hours self-destruct
+      : null
+
+    const anonName = isAnon
+      ? (user ? `Ẩn danh ${Math.floor(Math.random() * 100) + 1}` : `Ẩn danh (Khách) ${Math.floor(Math.random() * 100) + 1}`)
+      : (profile?.username || 'Bạn học')
+
+    const newCommentPayload = {
+      post_id: postId,
+      user_id: user?.id || null,
+      content: text,
+      is_anonymous: isAnon,
+      display_name: anonName,
+      expires_at: expiresAt,
+      created_at: new Date().toISOString()
+    }
+
+    try {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('help_comments')
+          .insert([newCommentPayload])
+          .select()
+          .single()
+
+        if (!error && data) {
+          const added = data as HelpComment
+          setCommentsByPost(prev => ({
+            ...prev,
+            [postId]: [...(prev[postId] || []), added]
+          }))
+        } else {
+          // Fallback insert local state
+          const fallback = { ...newCommentPayload, id: `lc-${Date.now()}` }
+          setCommentsByPost(prev => ({
+            ...prev,
+            [postId]: [...(prev[postId] || []), fallback]
+          }))
+        }
+      } else {
+        const fallback = { ...newCommentPayload, id: `lc-${Date.now()}` }
+        setCommentsByPost(prev => ({
+          ...prev,
+          [postId]: [...(prev[postId] || []), fallback]
+        }))
+      }
+    } catch {
+      const fallback = { ...newCommentPayload, id: `lc-${Date.now()}` }
+      setCommentsByPost(prev => ({
+        ...prev,
+        [postId]: [...(prev[postId] || []), fallback]
+      }))
+    }
+
+    // Refresh count locally
+    setCommentsCount(prev => ({
+      ...prev,
+      [postId]: (prev[postId] || 0) + 1
+    }))
+
+    // Reset input
+    setCommentInputs(prev => ({ ...prev, [postId]: '' }))
+    setSubmittingCommentPosts(prev => { const s = new Set(prev); s.delete(postId); return s; })
+  }
+
+  const handleDeleteComment = async (commentId: string, postId: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) return
+
+    try {
+      if (supabase && !commentId.startsWith('lc-') && !commentId.startsWith('c')) {
+        const { error } = await supabase
+          .from('help_comments')
+          .delete()
+          .eq('id', commentId)
+        
+        if (error) throw error
+      }
+      
+      setCommentsByPost(prev => ({
+        ...prev,
+        [postId]: (prev[postId] || []).filter(c => c.id !== commentId)
+      }))
+      setCommentsCount(prev => ({
+        ...prev,
+        [postId]: Math.max(0, (prev[postId] || 0) - 1)
+      }))
+    } catch (err) {
+      console.error('Error deleting life comment:', err)
     }
   }
 
@@ -173,20 +386,24 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
           const added = repairHelpPostText(data as HelpPost)
           setPosts(prev => [added, ...prev])
           setLikedCounts(prev => ({ ...prev, [added.id]: 0 }))
+          setCommentsCount(prev => ({ ...prev, [added.id]: 0 }))
         } else {
           const fallbackId = Date.now().toString()
           setPosts(prev => [{ ...newPost, id: fallbackId } as HelpPost, ...prev])
           setLikedCounts(prev => ({ ...prev, [fallbackId]: 0 }))
+          setCommentsCount(prev => ({ ...prev, [fallbackId]: 0 }))
         }
       } else {
         const fallbackId = Date.now().toString()
         setPosts(prev => [{ ...newPost, id: fallbackId } as HelpPost, ...prev])
         setLikedCounts(prev => ({ ...prev, [fallbackId]: 0 }))
+        setCommentsCount(prev => ({ ...prev, [fallbackId]: 0 }))
       }
     } catch {
       const fallbackId = Date.now().toString()
       setPosts(prev => [{ ...newPost, id: fallbackId } as HelpPost, ...prev])
       setLikedCounts(prev => ({ ...prev, [fallbackId]: 0 }))
+      setCommentsCount(prev => ({ ...prev, [fallbackId]: 0 }))
     }
 
     setFormTitle('')
@@ -412,82 +629,298 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
               <p className="text-xs font-bold text-brand-brown-light/75">{t('help.noPostsDesc')}</p>
             </div>
           ) : (
-            filtered.map(post => (
-              <article 
-                key={post.id} 
-                id={`post-${post.id}`} 
-                className="group rounded-[24px] border border-brand-terracotta-light/10 bg-white p-4.5 shadow-sm transition hover:shadow-md flex flex-col gap-3.5 dark:bg-brand-panel"
-              >
-                {/* Header Row: Avatar, UserName, Category chips, City & Time metadata */}
-                <div className="flex items-center justify-between shrink-0">
-                  <div className="flex items-center gap-3">
-                    {/* Circle user initials avatar */}
-                    <div className={`h-11 w-11 rounded-full flex items-center justify-center text-sm font-black text-white shadow-inner shrink-0 ${getAvatarBg(post.username)}`}>
-                      {post.username.substring(0, 2).toUpperCase()}
-                    </div>
-                    
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-display font-black text-xs sm:text-sm text-brand-brown-dark leading-none">{post.username}</span>
-                        <span className="text-[10px] text-brand-brown-light/60 font-black">·</span>
-                        <span className="text-[10px] text-brand-brown-light font-black inline-flex items-center gap-0.5"><Clock size={10} /> {timeAgo(post.created_at)}</span>
+            filtered.map(post => {
+              const isCommentsOpen = expandedComments.has(post.id)
+              const postComments = commentsByPost[post.id] || []
+              const commentText = commentInputs[post.id] || ''
+              const isAnonVal = isAnonCommentInputs[post.id] ?? true
+              const isSubmitting = submittingCommentPosts.has(post.id)
+
+              return (
+                <article 
+                  key={post.id} 
+                  id={`post-${post.id}`} 
+                  className="group rounded-[24px] border border-brand-terracotta-light/10 bg-white p-4.5 shadow-sm transition hover:shadow-md flex flex-col gap-3.5 dark:bg-brand-panel"
+                >
+                  {/* Header Row: Avatar, UserName, Category chips, City & Time metadata */}
+                  <div className="flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3">
+                      {/* Circle user initials avatar */}
+                      <div className={`h-11 w-11 rounded-full flex items-center justify-center text-sm font-black text-white shadow-inner shrink-0 ${getAvatarBg(post.username)}`}>
+                        {post.username.substring(0, 2).toUpperCase()}
                       </div>
                       
-                      <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold text-brand-brown-light">
-                        <span className="inline-flex items-center gap-0.5"><MapPin size={9} /> {post.city}</span>
-                        <span className="text-brand-brown-light/35">|</span>
-                        <span className={`rounded-full border px-2 py-0.5 text-[8.5px] font-black uppercase ${CAT_COLORS[post.category] || CAT_COLORS.other}`}>
-                          {t(`help.cat.${post.category}`)}
-                        </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-display font-black text-xs sm:text-sm text-brand-brown-dark leading-none">{post.username}</span>
+                          <span className="text-[10px] text-brand-brown-light/60 font-black">·</span>
+                          <span className="text-[10px] text-brand-brown-light font-black inline-flex items-center gap-0.5"><Clock size={10} /> {timeAgo(post.created_at)}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold text-brand-brown-light">
+                          <span className="inline-flex items-center gap-0.5"><MapPin size={9} /> {post.city}</span>
+                          <span className="text-brand-brown-light/35">|</span>
+                          <span className={`rounded-full border px-2 py-0.5 text-[8.5px] font-black uppercase ${CAT_COLORS[post.category] || CAT_COLORS.other}`}>
+                            {t(`help.cat.${post.category}`)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Body Row: Detailed text title, Description, Phone/Zalo contact badge */}
-                <div className="flex flex-col gap-1.5 min-w-0">
-                  <h3 className="font-display text-sm sm:text-base font-black text-brand-brown-dark group-hover:text-brand-terracotta transition leading-snug">
-                    {post.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm leading-relaxed text-brand-brown-dark/90 whitespace-pre-wrap">
-                    {post.content}
-                  </p>
-                  {post.contact && (
-                    <div className="mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-xl bg-brand-light/75 px-3.5 py-2 text-[10.5px] sm:text-xs font-black text-brand-terracotta border border-brand-terracotta-light/10 select-all">
-                      <Phone size={12} className="animate-pulse" />
-                      <span>{t('help.contact')}: {post.contact}</span>
+                  {/* Body Row: Detailed text title, Description, Phone/Zalo contact badge */}
+                  <div className="flex flex-col gap-1.5 min-w-0">
+                    <h3 className="font-display text-sm sm:text-base font-black text-brand-brown-dark group-hover:text-brand-terracotta transition leading-snug">
+                      {post.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm leading-relaxed text-brand-brown-dark/90 whitespace-pre-wrap">
+                      {post.content}
+                    </p>
+                    {post.contact && (
+                      <div className="mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-xl bg-brand-light/75 px-3.5 py-2 text-[10.5px] sm:text-xs font-black text-brand-terracotta border border-brand-terracotta-light/10 select-all">
+                        <Phone size={12} className="animate-pulse" />
+                        <span>{t('help.contact')}: {post.contact}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer Row: Facebook Style Interactive Actions */}
+                  <div className="flex items-center gap-2 border-t border-brand-terracotta-light/10 pt-2.5 mt-1 text-[11px] font-black text-brand-brown-light shrink-0 select-none">
+                    
+                    {/* Like Button */}
+                    <button
+                      onClick={() => handleLike(post.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition hover:bg-red-50/50 cursor-pointer ${
+                        likedPosts.has(post.id) ? 'text-red-500 bg-red-50/10' : 'hover:text-red-500'
+                      }`}
+                    >
+                      <Heart size={14} fill={likedPosts.has(post.id) ? '#ef4444' : 'none'} className="transition-transform duration-200 active:scale-125" />
+                      <span>{likedCounts[post.id] || 0} {t('forum.likes_count', 'Thích')}</span>
+                    </button>
+
+                    {/* Interactive Comment Expansion Button */}
+                    <button
+                      onClick={() => toggleComments(post.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition hover:bg-brand-light/50 hover:text-brand-brown-dark cursor-pointer ${
+                        isCommentsOpen ? 'text-brand-terracotta bg-brand-cream dark:bg-brand-light' : ''
+                      }`}
+                    >
+                      <MessageCircle size={14} />
+                      <span>Bình luận ({commentsCount[post.id] || 0})</span>
+                    </button>
+
+                    {/* Share/Copy link button */}
+                    <button
+                      onClick={() => handleShare(post.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition hover:bg-brand-light/50 hover:text-brand-brown-dark cursor-pointer"
+                    >
+                      <Share2 size={14} />
+                      <span>{copiedPostId === post.id ? 'Đã sao chép liên kết!' : 'Chia sẻ'}</span>
+                    </button>
+                  </div>
+
+                  {/* HIGH-FIDELITY SOCIAL COMMENTS ACCORDION PANEL */}
+                  {isCommentsOpen && (
+                    <div className="border-t border-brand-terracotta-light/10 pt-3 flex flex-col gap-3 animate-fade-slide-down">
+                      
+                      {/* Comments Timeline List */}
+                      <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
+                        {postComments.length === 0 ? (
+                          <div className="py-4 text-center text-xs font-bold text-brand-brown-light/70 italic">
+                            Chưa có bình luận nào. Hãy gửi lời khuyên ẩn danh đầu tiên nhé!
+                          </div>
+                        ) : (
+                          postComments.map(comment => (
+                            <HelpCommentItem 
+                              key={comment.id}
+                              comment={comment}
+                              onDelete={() => handleDeleteComment(comment.id, post.id)}
+                              canDelete={!!user && (user.id === comment.user_id || !!profile?.is_admin)}
+                              onReply={() => {
+                                setCommentInputs(prev => ({
+                                  ...prev,
+                                  [post.id]: `@${comment.display_name} `
+                                }))
+                              }}
+                            />
+                          ))
+                        )}
+                      </div>
+
+                      {/* Comment Form input box below */}
+                      <form onSubmit={(e) => handleSubmitComment(post.id, e)} className="flex flex-col gap-2 shrink-0">
+                        {/* Guest / Member Anonymous switch toggle */}
+                        <div className="flex items-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!user) return // locked for guests
+                              setIsAnonCommentInputs(prev => ({ ...prev, [post.id]: !isAnonVal }))
+                            }}
+                            className={`cm-comment-anon-toggle inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-black border transition cursor-pointer select-none ${
+                              !user || isAnonVal
+                                ? 'cm-comment-anon-toggle active border-emerald-100/40 text-emerald-700 bg-emerald-50/20'
+                                : 'border-brand-terracotta-light/15 bg-white/70 text-brand-brown-light dark:bg-brand-panel'
+                            }`}
+                            disabled={!user}
+                          >
+                            <span className="cm-comment-switch" />
+                            <span className="cm-comment-anon-text">
+                              {!user 
+                                ? '🔐 Bình luận Ẩn danh (Khách - Tự hủy 3h)' 
+                                : (isAnonVal ? '🔐 Bình luận Ẩn danh (Tự hủy 3h)' : `👤 Trạng thái công khai (${profile?.username || 'Bạn học'})`)
+                              }
+                            </span>
+                          </button>
+                        </div>
+
+                        {/* TextInput composer bar */}
+                        <div className="relative flex items-center rounded-2xl border border-brand-terracotta-light/20 bg-[#fbf6ef] p-1 dark:bg-brand-cream">
+                          <input
+                            type="text"
+                            value={commentText}
+                            onChange={e => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
+                            placeholder={user ? "Viết bình luận..." : "Khách ẩn danh viết bình luận..."}
+                            className="flex-1 bg-transparent px-3 py-1.5 text-xs font-semibold text-brand-brown-dark outline-none placeholder:text-brand-brown-light/50"
+                            maxLength={800}
+                          />
+                          <button
+                            type="submit"
+                            disabled={!commentText.trim() || isSubmitting}
+                            className="inline-flex h-7 w-7 shrink-0 place-items-center justify-center rounded-xl bg-brand-terracotta text-white hover:bg-brand-brown-dark transition active:scale-95 cursor-pointer disabled:opacity-40"
+                          >
+                            <Send size={12} />
+                          </button>
+                        </div>
+                      </form>
                     </div>
                   )}
-                </div>
-
-                {/* Footer Row: Facebook Style Interactive Actions */}
-                <div className="flex items-center gap-2 border-t border-brand-terracotta-light/10 pt-2.5 mt-1 text-[11px] font-black text-brand-brown-light shrink-0 select-none">
-                  
-                  {/* Like Button */}
-                  <button
-                    onClick={() => handleLike(post.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition hover:bg-red-50/50 cursor-pointer ${
-                      likedPosts.has(post.id) ? 'text-red-500 bg-red-50/10' : 'hover:text-red-500'
-                    }`}
-                  >
-                    <Heart size={14} fill={likedPosts.has(post.id) ? '#ef4444' : 'none'} className="transition-transform duration-200 active:scale-125" />
-                    <span>{likedCounts[post.id] || 0} {t('forum.likes_count', 'Thích')}</span>
-                  </button>
-
-                  {/* Share/Copy link button */}
-                  <button
-                    onClick={() => handleShare(post.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition hover:bg-brand-light/50 hover:text-brand-brown-dark cursor-pointer"
-                  >
-                    <Share2 size={14} />
-                    <span>{copiedPostId === post.id ? 'Đã sao chép liên kết!' : 'Chia sẻ'}</span>
-                  </button>
-                </div>
-              </article>
-            ))
+                </article>
+              )
+            })
           )}
         </div>
       </div>
     </div>
+  )
+}
+
+function HelpCommentItem({
+  comment,
+  onDelete,
+  canDelete,
+  onReply
+}: {
+  comment: HelpComment
+  onDelete: () => void
+  canDelete: boolean
+  onReply: () => void
+}) {
+  const [remainingMs, setRemainingMs] = useState<number | null>(() => {
+    if (!comment.expires_at) return null
+    return new Date(comment.expires_at).getTime() - Date.now()
+  })
+
+  useEffect(() => {
+    if (!comment.expires_at) return
+    const tick = () => {
+      setRemainingMs(new Date(comment.expires_at!).getTime() - Date.now())
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [comment.expires_at])
+
+  const showCountdown = remainingMs !== null && remainingMs > 0
+  const totalMs = comment.expires_at && comment.created_at
+    ? new Date(comment.expires_at).getTime() - new Date(comment.created_at).getTime()
+    : 10_800_000 // 3 hours
+  const progressPct = showCountdown
+    ? Math.max(0, Math.min(100, (remainingMs! / totalMs) * 100))
+    : 0
+
+  if (comment.expires_at && remainingMs !== null && remainingMs <= 0) {
+    return null // Filter out expired guest comments
+  }
+
+  const fmtCountdownHMS = (ms: number): string => {
+    if (ms <= 0) return '0:00:00'
+    const totalSec = Math.floor(ms / 1000)
+    const h = Math.floor(totalSec / 3600)
+    const m = Math.floor((totalSec % 3600) / 60)
+    const s = totalSec % 60
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+
+  const timeAgo = (dateString: string): string => {
+    const date = new Date(dateString)
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
+    if (seconds < 60) return 'vừa xong'
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes} phút trước`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours} giờ trước`
+    return date.toLocaleDateString('vi-VN', { month: 'short', day: 'numeric' })
+  }
+
+  return (
+    <article className="rounded-2xl border border-brand-terracotta-light/10 bg-[#fbf6ef]/45 p-3 flex flex-col gap-1 relative dark:bg-brand-cream/30">
+      
+      {/* Comment Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <strong className="text-xs font-black text-brand-brown-dark">
+            {comment.display_name}
+          </strong>
+          <span className="text-[10px] text-brand-brown-light/70">{timeAgo(comment.created_at)}</span>
+        </div>
+
+        {canDelete && (
+          <button
+            onClick={onDelete}
+            className="p-1 rounded-md text-brand-brown-light hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
+            title="Xóa bình luận"
+          >
+            <Trash2 size={11} />
+          </button>
+        )}
+      </div>
+
+      {/* Comment Content body */}
+      <p className="text-xs text-brand-brown-dark/90 leading-relaxed whitespace-pre-wrap">
+        {comment.content}
+      </p>
+
+      {/* Comment Interaction Actions */}
+      <div className="flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2 text-[10px] font-black text-brand-brown-light">
+          <button
+            type="button"
+            onClick={onReply}
+            className="px-2 py-0.5 hover:text-brand-terracotta transition cursor-pointer"
+          >
+            Phản hồi
+          </button>
+        </div>
+
+        {/* Self-Destruct Countdown Bar */}
+        {showCountdown && (
+          <div className="cm-comment-guest-countdown flex items-center gap-1.5 select-none shrink-0">
+            <span className="cm-comment-guest-label text-[9px] font-bold text-amber-600/85 dark:text-amber-400">
+              ⏱ xóa sau {fmtCountdownHMS(remainingMs!)}
+            </span>
+            <div className="cm-comment-guest-bar-track w-12 h-1 bg-brand-terracotta-light/35 rounded-full overflow-hidden">
+              <div
+                className="cm-comment-guest-bar-fill h-full bg-amber-400 rounded-full transition-all duration-1000"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Vivid orange-red divider bar matching the screenshot exactly */}
+      {showCountdown && <div className="cm-comment-self-destruct-divider" />}
+    </article>
   )
 }

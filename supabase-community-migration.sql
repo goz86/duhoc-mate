@@ -270,3 +270,49 @@ WHERE id IN (
   SELECT id FROM auth.users 
   WHERE email = 'heeffgh123@gmail.com'
 );
+
+-- =============================================
+-- 7. Create public.help_comments table for QuickHelpBoard
+-- =============================================
+CREATE TABLE IF NOT EXISTS public.help_comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id UUID REFERENCES public.help_posts(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  is_anonymous BOOLEAN NOT NULL DEFAULT true,
+  display_name TEXT NOT NULL DEFAULT 'Ẩn danh',
+  expires_at TIMESTAMPTZ, -- null means permanent, otherwise self-destructs at this time
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Enable RLS for help_comments
+ALTER TABLE public.help_comments ENABLE ROW LEVEL SECURITY;
+
+-- Help Comments Policies
+DROP POLICY IF EXISTS "Anyone can view help comments" ON public.help_comments;
+CREATE POLICY "Anyone can view help comments" 
+  ON public.help_comments FOR SELECT 
+  USING (expires_at IS NULL OR expires_at > now());
+
+DROP POLICY IF EXISTS "Anyone can insert help comments" ON public.help_comments;
+CREATE POLICY "Anyone can insert help comments" 
+  ON public.help_comments FOR INSERT 
+  WITH CHECK (
+    (user_id IS NULL OR auth.uid() = user_id)
+    AND (auth.uid() IS NULL OR NOT public.is_banned_user(auth.uid()))
+  );
+
+DROP POLICY IF EXISTS "Users and admins can delete help comments" ON public.help_comments;
+CREATE POLICY "Users and admins can delete help comments" 
+  ON public.help_comments FOR DELETE 
+  USING (
+    auth.uid() = user_id 
+    OR public.is_admin_user(auth.uid())
+  );
+
+-- Add to publication
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.help_comments;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
