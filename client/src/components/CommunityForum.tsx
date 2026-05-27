@@ -70,7 +70,7 @@ interface Props {
 const CATEGORIES = [
   { value: 'all', labelKey: 'forum.cat.all', Icon: Layers, color: '#8B7A6E', bg: 'rgba(139,122,110,0.10)' },
   { value: 'topik', labelKey: 'forum.cat.topik', Icon: BookOpen, color: '#0369a1', bg: 'rgba(14,165,233,0.10)' },
-  { value: 'life', labelKey: 'forum.cat.life', Icon: MapPin, color: '#059669', bg: 'rgba(16,185,129,0.10)' },
+  { value: 'life', labelKey: 'forum.cat.life', labelOverride: 'Tin tức', Icon: MapPin, color: '#059669', bg: 'rgba(16,185,129,0.10)' },
   { value: 'job', labelKey: 'forum.cat.job', Icon: Briefcase, color: '#b45309', bg: 'rgba(245,158,11,0.10)' },
   { value: 'free', labelKey: 'forum.cat.free', Icon: Globe2, color: '#C17C63', bg: 'rgba(193,124,99,0.10)' }
 ]
@@ -262,7 +262,9 @@ export default function CommunityForum({
   }
 
   const handleLikePost = async (postId: string, isLike: boolean) => {
-    if (!supabase || !currentUserId) return
+    if (!supabase) return
+
+    // Allow local state change for guests (optimistic update)
     const targetSet = isLike ? likedPosts : dislikedPosts
     const oppositeSet = isLike ? dislikedPosts : likedPosts
     const setTarget = isLike ? setLikedPosts : setDislikedPosts
@@ -271,22 +273,26 @@ export default function CommunityForum({
     const oppositeField = isLike ? 'dislikes_count' : 'likes_count'
     const post = posts.find(p => p.id === postId)
     if (!post) return
+
     try {
       if (targetSet.has(postId)) {
-        await supabase.from('community_likes').delete().eq('user_id', currentUserId).eq('post_id', postId)
+        // Unlike/undislike
         setTarget(prev => { const s = new Set(prev); s.delete(postId); return s })
         setPosts(prev => prev.map(p => p.id === postId ? { ...p, [countField]: Math.max(0, p[countField] - 1) } : p))
         if (selectedPost?.id === postId) {
           setSelectedPost(prev => prev ? { ...prev, [countField]: Math.max(0, prev[countField] - 1) } : null)
         }
+        // Database sync only for logged-in users
+        if (currentUserId) {
+          await supabase.from('community_likes').delete().eq('user_id', currentUserId).eq('post_id', postId)
+        }
       } else {
+        // Like/dislike
         let oppositeDecreased = 0
         if (oppositeSet.has(postId)) {
-          await supabase.from('community_likes').delete().eq('user_id', currentUserId).eq('post_id', postId)
           setOpposite(prev => { const s = new Set(prev); s.delete(postId); return s })
           oppositeDecreased = 1
         }
-        await supabase.from('community_likes').insert([{ user_id: currentUserId, post_id: postId, is_like: isLike }])
         setTarget(prev => new Set([...prev, postId]))
         setPosts(prev => prev.map(p => {
           if (p.id === postId) {
@@ -300,6 +306,10 @@ export default function CommunityForum({
             [countField]: prev[countField] + 1,
             [oppositeField]: Math.max(0, prev[oppositeField] - oppositeDecreased)
           } : null)
+        }
+        // Database sync only for logged-in users
+        if (currentUserId) {
+          await supabase.from('community_likes').insert([{ user_id: currentUserId, post_id: postId, is_like: isLike }])
         }
       }
     } catch (err) {
@@ -343,19 +353,30 @@ export default function CommunityForum({
   }
 
   const handleLikeComment = async (commentId: string) => {
-    if (!supabase || !currentUserId) return
+    if (!supabase) return
+
+    // Allow local state change for guests (optimistic update)
     const hasLiked = likedComments.has(commentId)
     const comment = comments.find(c => c.id === commentId)
     if (!comment) return
+
     try {
       if (hasLiked) {
-        await supabase.from('community_likes').delete().eq('user_id', currentUserId).eq('comment_id', commentId)
+        // Unlike
         setLikedComments(prev => { const s = new Set(prev); s.delete(commentId); return s })
         setComments(prev => prev.map(c => c.id === commentId ? { ...c, likes_count: Math.max(0, c.likes_count - 1) } : c))
+        // Database sync only for logged-in users
+        if (currentUserId) {
+          await supabase.from('community_likes').delete().eq('user_id', currentUserId).eq('comment_id', commentId)
+        }
       } else {
-        await supabase.from('community_likes').insert([{ user_id: currentUserId, comment_id: commentId, is_like: true }])
+        // Like
         setLikedComments(prev => new Set([...prev, commentId]))
         setComments(prev => prev.map(c => c.id === commentId ? { ...c, likes_count: c.likes_count + 1 } : c))
+        // Database sync only for logged-in users
+        if (currentUserId) {
+          await supabase.from('community_likes').insert([{ user_id: currentUserId, comment_id: commentId, is_like: true }])
+        }
       }
     } catch (err) {
       console.error('Error toggling comment like:', err)
@@ -449,7 +470,7 @@ export default function CommunityForum({
           </button>
           <div className="flex-1 text-center">
             <p className="text-xs font-black uppercase tracking-wider text-brand-brown-light">
-              {t(getCat(selectedPost.category).labelKey)}
+              {getCat(selectedPost.category).labelOverride || t(getCat(selectedPost.category).labelKey)}
             </p>
           </div>
           <button
@@ -688,7 +709,7 @@ export default function CommunityForum({
                     }`}
                   >
                     <CatIcon size={13} />
-                    {t(cat.labelKey)}
+                    {cat.labelOverride || t(cat.labelKey)}
                   </button>
                 )
               })}
@@ -814,7 +835,7 @@ export default function CommunityForum({
                   }`}
                 >
                   <CatIcon size={12} />
-                  {t(cat.labelKey)}
+                  {cat.labelOverride || t(cat.labelKey)}
                 </button>
               )
             })}
@@ -881,7 +902,7 @@ export default function CommunityForum({
                     className="inline-block rounded-md px-2 py-0.5 text-[10px] font-black mb-2"
                     style={{ color: cat.color, background: cat.bg }}
                   >
-                    {t(cat.labelKey)}
+                    {cat.labelOverride || t(cat.labelKey)}
                   </span>
                   <div className="flex gap-3">
                     <div className="flex-1 min-w-0">
