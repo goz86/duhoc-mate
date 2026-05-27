@@ -117,7 +117,7 @@ export default function TemplateMarketplace({
     avatarUrl || (hostName === username ? currentUserAvatarUrl || '' : '')
 
   const tabClass = (tab: LobbyTab) =>
-    `inline-flex flex-1 items-center justify-center gap-1.5 rounded-[12px] px-3 py-2 transition-all duration-200 2xl:py-2.5 ${activeTab === tab ? 'bg-white text-brand-brown-dark ring-2 ring-brand-brown-dark shadow-[0_1px_6px_rgba(76,55,49,0.08)]' : 'text-brand-brown-light hover:text-brand-brown-dark'}`
+    `inline-flex flex-1 items-center justify-center gap-1.5 rounded-[12px] px-2 sm:px-3 py-2 transition-all duration-200 whitespace-nowrap 2xl:py-2.5 ${activeTab === tab ? 'bg-white text-brand-brown-dark ring-2 ring-brand-brown-dark shadow-[0_1px_6px_rgba(76,55,49,0.08)]' : 'text-brand-brown-light hover:text-brand-brown-dark'}`
 
   const placeholder = {
     recent: t('landing.search.recent'),

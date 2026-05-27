@@ -414,10 +414,11 @@ export default function LandingPage({
               <button
                 type="button"
                 onClick={onEnterForum}
-                className="flex h-10 items-center gap-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0f172a] px-4 text-xs font-black text-brand-brown-dark dark:text-[#f8fafc] shadow-sm transition hover:border-brand-terracotta-light hover:shadow-md cursor-pointer"
+                className="flex h-10 items-center gap-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0f172a] px-3 sm:px-4 text-xs font-black text-brand-brown-dark dark:text-[#f8fafc] shadow-sm transition hover:border-brand-terracotta-light hover:shadow-md cursor-pointer"
+                title="Diễn đàn"
               >
-                <Globe2 size={13} className="text-brand-terracotta" />
-                <span>Diễn đàn</span>
+                <Globe2 size={13} className="text-brand-terracotta shrink-0" />
+                <span className="hidden sm:inline">Diễn đàn</span>
               </button>
             )}
 
@@ -425,11 +426,11 @@ export default function LandingPage({
               <button
                 type="button"
                 onClick={onEnterAdmin}
-                className="flex h-10 items-center gap-1.5 rounded-full border border-red-100 bg-red-50/50 px-4 text-xs font-black text-red-600 shadow-sm transition hover:bg-red-50 cursor-pointer"
+                className="flex h-10 items-center gap-1.5 rounded-full border border-red-100 bg-red-50/50 px-3 sm:px-4 text-xs font-black text-red-600 shadow-sm transition hover:bg-red-50 cursor-pointer"
                 title="Quản trị hệ thống"
               >
-                <ShieldCheck size={14} />
-                <span>Quản trị</span>
+                <ShieldCheck size={14} className="shrink-0" />
+                <span className="hidden sm:inline">Quản trị</span>
               </button>
             )}
             <LanguageSwitcher />
