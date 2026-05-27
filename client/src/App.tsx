@@ -256,6 +256,21 @@ export default function App() {
   const [isHost, setIsHost] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('duhoc-mate-dark') === 'true';
+  });
+
+  const toggleDarkMode = () => {
+    const nextVal = !isDarkMode;
+    setIsDarkMode(nextVal);
+    localStorage.setItem('duhoc-mate-dark', nextVal.toString());
+    document.documentElement.classList.toggle('dark', nextVal);
+  };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+  }, [isDarkMode]);
+
   // Auth modal
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -2266,7 +2281,7 @@ export default function App() {
   }, [activeLyricIndex]);
 
   return (
-    <div className={`min-h-screen bg-brand-cream text-brand-brown-dark font-sans selection:bg-brand-accent selection:text-white flex flex-col items-center ${view === 'room' ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
+    <div className={`min-h-screen bg-transparent text-brand-brown-dark font-sans selection:bg-brand-accent selection:text-white flex flex-col items-center ${view === 'room' ? 'lg:h-screen lg:overflow-hidden bg-brand-cream' : ''}`}>
       <style>{`
         @keyframes playlistEqualizer {
           0% { transform: scaleY(0.45); opacity: 0.65; }
@@ -2302,6 +2317,8 @@ export default function App() {
           friendsWithStatus={friendsWithStatus}
           showHelpBoard={showHelpBoard}
           setShowHelpBoard={setShowHelpBoard}
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
         />
       )}
 
@@ -2832,7 +2849,7 @@ export default function App() {
           <div className="flex flex-wrap items-center gap-2 border-b border-brand-terracotta-light/15 bg-white/55 px-5 py-3 backdrop-blur">
             {stageMode === 'youtube' && (
               <button onClick={() => setRoomCollapsed(prev => !prev)} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
-                <Minimize2 size={14} /> {roomCollapsed ? 'Trở lại phòng' : 'Thu gọn player'}
+                <Minimize2 size={14} /> {roomCollapsed ? 'Trở lại phòng' : 'Thu nhỏ'}
               </button>
             )}
             <button onClick={copyRoomInvite} className="inline-flex items-center gap-2 rounded-full border border-brand-terracotta/20 bg-brand-terracotta px-4 py-2 text-xs font-black text-white shadow-md shadow-brand-terracotta/15 transition hover:bg-brand-brown-dark">
@@ -2994,11 +3011,13 @@ export default function App() {
                 <div className={`${stageMode === 'youtube' && !roomCollapsed ? 'flex flex-1 flex-col gap-3 h-full justify-start overflow-y-auto pr-1' : 'absolute h-px w-px overflow-hidden opacity-0 pointer-events-none'}`} aria-hidden={stageMode !== 'youtube' || roomCollapsed}>
                     <div className={`mx-auto grid w-full max-w-[1180px] items-start gap-3 ${showLyrics && (lyrics || lyricsLoading) ? 'xl:grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1'}`}>
                     <div
-                      className="relative flex-none mx-auto rounded-2xl overflow-hidden border border-brand-terracotta-light/10 bg-black"
+                      className={`relative flex-none mx-auto rounded-2xl overflow-hidden border border-brand-terracotta-light/10 bg-black w-full ${
+                        (!currentVideo.id && playlist.length === 0)
+                          ? 'aspect-auto min-h-[340px] sm:aspect-video sm:min-h-[220px]'
+                          : 'aspect-video min-h-[220px]'
+                      }`}
                       style={{
                         width: showLyrics && (lyrics || lyricsLoading) ? '100%' : 'min(100%, 99.5vh, 1180px)',
-                        aspectRatio: '16 / 9',
-                        minHeight: '220px'
                       }}
                     >
                       <div className="w-full h-full" ref={iframeContainerRef}>
@@ -3010,24 +3029,24 @@ export default function App() {
                       {/* Man hinh cho khi chua co video — cũng hiện khi lỗi + playlist rỗng */}
                       {(!currentVideo.id && playlist.length === 0) && (
                         <div className="absolute inset-0 z-10 overflow-y-auto bg-[#FDF8F0] p-3 text-center text-brand-brown-dark sm:p-6">
-                          <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col justify-center gap-4">
-                            <div className="rounded-[28px] border border-brand-terracotta-light/25 bg-white/85 p-4 shadow-[0_24px_70px_rgba(76,55,49,0.10)] backdrop-blur sm:p-6">
-                          <div className="flex flex-col items-center gap-3 px-2 sm:px-4 [&>h3]:hidden [&>p:last-child]:hidden">
-                            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-terracotta text-white shadow-lg shadow-brand-terracotta/20">
-                              <Music2 size={25} />
+                          <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col justify-center gap-3 sm:gap-4">
+                            <div className="rounded-2xl sm:rounded-[28px] border border-brand-terracotta-light/25 bg-white/85 p-3.5 sm:p-6 shadow-[0_24px_70px_rgba(76,55,49,0.10)] backdrop-blur">
+                          <div className="flex flex-col items-center gap-2 sm:gap-3 px-2 sm:px-4">
+                            <div className="grid h-10 w-10 sm:h-14 sm:w-14 place-items-center rounded-xl sm:rounded-2xl bg-brand-terracotta text-white shadow-lg shadow-brand-terracotta/20">
+                              <Music2 className="h-5 w-5 sm:h-6 sm:w-6" />
                             </div>
                             <div className="max-w-2xl">
-                              <p className="text-[11px] font-black uppercase text-brand-terracotta">YouTube setup</p>
-                              <h3 className="mt-1 font-display text-xl font-black leading-tight text-brand-brown-dark sm:text-2xl">Chưa có video nào trong phòng</h3>
-                              <p className="mt-1 text-sm leading-relaxed text-brand-brown-light">
+                              <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-brand-terracotta">YouTube setup</p>
+                              <h3 className="mt-0.5 sm:mt-1 font-display text-base sm:text-2xl font-black leading-tight text-brand-brown-dark">Chưa có video nào trong phòng</h3>
+                              <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm leading-relaxed text-brand-brown-light max-w-md mx-auto">
                                 Chọn một bài để tạo playlist chung. Khi thêm video, player sẽ tự liên kết với YouTube và đồng bộ cho cả phòng.
                               </p>
                             </div>
                           </div>
-                          <div className="mt-5 overflow-x-auto pb-1">
-                            <div className="relative grid min-w-[560px] grid-cols-5 items-start gap-2 px-1 sm:min-w-0">
-                              <div className="absolute left-[10%] right-[10%] top-5 h-1 rounded-full bg-brand-terracotta-light/35" />
-                              <div className="absolute left-[10%] top-5 h-1 w-[10%] rounded-full bg-brand-terracotta" />
+                          <div className="mt-4 sm:mt-5 overflow-x-visible pb-0.5">
+                            <div className="relative grid grid-cols-5 items-start gap-1 px-1">
+                              <div className="absolute left-[10%] right-[10%] top-4 sm:top-[22px] h-1 rounded-full bg-brand-terracotta-light/35" />
+                              <div className="absolute left-[10%] top-4 sm:top-[22px] h-1 w-[20%] rounded-full bg-brand-terracotta" />
                               {[
                                 { label: 'Tìm nhạc', Icon: Search, done: true },
                                 { label: 'Chọn video', Icon: Play, done: false },
@@ -3040,10 +3059,10 @@ export default function App() {
 
                                 return (
                                   <div key={step.label} className="relative z-10 flex flex-col items-center text-center">
-                                    <span className={`grid h-11 w-11 place-items-center rounded-full border-4 shadow-sm ${step.done ? 'border-brand-terracotta bg-brand-terracotta text-white' : isActive ? 'border-brand-terracotta-light bg-white text-brand-terracotta shadow-[0_0_0_6px_rgba(167,122,108,0.12)]' : 'border-brand-terracotta-light/45 bg-white text-brand-brown-light'}`}>
-                                      <StepIcon size={16} />
+                                    <span className={`grid h-8 w-8 sm:h-11 sm:w-11 place-items-center rounded-full border-[3px] sm:border-4 shadow-sm ${step.done ? 'border-brand-terracotta bg-brand-terracotta text-white' : isActive ? 'border-brand-terracotta-light bg-white text-brand-terracotta shadow-[0_0_0_4px_rgba(167,122,108,0.12)] sm:shadow-[0_0_0_6px_rgba(167,122,108,0.12)]' : 'border-brand-terracotta-light/45 bg-white text-brand-brown-light'}`}>
+                                      <StepIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                     </span>
-                                    <span className={`mt-2 text-[11px] font-black ${isActive ? 'text-brand-terracotta' : 'text-brand-brown-light'}`}>
+                                    <span className={`mt-1.5 sm:mt-2 text-[9px] sm:text-[11px] font-black leading-tight ${isActive ? 'text-brand-terracotta' : 'text-brand-brown-light'}`}>
                                       {step.label}
                                     </span>
                                   </div>
@@ -3682,43 +3701,45 @@ export default function App() {
             <aside className={`${sideSpan} min-w-0 border-l border-brand-terracotta-light/20 bg-white/30 backdrop-blur-lg flex flex-col lg:max-h-full transition-all duration-300`}>
               
               {/* Tab Navigation in Sidebar */}
-              <div className="p-3 border-b border-brand-terracotta-light/10 grid grid-cols-3 gap-1.5 bg-white/40 xl:p-4 xl:gap-2">
-                <button
-                  onClick={() => setSidebarTab('playlist')}
-                  className={`h-10 min-w-0 rounded-xl px-1.5 font-bold text-xs xl:h-11 xl:px-2 xl:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                    sidebarTab === 'playlist'
-                      ? 'bg-brand-terracotta text-white shadow-sm'
-                      : 'hover:bg-brand-light text-brand-brown-light'
-                  }`}
-                >
-                  <ListMusic size={16} className="shrink-0" /> <span className="truncate">Playlist ({playlist.length})</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setSidebarTab('chat');
-                    setUnreadChatCount(0); // Reset counter when viewing chat
-                  }}
-                  className={`h-10 min-w-0 rounded-xl px-1.5 font-bold text-xs xl:h-11 xl:px-2 xl:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                    sidebarTab === 'chat'
-                      ? 'bg-brand-terracotta text-white shadow-sm'
-                      : 'hover:bg-brand-light text-brand-brown-light'
-                  }`}
-                >
-                  <MessageCircle size={16} className="shrink-0" />
-                  <span className="truncate">
-                    Chat ({unreadChatCount})
-                  </span>
-                </button>
-                <button
-                  onClick={() => setSidebarTab('members')}
-                  className={`h-10 min-w-0 rounded-xl px-1.5 font-bold text-xs xl:h-11 xl:px-2 xl:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                    sidebarTab === 'members'
-                      ? 'bg-brand-terracotta text-white shadow-sm'
-                      : 'hover:bg-brand-light text-brand-brown-light'
-                  }`}
-                >
-                  <Users size={16} /> <span className="truncate">Bạn học ({members.length})</span>
-                </button>
+              <div className="p-3 pb-0 xl:p-4 xl:pb-0 shrink-0">
+                <div className="rounded-[18px] border border-brand-terracotta-light/15 bg-white/40 dark:bg-black/35 p-1 grid grid-cols-3 gap-1.5 xl:gap-2">
+                  <button
+                    onClick={() => setSidebarTab('playlist')}
+                    className={`h-10 min-w-0 rounded-[14px] px-1.5 font-bold text-xs xl:h-11 xl:px-2 xl:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      sidebarTab === 'playlist'
+                        ? 'bg-brand-terracotta text-white shadow-sm'
+                        : 'hover:bg-brand-light text-brand-brown-light'
+                    }`}
+                  >
+                    <ListMusic size={16} className="shrink-0" /> <span className="truncate">Playlist ({playlist.length})</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSidebarTab('chat');
+                      setUnreadChatCount(0); // Reset counter when viewing chat
+                    }}
+                    className={`h-10 min-w-0 rounded-[14px] px-1.5 font-bold text-xs xl:h-11 xl:px-2 xl:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      sidebarTab === 'chat'
+                        ? 'bg-brand-terracotta text-white shadow-sm'
+                        : 'hover:bg-brand-light text-brand-brown-light'
+                    }`}
+                  >
+                    <MessageCircle size={16} className="shrink-0" />
+                    <span className="truncate">
+                      Chat ({unreadChatCount})
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setSidebarTab('members')}
+                    className={`h-10 min-w-0 rounded-[14px] px-1.5 font-bold text-xs xl:h-11 xl:px-2 xl:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      sidebarTab === 'members'
+                        ? 'bg-brand-terracotta text-white shadow-sm'
+                        : 'hover:bg-brand-light text-brand-brown-light'
+                    }`}
+                  >
+                    <Users size={16} /> <span className="truncate">Bạn học ({members.length})</span>
+                  </button>
+                </div>
               </div>
 
               {/* Sidebar Content Panel */}

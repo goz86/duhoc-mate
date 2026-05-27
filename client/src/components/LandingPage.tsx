@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState, useMemo } from 'react'
+import React, { useEffect, useRef, useState, useMemo } from 'react'
 import {
   ArrowLeft,
   CalendarDays,
@@ -22,6 +22,8 @@ import {
   Upload,
   UsersRound,
   Wallet,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import studyLounge3d from '../assets/study-lounge-3d-new.png'
@@ -91,6 +93,8 @@ type LandingPageProps = {
   friendsWithStatus: FriendStatus[]
   showHelpBoard: boolean
   setShowHelpBoard: (show: boolean) => void
+  isDarkMode: boolean
+  toggleDarkMode: () => void
 }
 
 export default function LandingPage({
@@ -119,6 +123,8 @@ export default function LandingPage({
   friendsWithStatus,
   showHelpBoard,
   setShowHelpBoard,
+  isDarkMode,
+  toggleDarkMode,
 }: LandingPageProps) {
   const { t } = useTranslation()
 
@@ -355,12 +361,12 @@ export default function LandingPage({
   }, [tickerIndex, tickerPosts])
 
   return (
-    <div className="relative isolate min-h-screen w-full overflow-x-hidden bg-[#fbf6ef] text-brand-brown-dark">
-      {/* Lá»›p ná»n trang trÃ­ â€” gradient blobs má» + lÆ°á»›i cháº¥m máº£nh (tá»‘i giáº£n, cÃ³ chiá»u sÃ¢u) */}
+    <div className="relative isolate min-h-screen w-full overflow-x-hidden bg-transparent text-brand-brown-dark">
+      {/* Lá»›p ná» n trang trÃ­ â€” gradient blobs má»  + lÆ°á»›i cháº¥m máº£nh (tá»‘i giáº£n, cÃ³ chiá» u sÃ¢u) */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 opacity-45 [background-image:radial-gradient(circle,rgba(76,55,49,0.035)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:linear-gradient(to_bottom,black,transparent_76%)]" />
       </div>
-      <header className="sticky top-0 z-50 bg-[#fbf6ef]/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 bg-brand-cream/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-black/[0.04] dark:border-white/[0.04]">
         <div className="landing-header-inner mx-auto flex max-w-[1720px] items-center justify-between px-5 py-3 md:px-10 xl:px-12 2xl:py-4">
           <div className="flex items-center gap-3">
             <img src={duhocMateLogo} alt="Duhoc Mate Logo" className="h-10 w-10 rounded-2xl object-cover bg-white shadow-sm ring-1 ring-black/[0.04] 2xl:h-11 2xl:w-11" />
@@ -400,6 +406,14 @@ export default function LandingPage({
               {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} {profile?.city || 'Seoul'}
             </span>
             <LanguageSwitcher />
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0f172a] text-brand-brown-dark dark:text-[#f8fafc] shadow-sm transition hover:border-brand-terracotta-light hover:shadow-md cursor-pointer"
+              title={isDarkMode ? 'Chế độ sáng' : 'Chế độ tối'}
+            >
+              {isDarkMode ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
             {user ? (
               <div ref={profileMenuRef} className="relative">
                 <button

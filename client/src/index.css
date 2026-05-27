@@ -18,13 +18,276 @@
 }
 
 body {
-  background-color: var(--color-brand-cream);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(215, 255, 95, 0.48), transparent 24%),
+    radial-gradient(circle at 86% 10%, rgba(79, 115, 255, 0.22), transparent 28%),
+    linear-gradient(135deg, #f7faf5 0%, var(--color-brand-cream) 48%, #f9f7ff 100%);
   color: var(--color-brand-brown-dark);
   font-family: var(--font-sans);
   letter-spacing: 0;
   margin: 0;
   padding: 0;
   min-height: 100vh;
+}
+
+.dark {
+  --color-brand-cream: #140d0c;
+  --color-brand-panel: #201614;
+  --color-brand-brown-dark: #fbf9f9;
+  --color-brand-brown-light: #ab9d9b;
+  --color-brand-terracotta: #c88d7f;
+  --color-brand-terracotta-light: #332421;
+  --color-brand-accent: #d89f92;
+  --color-brand-light: #281d1b;
+}
+
+.dark body {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(215, 255, 95, 0.04), transparent 24%),
+    radial-gradient(circle at 86% 10%, rgba(194, 139, 124, 0.08), transparent 28%),
+    linear-gradient(135deg, #110908 0%, #1c1211 48%, #110908 100%);
+}
+
+/* Comprehensive Cozy Dark Mode automatic utility mapping */
+.dark .bg-white {
+  background-color: var(--color-brand-panel) !important;
+}
+
+.dark .bg-white\/85 {
+  background-color: rgba(32, 22, 20, 0.85) !important;
+}
+
+.dark .bg-\[\#FAF6F0\] {
+  background-color: #281d1b !important;
+}
+
+.dark .bg-\[\#FAF6F0\]\/90 {
+  background-color: rgba(40, 29, 27, 0.9) !important;
+}
+
+.dark .bg-\[\#fbf6ef\] {
+  background-color: #1e1513 !important;
+}
+
+.dark .bg-\[\#f7f2ec\] {
+  background-color: #1e1513 !important;
+}
+
+.dark .bg-\[\#f7f2ec\]\/10 {
+  background-color: rgba(30, 21, 19, 0.1) !important;
+}
+
+.dark .bg-\[\#FDF8F0\] {
+  background-color: #140d0c !important;
+}
+
+.dark .bg-\[\#F2EDF0\] {
+  background-color: #1c1211 !important;
+}
+
+.dark .bg-\[\#f5f0ea\] {
+  background-color: #281d1b !important;
+}
+
+.dark .bg-\[\#AB8B7C\] {
+  background-color: var(--color-brand-terracotta) !important;
+}
+
+.dark .text-brand-brown-dark {
+  color: var(--color-brand-brown-dark) !important;
+}
+
+.dark .text-brand-brown-light {
+  color: var(--color-brand-brown-light) !important;
+}
+
+.dark .border-black\/\[0\.08\] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .border-black\/\[0\.06\] {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .border-black\/\[0\.05\] {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark .border-black\/\[0\.1\] {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .bg-white\/75 {
+  background-color: rgba(32, 22, 20, 0.75) !important;
+}
+
+.dark .bg-white\/55 {
+  background-color: rgba(32, 22, 20, 0.55) !important;
+}
+
+.dark .bg-white\/80 {
+  background-color: rgba(32, 22, 20, 0.8) !important;
+}
+
+.dark .bg-white\/85 {
+  background-color: rgba(32, 22, 20, 0.85) !important;
+}
+
+.dark .bg-white\/86 {
+  background-color: rgba(32, 22, 20, 0.86) !important;
+}
+
+.dark .bg-white\/88 {
+  background-color: rgba(32, 22, 20, 0.88) !important;
+}
+
+.dark .bg-white\/90 {
+  background-color: rgba(32, 22, 20, 0.9) !important;
+}
+
+.dark .bg-white\/95 {
+  background-color: rgba(32, 22, 20, 0.95) !important;
+}
+
+.dark .bg-white\/70 {
+  background-color: rgba(32, 22, 20, 0.7) !important;
+}
+
+.dark .bg-white\/65 {
+  background-color: rgba(32, 22, 20, 0.65) !important;
+}
+
+.dark .bg-white\/60 {
+  background-color: rgba(32, 22, 20, 0.6) !important;
+}
+
+.dark .bg-white\/45 {
+  background-color: rgba(32, 22, 20, 0.45) !important;
+}
+
+.dark .bg-white\/40 {
+  background-color: rgba(32, 22, 20, 0.4) !important;
+}
+
+.dark .bg-white\/25 {
+  background-color: rgba(32, 22, 20, 0.25) !important;
+}
+
+.dark .bg-white\/10 {
+  background-color: rgba(32, 22, 20, 0.1) !important;
+}
+
+.dark .bg-white\/20 {
+  background-color: rgba(32, 22, 20, 0.2) !important;
+}
+
+.dark .bg-white\/30 {
+  background-color: rgba(32, 22, 20, 0.3) !important;
+}
+
+.dark .glass-panel {
+  background: rgba(32, 22, 20, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ── Study Table Stage Overlay Gradient ── */
+.study-stage-overlay {
+  background: 
+    radial-gradient(circle at 20% 10%, rgba(125, 211, 199, 0.22), transparent 28%),
+    radial-gradient(circle at 82% 16%, rgba(242, 182, 109, 0.20), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(250, 246, 240, 0.42));
+}
+
+.dark .study-stage-overlay {
+  background: 
+    radial-gradient(circle at 20% 10%, rgba(125, 211, 199, 0.05), transparent 28%),
+    radial-gradient(circle at 82% 16%, rgba(242, 182, 109, 0.06), transparent 26%),
+    linear-gradient(180deg, rgba(32, 22, 20, 0.72), rgba(20, 13, 12, 0.42)) !important;
+}
+
+/* ── Idea Board Column Stylings ── */
+.column-todo {
+  border-color: #e2e8f0 !important; /* border-slate-200 */
+  background-color: rgba(248, 250, 252, 0.8) !important; /* bg-slate-50/80 */
+}
+
+.column-doing {
+  border-color: #fde68a !important; /* border-amber-200 */
+  background-color: rgba(254, 243, 199, 0.8) !important; /* bg-amber-50/80 */
+}
+
+.column-done {
+  border-color: #a7f3d0 !important; /* border-emerald-200 */
+  background-color: rgba(209, 250, 229, 0.8) !important; /* bg-emerald-50/80 */
+}
+
+.dark .column-todo {
+  border-color: rgba(228, 193, 181, 0.1) !important; /* border-brand-terracotta-light/10 */
+  background-color: rgba(26, 18, 16, 0.95) !important;
+}
+
+.dark .column-doing {
+  border-color: rgba(245, 158, 11, 0.15) !important; /* border-amber-500/15 */
+  background-color: rgba(43, 28, 22, 0.95) !important; /* dark amber panel */
+}
+
+.dark .column-done {
+  border-color: rgba(16, 185, 129, 0.15) !important; /* border-emerald-500/15 */
+  background-color: rgba(25, 38, 30, 0.95) !important; /* dark green panel */
+}
+
+/* ── Study Table Desk Background & Badges ── */
+.desk-overlay {
+  opacity: 0.85 !important;
+}
+
+.dark .desk-overlay {
+  opacity: 0.15 !important;
+}
+
+/* ── Cozy Dark Status and Reaction Badges ── */
+.dark .bg-emerald-50 {
+  background-color: rgba(6, 78, 59, 0.2) !important;
+  color: #34d399 !important;
+  border-color: rgba(6, 78, 59, 0.3) !important;
+}
+
+.dark .bg-sky-50 {
+  background-color: rgba(8, 47, 73, 0.2) !important;
+  color: #38bdf8 !important;
+  border-color: rgba(8, 47, 73, 0.3) !important;
+}
+
+.dark .bg-amber-50 {
+  background-color: rgba(69, 26, 3, 0.2) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(69, 26, 3, 0.3) !important;
+}
+
+.dark .bg-orange-50 {
+  background-color: rgba(124, 45, 18, 0.2) !important;
+  color: #fb923c !important;
+  border-color: rgba(124, 45, 18, 0.3) !important;
+}
+
+.dark .bg-rose-50 {
+  background-color: rgba(136, 19, 55, 0.2) !important;
+  color: #fb7185 !important;
+  border-color: rgba(136, 19, 55, 0.3) !important;
+}
+
+.dark .bg-slate-50 {
+  background-color: rgba(15, 23, 42, 0.3) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(15, 23, 42, 0.4) !important;
 }
 
 /* Vietnamese diacritics read best with natural spacing. Keep UI copy from inheriting wide tracking. */

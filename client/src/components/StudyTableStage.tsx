@@ -88,17 +88,17 @@ const seatPalette = [
 ]
 
 const statusCycle: Array<{ label: string; Icon: LucideIcon; tone: string }> = [
-  { label: 'đang gõ phím', Icon: Keyboard, tone: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
-  { label: 'tập trung sâu', Icon: VolumeX, tone: 'text-sky-700 bg-sky-50 border-sky-100' },
-  { label: 'đang đọc tài liệu', Icon: BookOpen, tone: 'text-amber-700 bg-amber-50 border-amber-100' },
-  { label: 'nghỉ một chút', Icon: Coffee, tone: 'text-orange-700 bg-orange-50 border-orange-100' },
-  { label: 'away', Icon: Moon, tone: 'text-slate-600 bg-slate-50 border-slate-100' },
+  { label: 'đang gõ phím', Icon: Keyboard, tone: 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' },
+  { label: 'tập trung sâu', Icon: VolumeX, tone: 'text-sky-700 bg-sky-50 border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900/30' },
+  { label: 'đang đọc tài liệu', Icon: BookOpen, tone: 'text-amber-700 bg-amber-50 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' },
+  { label: 'nghỉ một chút', Icon: Coffee, tone: 'text-orange-700 bg-orange-50 border-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30' },
+  { label: 'away', Icon: Moon, tone: 'text-slate-600 bg-slate-50 border-slate-100 dark:bg-slate-900/30 dark:text-slate-400 dark:border-slate-800/40' },
 ]
 
 const reactionOptions: Array<{ label: string; Icon: LucideIcon; tone: string }> = [
-  { label: 'Cố lên', Icon: Flame, tone: 'bg-orange-50 text-orange-700 border-orange-100' },
-  { label: 'Nghỉ chút', Icon: Coffee, tone: 'bg-sky-50 text-sky-700 border-sky-100' },
-  { label: 'Thích', Icon: Heart, tone: 'bg-rose-50 text-rose-700 border-rose-100' },
+  { label: 'Cố lên', Icon: Flame, tone: 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30' },
+  { label: 'Nghỉ chút', Icon: Coffee, tone: 'bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900/30' },
+  { label: 'Thích', Icon: Heart, tone: 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30' },
 ]
 
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase() || 'DM'
@@ -224,7 +224,7 @@ export default function StudyTableStage({
 
       <div className="grid flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
         <section className="relative min-h-[360px] rounded-[28px] border border-brand-terracotta-light/20 bg-[#FDF8F0] p-3 shadow-[0_24px_70px_rgba(76,55,49,0.08)] sm:min-h-[430px] sm:p-5 xl:min-h-[460px]">
-          <div className="pointer-events-none absolute inset-0 rounded-[28px] bg-[radial-gradient(circle_at_20%_10%,rgba(125,211,199,0.22),transparent_28%),radial-gradient(circle_at_82%_16%,rgba(242,182,109,0.20),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.72),rgba(250,246,240,0.42))]" />
+          <div className="pointer-events-none absolute inset-0 rounded-[28px] study-stage-overlay" />
           <div className="pointer-events-none absolute inset-x-4 bottom-4 top-8 rounded-[30px] border border-white/50 bg-white/20 [background-image:linear-gradient(rgba(167,122,108,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(167,122,108,0.07)_1px,transparent_1px)] [background-size:34px_34px]" />
 
           <div className="relative z-10 flex min-h-[330px] flex-col sm:min-h-[390px] xl:min-h-[420px]">
@@ -270,10 +270,10 @@ export default function StudyTableStage({
                     ? ((personal.duration - personalLeft) / personal.duration) * 100
                     : 0
                   const status = personal.isRunning
-                    ? { label: 'Tập trung', Icon: statusCycle[1].Icon, tone: 'text-sky-700 bg-sky-50 border-sky-100' }
+                    ? { label: 'Tập trung', Icon: statusCycle[1].Icon, tone: 'text-sky-700 bg-sky-50 border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900/30' }
                     : personal.isBreak
-                      ? { label: 'Giải lao', Icon: statusCycle[3].Icon, tone: 'text-amber-700 bg-amber-50 border-amber-100' }
-                      : { label: 'Sẵn sàng', Icon: statusCycle[0].Icon, tone: 'text-emerald-700 bg-emerald-50 border-emerald-100' }
+                      ? { label: 'Giải lao', Icon: statusCycle[3].Icon, tone: 'text-amber-700 bg-amber-50 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' }
+                      : { label: 'Sẵn sàng', Icon: statusCycle[0].Icon, tone: 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' }
                   const isLocal = member.id === currentSocketId || member.username === username
                   const activeReactions = visibleReactions.filter(item => item.memberId === member.id)
 
@@ -291,7 +291,7 @@ export default function StudyTableStage({
                         </div>
                       )}
 
-                      <div className={`absolute inset-x-3 top-3 h-20 rounded-[20px] bg-gradient-to-br ${palette.desk} opacity-85`} />
+                      <div className={`absolute inset-x-3 top-3 h-20 rounded-[20px] bg-gradient-to-br ${palette.desk} desk-overlay`} />
                       <div className="absolute right-4 top-4 h-6 w-12 rounded-full border border-white/70 bg-white/65" />
                       <div className="absolute right-6 top-6 h-1.5 w-7 rounded-full bg-brand-terracotta-light/60" />
 

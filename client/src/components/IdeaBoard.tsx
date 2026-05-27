@@ -62,7 +62,7 @@ function CustomSelect({
               className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 opt.value === value
                   ? 'bg-brand-terracotta text-white'
-                  : 'text-brand-brown-light hover:bg-[#FAF6F0] hover:text-brand-terracotta'
+                  : 'text-brand-brown-light hover:bg-brand-cream hover:text-brand-terracotta'
               }`}
             >
               {opt.label}
@@ -82,9 +82,9 @@ type Props = {
 }
 
 const columns: Array<{ key: IdeaStatus; title: string; hint: string; tone: string }> = [
-  { key: 'todo', title: 'Cần làm', hint: 'Ý tưởng và việc mới', tone: 'border-slate-200 bg-slate-50/80' },
-  { key: 'doing', title: 'Đang làm', hint: 'Việc đang tập trung', tone: 'border-amber-200 bg-amber-50/80' },
-  { key: 'done', title: 'Hoàn thành', hint: 'Đã xong hoặc đã review', tone: 'border-emerald-200 bg-emerald-50/80' },
+  { key: 'todo', title: 'Cần làm', hint: 'Ý tưởng và việc mới', tone: 'column-todo' },
+  { key: 'doing', title: 'Đang làm', hint: 'Việc đang tập trung', tone: 'column-doing' },
+  { key: 'done', title: 'Hoàn thành', hint: 'Đã xong hoặc đã review', tone: 'column-done' },
 ]
 
 const workflowSteps = [
