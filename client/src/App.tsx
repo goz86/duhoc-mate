@@ -357,6 +357,8 @@ export default function App() {
   const [roomAvatarFile, setRoomAvatarFile] = useState<File | null>(null);
   const [roomAvatarPreview, setRoomAvatarPreview] = useState('');
   const [roomAvatarUploading, setRoomAvatarUploading] = useState(false);
+  const [roomBgFile, setRoomBgFile] = useState<File | null>(null);
+  const [roomBgPreview, setRoomBgPreview] = useState('');
 
   // TikTok states
   const [tiktokUrl, setTiktokUrl] = useState('');
@@ -1717,14 +1719,33 @@ export default function App() {
         console.error('Upload room avatar error:', e);
       }
     }
+    // Upload ảnh nền phòng nếu có file mới
+    let finalBgUrl = roomBackgroundUrl;
+    if (roomBgFile && supabase) {
+      try {
+        const ext = roomBgFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const path = `rooms/${roomId}/bg_${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(path, roomBgFile, { cacheControl: '3600', upsert: true });
+        if (!uploadError) {
+          const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+          finalBgUrl = data.publicUrl;
+        }
+      } catch (e) {
+        console.error('Upload room background error:', e);
+      }
+    }
     setRoomAvatarUploading(false);
     if (finalAvatarUrl) setCurrentRoomAvatarUrl(finalAvatarUrl);
+    if (finalBgUrl) setRoomBackgroundUrl(finalBgUrl);
     socket.emit('room-settings-update', {
       roomId,
       roomTitle: nextName,
       isPrivate: !roomSettingsPublic,
       password: roomSettingsPassword,
       roomAvatarUrl: finalAvatarUrl,
+      roomBackgroundUrl: finalBgUrl,
     });
     savePersistentRoom({
       id: roomId,
@@ -1737,6 +1758,7 @@ export default function App() {
     }).catch(err => console.error('Error saving room settings:', err));
     setShowRoomSettings(false);
     setRoomAvatarFile(null);
+    setRoomBgFile(null);
     setCustomAlert({ message: 'Đã lưu cài đặt phòng.', show: true });
   };
 
@@ -2622,16 +2644,42 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Hình nền phòng — upload từ thiết bị */}
               <div>
-                <label className="text-xs font-bold text-brand-brown-light uppercase block mb-1">Hình nền phòng (URL)</label>
-                <input
-                  type="text"
-                  placeholder="URL ảnh nền (jpeg, png, webp)..."
-                  disabled={!isHost}
-                  value={roomBackgroundUrl}
-                  onChange={e => setRoomBackgroundUrl(e.target.value)}
-                  className="w-full rounded-2xl border border-black/[0.1] bg-brand-light px-4 py-3 text-sm font-bold text-brand-brown-dark outline-none focus:border-brand-terracotta focus:ring-2 focus:ring-brand-terracotta/20 disabled:opacity-60 disabled:cursor-not-allowed"
-                />
+                <p className="text-xs font-bold text-brand-brown-light uppercase block mb-2">Hình nền phòng</p>
+                <div className="relative overflow-hidden rounded-2xl border border-dashed border-brand-terracotta-light bg-brand-light" style={{ height: '100px' }}>
+                  {(roomBgPreview || roomBackgroundUrl) && (
+                    <img
+                      src={roomBgPreview || roomBackgroundUrl}
+                      alt="bg preview"
+                      className="absolute inset-0 h-full w-full object-cover opacity-60"
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                  )}
+                  {isHost ? (
+                    <label className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-1 text-brand-terracotta transition hover:bg-white/30">
+                      <Plus size={20} />
+                      <span className="text-xs font-black">{roomBgPreview || roomBackgroundUrl ? 'Đổi ảnh nền' : 'Tải ảnh nền lên'}</span>
+                      <span className="text-[10px] font-medium text-brand-brown-light/70">PNG, JPG, WEBP · Tối đa 5MB</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 5 * 1024 * 1024) { setCustomAlert({ message: 'Ảnh nền tối đa 5MB.', show: true }); return; }
+                          setRoomBgFile(file);
+                          setRoomBgPreview(URL.createObjectURL(file));
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-brand-brown-light">
+                      {roomBackgroundUrl ? 'Đã có ảnh nền' : 'Chưa có ảnh nền'}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-2xl bg-brand-light/60 border border-brand-terracotta-light/10">
