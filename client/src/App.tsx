@@ -945,7 +945,7 @@ export default function App() {
 
   // === YouTube IFrame API – Khá�  // Init or update player when currentVideo.id becomes available
   useEffect(() => {
-    if (view !== 'room') return;
+    if (roomId === '') return;
     void playerReinitTrigger;
 
     if (!currentVideo.id) {
@@ -1164,17 +1164,17 @@ export default function App() {
     return () => {
       clearInterval(interval);
     };
-  }, [view, currentVideo.id, playerReinitTrigger]);
+  }, [roomId, currentVideo.id, playerReinitTrigger]);
 
-  // Hủy player khi rời phòng (view khác 'room')
+  // Hủy player khi rời phòng (view khác 'room' và không ở chế độ thu nhỏ)
   useEffect(() => {
-    if (view !== 'room') {
+    if (view !== 'room' && roomId === '') {
       if (playerRef.current?.destroy) {
         playerRef.current.destroy();
       }
       playerRef.current = null;
     }
-  }, [view]);
+  }, [view, roomId]);
 
   // Load video mới khi currentVideo.id thay đổi (nhưng player đã tồn tại)
   useEffect(() => {
@@ -2159,7 +2159,7 @@ export default function App() {
     : 0;
 
   React.useEffect(() => {
-    if (view !== 'room' || !currentVideo.id) {
+    if (roomId === '' || !currentVideo.id) {
       setPlaybackTime(0);
       setVideoDuration(0);
       return;
@@ -2181,7 +2181,7 @@ export default function App() {
     updatePlaybackSnapshot();
     const timer = window.setInterval(updatePlaybackSnapshot, 500);
     return () => window.clearInterval(timer);
-  }, [view, currentVideo.id]);
+  }, [roomId, currentVideo.id]);
 
   // Fetch lyrics khi video thay đổi
   React.useEffect(() => {
