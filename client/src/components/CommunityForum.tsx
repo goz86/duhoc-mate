@@ -146,6 +146,28 @@ export default function CommunityForum({
     fetchUserReactions()
   }, [catFilter])
 
+  // Increment views when post is selected
+  useEffect(() => {
+    if (!selectedPost || !supabase) return
+    const incrementViews = async () => {
+      try {
+        const { error } = await supabase
+          .from('community_posts')
+          .update({ views_count: selectedPost.views_count + 1 })
+          .eq('id', selectedPost.id)
+        if (error) throw error
+        // Update local state
+        setSelectedPost(prev => prev ? { ...prev, views_count: prev.views_count + 1 } : null)
+        setPosts(prev => prev.map(p => p.id === selectedPost.id ? { ...p, views_count: p.views_count + 1 } : p))
+      } catch (err) {
+        console.error('Error incrementing views:', err)
+      }
+    }
+    // Only increment after a small delay to avoid multiple increments on re-renders
+    const timer = setTimeout(incrementViews, 500)
+    return () => clearTimeout(timer)
+  }, [selectedPost?.id])
+
   const fetchPosts = async () => {
     if (!supabase) return
     setLoading(true)
