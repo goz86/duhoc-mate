@@ -709,18 +709,28 @@ export default function CommunityForum({
                     if (!currentUserId) return // disable toggle switch if guest
                     setIsAnonComment(prev => !prev)
                   }}
-                  className={`cm-comment-anon-toggle inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black border transition cursor-pointer select-none ${
+                  className={`cm-comment-anon-toggle inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[10px] font-bold border transition cursor-pointer select-none ${
                     !currentUserId || isAnonComment
-                      ? 'cm-comment-anon-toggle active border-emerald-100/40 text-emerald-700 bg-emerald-50/20'
+                      ? 'cm-comment-anon-toggle active'
                       : 'border-brand-terracotta-light/15 bg-white/70 text-brand-brown-light dark:bg-brand-panel'
                   }`}
                   disabled={!currentUserId}
                 >
                   <span className="cm-comment-switch" />
-                  <span className="cm-comment-anon-text">
+                  <span className="cm-comment-anon-text flex items-center gap-1">
                     {!currentUserId 
-                      ? '🔐 Bình luận Ẩn danh (Khách - Tự hủy 3h)' 
-                      : (isAnonComment ? '🔐 Bình luận Ẩn danh (Tự hủy 3h)' : `👤 Trạng thái công khai (${username})`)
+                      ? (
+                        <>
+                          <ShieldCheck size={12} className="text-blue-500 shrink-0 stroke-[2.2]" />
+                          <span>Ẩn danh (Khách)</span>
+                        </>
+                      ) 
+                      : (isAnonComment ? (
+                        <>
+                          <ShieldCheck size={12} className="text-blue-500 shrink-0 stroke-[2.2]" />
+                          <span>Ẩn danh</span>
+                        </>
+                      ) : `👤 Trạng thái công khai (${username})`)
                     }
                   </span>
                 </button>
@@ -999,12 +1009,6 @@ function CommentItem({
   }, [comment.expires_at])
 
   const showCountdown = remainingMs !== null && remainingMs > 0
-  const totalMs = comment.expires_at && comment.created_at
-    ? new Date(comment.expires_at).getTime() - new Date(comment.created_at).getTime()
-    : 10_800_000 // 3 hours
-  const progressPct = showCountdown
-    ? Math.max(0, Math.min(100, (remainingMs! / totalMs) * 100))
-    : 0
 
   if (comment.expires_at && remainingMs !== null && remainingMs <= 0) {
     return null // Filter out expired guest comments
@@ -1039,48 +1043,39 @@ function CommentItem({
         {comment.content}
       </p>
 
-      {/* Comment Interaction Actions */}
-      <div className="flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2 text-[10px] font-black text-brand-brown-light">
-          <button
-            type="button"
-            onClick={onReply}
-            className="px-2.5 py-1 hover:text-brand-terracotta transition cursor-pointer"
-          >
-            Phản hồi
-          </button>
-          <button
-            type="button"
-            onClick={onLike}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md transition cursor-pointer ${
-              liked 
-                ? 'text-brand-terracotta bg-brand-cream dark:bg-brand-light' 
-                : 'hover:text-brand-brown-dark'
-            }`}
-          >
-            <ThumbsUp size={11} />
-            <span>{comment.likes_count} thích</span>
-          </button>
-        </div>
-
-        {/* Self-Destruct Countdown Bar */}
-        {showCountdown && (
-          <div className="cm-comment-guest-countdown flex items-center gap-1.5 select-none shrink-0">
-            <span className="cm-comment-guest-label text-[9px] font-bold text-amber-600/85 dark:text-amber-400">
-              ⏱ xóa sau {fmtCountdownHMS(remainingMs!)}
-            </span>
-            <div className="cm-comment-guest-bar-track w-12 h-1 bg-brand-terracotta-light/35 rounded-full overflow-hidden">
-              <div
-                className="cm-comment-guest-bar-fill h-full bg-amber-400 rounded-full transition-all duration-1000"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-          </div>
-        )}
+      {/* Comment Interaction Actions Row matching mockup exactly */}
+      <div className="flex items-center gap-3 text-xs mt-1 shrink-0 select-none">
+        <button
+          type="button"
+          onClick={onReply}
+          className="text-blue-500 hover:text-blue-700 font-bold transition cursor-pointer"
+        >
+          Trả lời
+        </button>
+        <button
+          type="button"
+          onClick={onLike}
+          className={`inline-flex items-center gap-1 transition cursor-pointer ${
+            liked 
+              ? 'text-brand-terracotta font-bold' 
+              : 'text-gray-400 hover:text-brand-brown-dark'
+          }`}
+        >
+          <ThumbsUp size={12} className="stroke-[1.8]" />
+          <span className="text-[11px] font-medium">{comment.likes_count}</span>
+        </button>
       </div>
 
       {/* Vivid orange-red divider bar matching the screenshot exactly */}
       {showCountdown && <div className="cm-comment-self-destruct-divider" />}
+
+      {/* Self-Destruct Countdown Text underneath the divider with clock icon */}
+      {showCountdown && (
+        <div className="flex items-center gap-1.5 text-[10px] font-bold text-orange-600 dark:text-orange-400 select-none mt-0.5">
+          <Clock size={11} className="text-gray-700 dark:text-gray-300 stroke-[2.2]" />
+          <span>xóa sau {fmtCountdownHMS(remainingMs!)}</span>
+        </div>
+      )}
     </article>
   )
 }

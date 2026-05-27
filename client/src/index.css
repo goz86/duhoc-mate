@@ -563,40 +563,38 @@ button.ticker-inner {
    COMMUNITY FORUM & ANONYMOUS COMMENTS HIGH-FIDELITY CSS
    ========================================================================== */
 
-/* ── Anonymous Toggle Switch in Form ── */
+/* ── Anonymous Toggle Switch in Form (Mockup matching) ── */
 .cm-comment-anon-toggle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  padding: 4px 12px;
   border-radius: 9999px;
-  border: 1.5px solid rgba(139, 126, 123, 0.2);
-  background: rgba(255, 255, 255, 0.85);
-  color: var(--color-brand-brown-light);
+  border: 1.2px solid #3b82f6 !important;
+  background: #ffffff !important;
+  color: #3b82f6 !important;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   user-select: none;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+  box-shadow: none !important;
 }
 
 .dark .cm-comment-anon-toggle {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: var(--color-brand-panel);
-  color: var(--color-brand-brown-light);
+  border-color: #3b82f6 !important;
+  background: var(--color-brand-panel) !important;
+  color: #60a5fa !important;
 }
 
 /* Active State matching user's blue theme switch exactly */
 .cm-comment-anon-toggle.active {
   border-color: #3b82f6 !important;
   background: #eff6ff !important;
-  color: #2563eb !important;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+  color: #3b82f6 !important;
 }
 
 .dark .cm-comment-anon-toggle.active {
-  border-color: #3b82f6 !important;
   background: rgba(59, 130, 246, 0.12) !important;
   color: #60a5fa !important;
 }
@@ -607,18 +605,10 @@ button.ticker-inner {
   display: inline-block;
   width: 32px;
   height: 18px;
-  background: #cbd5e1;
+  background: #3b82f6 !important; /* Always blue background */
   border-radius: 9999px;
-  transition: background-color 0.25s ease;
+  transition: background-color 0.2s ease;
   flex-shrink: 0;
-}
-
-.dark .cm-comment-switch {
-  background: #475569;
-}
-
-.cm-comment-anon-toggle.active .cm-comment-switch {
-  background: #3b82f6 !important;
 }
 
 /* Sliding circle knob */
@@ -631,7 +621,7 @@ button.ticker-inner {
   background: white;
   top: 2px;
   left: 2px;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
