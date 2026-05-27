@@ -17,7 +17,12 @@ import {
   X,
   MessageCircle,
   Eye,
-  Check
+  Check,
+  Layers,
+  BookOpen,
+  MapPin,
+  Briefcase,
+  Globe2
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
@@ -60,11 +65,11 @@ interface Props {
 }
 
 const CATEGORIES = [
-  { value: 'all', label: 'Tất cả' },
-  { value: 'topik', label: 'Học TOPIK' },
-  { value: 'life', label: 'Đời sống Hàn' },
-  { value: 'job', label: 'Việc làm thêm' },
-  { value: 'free', label: 'Tự do' }
+  { value: 'all', label: 'Tất cả', Icon: Layers },
+  { value: 'topik', label: 'Học TOPIK', Icon: BookOpen },
+  { value: 'life', label: 'Đời sống Hàn', Icon: MapPin },
+  { value: 'job', label: 'Việc làm thêm', Icon: Briefcase },
+  { value: 'free', label: 'Tự do', Icon: Globe2 }
 ]
 
 function timeAgo(dateString: string): string {
@@ -881,21 +886,26 @@ export default function CommunityForum({
 
             {/* Category selection */}
             <div className="rounded-[28px] border border-brand-terracotta-light/20 bg-white/85 p-3.5 shadow-sm dark:bg-brand-panel">
-              <h3 className="text-[10px] font-black uppercase text-brand-brown-light mb-2.5 px-1.5">Chuyên mục</h3>
+              <h3 className="text-[10px] font-black uppercase text-brand-brown-light mb-2.5 px-1.5 hidden sm:block">Chuyên mục</h3>
               <div className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto pb-1 lg:pb-0 custom-scrollbar">
-                {CATEGORIES.map(cat => (
-                  <button
-                    key={cat.value}
-                    onClick={() => setCatFilter(cat.value)}
-                    className={`w-full text-left px-3.5 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap active:scale-95 ${
-                      catFilter === cat.value
-                        ? 'bg-brand-terracotta text-white shadow-sm'
-                        : 'text-brand-brown-light hover:bg-brand-light'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
+                {CATEGORIES.map(cat => {
+                  const CatIcon = cat.Icon
+                  return (
+                    <button
+                      key={cat.value}
+                      onClick={() => setCatFilter(cat.value)}
+                      title={cat.label}
+                      className={`flex items-center gap-2 w-full text-left px-3 sm:px-3.5 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap active:scale-95 ${
+                        catFilter === cat.value
+                          ? 'bg-brand-terracotta text-white shadow-sm'
+                          : 'text-brand-brown-light hover:bg-brand-light'
+                      }`}
+                    >
+                      <CatIcon size={14} className="shrink-0" />
+                      <span className="hidden sm:inline">{cat.label}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </aside>

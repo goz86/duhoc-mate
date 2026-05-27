@@ -348,14 +348,15 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer ${
+              title={tab.label}
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer ${
                 activeTab === tab.value
                   ? 'bg-brand-terracotta text-white shadow-sm'
                   : 'text-brand-brown-light hover:text-brand-brown-dark'
               }`}
             >
               <TabIcon size={14} />
-              {tab.label}
+              <span className="hidden sm:inline">{tab.label}</span>
             </button>
           )
         })}
