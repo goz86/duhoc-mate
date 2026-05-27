@@ -21,6 +21,7 @@ export type Profile = {
   city?: string
   bio?: string
   language: 'vi' | 'ko' | 'en'
+  is_admin?: boolean
   created_at: string
 }
 

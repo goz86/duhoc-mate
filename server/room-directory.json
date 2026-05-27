@@ -97,7 +97,7 @@
   },
   "ANVSGO": {
     "id": "ANVSGO",
-    "hostName": "2",
+    "hostName": "goz",
     "memberCount": 0,
     "currentSong": "Dang nghe nhac Lofi",
     "roomTitle": "Phòng của 1",
@@ -105,7 +105,7 @@
     "password": "",
     "hostAvatarUrl": "",
     "createdAt": "2026-05-25T01:33:37.830Z",
-    "lastActiveAt": "2026-05-25T01:48:54.348Z"
+    "lastActiveAt": "2026-05-27T02:52:17.432Z"
   },
   "3PZMTW": {
     "id": "3PZMTW",
@@ -133,14 +133,26 @@
   },
   "W4D99U": {
     "id": "W4D99U",
-    "hostName": "Hỗ Trợ Michintashop",
-    "memberCount": 2,
+    "hostName": "goz",
+    "memberCount": 0,
     "currentSong": "Xuân Thì | CineLove (The Album) | Phan Mạnh Quỳnh",
     "roomTitle": "Phòng của 12",
     "isPrivate": false,
     "password": "",
     "hostAvatarUrl": "",
     "createdAt": "2026-05-25T15:20:43.310Z",
-    "lastActiveAt": "2026-05-26T15:26:00.682Z"
+    "lastActiveAt": "2026-05-27T03:00:02.815Z"
+  },
+  "TOPIK30": {
+    "id": "TOPIK30",
+    "hostName": "goz",
+    "memberCount": 0,
+    "currentSong": "Xuân Thì (OST Hẹn Em Ngày Nhật Thực) | Phan Mạnh Quỳnh | Music Video",
+    "roomTitle": "Phòng ôn TOPIK 30 ngày",
+    "isPrivate": false,
+    "password": "",
+    "hostAvatarUrl": "",
+    "createdAt": "2026-05-27T03:01:20.365Z",
+    "lastActiveAt": "2026-05-27T03:50:46.773Z"
   }
 }

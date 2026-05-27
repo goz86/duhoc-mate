@@ -24,6 +24,7 @@ import {
   Wallet,
   Sun,
   Moon,
+  ShieldCheck,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import studyLounge3d from '../assets/study-lounge-3d-new.png'
@@ -67,8 +68,8 @@ type LandingPageProps = {
   roomId: string
   setRoomId: (value: string) => void
   onlineUsersCount: number
-  user: unknown
-  profile: { username?: string; city?: string; avatar_url?: string } | null
+  user: any
+  profile: { username?: string; city?: string; avatar_url?: string; is_admin?: boolean } | null
   signOut: () => void
   getAvatarColor: (name: string) => string
   handleCreateRoom: (
@@ -95,6 +96,8 @@ type LandingPageProps = {
   setShowHelpBoard: (show: boolean) => void
   isDarkMode: boolean
   toggleDarkMode: () => void
+  onEnterForum: () => void
+  onEnterAdmin: () => void
 }
 
 export default function LandingPage({
@@ -125,6 +128,8 @@ export default function LandingPage({
   setShowHelpBoard,
   isDarkMode,
   toggleDarkMode,
+  onEnterForum,
+  onEnterAdmin,
 }: LandingPageProps) {
   const { t } = useTranslation()
 
@@ -405,6 +410,28 @@ export default function LandingPage({
               <Clock size={13} />
               {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} {profile?.city || 'Seoul'}
             </span>
+            {user && (
+              <button
+                type="button"
+                onClick={onEnterForum}
+                className="flex h-10 items-center gap-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0f172a] px-4 text-xs font-black text-brand-brown-dark dark:text-[#f8fafc] shadow-sm transition hover:border-brand-terracotta-light hover:shadow-md cursor-pointer"
+              >
+                <Globe2 size={13} className="text-brand-terracotta" />
+                <span>Diễn đàn</span>
+              </button>
+            )}
+
+            {profile?.is_admin && (
+              <button
+                type="button"
+                onClick={onEnterAdmin}
+                className="flex h-10 items-center gap-1.5 rounded-full border border-red-100 bg-red-50/50 px-4 text-xs font-black text-red-600 shadow-sm transition hover:bg-red-50 cursor-pointer"
+                title="Quản trị hệ thống"
+              >
+                <ShieldCheck size={14} />
+                <span>Quản trị</span>
+              </button>
+            )}
             <LanguageSwitcher />
             <button
               type="button"
