@@ -2919,7 +2919,7 @@ export default function App() {
       )}
 
       {roomId !== '' && (
-        <div className={`w-full flex-1 flex flex-col lg:h-full lg:max-h-full lg:overflow-hidden ${view !== 'room' ? 'hidden' : ''} ${
+        <div className={`w-full flex-1 flex flex-col lg:h-full lg:max-h-full lg:overflow-hidden ${view !== 'room' ? 'pointer-events-none absolute -left-[9999px] -top-[9999px] h-1 w-1 overflow-hidden opacity-0' : ''} ${
           roomTheme === 'midnight' ? 'bg-slate-950 text-white' :
           roomTheme === 'sakura' ? 'bg-pink-50' :
           roomTheme === 'ocean' ? 'bg-cyan-50' :
@@ -2937,7 +2937,7 @@ export default function App() {
             isHost={isHost}
             onCopyRoomId={copyRoomId}
             onLeaveRoom={handleLeaveRoom}
-            onMinimizeRoom={() => { isProgrammaticNavRef.current = true; setView('landing'); navigateToLanding(); }}
+            onMinimizeRoom={() => { setView('landing'); }}
             onAddFriend={addFriendFromMember}
             onTransferHost={transferHost}
           />
@@ -4395,7 +4395,7 @@ export default function App() {
         <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 bg-[#FAF6F0]/90 dark:bg-slate-900/90 backdrop-blur-md border border-brand-terracotta/20 rounded-2xl p-3 shadow-[0_12px_40px_rgba(76,55,49,0.15)] animate-custom-fade-in w-72 sm:w-80 group transition-all duration-300 hover:border-brand-terracotta/40">
           {/* Animated vinyl / CD visualizer */}
           <div 
-            onClick={() => { isProgrammaticNavRef.current = true; setView('room'); navigateToRoom(roomId); }}
+            onClick={() => { setView('room'); }}
             className="relative w-12 h-12 rounded-full bg-brand-brown-dark flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 shadow-md ring-2 ring-brand-terracotta/20 group-hover:ring-brand-terracotta/40 transition"
           >
             {currentVideo.id ? (
@@ -4414,7 +4414,7 @@ export default function App() {
 
           {/* Song text area */}
           <div 
-            onClick={() => { isProgrammaticNavRef.current = true; setView('room'); navigateToRoom(roomId); }}
+            onClick={() => { setView('room'); }}
             className="flex-1 min-w-0 cursor-pointer space-y-0.5"
           >
             <p className="text-xs font-bold text-brand-terracotta uppercase tracking-wider select-none">Đang học nhóm</p>
@@ -4446,7 +4446,7 @@ export default function App() {
 
             {/* Expand / Maximize button */}
             <button
-              onClick={() => { isProgrammaticNavRef.current = true; setView('room'); navigateToRoom(roomId); }}
+              onClick={() => { setView('room'); }}
               className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 text-brand-brown-dark dark:text-white border border-brand-terracotta/20 flex items-center justify-center hover:bg-brand-light transition cursor-pointer active:scale-90 shadow-sm"
               title="Quay lại phòng"
             >
