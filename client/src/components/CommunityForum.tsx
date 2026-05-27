@@ -117,6 +117,18 @@ export default function CommunityForum({
   const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(new Set())
   const [likedComments, setLikedComments] = useState<Set<string>>(new Set())
 
+  // Custom confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean
+    message: string
+    onConfirm: () => void
+  }>({ open: false, message: '', onConfirm: () => {} })
+
+  const showConfirm = (message: string, onConfirm: () => void) => {
+    setConfirmDialog({ open: true, message, onConfirm })
+  }
+  const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, open: false }))
+
   // Guest ID: UUID duy nhất cho mỗi browser, lưu localStorage, dùng để ghi reaction vào DB
   const guestId = useMemo<string>(() => {
     if (currentUserId) return ''
@@ -445,7 +457,7 @@ export default function CommunityForum({
 
   const handleDeletePost = async (postId: string) => {
     if (!supabase || (!isAdmin && posts.find(p => p.id === postId)?.user_id !== currentUserId)) return
-    if (!confirm('Bạn có chắc chắn muốn xóa bài viết này không?')) return
+    showConfirm('Bạn có chắc chắn muốn xóa bài viết này không?', async () => {
     try {
       const { error } = await supabase.from('community_posts').delete().eq('id', postId)
       if (error) throw error
@@ -454,6 +466,7 @@ export default function CommunityForum({
     } catch (err) {
       console.error('Error deleting post:', err)
     }
+    })
   }
 
   const handleLikeComment = async (commentId: string) => {
@@ -565,18 +578,19 @@ export default function CommunityForum({
     }
   }
 
-  const handleDeleteComment = async (commentId: string) => {
+  const handleDeleteComment = (commentId: string) => {
     if (!supabase || !selectedPost) return
-    if (!confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) return
-    try {
-      const { error } = await supabase.from('community_comments').delete().eq('id', commentId)
-      if (error) throw error
-      setComments(prev => prev.filter(c => c.id !== commentId))
-      setSelectedPost(prev => prev ? { ...prev, comments_count: Math.max(0, prev.comments_count - 1) } : null)
-      setPosts(prev => prev.map(p => p.id === selectedPost.id ? { ...p, comments_count: Math.max(0, p.comments_count - 1) } : p))
-    } catch (err) {
-      console.error('Error deleting comment:', err)
-    }
+    showConfirm('Bạn có chắc chắn muốn xóa bình luận này không?', async () => {
+      try {
+        const { error } = await supabase.from('community_comments').delete().eq('id', commentId)
+        if (error) throw error
+        setComments(prev => prev.filter(c => c.id !== commentId))
+        setSelectedPost(prev => prev ? { ...prev, comments_count: Math.max(0, prev.comments_count - 1) } : null)
+        setPosts(prev => prev.map(p => p.id === selectedPost.id ? { ...p, comments_count: Math.max(0, p.comments_count - 1) } : p))
+      } catch (err) {
+        console.error('Error deleting comment:', err)
+      }
+    })
   }
 
   // Group comments
@@ -849,6 +863,29 @@ export default function CommunityForum({
             </button>
           </div>
         </form>
+
+        {/* Custom Confirm Dialog (shared) */}
+        {confirmDialog.open && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={closeConfirm} />
+            <div className="relative w-full max-w-sm rounded-2xl bg-white shadow-[0_24px_64px_rgba(76,55,49,0.18)] overflow-hidden animate-fade-in-up">
+              <div className="h-1 w-full bg-gradient-to-r from-brand-terracotta to-brand-brown-dark" />
+              <div className="px-6 pt-5 pb-6">
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-red-50">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                </div>
+                <p className="text-[15px] font-bold text-brand-brown-dark leading-snug">{confirmDialog.message}</p>
+                <p className="mt-1 text-[13px] text-brand-brown-light">Hành động này không thể hoàn tác.</p>
+                <div className="mt-5 flex gap-2.5">
+                  <button onClick={closeConfirm} className="flex-1 h-10 rounded-xl border border-brand-terracotta-light/30 bg-brand-light text-sm font-black text-brand-brown-dark hover:bg-brand-terracotta-light/20 transition active:scale-95">Huỷ</button>
+                  <button onClick={() => { confirmDialog.onConfirm(); closeConfirm() }} className="flex-1 h-10 rounded-xl bg-red-500 text-sm font-black text-white hover:bg-red-600 transition active:scale-95 shadow-md shadow-red-500/20">Xóa</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -1138,6 +1175,52 @@ export default function CommunityForum({
         <Plus size={18} />
         <span>Viết bài</span>
       </button>
+
+      {/* Custom Confirm Dialog */}
+      {confirmDialog.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
+            onClick={closeConfirm}
+          />
+          {/* Modal */}
+          <div className="relative w-full max-w-sm rounded-2xl bg-white shadow-[0_24px_64px_rgba(76,55,49,0.18)] animate-fade-in-up overflow-hidden">
+            {/* Top accent line */}
+            <div className="h-1 w-full bg-gradient-to-r from-brand-terracotta to-brand-brown-dark" />
+            <div className="px-6 pt-5 pb-6">
+              {/* Icon */}
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-red-50">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+              </div>
+              {/* Message */}
+              <p className="text-[15px] font-bold text-brand-brown-dark leading-snug">
+                {confirmDialog.message}
+              </p>
+              <p className="mt-1 text-[13px] text-brand-brown-light">
+                Hành động này không thể hoàn tác.
+              </p>
+              {/* Buttons */}
+              <div className="mt-5 flex gap-2.5">
+                <button
+                  onClick={closeConfirm}
+                  className="flex-1 h-10 rounded-xl border border-brand-terracotta-light/30 bg-brand-light text-sm font-black text-brand-brown-dark hover:bg-brand-terracotta-light/20 transition active:scale-95"
+                >
+                  Huỷ
+                </button>
+                <button
+                  onClick={() => { confirmDialog.onConfirm(); closeConfirm() }}
+                  className="flex-1 h-10 rounded-xl bg-red-500 text-sm font-black text-white hover:bg-red-600 transition active:scale-95 shadow-md shadow-red-500/20"
+                >
+                  Xóa
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
