@@ -182,11 +182,11 @@ CREATE POLICY "Anyone can view unexpired comments"
   USING (expires_at IS NULL OR expires_at > now());
 
 DROP POLICY IF EXISTS "Authenticated and non-banned users can insert comments" ON public.community_comments;
-CREATE POLICY "Authenticated and non-banned users can insert comments" 
+CREATE POLICY "Anyone can insert comments" 
   ON public.community_comments FOR INSERT 
   WITH CHECK (
-    auth.uid() = user_id 
-    AND NOT public.is_banned_user(auth.uid())
+    (user_id IS NULL OR auth.uid() = user_id)
+    AND (auth.uid() IS NULL OR NOT public.is_banned_user(auth.uid()))
   );
 
 DROP POLICY IF EXISTS "Users and admins can delete comments" ON public.community_comments;

@@ -417,24 +417,24 @@ export default function CommunityForum({
     setSubmittingComment(true)
     try {
       // Calculate self-destruct expiration if anonymous comment
-      const expiresAt = isAnonComment 
+      const expiresAt = (!currentUserId || isAnonComment) 
         ? new Date(Date.now() + 3 * 3600 * 1000).toISOString() // 3 Hours expiration
         : null
 
       // If anonymous comment, assess standard name display "Ẩn danh X"
       // Generate a consistent pseudo-random index per comment session
-      const anonName = isAnonComment
-        ? `Ẩn danh ${Math.floor(Math.random() * 100) + 1}`
+      const anonName = (!currentUserId || isAnonComment)
+        ? (currentUserId ? `Ẩn danh ${Math.floor(Math.random() * 100) + 1}` : `Ẩn danh (Khách) ${Math.floor(Math.random() * 100) + 1}`)
         : username
 
       const commentPayload = {
         post_id: selectedPost.id,
         parent_id: replyToCommentId,
-        user_id: currentUserId,
+        user_id: currentUserId || null,
         content: newComment.trim(),
-        is_anonymous: isAnonComment,
+        is_anonymous: !currentUserId ? true : isAnonComment,
         display_name: anonName,
-        is_author: selectedPost.user_id === currentUserId,
+        is_author: currentUserId ? (selectedPost.user_id === currentUserId) : false,
         expires_at: expiresAt
       }
 
@@ -705,16 +705,23 @@ export default function CommunityForum({
               <div className="flex items-center justify-between mb-2">
                 <button
                   type="button"
-                  onClick={() => setIsAnonComment(prev => !prev)}
+                  onClick={() => {
+                    if (!currentUserId) return // disable toggle switch if guest
+                    setIsAnonComment(prev => !prev)
+                  }}
                   className={`cm-comment-anon-toggle inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black border transition cursor-pointer select-none ${
-                    isAnonComment
+                    !currentUserId || isAnonComment
                       ? 'cm-comment-anon-toggle active border-emerald-100/40 text-emerald-700 bg-emerald-50/20'
                       : 'border-brand-terracotta-light/15 bg-white/70 text-brand-brown-light dark:bg-brand-panel'
                   }`}
+                  disabled={!currentUserId}
                 >
                   <span className="cm-comment-switch" />
                   <span className="cm-comment-anon-text">
-                    {isAnonComment ? '🔐 Bình luận Ẩn danh (Tự hủy 3h)' : `👤 Trạng thái công khai (${username})`}
+                    {!currentUserId 
+                      ? '🔐 Bình luận Ẩn danh (Khách - Tự hủy 3h)' 
+                      : (isAnonComment ? '🔐 Bình luận Ẩn danh (Tự hủy 3h)' : `👤 Trạng thái công khai (${username})`)
+                    }
                   </span>
                 </button>
               </div>
