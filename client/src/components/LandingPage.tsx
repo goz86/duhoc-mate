@@ -36,9 +36,7 @@ import CommunityForum from './CommunityForum'
 import TemplateMarketplace from './TemplateMarketplace'
 import type { RoomTemplate } from '../lib/communityTemplates'
 import { supabase } from '../lib/supabase'
-import type { HelpPost } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { repairHelpPostText } from '../lib/textEncoding'
 
 
 type ActiveRoom = {
@@ -134,7 +132,8 @@ export default function LandingPage({
   const [exchangeRate, setExchangeRate] = useState<string>('Đang tải...')
   const [weather, setWeather] = useState<{ temp: string; desc: string } | null>(null)
 
-  const [tickerPosts, setTickerPosts] = useState<HelpPost[]>([])
+  type TickerPost = { id: string; display_name: string; title: string; is_anonymous: boolean }
+  const [tickerPosts, setTickerPosts] = useState<TickerPost[]>([])
   const [tickerIndex, setTickerIndex] = useState(0)
   const [tickerPhase, setTickerPhase] = useState<'in' | 'show' | 'out'>('in')
   const tickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -319,12 +318,12 @@ export default function LandingPage({
       try {
         if (supabase) {
           const { data } = await supabase
-            .from('help_posts')
-            .select('*')
+            .from('community_posts')
+            .select('id, display_name, title, is_anonymous')
             .order('created_at', { ascending: false })
-            .limit(15)
+            .limit(20)
           if (data && data.length > 0) {
-            setTickerPosts((data as HelpPost[]).map(repairHelpPostText))
+            setTickerPosts(data as TickerPost[])
             return
           }
         }
@@ -332,9 +331,9 @@ export default function LandingPage({
         // Fallback below
       }
       setTickerPosts([
-        { id: '1', user_id: 'demo', username: 'Minh Anh', title: 'Cần người đi cùng lên Cục XNC Suwon', content: '', category: 'transport', city: 'Suwon', created_at: new Date().toISOString() },
-        { id: '2', user_id: 'demo', username: 'Goz', title: 'Tìm bạn mua chung gia vị Việt ở Itaewon', content: '', category: 'food', city: 'Seoul', created_at: new Date().toISOString() },
-        { id: '3', user_id: 'demo', username: 'Thu Trang', title: 'Job làm thêm cuối tuần tại nhà hàng', content: '', category: 'job', city: 'Gyeonggi', created_at: new Date().toISOString() },
+        { id: '1', display_name: 'Minh Anh', title: 'Cần người đi cùng lên Cục XNC Suwon', is_anonymous: false },
+        { id: '2', display_name: 'Goz', title: 'Tìm bạn mua chung gia vị Việt ở Itaewon', is_anonymous: false },
+        { id: '3', display_name: 'Thu Trang', title: 'Job làm thêm cuối tuần tại nhà hàng', is_anonymous: false },
       ])
     }
     fetchTickerPosts()
@@ -881,7 +880,9 @@ export default function LandingPage({
                       <span className="ticker-icon flex items-center text-brand-terracotta">
                         <Megaphone size={12} strokeWidth={2.5} />
                       </span>
-                      <span className="ticker-author shrink-0 text-xs font-bold text-brand-brown-dark">{tickerPosts[tickerIndex]?.username}</span>
+                      <span className="ticker-author shrink-0 text-xs font-bold text-brand-brown-dark">
+                        {tickerPosts[tickerIndex]?.is_anonymous ? 'Ẩn danh' : (tickerPosts[tickerIndex]?.display_name ?? '')}
+                      </span>
                       <span className="ticker-sep font-bold text-brand-terracotta-light">·</span>
                       <span className="ticker-text truncate text-xs font-semibold text-brand-brown-light">
                         {tickerPosts[tickerIndex]?.title}
