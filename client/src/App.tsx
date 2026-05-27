@@ -352,7 +352,7 @@ export default function App() {
   const [roomSettingsPublic, setRoomSettingsPublic] = useState(true);
   const [roomSettingsPassword, setRoomSettingsPassword] = useState('');
   const [roomBackgroundUrl, setRoomBackgroundUrl] = useState('');
-  const [roomAvatarUrl, setRoomAvatarUrl] = useState('');
+  const [roomAvatarUrl] = useState('');
   const [currentRoomAvatarUrl, setCurrentRoomAvatarUrl] = useState('');
   const [roomAvatarFile, setRoomAvatarFile] = useState<File | null>(null);
   const [roomAvatarPreview, setRoomAvatarPreview] = useState('');
@@ -2255,7 +2255,6 @@ export default function App() {
     // Cuộn trong đúng container lyrics — không dùng scrollIntoView để tránh cuộn nhầm
     const scrollWithin = (container: HTMLDivElement | null, el: HTMLParagraphElement | null) => {
       if (!container || !el) return;
-      const containerTop = container.scrollTop;
       const containerHeight = container.clientHeight;
       const elTop = el.offsetTop;
       const elHeight = el.clientHeight;
