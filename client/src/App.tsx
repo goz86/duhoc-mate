@@ -22,7 +22,6 @@ import TopikStudy from './components/TopikStudy';
 import IdeaBoard from './components/IdeaBoard';
 import CreateTemplateModal from './components/CreateTemplateModal';
 import LandingPage from './components/LandingPage';
-import CommunityForum from './components/CommunityForum';
 import AdminDashboard from './components/AdminDashboard';
 import { getTemplateRoomId, seedRoomIds } from './lib/templateRooms';
 import RoomHeader from './components/RoomHeader';
@@ -249,7 +248,7 @@ export default function App() {
   };
 
   const _initialNav = getInitialViewFromHash();
-  const [view, setView] = useState<'landing' | 'room' | 'forum' | 'admin'>(_initialNav.view);
+  const [view, setView] = useState<'landing' | 'room' | 'admin'>(_initialNav.view);
   const [roomId, setRoomId] = useState(_initialNav.roomId);
   const [roomInputId, setRoomInputId] = useState('');
   const [currentRoomTitle, setCurrentRoomTitle] = useState('');
@@ -300,7 +299,7 @@ export default function App() {
           // Show leaving confirmation dialog
           handleLeaveRoom();
         }
-      } else if (view === 'forum' || view === 'admin') {
+      } else if (view === 'admin') {
         setView('landing');
         navigateToLanding();
       }
@@ -2416,17 +2415,7 @@ export default function App() {
           setShowHelpBoard={setShowHelpBoard}
           isDarkMode={isDarkMode}
           toggleDarkMode={toggleDarkMode}
-          onEnterForum={() => setView('forum')}
           onEnterAdmin={() => setView('admin')}
-        />
-      )}
-
-      {view === 'forum' && (
-        <CommunityForum
-          currentUserId={user?.id || ''}
-          username={profile?.username || username || 'Bạn học'}
-          isAdmin={!!profile?.is_admin}
-          onBackToLobby={() => setView('landing')}
         />
       )}
 

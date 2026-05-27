@@ -32,7 +32,7 @@ import createRoomScene from '../assets/create-room-scene.png'
 import createRoomSceneSecondary from '../assets/create-room-scene-secondary.png'
 import duhocMateLogo from '../assets/duhoc-mate-logo-new.png'
 import LanguageSwitcher from './LanguageSwitcher'
-import QuickHelpBoard from './QuickHelpBoard'
+import CommunityForum from './CommunityForum'
 import TemplateMarketplace from './TemplateMarketplace'
 import type { RoomTemplate } from '../lib/communityTemplates'
 import { supabase } from '../lib/supabase'
@@ -96,7 +96,6 @@ type LandingPageProps = {
   setShowHelpBoard: (show: boolean) => void
   isDarkMode: boolean
   toggleDarkMode: () => void
-  onEnterForum: () => void
   onEnterAdmin: () => void
 }
 
@@ -128,7 +127,6 @@ export default function LandingPage({
   setShowHelpBoard,
   isDarkMode,
   toggleDarkMode,
-  onEnterForum,
   onEnterAdmin,
 }: LandingPageProps) {
   const { t } = useTranslation()
@@ -140,7 +138,6 @@ export default function LandingPage({
   const [tickerIndex, setTickerIndex] = useState(0)
   const [tickerPhase, setTickerPhase] = useState<'in' | 'show' | 'out'>('in')
   const tickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
 
   const { signInWithGoogle, updateProfile, user: authUser } = useAuth()
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -410,17 +407,6 @@ export default function LandingPage({
               <Clock size={13} />
               {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} {profile?.city || 'Seoul'}
             </span>
-            {user && (
-              <button
-                type="button"
-                onClick={onEnterForum}
-                className="flex h-10 items-center gap-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0f172a] px-3 sm:px-4 text-xs font-black text-brand-brown-dark dark:text-[#f8fafc] shadow-sm transition hover:border-brand-terracotta-light hover:shadow-md cursor-pointer"
-                title="Diễn đàn"
-              >
-                <Globe2 size={13} className="text-brand-terracotta shrink-0" />
-                <span className="hidden sm:inline">Diễn đàn</span>
-              </button>
-            )}
 
             {profile?.is_admin && (
               <button
@@ -560,7 +546,12 @@ export default function LandingPage({
 
         {showHelpBoard ? (
           <section className="overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-sm">
-            <QuickHelpBoard initialExpandedPostId={selectedPostId} />
+            <CommunityForum
+              currentUserId={user?.id || ''}
+              username={profile?.username || username || 'Bạn học'}
+              isAdmin={!!profile?.is_admin}
+              onBackToLobby={() => setShowHelpBoard(false)}
+            />
           </section>
         ) : showExploreFull ? (
           <section className="w-full py-4 animate-custom-fade-in">
@@ -882,7 +873,6 @@ export default function LandingPage({
                   <div className="activity-ticker flex h-8 items-center overflow-hidden rounded-full border border-black/[0.05] bg-[#fbf6ef] px-4 py-1.5 shadow-xs">
                     <button
                       onClick={() => {
-                        setSelectedPostId(tickerPosts[tickerIndex]?.id)
                         setShowHelpBoard(true)
                       }}
                       className={`ticker-inner ticker-${tickerPhase} ticker-clickable flex w-full items-center gap-2 text-left`}

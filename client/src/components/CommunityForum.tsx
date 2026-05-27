@@ -1035,16 +1035,20 @@ function CommentItem({
 
         {/* Countdown bar — 3h self destruct */}
         {showCountdown && (
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex items-center gap-1.5">
             <Clock size={10} className="text-amber-500 shrink-0" />
-            <span className="text-[10px] font-black text-amber-700 tabular-nums shrink-0">
-              {fmtCountdownHMS(remainingMs!)}
-            </span>
-            <div className="flex-1 h-1 rounded-full bg-amber-100 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-[width] duration-1000 ease-linear"
-                style={{ width: `${progressPct}%` }}
-              />
+            <div className="flex-1">
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] font-black text-amber-700 tabular-nums shrink-0">
+                  {fmtCountdownHMS(remainingMs!)}
+                </span>
+              </div>
+              <div className="h-1 rounded-full bg-amber-100 overflow-hidden mt-0.5">
+                <div
+                  className="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-[width] duration-1000 ease-linear"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
             </div>
           </div>
         )}
