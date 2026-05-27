@@ -753,10 +753,18 @@ export default function LandingPage({
 
                 <h1
                   style={{ animationDelay: '100ms' }}
-                  className="landing-hero-title mt-4 animate-fade-slide-down font-display text-5xl font-black leading-[1.03] text-brand-brown-dark sm:text-6xl lg:text-[54px] xl:text-[60px] 2xl:mt-6 2xl:text-[78px]"
+                  className="landing-hero-title mt-4 animate-fade-slide-down font-display text-4xl font-black leading-[1.03] text-brand-brown-dark sm:text-5xl lg:text-[54px] xl:text-[60px] 2xl:mt-6 2xl:text-[78px]"
                 >
-                  <span className="2xl:whitespace-nowrap">{t('landing.heroLine1')}</span> <br />
-                  <span className="text-brand-terracotta">{t('landing.heroLine2')}</span>
+                  {/* Mobile version */}
+                  <span className="block lg:hidden">
+                    {t('landing.heroMobile')}
+                  </span>
+
+                  {/* Desktop version */}
+                  <span className="hidden lg:block">
+                    <span className="lg:whitespace-nowrap">{t('landing.heroDesktopLine1')}</span> <br />
+                    <span className="text-brand-terracotta lg:whitespace-nowrap">{t('landing.heroDesktopLine2')}</span>
+                  </span>
                 </h1>
                 <p
                   style={{ animationDelay: '200ms' }}
