@@ -729,3 +729,20 @@ button.ticker-inner {
   background: var(--color-brand-panel);
 }
 
+/* marker highlight effect */
+@keyframes markerDraw {
+  from {
+    transform: scaleX(0) skewX(-6deg);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1) skewX(-6deg);
+    opacity: 0.8;
+  }
+}
+
+.animate-marker-draw {
+  transform-origin: left center;
+  animation: markerDraw 0.25s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+

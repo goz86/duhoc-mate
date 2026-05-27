@@ -508,37 +508,49 @@ export default function LandingPage({
           <div className="flex gap-5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:col-span-2">
             <button
               onClick={() => setShowHelpBoard(false)}
-              className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all cursor-pointer relative ${!showHelpBoard
-                  ? 'text-brand-brown-dark border-b-2 border-brand-terracotta'
+              className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all cursor-pointer relative group ${!showHelpBoard
+                  ? 'text-brand-brown-dark'
                   : 'text-brand-brown-light hover:text-brand-brown-dark'
                 }`}
             >
-              {t('landing.nav.rooms')}
+              <span className="relative z-10">{t('landing.nav.rooms')}</span>
+              {!showHelpBoard ? (
+                <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/75 rounded-[8px_100%_12px_95%] skew-x-[-6deg] animate-marker-draw z-0" />
+              ) : (
+                <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/20 rounded-[8px_100%_12px_95%] skew-x-[-6deg] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-200 z-0" />
+              )}
             </button>
             <button
               onClick={() => setShowHelpBoard(true)}
-              className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all cursor-pointer relative ${showHelpBoard
-                  ? 'text-brand-brown-dark border-b-2 border-brand-terracotta'
+              className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all cursor-pointer relative group ${showHelpBoard
+                  ? 'text-brand-brown-dark'
                   : 'text-brand-brown-light hover:text-brand-brown-dark'
                 }`}
             >
-              {t('landing.nav.board')}
+              <span className="relative z-10">{t('landing.nav.board')}</span>
+              {showHelpBoard ? (
+                <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/75 rounded-[8px_100%_12px_95%] skew-x-[-6deg] animate-marker-draw z-0" />
+              ) : (
+                <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/20 rounded-[8px_100%_12px_95%] skew-x-[-6deg] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-200 z-0" />
+              )}
             </button>
             <a
               href="https://www.duhocmate.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 whitespace-nowrap pb-2 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5"
+              className="shrink-0 whitespace-nowrap pb-2 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5 relative group"
             >
-              {t('landing.nav.salary')}
+              <span className="relative z-10">{t('landing.nav.salary')}</span>
+              <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/20 rounded-[8px_100%_12px_95%] skew-x-[-6deg] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-200 z-0" />
             </a>
             <a
               href="https://chu-viet.vercel.app/"
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 whitespace-nowrap pb-2 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5"
+              className="shrink-0 whitespace-nowrap pb-2 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5 relative group"
             >
-              {t('landing.nav.handwriting')}
+              <span className="relative z-10">{t('landing.nav.handwriting')}</span>
+              <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/20 rounded-[8px_100%_12px_95%] skew-x-[-6deg] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-200 z-0" />
             </a>
           </div>
 
