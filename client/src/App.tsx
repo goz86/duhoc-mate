@@ -251,6 +251,7 @@ export default function App() {
   const _initialNav = getInitialViewFromHash();
   const [view, setView] = useState<'landing' | 'room' | 'forum' | 'admin'>(_initialNav.view);
   const [roomId, setRoomId] = useState(_initialNav.roomId);
+  const [roomInputId, setRoomInputId] = useState('');
   const [currentRoomTitle, setCurrentRoomTitle] = useState('');
   const [username, setUsername] = useState(() => {
     // Dùng profile.username nếu đã đăng nhập, không thì dùng localStorage
@@ -1360,7 +1361,7 @@ export default function App() {
       return;
     }
 
-    let targetRoomId = roomId;
+    let targetRoomId = roomInputId;
     if (typeof e === 'string') {
       targetRoomId = e;
     } else if (e) {
@@ -1370,7 +1371,6 @@ export default function App() {
     if (!targetRoomId.trim()) return alert("Vui lòng nhập mã phòng!");
     
     const formattedId = targetRoomId.trim().toUpperCase();
-    setRoomId(formattedId);
 
     // Nếu chưa đăng nhập, bắt buộc hiện popup nhập tên khách / đăng nhập Google
     if (!user && !isGuestConfirmed) {
@@ -1380,7 +1380,6 @@ export default function App() {
       setShowGuestJoinModal(true);
       return;
     }
-    setRoomId(formattedId);
 
     // Lấy thông tin phòng hiện tại nếu nó đang active để lưu thông tin chính xác
     const matchedActive = activeRooms.find(r => r.id === formattedId);
@@ -1490,6 +1489,7 @@ export default function App() {
     setRoomSettingsPublic(!isPrivate);
     setRoomSettingsPassword(enteredPassword || '');
 
+    setRoomId(formattedId);
     socket.emit('join-room', {
       roomId: formattedId,
       username: guestUsername || username,
@@ -2371,8 +2371,8 @@ export default function App() {
         <LandingPage
           username={username}
           setUsername={setUsername}
-          roomId={roomId}
-          setRoomId={setRoomId}
+          roomId={roomInputId}
+          setRoomId={setRoomInputId}
           onlineUsersCount={onlineUsers.length}
           user={user}
           profile={profile}
