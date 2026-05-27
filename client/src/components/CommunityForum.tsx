@@ -146,24 +146,43 @@ export default function CommunityForum({
     fetchUserReactions()
   }, [catFilter])
 
-  // Increment views when post is selected
+  // Guest: load reactions from localStorage (persist across reloads)
+  useEffect(() => {
+    if (currentUserId) return
+    try {
+      const saved = localStorage.getItem('forum_guest_reactions')
+      if (saved) {
+        const { liked = [], disliked = [] } = JSON.parse(saved)
+        setLikedPosts(new Set(liked))
+        setDislikedPosts(new Set(disliked))
+      }
+    } catch {}
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Guest: save reactions to localStorage whenever they change
+  useEffect(() => {
+    if (currentUserId) return
+    try {
+      localStorage.setItem('forum_guest_reactions', JSON.stringify({
+        liked: [...likedPosts],
+        disliked: [...dislikedPosts]
+      }))
+    } catch {}
+  }, [likedPosts, dislikedPosts, currentUserId])
+
+  // Increment views when post is selected (atomic via RPC)
   useEffect(() => {
     if (!selectedPost || !supabase) return
     const incrementViews = async () => {
       try {
-        const { error } = await supabase
-          .from('community_posts')
-          .update({ views_count: selectedPost.views_count + 1 })
-          .eq('id', selectedPost.id)
+        const { error } = await supabase.rpc('increment_post_views', { post_id: selectedPost.id })
         if (error) throw error
-        // Update local state
         setSelectedPost(prev => prev ? { ...prev, views_count: prev.views_count + 1 } : null)
         setPosts(prev => prev.map(p => p.id === selectedPost.id ? { ...p, views_count: p.views_count + 1 } : p))
       } catch (err) {
         console.error('Error incrementing views:', err)
       }
     }
-    // Only increment after a small delay to avoid multiple increments on re-renders
     const timer = setTimeout(incrementViews, 500)
     return () => clearTimeout(timer)
   }, [selectedPost?.id])
@@ -224,20 +243,10 @@ export default function CommunityForum({
     }
   }
 
-  const handlePostClick = async (post: CommunityPost) => {
+  const handlePostClick = (post: CommunityPost) => {
     setSelectedPost(post)
     fetchComments(post.id)
-    if (supabase) {
-      try {
-        await supabase
-          .from('community_posts')
-          .update({ views_count: post.views_count + 1 })
-          .eq('id', post.id)
-        setPosts(prev => prev.map(p => p.id === post.id ? { ...p, views_count: p.views_count + 1 } : p))
-      } catch (err) {
-        console.error('Error updating views count:', err)
-      }
-    }
+    // View counting handled by the useEffect watching selectedPost?.id
   }
 
   const fetchComments = async (postId: string) => {
@@ -336,7 +345,12 @@ export default function CommunityForum({
         }
         // Database sync only for logged-in users
         if (currentUserId) {
-          await supabase.from('community_likes').insert([{ user_id: currentUserId, post_id: postId, is_like: isLike }])
+          // Delete old reaction first (handles like ↔ dislike switching, avoids unique constraint error)
+          await supabase.from('community_likes').delete()
+            .eq('user_id', currentUserId).eq('post_id', postId)
+          await supabase.from('community_likes').insert([
+            { user_id: currentUserId, post_id: postId, is_like: isLike }
+          ])
         }
       }
     } catch (err) {
