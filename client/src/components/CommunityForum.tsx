@@ -1133,7 +1133,7 @@ export default function CommunityForum({
       {/* FAB Viết bài */}
       <button
         onClick={() => setIsWriting(true)}
-        className="forum-fab fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 h-12 px-5 rounded-full bg-brand-terracotta text-white font-black text-sm shadow-[0_8px_24px_rgba(193,124,99,0.4)] hover:bg-brand-brown-dark transition active:scale-95"
+        className="forum-fab absolute bottom-5 right-4 z-40 inline-flex items-center gap-2 h-12 px-5 rounded-full bg-brand-terracotta text-white font-black text-sm shadow-[0_8px_24px_rgba(193,124,99,0.4)] hover:bg-brand-brown-dark transition active:scale-95"
       >
         <Plus size={18} />
         <span>Viết bài</span>

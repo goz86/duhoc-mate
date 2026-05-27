@@ -545,7 +545,7 @@ export default function LandingPage({
         </div>
 
         {showHelpBoard ? (
-          <section className="overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-sm">
+          <section className="overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-sm flex flex-col min-h-[calc(100svh-118px)]">
             <CommunityForum
               currentUserId={user?.id || ''}
               username={profile?.username || username || 'Bạn học'}
