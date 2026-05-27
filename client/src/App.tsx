@@ -2911,8 +2911,8 @@ export default function App() {
         </div>
       )}
 
-      {view === 'room' && (
-        <div className={`w-full flex-1 flex flex-col lg:h-full lg:max-h-full lg:overflow-hidden ${
+      {roomId !== '' && (
+        <div className={`w-full flex-1 flex flex-col lg:h-full lg:max-h-full lg:overflow-hidden ${view !== 'room' ? 'hidden' : ''} ${
           roomTheme === 'midnight' ? 'bg-slate-950 text-white' :
           roomTheme === 'sakura' ? 'bg-pink-50' :
           roomTheme === 'ocean' ? 'bg-cyan-50' :
@@ -2930,6 +2930,7 @@ export default function App() {
             isHost={isHost}
             onCopyRoomId={copyRoomId}
             onLeaveRoom={handleLeaveRoom}
+            onMinimizeRoom={() => { setView('landing'); navigateToLanding(); }}
             onAddFriend={addFriendFromMember}
             onTransferHost={transferHost}
           />
@@ -4379,6 +4380,85 @@ export default function App() {
           </div>
           ); // end IIFE return
           })()} {/* end adaptive grid IIFE */}
+        </div>
+      )}
+
+      {/* GLOBAL IN-APP FLOATING PLAYER WIDGET */}
+      {roomId !== '' && view !== 'room' && (
+        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 bg-[#FAF6F0]/90 dark:bg-slate-900/90 backdrop-blur-md border border-brand-terracotta/20 rounded-2xl p-3 shadow-[0_12px_40px_rgba(76,55,49,0.15)] animate-custom-fade-in w-72 sm:w-80 group transition-all duration-300 hover:border-brand-terracotta/40">
+          {/* Animated vinyl / CD visualizer */}
+          <div 
+            onClick={() => { setView('room'); navigateToRoom(roomId); }}
+            className="relative w-12 h-12 rounded-full bg-brand-brown-dark flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 shadow-md ring-2 ring-brand-terracotta/20 group-hover:ring-brand-terracotta/40 transition"
+          >
+            {currentVideo.id ? (
+              <img 
+                src={`https://img.youtube.com/vi/${currentVideo.id}/0.jpg`} 
+                alt="Thumbnail" 
+                className={`w-full h-full object-cover rounded-full ${currentVideo.playing ? 'animate-[spin_10s_linear_infinite]' : ''}`}
+              />
+            ) : (
+              <Music2 size={20} className="text-brand-cream animate-pulse" />
+            )}
+            <div className="absolute inset-0 bg-black/10 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+              <Sparkles size={16} className="text-white" />
+            </div>
+          </div>
+
+          {/* Song text area */}
+          <div 
+            onClick={() => { setView('room'); navigateToRoom(roomId); }}
+            className="flex-1 min-w-0 cursor-pointer space-y-0.5"
+          >
+            <p className="text-xs font-bold text-brand-terracotta uppercase tracking-wider select-none">Đang học nhóm</p>
+            <p className="text-sm font-black text-brand-brown-dark dark:text-white truncate select-none">
+              {activeVideoTitle || "Chưa phát nhạc"}
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Play / Pause button */}
+            {currentVideo.id && (
+              <button
+                onClick={() => {
+                  if (playerRef.current) {
+                    if (currentVideo.playing) {
+                      playerRef.current.pauseVideo();
+                    } else {
+                      playerRef.current.playVideo();
+                    }
+                  }
+                }}
+                className="w-8 h-8 rounded-full bg-brand-terracotta text-white flex items-center justify-center hover:bg-brand-brown-dark transition cursor-pointer active:scale-90 shadow-sm"
+                title={currentVideo.playing ? "Tạm dừng" : "Phát tiếp"}
+              >
+                {currentVideo.playing ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
+              </button>
+            )}
+
+            {/* Expand / Maximize button */}
+            <button
+              onClick={() => { setView('room'); navigateToRoom(roomId); }}
+              className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 text-brand-brown-dark dark:text-white border border-brand-terracotta/20 flex items-center justify-center hover:bg-brand-light transition cursor-pointer active:scale-90 shadow-sm"
+              title="Quay lại phòng"
+            >
+              <Minimize2 className="rotate-180" size={14} />
+            </button>
+
+            {/* Direct close button (leaves the room completely) */}
+            <button
+              onClick={() => {
+                if (window.confirm("Bạn có chắc muốn rời phòng hoàn toàn?")) {
+                  confirmLeaveRoom();
+                }
+              }}
+              className="w-8 h-8 rounded-full bg-red-50 dark:bg-red-950/20 text-red-500 flex items-center justify-center hover:bg-red-100 transition cursor-pointer active:scale-90 shadow-sm"
+              title="Rời phòng"
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
       )}
     </div>

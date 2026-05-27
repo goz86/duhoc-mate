@@ -1,4 +1,4 @@
-import { Crown, LogOut, Share2, UserPlus, Users, Home } from 'lucide-react'
+import { Crown, LogOut, Share2, UserPlus, Users, Home, Minimize2 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import duhocMateLogo from '../assets/duhoc-mate-logo-new.png'
@@ -19,6 +19,7 @@ type RoomHeaderProps = {
   isHost: boolean
   onCopyRoomId: () => void
   onLeaveRoom: () => void
+  onMinimizeRoom: () => void
   onAddFriend: (member: HeaderMember) => void
   onTransferHost: (memberId?: string) => void
 }
@@ -33,6 +34,7 @@ export default function RoomHeader({
   isHost,
   onCopyRoomId,
   onLeaveRoom,
+  onMinimizeRoom,
   onAddFriend,
   onTransferHost,
 }: RoomHeaderProps) {
@@ -217,6 +219,14 @@ export default function RoomHeader({
         <div className="hidden sm:block">
           <LanguageSwitcher compact />
         </div>
+        <button
+          onClick={onMinimizeRoom}
+          className="flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-brand-light px-4 py-2.5 text-sm font-bold text-brand-brown-dark transition hover:bg-brand-terracotta-light/40 cursor-pointer"
+          title="Thu nhỏ phòng học"
+        >
+          <Minimize2 size={16} />
+          <span className="hidden md:inline">Thu nhỏ</span>
+        </button>
         <button
           onClick={onLeaveRoom}
           className="flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-brand-light px-4 py-2.5 text-sm font-bold text-brand-brown-dark transition hover:bg-brand-terracotta-light/40"
