@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Users,
   Timer,
@@ -66,6 +67,7 @@ interface Props {
 type TabType = 'stats' | 'members' | 'forum' | 'rooms'
 
 export default function AdminDashboard({ currentUserId, onClose }: Props) {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<TabType>('stats')
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
@@ -321,7 +323,7 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
               Quản trị Hệ thống
             </h2>
             <p className="text-xs text-brand-brown-light mt-0.5">
-              Giám sát thông số ứng dụng, quản lý tài khoản thành viên và điều hành diễn đàn
+              {t('admin.subtitle')}
             </p>
           </div>
         </div>
@@ -331,17 +333,17 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
           className="inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-brand-terracotta-light/15 bg-white text-xs font-black text-brand-brown-light hover:text-brand-brown-dark transition cursor-pointer active:scale-95 dark:bg-brand-panel"
         >
           <RefreshCw size={13} />
-          Làm mới
+          {t('admin.refresh')}
         </button>
       </div>
 
       {/* ADMIN TABS SELECTOR CONTAINER */}
       <div className="flex gap-1 p-1 bg-white/55 rounded-2xl w-fit mb-4 shrink-0 dark:bg-brand-panel/55">
         {([
-          { value: 'stats', label: 'Thống kê', Icon: Activity },
-          { value: 'members', label: 'Thành viên', Icon: Users },
-          { value: 'forum', label: 'Diễn đàn', Icon: MessageSquare },
-          { value: 'rooms', label: 'Phòng học', Icon: Timer }
+          { value: 'stats', label: t('admin.tab.stats'), Icon: Activity },
+          { value: 'members', label: t('admin.tab.members'), Icon: Users },
+          { value: 'forum', label: t('admin.tab.forum'), Icon: MessageSquare },
+          { value: 'rooms', label: t('admin.tab.rooms'), Icon: Timer }
         ] as const).map(tab => {
           const TabIcon = tab.Icon
           return (
@@ -378,38 +380,38 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="rounded-2xl border border-brand-terracotta-light/15 bg-white/85 p-4 shadow-sm dark:bg-brand-panel/85">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-black uppercase text-brand-brown-light">Tổng thành viên</span>
+                    <span className="text-[10px] font-black uppercase text-brand-brown-light">{t('admin.stat.users')}</span>
                     <span className="p-1.5 bg-emerald-50 rounded-lg text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"><Users size={14} /></span>
                   </div>
                   <h4 className="font-display text-2xl font-black text-brand-brown-dark">{stats.totalUsers}</h4>
-                  <p className="text-[9px] text-emerald-600 mt-1">Đã đăng ký tài khoản</p>
+                  <p className="text-[9px] text-emerald-600 mt-1">{t('admin.stat.usersDesc')}</p>
                 </div>
 
                 <div className="rounded-2xl border border-brand-terracotta-light/15 bg-white/85 p-4 shadow-sm dark:bg-brand-panel/85">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-black uppercase text-brand-brown-light">Phòng trực tuyến</span>
+                    <span className="text-[10px] font-black uppercase text-brand-brown-light">{t('admin.stat.rooms')}</span>
                     <span className="p-1.5 bg-amber-50 rounded-lg text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"><Timer size={14} /></span>
                   </div>
                   <h4 className="font-display text-2xl font-black text-brand-brown-dark">{stats.totalActiveRooms}</h4>
-                  <p className="text-[9px] text-amber-600 mt-1">Đang hoạt động</p>
+                  <p className="text-[9px] text-amber-600 mt-1">{t('admin.stat.roomsDesc')}</p>
                 </div>
 
                 <div className="rounded-2xl border border-brand-terracotta-light/15 bg-white/85 p-4 shadow-sm dark:bg-brand-panel/85">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-black uppercase text-brand-brown-light">Bài viết diễn đàn</span>
+                    <span className="text-[10px] font-black uppercase text-brand-brown-light">{t('admin.stat.posts')}</span>
                     <span className="p-1.5 bg-sky-50 rounded-lg text-sky-700 dark:bg-sky-950/20 dark:text-sky-400"><FileText size={14} /></span>
                   </div>
                   <h4 className="font-display text-2xl font-black text-brand-brown-dark">{stats.totalPosts}</h4>
-                  <p className="text-[9px] text-sky-600 mt-1">Lượt thảo luận học tập</p>
+                  <p className="text-[9px] text-sky-600 mt-1">{t('admin.stat.postsDesc')}</p>
                 </div>
 
                 <div className="rounded-2xl border border-brand-terracotta-light/15 bg-white/85 p-4 shadow-sm dark:bg-brand-panel/85">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-black uppercase text-brand-brown-light">Tài khoản bị khóa</span>
+                    <span className="text-[10px] font-black uppercase text-brand-brown-light">{t('admin.stat.banned')}</span>
                     <span className="p-1.5 bg-red-50 rounded-lg text-red-700 dark:bg-red-950/20 dark:text-red-400"><Ban size={14} /></span>
                   </div>
                   <h4 className="font-display text-2xl font-black text-brand-brown-dark">{stats.totalBanned}</h4>
-                  <p className="text-[9px] text-red-500 mt-1">Bị hạn chế do vi phạm</p>
+                  <p className="text-[9px] text-red-500 mt-1">{t('admin.stat.bannedDesc')}</p>
                 </div>
               </div>
 
@@ -419,10 +421,8 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
                   <Activity size={32} />
                 </div>
                 <div>
-                  <h3 className="font-display text-base font-black text-brand-brown-dark mb-1">Trạng thái máy chủ: Ổn định (Healthy)</h3>
-                  <p className="text-xs text-brand-brown-light leading-relaxed">
-                    Mọi kết nối thời gian thực qua WebSockets (Jitsi, Chat và Pomodoro chung) hoạt động ở trạng thái phản hồi nhanh. Quyền lực quản lý tối cao được bảo vệ bởi Supabase RLS chính sách của duhoc-mate.
-                  </p>
+                  <h3 className="font-display text-base font-black text-brand-brown-dark mb-1">{t('admin.server.title')}</h3>
+                  <p className="text-xs text-brand-brown-light leading-relaxed">{t('admin.server.desc')}</p>
                 </div>
               </div>
             </div>
@@ -439,7 +439,7 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
                   type="text"
                   value={memberSearch}
                   onChange={e => setMemberSearch(e.target.value)}
-                  placeholder="Tìm kiếm tài khoản thành viên..."
+                  placeholder={t('admin.members.search')}
                   className="w-full bg-transparent text-xs font-medium text-brand-brown-dark outline-none placeholder:text-brand-brown-light/50"
                 />
               </div>
@@ -449,18 +449,18 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-brand-terracotta-light/15 text-[10px] font-black uppercase text-brand-brown-light">
-                      <th className="px-5 py-3.5">Học viên</th>
-                      <th className="px-5 py-3.5">Thành phố</th>
-                      <th className="px-5 py-3.5">Quyền hạn</th>
-                      <th className="px-5 py-3.5">Trạng thái</th>
-                      <th className="px-5 py-3.5 text-right">Hành động</th>
+                      <th className="px-5 py-3.5">{t('admin.members.col.name')}</th>
+                      <th className="px-5 py-3.5">{t('admin.members.col.city')}</th>
+                      <th className="px-5 py-3.5">{t('admin.members.col.role')}</th>
+                      <th className="px-5 py-3.5">{t('admin.members.col.status')}</th>
+                      <th className="px-5 py-3.5 text-right">{t('admin.members.col.action')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-brand-terracotta-light/10 text-xs text-brand-brown-dark font-medium">
                     {filteredMembers.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-5 py-10 text-center font-bold text-brand-brown-light">
-                          Không tìm thấy thành viên nào phù hợp
+                          {t('admin.members.notFound')}
                         </td>
                       </tr>
                     ) : (
@@ -478,7 +478,7 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
                             </div>
                           </td>
                           <td className="px-5 py-3.5 text-brand-brown-light">
-                            {member.city || 'Chưa cập nhật'}
+                            {member.city || t('admin.members.noCity')}
                           </td>
                           <td className="px-5 py-3.5">
                             <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${
@@ -496,7 +496,7 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
                                 : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
                             }`}>
                               <span className={`h-1.5 w-1.5 rounded-full ${member.is_banned ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                              {member.is_banned ? 'Khóa' : 'Hoạt động'}
+                              {member.is_banned ? t('admin.members.banned') : t('admin.members.active')}
                             </span>
                             {member.is_banned && member.ban_reason && (
                               <div className="text-[9px] text-red-400/90 mt-0.5 truncate max-w-[150px]">{member.ban_reason}</div>
@@ -510,7 +510,7 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
                                   className="inline-flex items-center gap-1 rounded-lg border border-emerald-100 bg-emerald-50/50 px-2 py-1 text-[10px] font-black text-emerald-700 hover:bg-emerald-50 cursor-pointer transition active:scale-95 dark:bg-emerald-950/20 dark:text-emerald-400"
                                 >
                                   <UserCheck size={11} />
-                                  Mở khóa
+                                  {t('admin.members.unban')}
                                 </button>
                               ) : (
                                 <button
@@ -518,7 +518,7 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
                                   className="inline-flex items-center gap-1 rounded-lg border border-red-100 bg-red-50/50 px-2 py-1 text-[10px] font-black text-red-600 hover:bg-red-50 cursor-pointer transition active:scale-95 dark:bg-red-950/20 dark:text-red-400"
                                 >
                                   <Ban size={11} />
-                                  Khóa
+                                  {t('admin.members.ban')}
                                 </button>
                               )
                             )}
@@ -543,7 +543,7 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
                   type="text"
                   value={forumSearch}
                   onChange={e => setForumSearch(e.target.value)}
-                  placeholder="Tìm kiếm theo tiêu đề bài viết hoặc người đăng..."
+                  placeholder={t('admin.forum.search')}
                   className="w-full bg-transparent text-xs font-medium text-brand-brown-dark outline-none placeholder:text-brand-brown-light/50"
                 />
               </div>
@@ -553,18 +553,18 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-brand-terracotta-light/15 text-[10px] font-black uppercase text-brand-brown-light">
-                      <th className="px-5 py-3.5">Bài viết</th>
-                      <th className="px-5 py-3.5">Người đăng</th>
-                      <th className="px-5 py-3.5">Tương tác</th>
-                      <th className="px-5 py-3.5">Ngày đăng</th>
-                      <th className="px-5 py-3.5 text-right">Hành động</th>
+                      <th className="px-5 py-3.5">{t('admin.forum.col.post')}</th>
+                      <th className="px-5 py-3.5">{t('admin.forum.col.author')}</th>
+                      <th className="px-5 py-3.5">{t('admin.forum.col.stats')}</th>
+                      <th className="px-5 py-3.5">{t('admin.forum.col.date')}</th>
+                      <th className="px-5 py-3.5 text-right">{t('admin.forum.col.action')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-brand-terracotta-light/10 text-xs text-brand-brown-dark font-medium">
                     {filteredPosts.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-5 py-10 text-center font-bold text-brand-brown-light">
-                          Không có bài viết nào trên diễn đàn
+                          {t('admin.forum.noPost')}
                         </td>
                       </tr>
                     ) : (
@@ -611,25 +611,25 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-brand-terracotta-light/15 text-[10px] font-black uppercase text-brand-brown-light">
-                    <th className="px-5 py-3.5">Phòng học</th>
-                    <th className="px-5 py-3.5">Chủ phòng (Host)</th>
-                    <th className="px-5 py-3.5">Phân loại</th>
-                    <th className="px-5 py-3.5">Hoạt động cuối</th>
-                    <th className="px-5 py-3.5 text-right">Hành động</th>
+                    <th className="px-5 py-3.5">{t('admin.rooms.col.room')}</th>
+                    <th className="px-5 py-3.5">{t('admin.rooms.col.host')}</th>
+                    <th className="px-5 py-3.5">{t('admin.rooms.col.type')}</th>
+                    <th className="px-5 py-3.5">{t('admin.rooms.col.lastActive')}</th>
+                    <th className="px-5 py-3.5 text-right">{t('admin.rooms.col.action')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-brand-terracotta-light/10 text-xs text-brand-brown-dark font-medium">
                   {rooms.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-5 py-10 text-center font-bold text-brand-brown-light">
-                        Không có phòng học nào đang trực tuyến
+                      {t('admin.rooms.noRoom')}
                       </td>
                     </tr>
                   ) : (
                     rooms.map(room => (
                       <tr key={room.id} className="hover:bg-brand-cream/30 dark:hover:bg-brand-panel/40 transition">
                         <td className="px-5 py-3.5">
-                          <div className="font-bold">{room.title || 'Bàn học tự do'}</div>
+                          <div className="font-bold">{room.title || t('admin.rooms.freeTable')}</div>
                           <div className="text-[9px] text-brand-brown-light">ID: {room.id}</div>
                         </td>
                         <td className="px-5 py-3.5">
@@ -641,7 +641,7 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
                               ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400' 
                               : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
                           }`}>
-                            {room.is_private ? 'Riêng tư' : 'Công khai'}
+                            {room.is_private ? t('admin.rooms.private') : t('admin.rooms.public')}
                           </span>
                         </td>
                         <td className="px-5 py-3.5 text-brand-brown-light">
@@ -653,7 +653,7 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
                             className="inline-flex items-center gap-1 rounded-lg border border-red-100 bg-red-50/50 px-2.5 py-1.5 text-[10px] font-black text-red-600 hover:bg-red-50 cursor-pointer transition active:scale-95 dark:bg-red-950/20 dark:text-red-400"
                           >
                             <LogOut size={11} />
-                            Đóng phòng
+                            {t('admin.rooms.closeRoom')}
                           </button>
                         </td>
                       </tr>
@@ -672,16 +672,16 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
           <div className="w-full max-w-sm rounded-[28px] border border-brand-terracotta-light/20 bg-white p-5 shadow-2xl animate-custom-scale-up dark:bg-brand-panel">
             <div className="flex items-center gap-2 mb-3 text-red-600">
               <AlertCircle size={20} />
-              <h3 className="font-display font-black text-sm text-brand-brown-dark">Khóa tài khoản thành viên</h3>
+              <h3 className="font-display font-black text-sm text-brand-brown-dark">{t('admin.ban.title')}</h3>
             </div>
             <p className="text-xs text-brand-brown-light leading-relaxed mb-4">
-              Vui lòng nhập lý do hạn chế quyền truy cập của học viên này. Lịch sử ban sẽ được ghi nhận bảo mật tại cơ sở dữ liệu.
+              {t('admin.ban.desc')}
             </p>
             <input
               type="text"
               value={banReason}
               onChange={e => setBanReason(e.target.value)}
-              placeholder="Nhập lý do (ví dụ: Spam, Ngôn từ xúc phạm)..."
+              placeholder={t('admin.ban.placeholder')}
               className="w-full rounded-xl border border-brand-terracotta-light/20 bg-brand-cream/60 px-3.5 py-3 text-xs font-bold text-brand-brown-dark outline-none focus:ring-2 focus:ring-brand-terracotta/30 mb-4 dark:bg-brand-panel"
               maxLength={200}
             />
@@ -690,13 +690,13 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
                 onClick={() => { setShowBanModal(false); setActionUserId(null); }}
                 className="px-4 py-2 rounded-xl border border-brand-terracotta-light/10 bg-white text-brand-brown-light hover:text-brand-brown-dark transition cursor-pointer dark:bg-brand-panel"
               >
-                Hủy bỏ
+                {t('admin.ban.cancel')}
               </button>
               <button
                 onClick={handleBanMember}
                 className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition cursor-pointer active:scale-95"
               >
-                Xác nhận khóa
+                {t('admin.ban.confirm')}
               </button>
             </div>
           </div>

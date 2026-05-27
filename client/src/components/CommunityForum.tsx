@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   MessageSquare,
   ThumbsUp,
@@ -65,11 +66,11 @@ interface Props {
 }
 
 const CATEGORIES = [
-  { value: 'all', label: 'Tất cả', Icon: Layers },
-  { value: 'topik', label: 'Học TOPIK', Icon: BookOpen },
-  { value: 'life', label: 'Đời sống Hàn', Icon: MapPin },
-  { value: 'job', label: 'Việc làm thêm', Icon: Briefcase },
-  { value: 'free', label: 'Tự do', Icon: Globe2 }
+  { value: 'all', labelKey: 'forum.cat.all', Icon: Layers },
+  { value: 'topik', labelKey: 'forum.cat.topik', Icon: BookOpen },
+  { value: 'life', labelKey: 'forum.cat.life', Icon: MapPin },
+  { value: 'job', labelKey: 'forum.cat.job', Icon: Briefcase },
+  { value: 'free', labelKey: 'forum.cat.free', Icon: Globe2 }
 ]
 
 function timeAgo(dateString: string): string {
@@ -101,6 +102,7 @@ export default function CommunityForum({
   isAdmin,
   onBackToLobby
 }: Props) {
+  const { t } = useTranslation()
   const [posts, setPosts] = useState<CommunityPost[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null)
@@ -519,10 +521,10 @@ export default function CommunityForum({
           )}
           <div>
             <h2 className="font-display text-2xl font-black text-brand-brown-dark leading-tight">
-              {selectedPost ? 'Chi tiết bài viết' : 'Diễn đàn học tập'}
+              {selectedPost ? t('forum.postDetail') : t('forum.title')}
             </h2>
             <p className="text-xs text-brand-brown-light mt-0.5">
-              {selectedPost ? 'Xem bình luận và thảo luận cùng cộng đồng' : 'Chia sẻ kinh nghiệm và kết nối ẩn danh an toàn'}
+              {selectedPost ? t('forum.postDetailSub') : t('forum.subtitle')}
             </p>
           </div>
         </div>
@@ -533,7 +535,7 @@ export default function CommunityForum({
             className="inline-flex items-center gap-1.5 rounded-xl bg-brand-terracotta px-4 py-2.5 text-xs font-black text-white hover:bg-brand-brown-dark transition active:scale-95 cursor-pointer"
           >
             <Plus size={15} />
-            Viết bài
+            {t('forum.writePost')}
           </button>
         )}
       </div>
@@ -546,11 +548,11 @@ export default function CommunityForum({
           <section className="flex-1 rounded-[28px] border border-brand-terracotta-light/20 bg-white/85 p-5 shadow-sm overflow-y-auto custom-scrollbar flex flex-col dark:bg-brand-panel/85">
             <div className="flex items-center justify-between mb-3.5">
               <span className="rounded-full border border-brand-terracotta/25 bg-brand-cream/80 px-2.5 py-1 text-[10px] font-black text-brand-terracotta dark:bg-brand-light">
-                {CATEGORIES.find(c => c.value === selectedPost.category)?.label || 'Tự do'}
+                {t(CATEGORIES.find(c => c.value === selectedPost.category)?.labelKey || 'forum.cat.free')}
               </span>
               <div className="flex items-center gap-1 text-[10px] font-bold text-brand-brown-light">
                 <Eye size={12} />
-                <span>{selectedPost.views_count} lượt xem</span>
+                <span>{selectedPost.views_count} {t('forum.views')}</span>
               </div>
             </div>
 
@@ -711,7 +713,7 @@ export default function CommunityForum({
                 <button
                   type="button"
                   onClick={() => {
-                    if (!currentUserId) return // disable toggle switch if guest
+                    if (!currentUserId) return
                     setIsAnonComment(prev => !prev)
                   }}
                   className={`cm-comment-anon-toggle inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[10px] font-bold border transition cursor-pointer select-none ${
@@ -727,16 +729,15 @@ export default function CommunityForum({
                       ? (
                         <>
                           <ShieldCheck size={12} className="text-blue-500 shrink-0 stroke-[2.2]" />
-                          <span>Ẩn danh (Khách)</span>
+                          <span>{t('forum.anonGuest')}</span>
                         </>
                       ) 
                       : (isAnonComment ? (
                         <>
                           <ShieldCheck size={12} className="text-blue-500 shrink-0 stroke-[2.2]" />
-                          <span>Ẩn danh</span>
+                          <span>{t('forum.anonymous')}</span>
                         </>
-                      ) : `👤 Trạng thái công khai (${username})`)
-                    }
+                      ) : `👤 ${t('forum.publicAs')} (${username})`)}
                   </span>
                 </button>
               </div>
@@ -747,7 +748,7 @@ export default function CommunityForum({
                   type="text"
                   value={newComment}
                   onChange={e => setNewComment(e.target.value)}
-                  placeholder="Viết bình luận..."
+                  placeholder={t('forum.commentPlaceholder')}
                   className="flex-1 bg-transparent px-3 py-2 text-xs font-medium text-brand-brown-dark outline-none placeholder:text-brand-brown-light/60"
                   maxLength={1000}
                 />
@@ -767,7 +768,7 @@ export default function CommunityForum({
         /* WRITE NEW POST FULLSCREEN/OVERLAY SCREEN */
         <section className="flex-1 rounded-[28px] border border-brand-terracotta-light/25 bg-white/85 p-4 sm:p-6 shadow-sm overflow-y-auto custom-scrollbar flex flex-col dark:bg-brand-panel/85">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-black text-base text-brand-brown-dark">Viết bài mới</h3>
+            <h3 className="font-display font-black text-base text-brand-brown-dark">{t('forum.newPost')}</h3>
             <button
               onClick={() => setIsWriting(false)}
               className="p-1.5 rounded-full hover:bg-brand-light text-brand-brown-light transition cursor-pointer"
@@ -780,7 +781,7 @@ export default function CommunityForum({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Category selector */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-black uppercase text-brand-brown-light">Chuyên mục bài viết</label>
+                <label className="text-[11px] font-black uppercase text-brand-brown-light">{t('forum.writeCategory')}</label>
                 <div className="flex flex-wrap gap-2">
                   {CATEGORIES.slice(1).map(cat => (
                     <button
@@ -793,7 +794,7 @@ export default function CommunityForum({
                           : 'border-brand-terracotta-light/15 bg-white text-brand-brown-light hover:text-brand-brown-dark dark:bg-brand-panel'
                       }`}
                     >
-                      {cat.label}
+                      {t(cat.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -801,7 +802,7 @@ export default function CommunityForum({
 
               {/* Anonymous Post Toggle */}
               <div className="flex flex-col gap-1.5 justify-center md:items-end">
-                <label className="text-[11px] font-black uppercase text-brand-brown-light">Chế độ hiển thị</label>
+                <label className="text-[11px] font-black uppercase text-brand-brown-light">{t('forum.displayMode')}</label>
                 <button
                   type="button"
                   onClick={() => setIsAnon(prev => !prev)}
@@ -860,7 +861,7 @@ export default function CommunityForum({
                 disabled={!writeTitle.trim() || !writeContent.trim() || submittingPost}
                 className="px-5 py-2.5 rounded-xl bg-brand-terracotta text-xs font-black text-white hover:bg-brand-brown-dark transition cursor-pointer active:scale-95 disabled:opacity-40"
               >
-                {submittingPost ? 'Đang gửi...' : 'Đăng bài viết'}
+              {submittingPost ? t('forum.submitting') : t('forum.submitPost')}
               </button>
             </div>
           </form>
@@ -886,7 +887,7 @@ export default function CommunityForum({
 
             {/* Category selection */}
             <div className="rounded-[28px] border border-brand-terracotta-light/20 bg-white/85 p-3.5 shadow-sm dark:bg-brand-panel">
-              <h3 className="text-[10px] font-black uppercase text-brand-brown-light mb-2.5 px-1.5 hidden sm:block">Chuyên mục</h3>
+              <h3 className="text-[10px] font-black uppercase text-brand-brown-light mb-2.5 px-1.5 hidden sm:block">{t('forum.section')}</h3>
               <div className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto pb-1 lg:pb-0 custom-scrollbar">
                 {CATEGORIES.map(cat => {
                   const CatIcon = cat.Icon
@@ -894,7 +895,7 @@ export default function CommunityForum({
                     <button
                       key={cat.value}
                       onClick={() => setCatFilter(cat.value)}
-                      title={cat.label}
+                      title={t(cat.labelKey)}
                       className={`flex items-center gap-2 w-full text-left px-3 sm:px-3.5 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap active:scale-95 ${
                         catFilter === cat.value
                           ? 'bg-brand-terracotta text-white shadow-sm'
@@ -902,7 +903,7 @@ export default function CommunityForum({
                       }`}
                     >
                       <CatIcon size={14} className="shrink-0" />
-                      <span className="hidden sm:inline">{cat.label}</span>
+                      <span className="hidden sm:inline">{t(cat.labelKey)}</span>
                     </button>
                   )
                 })}
@@ -915,13 +916,13 @@ export default function CommunityForum({
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <Clock className="animate-spin text-brand-terracotta/40 mb-2" size={32} />
-                <p className="text-sm font-bold text-brand-brown-light">Đang tải danh sách bài viết...</p>
+                <p className="text-sm font-bold text-brand-brown-light">{t('forum.loading')}</p>
               </div>
             ) : filteredPosts.length === 0 ? (
               <div className="rounded-[28px] border border-brand-terracotta-light/20 bg-white/70 p-10 text-center">
                 <MessageSquare size={36} className="text-brand-terracotta/30 mx-auto mb-2" />
-                <h4 className="font-display font-black text-base text-brand-brown-dark mb-1">Chưa có bài viết nào</h4>
-                <p className="text-xs text-brand-brown-light">Hãy là người đầu tiên đăng bài trong chuyên mục này!</p>
+                <h4 className="font-display font-black text-base text-brand-brown-dark mb-1">{t('forum.empty')}</h4>
+                <p className="text-xs text-brand-brown-light">{t('forum.emptyDesc')}</p>
               </div>
             ) : (
               filteredPosts.map(post => (
@@ -934,7 +935,7 @@ export default function CommunityForum({
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
                         <span className="rounded-full border border-brand-terracotta/20 bg-brand-cream/80 px-2 py-0.5 text-[9px] font-black text-brand-terracotta dark:bg-brand-light">
-                          {CATEGORIES.find(c => c.value === post.category)?.label || 'Tự do'}
+                          {t(CATEGORIES.find(c => c.value === post.category)?.labelKey || 'forum.cat.free')}
                         </span>
                         <span className="text-[10px] font-bold text-brand-brown-light inline-flex items-center gap-1">
                           {post.is_anonymous ? <ShieldCheck size={11} className="text-emerald-500" /> : <User size={11} />}
