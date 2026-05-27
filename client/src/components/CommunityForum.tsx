@@ -500,35 +500,38 @@ export default function CommunityForum({
         : null
 
       // ── Anonymous name logic ──────────────────────────────────────────────
-      // Rule: same person in same post → always same number, numbered in order
-      // of first appearance (1, 2, 3...). No duplicates, no random.
-      const getAnonDisplayName = (): string => {
-        if (currentUserId && !isAnonComment) return username // public: real name
+      // Rule: same person in same post → always same "Ẩn danh N", numbered
+      // in order of first appearance (1, 2, 3…). No duplicates, no random.
+      const ANON_RE = /^Ẩn danh (\d+)$/  // only match "Ẩn danh N" format
 
-        // 1. Logged-in user commenting anonymously → reuse their existing anon name in this post
+      const getAnonDisplayName = (): string => {
+        if (currentUserId && !isAnonComment) return username // public comment
+
+        // 1. Logged-in user → find their own previous "Ẩn danh N" in this post
         if (currentUserId) {
-          const prev = comments.find(c => c.user_id === currentUserId && c.is_anonymous)
+          const prev = comments.find(
+            c => c.user_id === currentUserId && c.is_anonymous && ANON_RE.test(c.display_name)
+          )
           if (prev) return prev.display_name
         }
 
-        // 2. Guest → check localStorage for saved anon name in this post (same browser = same name)
+        // 2. Guest → check localStorage for saved name (same browser = same name)
         if (!currentUserId && guestId) {
-          const storageKey = `forum_anon_${selectedPost.id}_${guestId}`
-          const saved = localStorage.getItem(storageKey)
-          if (saved) return saved
+          const saved = localStorage.getItem(`forum_anon_${selectedPost.id}_${guestId}`)
+          if (saved && ANON_RE.test(saved)) return saved
         }
 
-        // 3. New commenter → assign next sequential number not yet taken in this post
-        const takenNums = new Set(
+        // 3. New commenter → next available integer not yet used in this post
+        const taken = new Set(
           comments
-            .map(c => { const m = c.display_name?.match(/^Ẩn danh (\d+)$/); return m ? parseInt(m[1]) : 0 })
+            .map(c => { const m = ANON_RE.exec(c.display_name); return m ? parseInt(m[1]) : 0 })
             .filter(n => n > 0)
         )
         let n = 1
-        while (takenNums.has(n)) n++
+        while (taken.has(n)) n++
         const newName = `Ẩn danh ${n}`
 
-        // Save guest's anon name so same browser gets same number on next comment
+        // Persist guest name for this post so next comment stays consistent
         if (!currentUserId && guestId) {
           try { localStorage.setItem(`forum_anon_${selectedPost.id}_${guestId}`, newName) } catch {}
         }
