@@ -433,7 +433,9 @@ export default function LandingPage({
                 <span className="hidden sm:inline">Quản trị</span>
               </button>
             )}
-            <LanguageSwitcher />
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
             <button
               type="button"
               onClick={toggleDarkMode}
