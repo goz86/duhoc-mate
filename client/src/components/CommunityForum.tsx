@@ -117,6 +117,19 @@ export default function CommunityForum({
   const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(new Set())
   const [likedComments, setLikedComments] = useState<Set<string>>(new Set())
 
+  // Guest ID: UUID duy nhất cho mỗi browser, lưu localStorage, dùng để ghi reaction vào DB
+  const guestId = useMemo<string>(() => {
+    if (currentUserId) return ''
+    try {
+      let id = localStorage.getItem('forum_guest_id')
+      if (!id) {
+        id = crypto.randomUUID()
+        localStorage.setItem('forum_guest_id', id)
+      }
+      return id
+    } catch { return '' }
+  }, [currentUserId])
+
   // Filters & Writing
   const [catFilter, setCatFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -143,32 +156,12 @@ export default function CommunityForum({
 
   useEffect(() => {
     fetchPosts()
-    fetchUserReactions()
-  }, [catFilter])
-
-  // Guest: load reactions from localStorage (persist across reloads)
-  useEffect(() => {
-    if (currentUserId) return
-    try {
-      const saved = localStorage.getItem('forum_guest_reactions')
-      if (saved) {
-        const { liked = [], disliked = [] } = JSON.parse(saved)
-        setLikedPosts(new Set(liked))
-        setDislikedPosts(new Set(disliked))
-      }
-    } catch {}
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Guest: save reactions to localStorage whenever they change
-  useEffect(() => {
-    if (currentUserId) return
-    try {
-      localStorage.setItem('forum_guest_reactions', JSON.stringify({
-        liked: [...likedPosts],
-        disliked: [...dislikedPosts]
-      }))
-    } catch {}
-  }, [likedPosts, dislikedPosts, currentUserId])
+    if (currentUserId) {
+      fetchUserReactions()
+    } else {
+      fetchGuestReactions()
+    }
+  }, [catFilter]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Increment views when post is selected (atomic via RPC)
   useEffect(() => {
@@ -198,28 +191,7 @@ export default function CommunityForum({
       const { data, error } = await query.order('created_at', { ascending: false })
       if (error) throw error
 
-      let result = data || []
-
-      // Guest: apply local reaction count deltas so counts show correctly after reload
-      if (!currentUserId) {
-        try {
-          const saved = localStorage.getItem('forum_guest_reactions')
-          if (saved) {
-            const { liked = [], disliked = [] } = JSON.parse(saved)
-            const likedSet = new Set<string>(liked)
-            const dislikedSet = new Set<string>(disliked)
-            if (likedSet.size > 0 || dislikedSet.size > 0) {
-              result = result.map(p => ({
-                ...p,
-                likes_count: p.likes_count + (likedSet.has(p.id) ? 1 : 0),
-                dislikes_count: p.dislikes_count + (dislikedSet.has(p.id) ? 1 : 0)
-              }))
-            }
-          }
-        } catch {}
-      }
-
-      setPosts(result)
+      setPosts(data || [])
     } catch (err) {
       console.error('Error fetching posts:', err)
     } finally {
@@ -265,23 +237,38 @@ export default function CommunityForum({
     }
   }
 
-  const handlePostClick = (post: CommunityPost) => {
-    // Guest: apply local reaction delta to selectedPost count too
-    let displayPost = post
-    if (!currentUserId) {
-      try {
-        const saved = localStorage.getItem('forum_guest_reactions')
-        if (saved) {
-          const { liked = [], disliked = [] } = JSON.parse(saved)
-          displayPost = {
-            ...post,
-            likes_count: post.likes_count + (liked.includes(post.id) ? 1 : 0),
-            dislikes_count: post.dislikes_count + (disliked.includes(post.id) ? 1 : 0)
+  // Load reactions from DB for guest users using their persistent guest_id
+  const fetchGuestReactions = async () => {
+    if (!supabase || !guestId) return
+    try {
+      const { data: likes } = await supabase
+        .from('community_likes')
+        .select('post_id, comment_id, is_like')
+        .eq('guest_id', guestId)
+        .is('user_id', null)
+      if (likes) {
+        const lPosts = new Set<string>()
+        const dlPosts = new Set<string>()
+        const lComms = new Set<string>()
+        likes.forEach(item => {
+          if (item.post_id) {
+            if (item.is_like) lPosts.add(item.post_id)
+            else dlPosts.add(item.post_id)
+          } else if (item.comment_id && item.is_like) {
+            lComms.add(item.comment_id)
           }
-        }
-      } catch {}
+        })
+        setLikedPosts(lPosts)
+        setDislikedPosts(dlPosts)
+        setLikedComments(lComms)
+      }
+    } catch (err) {
+      console.error('Error fetching guest reactions:', err)
     }
-    setSelectedPost(displayPost)
+  }
+
+  const handlePostClick = (post: CommunityPost) => {
+    setSelectedPost(post)
     fetchComments(post.id)
     // View counting handled by the useEffect watching selectedPost?.id
   }
@@ -355,9 +342,13 @@ export default function CommunityForum({
         if (selectedPost?.id === postId) {
           setSelectedPost(prev => prev ? { ...prev, [countField]: Math.max(0, prev[countField] - 1) } : null)
         }
-        // Database sync only for logged-in users
+        // Sync to DB
         if (currentUserId) {
-          await supabase.from('community_likes').delete().eq('user_id', currentUserId).eq('post_id', postId)
+          await supabase.from('community_likes').delete()
+            .eq('user_id', currentUserId).eq('post_id', postId)
+        } else if (guestId) {
+          await supabase.from('community_likes').delete()
+            .eq('guest_id', guestId).eq('post_id', postId).is('user_id', null)
         }
       } else {
         // Like/dislike
@@ -380,13 +371,18 @@ export default function CommunityForum({
             [oppositeField]: Math.max(0, prev[oppositeField] - oppositeDecreased)
           } : null)
         }
-        // Database sync only for logged-in users
+        // Sync to DB – delete first to handle like↔dislike switch
         if (currentUserId) {
-          // Delete old reaction first (handles like ↔ dislike switching, avoids unique constraint error)
           await supabase.from('community_likes').delete()
             .eq('user_id', currentUserId).eq('post_id', postId)
           await supabase.from('community_likes').insert([
             { user_id: currentUserId, post_id: postId, is_like: isLike }
+          ])
+        } else if (guestId) {
+          await supabase.from('community_likes').delete()
+            .eq('guest_id', guestId).eq('post_id', postId).is('user_id', null)
+          await supabase.from('community_likes').insert([
+            { guest_id: guestId, post_id: postId, is_like: isLike }
           ])
         }
       }
@@ -473,17 +469,20 @@ export default function CommunityForum({
         // Unlike
         setLikedComments(prev => { const s = new Set(prev); s.delete(commentId); return s })
         setComments(prev => prev.map(c => c.id === commentId ? { ...c, likes_count: Math.max(0, c.likes_count - 1) } : c))
-        // Database sync only for logged-in users
         if (currentUserId) {
           await supabase.from('community_likes').delete().eq('user_id', currentUserId).eq('comment_id', commentId)
+        } else if (guestId) {
+          await supabase.from('community_likes').delete()
+            .eq('guest_id', guestId).eq('comment_id', commentId).is('user_id', null)
         }
       } else {
         // Like
         setLikedComments(prev => new Set([...prev, commentId]))
         setComments(prev => prev.map(c => c.id === commentId ? { ...c, likes_count: c.likes_count + 1 } : c))
-        // Database sync only for logged-in users
         if (currentUserId) {
           await supabase.from('community_likes').insert([{ user_id: currentUserId, comment_id: commentId, is_like: true }])
+        } else if (guestId) {
+          await supabase.from('community_likes').insert([{ guest_id: guestId, comment_id: commentId, is_like: true }])
         }
       }
     } catch (err) {
