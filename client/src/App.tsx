@@ -9,7 +9,7 @@ import {
   Headphones, Music2, ChevronRight, Search, Sparkles,
   Minimize2, Palette, Settings, Crown,
   Link2, Volume2, VolumeX, SkipForward, Plus, Share2, X, Trash2,
-  Mic, MicOff, PhoneOff, GripVertical, Camera
+  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
 import { useTranslation } from 'react-i18next';
@@ -74,6 +74,8 @@ interface Member {
   isHost: boolean;
   friendCode?: string;
   avatarUrl?: string;
+  role?: 'host' | 'cohost' | 'moderator' | 'member';
+  mutedUntil?: string | number | null;
 }
 
 interface PlaylistItem {
@@ -100,6 +102,7 @@ interface Message {
   sender: string;
   senderId?: string;
   isHost?: boolean;
+  role?: 'host' | 'cohost' | 'moderator' | 'member';
   type?: 'user' | 'system';
   text: string;
   timestamp: string;
@@ -258,6 +261,8 @@ export default function App() {
   });
   const [isHost, setIsHost] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pinnedMessage, setPinnedMessage] = useState<Message | null>(null);
+  const [activeMemberMenuId, setActiveMemberMenuId] = useState<string | null>(null);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('duhoc-mate-dark') === 'true';
@@ -368,6 +373,14 @@ export default function App() {
 
   // Room states
   const [members, setMembers] = useState<Member[]>([]);
+  const myMember = members.find(m => m.id === socket?.id);
+  const myRole = myMember?.role || (isHost ? 'host' : 'member');
+  const canControlMusic = myRole === 'host' || myRole === 'cohost';
+  const canControlPomodoro = myRole === 'host' || myRole === 'cohost';
+  const canModerateChat = myRole === 'host' || myRole === 'cohost' || myRole === 'moderator';
+  const isHostConnected = members.some(m => m.isHost);
+  const isPrimaryMusicController = isHost || (!isHostConnected && myRole === 'cohost' && members.filter(m => m.role === 'cohost')[0]?.id === socket?.id);
+
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -448,6 +461,10 @@ export default function App() {
   useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
   const isHostRef = useRef(isHost);
   useEffect(() => { isHostRef.current = isHost; }, [isHost]);
+  const canControlMusicRef = useRef(canControlMusic);
+  useEffect(() => { canControlMusicRef.current = canControlMusic; }, [canControlMusic]);
+  const isPrimarySyncSourceRef = useRef(isPrimaryMusicController);
+  useEffect(() => { isPrimarySyncSourceRef.current = isPrimaryMusicController; }, [isPrimaryMusicController]);
   const [localPaused, setLocalPaused] = useState(false);
   const localPausedRef = useRef(false);
   const [isHostPaused, setIsHostPaused] = useState(false);
@@ -637,7 +654,7 @@ export default function App() {
       if (me) setIsHost(me.isHost);
     });
 
-    socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost, tiktokVideoId, ideaTasks, slideUrl: initSlideUrl, studyTable }) => {
+    socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost, tiktokVideoId, ideaTasks, slideUrl: initSlideUrl, studyTable, pinnedMessage: initPinnedMessage }) => {
       setPlaylist(playlist);
       setCurrentVideo(videoState);
       setVideoError(false);
@@ -647,6 +664,7 @@ export default function App() {
       messagesSentRef.current = 0;
       setPomodoro(pomodoro);
       setChatMessages(chatMessages || []);
+      setPinnedMessage(initPinnedMessage || null);
       setIdeaTasks(ideaTasks || []);
       setStudyTable(studyTable || { seats: {}, reactions: [] });
       if (initSlideUrl) { setSlideUrl(initSlideUrl); setSlideInputUrl(initSlideUrl); }
@@ -1046,16 +1064,16 @@ export default function App() {
 
             // 2. Autoplay enforcement during transition / load
             if (loadingNewVideoRef.current && (state === 2 || state === 5 || state === -1)) {
-              const wantsToPlay = isHostRef.current ? cvr.playing : !isHostPausedRef.current;
+              const wantsToPlay = canControlMusicRef.current ? cvr.playing : !isHostPausedRef.current;
               if (wantsToPlay) {
-                console.log(`[YT-STATE] ${isHostRef.current ? 'HOST' : 'NON-HOST'} forcing play during video transition (state=${state})`);
+                console.log(`[YT-STATE] ${canControlMusicRef.current ? 'Music Controller' : 'NON-HOST'} forcing play during video transition (state=${state})`);
                 event.target.playVideo();
                 return;
               }
             }
 
             // Non-host: chỉ cập nhật local state, KHÔNG emit socket
-            if (!isHostRef.current) {
+            if (!canControlMusicRef.current) {
               // state=1 (playing) hoặc state=3 (buffering) khi host đã pause → PAUSE ngay lập tức
               // Dùng pauseVideo() thay vì stopVideo() để giữ nguyên vị trí video
               // → khi host resume, guest play ngay từ đúng vị trí, không cần tạo lại player
@@ -1144,7 +1162,7 @@ export default function App() {
     // Không emit khi host đang pause - tránh non-host bị seek + auto-play loop
     const interval = setInterval(() => {
       if (
-        isHostRef.current &&
+        isPrimarySyncSourceRef.current &&
         playerRef.current?.getCurrentTime &&
         currentVideoRef.current.playing
       ) {
@@ -1686,9 +1704,36 @@ export default function App() {
     setCustomAlert({ message: 'Đã sao chép link mời vào phòng.', show: true });
   };
 
+  const updateMemberRole = (targetId: string, role: string) => {
+    socket.emit('update-member-role', { roomId, targetId, role });
+    setActiveMemberMenuId(null);
+  };
+
+  const muteUser = (targetId: string, durationMinutes: number) => {
+    socket.emit('mute-user', { roomId, targetId, durationMinutes });
+    setActiveMemberMenuId(null);
+  };
+
+  const unmuteUser = (targetId: string) => {
+    socket.emit('unmute-user', { roomId, targetId });
+    setActiveMemberMenuId(null);
+  };
+
+  const deleteMessage = (messageId: string) => {
+    socket.emit('delete-message', { roomId, messageId });
+  };
+
+  const pinMessage = (messageId: string) => {
+    socket.emit('pin-message', { roomId, messageId });
+  };
+
+  const unpinMessage = () => {
+    socket.emit('unpin-message', { roomId });
+  };
+
   const toggleMiniPlayback = () => {
     const currentTime = playerRef.current?.getCurrentTime?.() || currentVideo.time || 0;
-    if (isHostRef.current) {
+    if (canControlMusicRef.current) {
       // Host: điều khiển toàn phòng qua socket
       if (currentVideo.playing) {
         hostWantsToPlayRef.current = false; // CHẶN mọi spurious state=1 sau pause
@@ -3753,23 +3798,25 @@ export default function App() {
                         {pomodoro.isRunning ? t('pomodoro.running') : t('pomodoro.paused')}
                       </span>
                     </div>
-                    <div className="flex gap-3 flex-wrap justify-center">
-                      {pomodoro.isRunning ? (
-                        <button onClick={() => controlPomodoro('pause')} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition cursor-pointer">
-                          <Pause size={14} /> {t('pomodoro.pause')}
+                    {canControlPomodoro && (
+                      <div className="flex gap-3 flex-wrap justify-center animate-fadeIn">
+                        {pomodoro.isRunning ? (
+                          <button onClick={() => controlPomodoro('pause')} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition cursor-pointer">
+                            <Pause size={14} /> {t('pomodoro.pause')}
+                          </button>
+                        ) : (
+                          <button onClick={() => controlPomodoro('start')} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs transition cursor-pointer">
+                            <Play size={14} /> {t('pomodoro.start')}
+                          </button>
+                        )}
+                        <button onClick={() => controlPomodoro('reset', false)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-light hover:bg-brand-terracotta-light/40 border border-brand-terracotta-light/20 font-bold text-xs transition cursor-pointer">
+                          <RotateCcw size={14} /> {t('pomodoro.study25')}
                         </button>
-                      ) : (
-                        <button onClick={() => controlPomodoro('start')} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs transition cursor-pointer">
-                          <Play size={14} /> {t('pomodoro.start')}
+                        <button onClick={() => controlPomodoro('reset', true)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-light hover:bg-brand-terracotta-light/40 border border-brand-terracotta-light/20 font-bold text-xs transition cursor-pointer">
+                          <Coffee size={14} /> {t('pomodoro.rest5')}
                         </button>
-                      )}
-                      <button onClick={() => controlPomodoro('reset', false)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-light hover:bg-brand-terracotta-light/40 border border-brand-terracotta-light/20 font-bold text-xs transition cursor-pointer">
-                        <RotateCcw size={14} /> {t('pomodoro.study25')}
-                      </button>
-                      <button onClick={() => controlPomodoro('reset', true)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-light hover:bg-brand-terracotta-light/40 border border-brand-terracotta-light/20 font-bold text-xs transition cursor-pointer">
-                        <Coffee size={14} /> {t('pomodoro.rest5')}
-                      </button>
-                    </div>
+                      </div>
+                    )}
                     <p className="text-xs text-brand-brown-light text-center max-w-sm">{t('pomodoro.desc')}</p>
                   </div>
                 )}
@@ -4144,6 +4191,40 @@ export default function App() {
                 {/* 2. CHAT TAB */}
                 {sidebarTab === 'chat' && (
                   <div className="flex h-full lg:h-full lg:min-h-0 min-h-0 max-h-[calc(100vh-320px)] sm:max-h-[calc(100vh-280px)] lg:max-h-[calc(100vh-240px)] flex-col gap-0 flex-1">
+                    {/* Pinned Message Bar */}
+                    {pinnedMessage && (
+                      <div className="shrink-0 mx-3 my-2 px-3 py-2 bg-amber-50/90 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 rounded-xl flex items-center justify-between gap-2 shadow-sm animate-fadeIn">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-amber-500 text-sm">📌</span>
+                          <div className="min-w-0">
+                            <p className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">Tin nhắn ghim</p>
+                            <p className="text-xs font-semibold text-brand-brown-dark truncate">{pinnedMessage.text}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              window.alert(`Tin nhắn ghim của ${pinnedMessage.sender}: \n"${pinnedMessage.text}"`);
+                            }}
+                            className="text-[10px] font-black text-brand-brown-dark hover:underline px-2 py-0.5 rounded-md bg-amber-100/50 hover:bg-amber-200/50 transition cursor-pointer"
+                          >
+                            Xem
+                          </button>
+                          {canModerateChat && (
+                            <button
+                              type="button"
+                              onClick={unpinMessage}
+                              className="text-amber-600 hover:text-amber-800 p-1 transition cursor-pointer"
+                              title="Bỏ ghim"
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Messages Area */}
                     <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain space-y-4 pr-1 mb-3 custom-scrollbar">
                       {chatMessages.length === 0 ? (
@@ -4171,7 +4252,7 @@ export default function App() {
                           }
 
                           return (
-                            <div key={msg.id} className={`flex flex-col gap-1 ${isMyMessage ? 'items-end' : 'items-start'}`}>
+                            <div key={msg.id} className={`flex flex-col gap-1 group/msg ${isMyMessage ? 'items-end' : 'items-start'}`}>
                               <div className="flex items-center gap-2 px-2">
                                 {!isMyMessage && (
                                   <span className={`text-xs font-bold ${isHostMsg ? 'text-amber-600' : 'text-brand-terracotta'}`}>
@@ -4181,17 +4262,69 @@ export default function App() {
                                 {isHostMsg && (
                                   <span className="px-2 rounded bg-amber-500/20 text-amber-700 text-[10px] font-black uppercaser">Host</span>
                                 )}
+                                {msg.role === 'cohost' && (
+                                  <span className="px-1.5 rounded bg-brand-terracotta/20 text-brand-terracotta text-[9px] font-black">Co-host</span>
+                                )}
+                                {msg.role === 'moderator' && (
+                                  <span className="px-1.5 rounded bg-blue-100 text-blue-700 text-[9px] font-black">Mod</span>
+                                )}
                                 <span className="text-xs text-brand-brown-light/70">{msg.timestamp}</span>
                               </div>
 
-                              <div className={`p-3 rounded-2xl text-sm leading-relaxed max-w-[85%] shadow-sm border ${
-                                isMyMessage
-                                  ? 'bg-brand-terracotta text-white border-brand-terracotta rounded-tr-none'
-                                  : isHostMsg
-                                    ? 'bg-amber-50/80 text-brand-brown-dark border-amber-200/50 rounded-tl-none'
-                                    : 'bg-white text-brand-brown-dark border-brand-terracotta-light/10 rounded-tl-none'
-                              }`}>
-                                {msg.text}
+                              <div className="flex items-center gap-2 max-w-[85%] group">
+                                {isMyMessage && (canModerateChat || isMyMessage) && (
+                                  <div className="hidden group-hover/msg:flex items-center gap-1 shrink-0 animate-fadeIn">
+                                    {canModerateChat && (
+                                      <button
+                                        type="button"
+                                        onClick={() => pinMessage(msg.id)}
+                                        className="p-1 rounded-full text-brand-brown-light/60 hover:text-amber-500 hover:bg-brand-light transition cursor-pointer"
+                                        title="Ghim tin nhắn"
+                                      >
+                                        <Pin size={12} />
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteMessage(msg.id)}
+                                      className="p-1 rounded-full text-brand-brown-light/60 hover:text-red-500 hover:bg-red-50 transition cursor-pointer"
+                                      title="Xóa tin nhắn"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                )}
+                                <div className={`p-3 rounded-2xl text-sm leading-relaxed shadow-sm border ${
+                                  isMyMessage
+                                    ? 'bg-brand-terracotta text-white border-brand-terracotta rounded-tr-none'
+                                    : isHostMsg
+                                      ? 'bg-amber-50/80 text-brand-brown-dark border-amber-200/50 rounded-tl-none'
+                                      : 'bg-white text-brand-brown-dark border-brand-terracotta-light/10 rounded-tl-none'
+                                }`}>
+                                  {msg.text}
+                                </div>
+                                {!isMyMessage && (canModerateChat || isMyMessage) && (
+                                  <div className="hidden group-hover/msg:flex items-center gap-1 shrink-0 animate-fadeIn">
+                                    {canModerateChat && (
+                                      <button
+                                        type="button"
+                                        onClick={() => pinMessage(msg.id)}
+                                        className="p-1 rounded-full text-brand-brown-light/60 hover:text-amber-500 hover:bg-brand-light transition cursor-pointer"
+                                        title="Ghim tin nhắn"
+                                      >
+                                        <Pin size={12} />
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteMessage(msg.id)}
+                                      className="p-1 rounded-full text-brand-brown-light/60 hover:text-red-500 hover:bg-red-50 transition cursor-pointer"
+                                      title="Xóa tin nhắn"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           );
@@ -4323,15 +4456,24 @@ export default function App() {
                               </div>
 
                               <div className="space-y-0.5 min-w-0">
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <p className="font-display font-extrabold text-sm text-brand-brown-dark truncate">{m.username}</p>
                                   {m.isHost && (
                                     <Crown size={12} className="text-amber-500 shrink-0" />
                                   )}
+                                  {m.role === 'cohost' && (
+                                    <span className="px-1.5 py-0.5 rounded bg-brand-terracotta/20 text-brand-terracotta text-[9px] font-black uppercase shrink-0">Co-host</span>
+                                  )}
+                                  {m.role === 'moderator' && (
+                                    <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-[9px] font-black uppercase shrink-0">Mod</span>
+                                  )}
+                                  {m.mutedUntil && new Date(m.mutedUntil).getTime() > Date.now() && (
+                                    <span className="px-1.5 py-0.5 rounded bg-red-50 text-red-500 text-[9px] font-black uppercase border border-red-500/10 shrink-0">Bị Khóa chat</span>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-xs text-brand-brown-light font-medium">
-                                    {isMe ? (m.isHost ? "Bạn (Host)" : "Bạn") : (m.isHost ? "Host" : "Bạn học")}
+                                    {isMe ? (m.isHost ? "Bạn (Host)" : m.role === 'cohost' ? "Bạn (Co-host)" : m.role === 'moderator' ? "Bạn (Mod)" : "Bạn") : (m.isHost ? "Host" : m.role === 'cohost' ? "Co-host" : m.role === 'moderator' ? "Mod" : "Bạn học")}
                                   </span>
                                   {isSpeakingNow && (
                                     <span className="text-[10px] font-bold text-green-600 animate-pulse">đang nói...</span>
@@ -4397,6 +4539,101 @@ export default function App() {
                               {m.isHost && (
                                 <span className="px-2 py-1 rounded-md text-xs font-bold bg-amber-500/20 text-amber-700 uppercase border border-amber-500/10">Host</span>
                               )}
+
+                              {/* Moderation Context Menu Trigger */}
+                              {(() => {
+                                const targetRole = m.role || (m.isHost ? 'host' : 'member');
+                                const isTargetMuted = m.mutedUntil && new Date(m.mutedUntil).getTime() > Date.now();
+                                const canModerateMember = !isMe && (
+                                  myRole === 'host' ||
+                                  (myRole === 'cohost' && targetRole !== 'host' && targetRole !== 'cohost') ||
+                                  (myRole === 'moderator' && targetRole !== 'host' && targetRole !== 'cohost' && targetRole !== 'moderator')
+                                );
+
+                                if (!canModerateMember) return null;
+
+                                return (
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveMemberMenuId(activeMemberMenuId === m.id ? null : m.id)}
+                                      className={`rounded-full p-2 transition cursor-pointer ${activeMemberMenuId === m.id ? 'bg-brand-terracotta text-white' : 'bg-brand-light text-brand-brown-light hover:text-brand-terracotta hover:bg-brand-light'}`}
+                                      title="Quản lý thành viên"
+                                    >
+                                      <MoreVertical size={16} />
+                                    </button>
+                                    {activeMemberMenuId === m.id && (
+                                      <div className="absolute right-0 top-10 z-[1000] w-48 rounded-xl bg-white border border-brand-terracotta-light/20 shadow-xl p-1.5 animate-fadeIn text-left">
+                                        {myRole === 'host' && (
+                                          <>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                if (window.confirm(`Bạn có chắc chắn muốn chuyển quyền Host cho ${m.username}?`)) {
+                                                  socket.emit('transfer-host', { roomId, targetId: m.id });
+                                                  setActiveMemberMenuId(null);
+                                                }
+                                              }}
+                                              className="w-full text-left px-3 py-2 text-xs font-bold text-brand-brown-dark hover:bg-brand-light rounded-lg transition cursor-pointer"
+                                            >
+                                              👑 Chuyển Host
+                                            </button>
+                                            {m.role !== 'cohost' && (
+                                              <button
+                                                type="button"
+                                                onClick={() => updateMemberRole(m.id, 'cohost')}
+                                                className="w-full text-left px-3 py-2 text-xs font-bold text-brand-brown-dark hover:bg-brand-light rounded-lg transition cursor-pointer"
+                                              >
+                                                ⭐ Thăng chức Co-host
+                                              </button>
+                                            )}
+                                            {m.role !== 'moderator' && (
+                                              <button
+                                                type="button"
+                                                onClick={() => updateMemberRole(m.id, 'moderator')}
+                                                className="w-full text-left px-3 py-2 text-xs font-bold text-brand-brown-dark hover:bg-brand-light rounded-lg transition cursor-pointer"
+                                              >
+                                                🛡️ Bổ nhiệm Moderator
+                                              </button>
+                                            )}
+                                            {m.role !== 'member' && m.role !== 'host' && (
+                                              <button
+                                                type="button"
+                                                onClick={() => updateMemberRole(m.id, 'member')}
+                                                className="w-full text-left px-3 py-2 text-xs font-bold text-brand-brown-dark hover:bg-brand-light rounded-lg transition cursor-pointer"
+                                              >
+                                                👤 Hạ xuống Thành viên
+                                              </button>
+                                            )}
+                                            <div className="h-px bg-brand-terracotta-light/10 my-1" />
+                                          </>
+                                        )}
+                                        
+                                        {isTargetMuted ? (
+                                          <button
+                                            type="button"
+                                            onClick={() => unmuteUser(m.id)}
+                                            className="w-full text-left px-3 py-2 text-xs font-bold text-green-600 hover:bg-green-50 rounded-lg transition cursor-pointer"
+                                          >
+                                            🔊 Mở khóa chat
+                                          </button>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const mins = parseInt(prompt("Nhập thời gian khóa chat (phút):", "5") || "0");
+                                              if (mins > 0) muteUser(m.id, mins);
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                                          >
+                                            🔇 Khóa chat tạm thời
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </div>
                         );

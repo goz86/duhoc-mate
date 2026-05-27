@@ -284,6 +284,21 @@ const onlineUsers = new Map(); // socket.id -> { socketId, friendCode, username,
 const HOST_RECONNECT_TTL_MS = 5 * 60 * 1000;
 const hostTransferTimers = new Map();
 
+const hasPermission = (member, action) => {
+  if (!member) return false;
+  const role = member.role || (member.isHost ? 'host' : 'member');
+  if (action === 'music.control') {
+    return role === 'host' || role === 'cohost';
+  }
+  if (action === 'pomodoro.control') {
+    return role === 'host' || role === 'cohost';
+  }
+  if (action === 'chat.moderate') {
+    return role === 'host' || role === 'cohost' || role === 'moderator';
+  }
+  return false;
+};
+
 const normalizeStr = (str) => {
   if (!str) return '';
   return str
@@ -304,7 +319,13 @@ const setRoomHost = (room, targetId) => {
   const target = room.members.find(member => member.id === targetId);
   if (!target) return null;
   room.members.forEach(member => {
+    const wasHost = member.isHost || member.role === 'host';
     member.isHost = member.id === targetId;
+    if (member.id === targetId) {
+      member.role = 'host';
+    } else if (wasHost) {
+      member.role = 'member';
+    }
   });
   room.hostFriendCode = target.friendCode || '';
   room.hostUsername = target.username || '';
@@ -318,7 +339,16 @@ const scheduleHostTransfer = (roomId) => {
     hostTransferTimers.delete(roomId);
     const room = rooms.get(roomId);
     if (!room || room.members.length === 0 || room.members.some(member => member.isHost)) return;
-    const nextHost = setRoomHost(room, room.members[0].id);
+    
+    let candidate = room.members.find(m => m.role === 'cohost');
+    if (!candidate) {
+      candidate = room.members.find(m => m.role === 'moderator');
+    }
+    if (!candidate) {
+      candidate = room.members[0];
+    }
+    
+    const nextHost = setRoomHost(room, candidate.id);
     if (!nextHost) return;
     io.to(nextHost.id).emit('assigned-host', true);
     io.to(roomId).emit('room-users', room.members);
@@ -406,6 +436,7 @@ const serializeRoomState = (room) => ({
   hostUsername: room.hostUsername || '',
   hostReconnectUntil: room.hostReconnectUntil || null,
   studyTable: room.studyTable || createDefaultStudyTable(),
+  pinnedMessage: room.pinnedMessage || null,
 });
 
 const saveRoomState = () => {
@@ -448,6 +479,7 @@ const saveRoomStateToSupabase = async (state) => {
         host_username: state.hostUsername,
         host_reconnect_until: state.hostReconnectUntil,
         study_table: state.studyTable,
+        pinned_message: state.pinnedMessage || null,
         updated_at: new Date().toISOString(),
       }),
     });
@@ -486,6 +518,7 @@ const loadRoomStateFromSupabase = async (roomId) => {
       hostUsername: row.host_username || '',
       hostReconnectUntil: row.host_reconnect_until || null,
       studyTable: row.study_table || createDefaultStudyTable(),
+      pinnedMessage: row.pinned_message || null,
     };
   } catch (error) {
     console.error('loadRoomStateFromSupabase error:', error.message);
@@ -709,6 +742,7 @@ io.on('connection', (socket) => {
         hostUsername: restoredState.hostUsername || rememberedRoom?.hostName || '',
         hostReconnectUntil: restoredState.hostReconnectUntil || null,
         studyTable: restoredState.studyTable || createDefaultStudyTable(),
+        pinnedMessage: restoredState.pinnedMessage || null,
         voiceUsers: {}  // { [socketId]: { muted, speaking } }
       });
     }
@@ -767,8 +801,10 @@ io.on('connection', (socket) => {
       id: socket.id,
       username: username || `Bạn học #${Math.floor(1000 + Math.random() * 9000)}`,
       isHost: false,
+      role: 'member',
       friendCode: memberFriendCode,
-      avatarUrl: avatarUrl || ''
+      avatarUrl: avatarUrl || '',
+      mutedUntil: null
     };
 
     room.members.push(newMember);
@@ -814,7 +850,8 @@ io.on('connection', (socket) => {
       ideaTasks: room.ideaTasks || [],
       voiceUsers: room.voiceUsers || {},
       slideUrl: room.slideUrl || '',
-      studyTable: syncStudyMembers(room)
+      studyTable: syncStudyMembers(room),
+      pinnedMessage: room.pinnedMessage || null
     });
     emitStudyTable(roomId);
 
@@ -866,9 +903,18 @@ io.on('connection', (socket) => {
     } else {
       sendSystemMessage(roomId, `Bạn học ${removedMember.username} đã rời phòng.`);
       if (removedMember.isHost) {
-        const nextHost = setRoomHost(room, room.members[0].id);
-        io.to(nextHost.id).emit('assigned-host', true);
-        sendSystemMessage(roomId, `Bạn học ${nextHost.username} đã trở thành chủ phòng.`);
+        let candidate = room.members.find(m => m.role === 'cohost');
+        if (!candidate) {
+          candidate = room.members.find(m => m.role === 'moderator');
+        }
+        if (!candidate) {
+          candidate = room.members[0];
+        }
+        const nextHost = setRoomHost(room, candidate.id);
+        if (nextHost) {
+          io.to(nextHost.id).emit('assigned-host', true);
+          sendSystemMessage(roomId, `Bạn học ${nextHost.username} đã trở thành chủ phòng.`);
+        }
       }
       io.to(roomId).emit('room-users', room.members);
       rememberRoomState(room);
@@ -886,6 +932,18 @@ io.on('connection', (socket) => {
 
     const sender = room.members.find(m => m.id === socket.id);
     if (!sender) return;
+
+    if (sender.mutedUntil && new Date(sender.mutedUntil).getTime() > Date.now()) {
+      socket.emit('receive-message', {
+        id: `system-mute-${Date.now()}`,
+        sender: 'Hệ thống',
+        senderId: 'system',
+        text: 'Bạn đang bị khóa chat tạm thời và không thể gửi tin nhắn.',
+        type: 'system',
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      });
+      return;
+    }
 
     const now = Date.now();
     const chatMsg = {
@@ -1091,7 +1149,7 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomId);
     if (!room) return;
     const sender = room.members.find(m => m.id === socket.id);
-    if (!sender?.isHost) return;
+    if (!hasPermission(sender, 'music.control')) return;
 
     const item = room.playlist.find(song => song.id === songId);
     if (!item || item.status === 'playing' || item.videoId === room.videoState.id) return;
@@ -1107,7 +1165,7 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomId);
     if (!room) return;
     const sender = room.members.find(m => m.id === socket.id);
-    if (!sender?.isHost) return;
+    if (!hasPermission(sender, 'music.control')) return;
 
     const now = Date.now();
     room.playlist = room.playlist.map((item, idx) => {
@@ -1134,7 +1192,7 @@ io.on('connection', (socket) => {
     if (!room) return;
 
     const sender = room.members.find(m => m.id === socket.id);
-    if (!sender?.isHost) return;
+    if (!hasPermission(sender, 'music.control')) return;
 
     const playlistMap = new Map(room.playlist.map(item => [item.id, item]));
     const newPlaylist = [];
@@ -1167,8 +1225,10 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomId);
     if (!room) return;
 
-    const p = room.pomodoro;
     const sender = room.members.find(m => m.id === socket.id);
+    if (!hasPermission(sender, 'pomodoro.control')) return;
+
+    const p = room.pomodoro;
     const username = sender ? sender.username : 'Chủ phòng';
 
     if (action === 'start') {
@@ -1298,6 +1358,179 @@ io.on('connection', (socket) => {
       isPrivate: room.isPrivate
     });
     broadcastRoomDirectory();
+  });
+
+  socket.on('update-member-role', ({ roomId, targetId, role }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const sender = room.members.find(m => m.id === socket.id);
+    if (!sender?.isHost) return;
+
+    const target = room.members.find(m => m.id === targetId);
+    if (!target) return;
+
+    const oldRole = target.role || 'member';
+    target.role = role;
+    target.isHost = (role === 'host');
+
+    io.to(roomId).emit('room-users', room.members);
+    io.to(roomId).emit('room-role-updated', { userId: targetId, role, username: target.username });
+
+    if (role === 'cohost' && oldRole !== 'cohost') {
+      io.to(roomId).emit('cohost-promoted', { userId: targetId, username: target.username });
+      sendSystemMessage(roomId, `${sender.username} đã bổ nhiệm ${target.username} làm Co-host.`);
+    } else if (role === 'moderator' && oldRole !== 'moderator') {
+      sendSystemMessage(roomId, `${sender.username} đã bổ nhiệm ${target.username} làm Moderator.`);
+    } else if (role === 'member') {
+      sendSystemMessage(roomId, `${sender.username} đã chuyển ${target.username} thành Thành viên thường.`);
+    }
+
+    rememberRoomState(room);
+  });
+
+  socket.on('delete-message', ({ roomId, messageId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const sender = room.members.find(m => m.id === socket.id);
+    
+    const msgIndex = room.chatMessages.findIndex(m => m.id === messageId);
+    if (msgIndex === -1) return;
+    const msg = room.chatMessages[msgIndex];
+
+    const isOwnMessage = msg.senderId === socket.id;
+    if (!isOwnMessage && !hasPermission(sender, 'chat.moderate')) return;
+
+    room.chatMessages.splice(msgIndex, 1);
+    rememberRoomState(room);
+
+    io.to(roomId).emit('receive-message-deleted', { messageId });
+    
+    const moderatorName = sender ? sender.username : 'Hệ thống';
+    io.to(roomId).emit('moderation-action', {
+      action: 'delete-message',
+      moderatorId: socket.id,
+      moderatorName,
+      targetId: msg.senderId,
+      targetName: msg.sender,
+      details: `Xóa tin nhắn: "${msg.text}"`
+    });
+
+    if (!isOwnMessage) {
+      sendSystemMessage(roomId, `${moderatorName} đã xóa tin nhắn của ${msg.sender}.`);
+    }
+  });
+
+  socket.on('pin-message', ({ roomId, messageId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const sender = room.members.find(m => m.id === socket.id);
+    if (!hasPermission(sender, 'chat.moderate')) return;
+
+    const msg = room.chatMessages.find(m => m.id === messageId);
+    if (!msg) return;
+
+    room.pinnedMessage = msg;
+    rememberRoomState(room);
+
+    io.to(roomId).emit('room-pinned-message', msg);
+    
+    const moderatorName = sender ? sender.username : 'Hệ thống';
+    io.to(roomId).emit('moderation-action', {
+      action: 'pin-message',
+      moderatorId: socket.id,
+      moderatorName,
+      targetId: msg.id,
+      targetName: msg.sender,
+      details: `Ghim tin nhắn: "${msg.text}"`
+    });
+
+    sendSystemMessage(roomId, `${moderatorName} đã ghim tin nhắn của ${msg.sender}.`);
+  });
+
+  socket.on('unpin-message', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const sender = room.members.find(m => m.id === socket.id);
+    if (!hasPermission(sender, 'chat.moderate')) return;
+
+    room.pinnedMessage = null;
+    rememberRoomState(room);
+
+    io.to(roomId).emit('room-pinned-message', null);
+
+    const moderatorName = sender ? sender.username : 'Hệ thống';
+    io.to(roomId).emit('moderation-action', {
+      action: 'unpin-message',
+      moderatorId: socket.id,
+      moderatorName,
+      details: 'Bỏ ghim tin nhắn'
+    });
+
+    sendSystemMessage(roomId, `${moderatorName} đã bỏ ghim tin nhắn.`);
+  });
+
+  socket.on('mute-user', ({ roomId, targetId, durationMinutes }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const sender = room.members.find(m => m.id === socket.id);
+    if (!hasPermission(sender, 'chat.moderate')) return;
+
+    const target = room.members.find(m => m.id === targetId);
+    if (!target) return;
+
+    const senderRole = sender.role || (sender.isHost ? 'host' : 'member');
+    const targetRole = target.role || (target.isHost ? 'host' : 'member');
+    
+    if (targetRole === 'host') return;
+    if (senderRole === 'moderator' && (targetRole === 'cohost' || targetRole === 'moderator')) return;
+    if (senderRole === 'cohost' && targetRole === 'cohost') return;
+
+    const durationMs = durationMinutes * 60 * 1000;
+    target.mutedUntil = Date.now() + durationMs;
+    rememberRoomState(room);
+
+    io.to(roomId).emit('room-users', room.members);
+    io.to(roomId).emit('user-muted', { targetId, mutedUntil: target.mutedUntil, targetName: target.username });
+
+    const moderatorName = sender ? sender.username : 'Hệ thống';
+    io.to(roomId).emit('moderation-action', {
+      action: 'mute-user',
+      moderatorId: socket.id,
+      moderatorName,
+      targetId,
+      targetName: target.username,
+      details: `Khóa chat trong ${durationMinutes} phút`
+    });
+
+    sendSystemMessage(roomId, `${moderatorName} đã khóa chat của bạn học ${target.username} trong ${durationMinutes} phút.`);
+  });
+
+  socket.on('unmute-user', ({ roomId, targetId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const sender = room.members.find(m => m.id === socket.id);
+    if (!hasPermission(sender, 'chat.moderate')) return;
+
+    const target = room.members.find(m => m.id === targetId);
+    if (!target) return;
+
+    target.mutedUntil = null;
+    rememberRoomState(room);
+
+    io.to(roomId).emit('room-users', room.members);
+    io.to(roomId).emit('user-unmuted', { targetId });
+
+    const moderatorName = sender ? sender.username : 'Hệ thống';
+    io.to(roomId).emit('moderation-action', {
+      action: 'unmute-user',
+      moderatorId: socket.id,
+      moderatorName,
+      targetId,
+      targetName: target.username,
+      details: 'Mở khóa chat'
+    });
+
+    sendSystemMessage(roomId, `${moderatorName} đã mở khóa chat cho bạn học ${target.username}.`);
   });
 
   socket.on('transfer-host', ({ roomId, targetId }) => {

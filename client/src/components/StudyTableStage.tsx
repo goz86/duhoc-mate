@@ -25,6 +25,7 @@ type StudyMember = {
   username: string
   isHost: boolean
   avatarUrl?: string
+  role?: string
 }
 
 type PomodoroState = {
@@ -133,6 +134,10 @@ export default function StudyTableStage({
 }: StudyTableStageProps) {
   const { t } = useTranslation()
   const [now, setNow] = useState(() => Date.now())
+
+  const myMember = members.find(m => m.id === currentSocketId)
+  const myRole = myMember?.role || (myMember?.isHost ? 'host' : 'member')
+  const canControlPomodoro = myRole === 'host' || myRole === 'cohost'
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000)
@@ -359,7 +364,7 @@ export default function StudyTableStage({
                                   {member.username}{isLocal ? ' (Bạn)' : ''}
                                 </h3>
                                 <p className="mt-0.5 text-[10px] font-bold text-brand-brown-light">
-                                  {member.isHost ? 'Chủ bàn học' : 'Bạn học'}
+                                  {member.isHost ? 'Chủ bàn học' : member.role === 'cohost' ? 'Co-host' : member.role === 'moderator' ? 'Mod' : 'Bạn học'}
                                 </p>
                               </div>
                               <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-black ${isPersonalBreak ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700'}`}>
@@ -477,25 +482,27 @@ export default function StudyTableStage({
             </p>
           </div>
 
-          <div className="mt-4 grid gap-2">
-            {pomodoro.isRunning ? (
-              <button type="button" onClick={() => onControlPomodoro('pause')} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-black text-white transition hover:bg-amber-600">
-                <Pause size={14} /> {t('pomodoro.pause')}
-              </button>
-            ) : (
-              <button type="button" onClick={() => onControlPomodoro('start')} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-green-500 px-4 py-2.5 text-xs font-black text-white transition hover:bg-green-600">
-                <Play size={14} /> {t('pomodoro.start')}
-              </button>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => onControlPomodoro('reset', false)} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-terracotta-light/20 bg-white px-3 py-2.5 text-[11px] font-black text-brand-brown-dark transition hover:bg-brand-light">
-                <RotateCcw size={13} /> 25 phút
-              </button>
-              <button type="button" onClick={() => onControlPomodoro('reset', true)} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-terracotta-light/20 bg-white px-3 py-2.5 text-[11px] font-black text-brand-brown-dark transition hover:bg-brand-light">
-                <Coffee size={13} /> 5 phút
-              </button>
+          {canControlPomodoro && (
+            <div className="mt-4 grid gap-2 animate-fadeIn">
+              {pomodoro.isRunning ? (
+                <button type="button" onClick={() => onControlPomodoro('pause')} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-black text-white transition hover:bg-amber-600">
+                  <Pause size={14} /> {t('pomodoro.pause')}
+                </button>
+              ) : (
+                <button type="button" onClick={() => onControlPomodoro('start')} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-green-500 px-4 py-2.5 text-xs font-black text-white transition hover:bg-green-600">
+                  <Play size={14} /> {t('pomodoro.start')}
+                </button>
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => onControlPomodoro('reset', false)} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-terracotta-light/20 bg-white px-3 py-2.5 text-[11px] font-black text-brand-brown-dark transition hover:bg-brand-light">
+                  <RotateCcw size={13} /> 25 phút
+                </button>
+                <button type="button" onClick={() => onControlPomodoro('reset', true)} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-terracotta-light/20 bg-white px-3 py-2.5 text-[11px] font-black text-brand-brown-dark transition hover:bg-brand-light">
+                  <Coffee size={13} /> 5 phút
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="mt-4 space-y-2">
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-700">

@@ -13,6 +13,7 @@ create table if not exists public.room_states (
   host_username text not null default '',
   host_reconnect_until timestamptz,
   study_table jsonb not null default '{}'::jsonb,
+  pinned_message jsonb not null default 'null'::jsonb,
   updated_at timestamptz not null default now()
 );
 
@@ -20,7 +21,8 @@ alter table public.room_states
   add column if not exists host_friend_code text not null default '',
   add column if not exists host_username text not null default '',
   add column if not exists host_reconnect_until timestamptz,
-  add column if not exists study_table jsonb not null default '{}'::jsonb;
+  add column if not exists study_table jsonb not null default '{}'::jsonb,
+  add column if not exists pinned_message jsonb not null default 'null'::jsonb;
 
 alter table public.room_states enable row level security;
 
