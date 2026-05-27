@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   MessageSquare,
@@ -23,7 +23,9 @@ import {
   BookOpen,
   MapPin,
   Briefcase,
-  Globe2
+  Globe2,
+  Flame,
+  Loader2
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
@@ -66,25 +68,24 @@ interface Props {
 }
 
 const CATEGORIES = [
-  { value: 'all', labelKey: 'forum.cat.all', Icon: Layers },
-  { value: 'topik', labelKey: 'forum.cat.topik', Icon: BookOpen },
-  { value: 'life', labelKey: 'forum.cat.life', Icon: MapPin },
-  { value: 'job', labelKey: 'forum.cat.job', Icon: Briefcase },
-  { value: 'free', labelKey: 'forum.cat.free', Icon: Globe2 }
+  { value: 'all', labelKey: 'forum.cat.all', Icon: Layers, color: '#8B7A6E', bg: 'rgba(139,122,110,0.10)' },
+  { value: 'topik', labelKey: 'forum.cat.topik', Icon: BookOpen, color: '#0369a1', bg: 'rgba(14,165,233,0.10)' },
+  { value: 'life', labelKey: 'forum.cat.life', Icon: MapPin, color: '#059669', bg: 'rgba(16,185,129,0.10)' },
+  { value: 'job', labelKey: 'forum.cat.job', Icon: Briefcase, color: '#b45309', bg: 'rgba(245,158,11,0.10)' },
+  { value: 'free', labelKey: 'forum.cat.free', Icon: Globe2, color: '#C17C63', bg: 'rgba(193,124,99,0.10)' }
 ]
 
 function timeAgo(dateString: string): string {
   const date = new Date(dateString)
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
-
   if (seconds < 60) return 'vừa xong'
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} phút trước`
+  if (minutes < 60) return `${minutes}p`
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} giờ trước`
+  if (hours < 24) return `${hours}h`
   const days = Math.floor(hours / 24)
-  if (days < 7) return `${days} ngày trước`
-  return date.toLocaleDateString('vi-VN', { month: 'long', day: 'numeric', year: 'numeric' })
+  if (days < 7) return `${days}d`
+  return date.toLocaleDateString('vi-VN', { month: 'short', day: 'numeric' })
 }
 
 function fmtCountdownHMS(ms: number): string {
@@ -94,6 +95,10 @@ function fmtCountdownHMS(ms: number): string {
   const m = Math.floor((totalSec % 3600) / 60)
   const s = totalSec % 60
   return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+function getCat(value: string) {
+  return CATEGORIES.find(c => c.value === value) || CATEGORIES[0]
 }
 
 export default function CommunityForum({
@@ -115,6 +120,7 @@ export default function CommunityForum({
   // Filters & Writing
   const [catFilter, setCatFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
   const [isWriting, setIsWriting] = useState(false)
   const [writeTitle, setWriteTitle] = useState('')
   const [writeContent, setWriteContent] = useState('')
@@ -126,6 +132,7 @@ export default function CommunityForum({
   const [newComment, setNewComment] = useState('')
   const [isAnonComment, setIsAnonComment] = useState(true)
   const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null)
+  const [replyToDisplayName, setReplyToDisplayName] = useState<string>('')
   const [submittingComment, setSubmittingComment] = useState(false)
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null)
 
@@ -155,7 +162,6 @@ export default function CommunityForum({
   const fetchUserReactions = async () => {
     if (!supabase || !currentUserId) return
     try {
-      // Fetch likes
       const { data: likes } = await supabase
         .from('community_likes')
         .select('post_id, comment_id, is_like')
@@ -165,7 +171,6 @@ export default function CommunityForum({
         const lPosts = new Set<string>()
         const dlPosts = new Set<string>()
         const lComms = new Set<string>()
-
         likes.forEach(item => {
           if (item.post_id) {
             if (item.is_like) lPosts.add(item.post_id)
@@ -179,7 +184,6 @@ export default function CommunityForum({
         setLikedComments(lComms)
       }
 
-      // Fetch bookmarks
       const { data: bookmarks } = await supabase
         .from('community_bookmarks')
         .select('post_id')
@@ -196,14 +200,12 @@ export default function CommunityForum({
   const handlePostClick = async (post: CommunityPost) => {
     setSelectedPost(post)
     fetchComments(post.id)
-    // Increment view count
     if (supabase) {
       try {
         await supabase
           .from('community_posts')
           .update({ views_count: post.views_count + 1 })
           .eq('id', post.id)
-        
         setPosts(prev => prev.map(p => p.id === post.id ? { ...p, views_count: p.views_count + 1 } : p))
       } catch (err) {
         console.error('Error updating views count:', err)
@@ -219,7 +221,6 @@ export default function CommunityForum({
         .select('*')
         .eq('post_id', postId)
         .order('created_at', { ascending: true })
-
       if (error) throw error
       setComments(data || [])
     } catch (err) {
@@ -230,7 +231,6 @@ export default function CommunityForum({
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!supabase || !writeTitle.trim() || !writeContent.trim() || submittingPost) return
-
     setSubmittingPost(true)
     try {
       const newPostData = {
@@ -241,19 +241,14 @@ export default function CommunityForum({
         is_anonymous: isAnon,
         display_name: isAnon ? 'Ẩn danh' : username
       }
-
       const { data, error } = await supabase
         .from('community_posts')
         .insert([newPostData])
         .select()
-
       if (error) throw error
-
       if (data && data.length > 0) {
         setPosts([data[0], ...posts])
       }
-      
-      // Reset forms
       setWriteTitle('')
       setWriteContent('')
       setWriteCat('free')
@@ -268,57 +263,34 @@ export default function CommunityForum({
 
   const handleLikePost = async (postId: string, isLike: boolean) => {
     if (!supabase || !currentUserId) return
-
     const targetSet = isLike ? likedPosts : dislikedPosts
     const oppositeSet = isLike ? dislikedPosts : likedPosts
     const setTarget = isLike ? setLikedPosts : setDislikedPosts
     const setOpposite = isLike ? setDislikedPosts : setLikedPosts
     const countField = isLike ? 'likes_count' : 'dislikes_count'
     const oppositeField = isLike ? 'dislikes_count' : 'likes_count'
-
     const post = posts.find(p => p.id === postId)
     if (!post) return
-
     try {
       if (targetSet.has(postId)) {
-        // Remove reaction
-        await supabase
-          .from('community_likes')
-          .delete()
-          .eq('user_id', currentUserId)
-          .eq('post_id', postId)
-
+        await supabase.from('community_likes').delete().eq('user_id', currentUserId).eq('post_id', postId)
         setTarget(prev => { const s = new Set(prev); s.delete(postId); return s })
         setPosts(prev => prev.map(p => p.id === postId ? { ...p, [countField]: Math.max(0, p[countField] - 1) } : p))
         if (selectedPost?.id === postId) {
           setSelectedPost(prev => prev ? { ...prev, [countField]: Math.max(0, prev[countField] - 1) } : null)
         }
       } else {
-        // Toggle opposite reaction if exists
         let oppositeDecreased = 0
         if (oppositeSet.has(postId)) {
-          await supabase
-            .from('community_likes')
-            .delete()
-            .eq('user_id', currentUserId)
-            .eq('post_id', postId)
+          await supabase.from('community_likes').delete().eq('user_id', currentUserId).eq('post_id', postId)
           setOpposite(prev => { const s = new Set(prev); s.delete(postId); return s })
           oppositeDecreased = 1
         }
-
-        // Add reaction
-        await supabase
-          .from('community_likes')
-          .insert([{ user_id: currentUserId, post_id: postId, is_like: isLike }])
-
+        await supabase.from('community_likes').insert([{ user_id: currentUserId, post_id: postId, is_like: isLike }])
         setTarget(prev => new Set([...prev, postId]))
         setPosts(prev => prev.map(p => {
           if (p.id === postId) {
-            return {
-              ...p,
-              [countField]: p[countField] + 1,
-              [oppositeField]: Math.max(0, p[oppositeField] - oppositeDecreased)
-            }
+            return { ...p, [countField]: p[countField] + 1, [oppositeField]: Math.max(0, p[oppositeField] - oppositeDecreased) }
           }
           return p
         }))
@@ -337,21 +309,12 @@ export default function CommunityForum({
 
   const handleBookmarkPost = async (postId: string) => {
     if (!supabase || !currentUserId) return
-
     try {
       if (bookmarkedPosts.has(postId)) {
-        await supabase
-          .from('community_bookmarks')
-          .delete()
-          .eq('user_id', currentUserId)
-          .eq('post_id', postId)
-
+        await supabase.from('community_bookmarks').delete().eq('user_id', currentUserId).eq('post_id', postId)
         setBookmarkedPosts(prev => { const s = new Set(prev); s.delete(postId); return s })
       } else {
-        await supabase
-          .from('community_bookmarks')
-          .insert([{ user_id: currentUserId, post_id: postId }])
-
+        await supabase.from('community_bookmarks').insert([{ user_id: currentUserId, post_id: postId }])
         setBookmarkedPosts(prev => new Set([...prev, postId]))
       }
     } catch (err) {
@@ -369,19 +332,11 @@ export default function CommunityForum({
   const handleDeletePost = async (postId: string) => {
     if (!supabase || (!isAdmin && posts.find(p => p.id === postId)?.user_id !== currentUserId)) return
     if (!confirm('Bạn có chắc chắn muốn xóa bài viết này không?')) return
-
     try {
-      const { error } = await supabase
-        .from('community_posts')
-        .delete()
-        .eq('id', postId)
-
+      const { error } = await supabase.from('community_posts').delete().eq('id', postId)
       if (error) throw error
-
       setPosts(prev => prev.filter(p => p.id !== postId))
-      if (selectedPost?.id === postId) {
-        setSelectedPost(null)
-      }
+      if (selectedPost?.id === postId) setSelectedPost(null)
     } catch (err) {
       console.error('Error deleting post:', err)
     }
@@ -389,26 +344,16 @@ export default function CommunityForum({
 
   const handleLikeComment = async (commentId: string) => {
     if (!supabase || !currentUserId) return
-
     const hasLiked = likedComments.has(commentId)
     const comment = comments.find(c => c.id === commentId)
     if (!comment) return
-
     try {
       if (hasLiked) {
-        await supabase
-          .from('community_likes')
-          .delete()
-          .eq('user_id', currentUserId)
-          .eq('comment_id', commentId)
-
+        await supabase.from('community_likes').delete().eq('user_id', currentUserId).eq('comment_id', commentId)
         setLikedComments(prev => { const s = new Set(prev); s.delete(commentId); return s })
         setComments(prev => prev.map(c => c.id === commentId ? { ...c, likes_count: Math.max(0, c.likes_count - 1) } : c))
       } else {
-        await supabase
-          .from('community_likes')
-          .insert([{ user_id: currentUserId, comment_id: commentId, is_like: true }])
-
+        await supabase.from('community_likes').insert([{ user_id: currentUserId, comment_id: commentId, is_like: true }])
         setLikedComments(prev => new Set([...prev, commentId]))
         setComments(prev => prev.map(c => c.id === commentId ? { ...c, likes_count: c.likes_count + 1 } : c))
       }
@@ -420,20 +365,14 @@ export default function CommunityForum({
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!supabase || !newComment.trim() || submittingComment || !selectedPost) return
-
     setSubmittingComment(true)
     try {
-      // Calculate self-destruct expiration if anonymous comment
-      const expiresAt = (!currentUserId || isAnonComment) 
-        ? new Date(Date.now() + 3 * 3600 * 1000).toISOString() // 3 Hours expiration
+      const expiresAt = (!currentUserId || isAnonComment)
+        ? new Date(Date.now() + 3 * 3600 * 1000).toISOString()
         : null
-
-      // If anonymous comment, assess standard name display "Ẩn danh X"
-      // Generate a consistent pseudo-random index per comment session
       const anonName = (!currentUserId || isAnonComment)
         ? (currentUserId ? `Ẩn danh ${Math.floor(Math.random() * 100) + 1}` : `Ẩn danh (Khách) ${Math.floor(Math.random() * 100) + 1}`)
         : username
-
       const commentPayload = {
         post_id: selectedPost.id,
         parent_id: replyToCommentId,
@@ -444,23 +383,16 @@ export default function CommunityForum({
         is_author: currentUserId ? (selectedPost.user_id === currentUserId) : false,
         expires_at: expiresAt
       }
-
-      const { data, error } = await supabase
-        .from('community_comments')
-        .insert([commentPayload])
-        .select()
-
+      const { data, error } = await supabase.from('community_comments').insert([commentPayload]).select()
       if (error) throw error
-
       if (data && data.length > 0) {
         setComments([...comments, data[0]])
-        // Increment comment counts locally in selected post
         setSelectedPost(prev => prev ? { ...prev, comments_count: prev.comments_count + 1 } : null)
         setPosts(prev => prev.map(p => p.id === selectedPost.id ? { ...p, comments_count: p.comments_count + 1 } : p))
       }
-
       setNewComment('')
       setReplyToCommentId(null)
+      setReplyToDisplayName('')
     } catch (err) {
       console.error('Error creating comment:', err)
     } finally {
@@ -471,15 +403,9 @@ export default function CommunityForum({
   const handleDeleteComment = async (commentId: string) => {
     if (!supabase || !selectedPost) return
     if (!confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) return
-
     try {
-      const { error } = await supabase
-        .from('community_comments')
-        .delete()
-        .eq('id', commentId)
-
+      const { error } = await supabase.from('community_comments').delete().eq('id', commentId)
       if (error) throw error
-
       setComments(prev => prev.filter(c => c.id !== commentId))
       setSelectedPost(prev => prev ? { ...prev, comments_count: Math.max(0, prev.comments_count - 1) } : null)
       setPosts(prev => prev.map(p => p.id === selectedPost.id ? { ...p, comments_count: Math.max(0, p.comments_count - 1) } : p))
@@ -488,514 +414,534 @@ export default function CommunityForum({
     }
   }
 
-  // Group comments: Root comments and their lồng nhau replies
+  // Group comments
   const rootComments = comments.filter(c => c.parent_id === null)
   const commentReplies = (parentId: string) => comments.filter(c => c.parent_id === parentId)
 
-  // Filter posts based on search query
-  const filteredPosts = posts.filter(post => 
-    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.content.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Filter posts by search query
+  const filteredPosts = useMemo(() => {
+    if (!searchQuery.trim()) return posts
+    const q = searchQuery.toLowerCase()
+    return posts.filter(p => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q))
+  }, [posts, searchQuery])
 
-  return (
-    <div className="flex-1 w-full max-w-[1240px] px-3 sm:px-6 py-4 flex flex-col min-h-0">
-      
-      {/* HEADER SECTION */}
-      <div className="flex items-center justify-between mb-4 shrink-0">
-        <div className="flex items-center gap-3">
-          {selectedPost ? (
-            <button
-              onClick={() => { setSelectedPost(null); setComments([]); }}
-              className="p-2.5 rounded-full border border-brand-terracotta-light/10 bg-white/80 hover:bg-white text-brand-brown-dark shadow-sm transition active:scale-95 cursor-pointer dark:bg-brand-panel"
-            >
-              <ArrowLeft size={16} />
-            </button>
-          ) : (
-            <button
-              onClick={onBackToLobby}
-              className="p-2.5 rounded-full border border-brand-terracotta-light/10 bg-white/80 hover:bg-white text-brand-brown-dark shadow-sm transition active:scale-95 cursor-pointer dark:bg-brand-panel"
-            >
-              <ChevronLeft size={18} />
-            </button>
-          )}
-          <div>
-            <h2 className="font-display text-2xl font-black text-brand-brown-dark leading-tight">
-              {selectedPost ? t('forum.postDetail') : t('forum.title')}
-            </h2>
-            <p className="text-xs text-brand-brown-light mt-0.5">
-              {selectedPost ? t('forum.postDetailSub') : t('forum.subtitle')}
+  // Trending post: most likes in last 7 days, or top liked overall
+  const trendingPost = useMemo(() => {
+    if (posts.length === 0) return null
+    const sorted = [...posts].sort((a, b) => (b.likes_count + b.comments_count * 2) - (a.likes_count + a.comments_count * 2))
+    return sorted[0]
+  }, [posts])
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // DETAIL VIEW
+  // ─────────────────────────────────────────────────────────────────────────
+  if (selectedPost) {
+    return (
+      <div className="forum-v2 flex-1 w-full max-w-[760px] mx-auto flex flex-col min-h-0">
+        {/* Sticky header */}
+        <header className="sticky top-0 z-30 flex items-center gap-2 px-4 py-3 bg-white/85 backdrop-blur-md border-b border-brand-terracotta-light/15">
+          <button
+            onClick={() => { setSelectedPost(null); setComments([]); setReplyToCommentId(null); }}
+            className="grid h-10 w-10 place-items-center rounded-full text-brand-brown-dark hover:bg-brand-light transition active:scale-95"
+            aria-label="Quay lại"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div className="flex-1 text-center">
+            <p className="text-xs font-black uppercase tracking-wider text-brand-brown-light">
+              {t(getCat(selectedPost.category).labelKey)}
             </p>
           </div>
-        </div>
-
-        {!selectedPost && !isWriting && (
           <button
-            onClick={() => setIsWriting(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-brand-terracotta px-4 py-2.5 text-xs font-black text-white hover:bg-brand-brown-dark transition active:scale-95 cursor-pointer"
+            onClick={() => handleBookmarkPost(selectedPost.id)}
+            className={`grid h-10 w-10 place-items-center rounded-full transition active:scale-95 ${
+              bookmarkedPosts.has(selectedPost.id)
+                ? 'text-amber-600 bg-amber-50'
+                : 'text-brand-brown-light hover:bg-brand-light'
+            }`}
+            aria-label="Lưu"
           >
-            <Plus size={15} />
-            {t('forum.writePost')}
+            <Bookmark size={17} fill={bookmarkedPosts.has(selectedPost.id) ? 'currentColor' : 'none'} />
           </button>
-        )}
-      </div>
+          {(isAdmin || selectedPost.user_id === currentUserId) && (
+            <button
+              onClick={() => handleDeletePost(selectedPost.id)}
+              className="grid h-10 w-10 place-items-center rounded-full text-red-500 hover:bg-red-50 transition active:scale-95"
+              aria-label="Xóa"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </header>
 
-      {/* DETAILED POST READ PANEL */}
-      {selectedPost ? (
-        <div className="flex-1 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
-          
-          {/* LEFT COLUMN: THE POST DETAIL CARD */}
-          <section className="flex-1 rounded-[28px] border border-brand-terracotta-light/20 bg-white/85 p-5 shadow-sm overflow-y-auto custom-scrollbar flex flex-col dark:bg-brand-panel/85">
-            <div className="flex items-center justify-between mb-3.5">
-              <span className="rounded-full border border-brand-terracotta/25 bg-brand-cream/80 px-2.5 py-1 text-[10px] font-black text-brand-terracotta dark:bg-brand-light">
-                {t(CATEGORIES.find(c => c.value === selectedPost.category)?.labelKey || 'forum.cat.free')}
-              </span>
-              <div className="flex items-center gap-1 text-[10px] font-bold text-brand-brown-light">
-                <Eye size={12} />
-                <span>{selectedPost.views_count} {t('forum.views')}</span>
-              </div>
-            </div>
-
-            <h3 className="font-display text-lg sm:text-xl font-black text-brand-brown-dark leading-tight mb-2">
-              {selectedPost.title}
-            </h3>
-
-            <div className="flex items-center gap-2 text-xs text-brand-brown-light mb-4 pb-3 border-b border-brand-terracotta-light/10">
-              <span className="inline-flex items-center gap-1 font-bold text-brand-brown-dark">
-                {selectedPost.is_anonymous ? <ShieldCheck size={13} className="text-emerald-500" /> : <User size={13} />}
-                {selectedPost.display_name}
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar pb-32">
+          <article className="px-4 sm:px-6 pt-5 pb-6">
+            {/* Author row */}
+            <div className="flex items-center gap-2 text-xs text-brand-brown-light mb-3">
+              <span className="inline-flex items-center gap-1.5">
+                {selectedPost.is_anonymous
+                  ? <ShieldCheck size={13} className="text-emerald-500" />
+                  : <User size={13} className="text-brand-brown-light" />}
+                <span className="font-bold text-brand-brown-dark">{selectedPost.display_name}</span>
               </span>
               <span>·</span>
+              <span>{new Date(selectedPost.created_at).toLocaleDateString('vi-VN')}</span>
+              <span>·</span>
               <span className="inline-flex items-center gap-1">
-                <Clock size={12} />
-                {timeAgo(selectedPost.created_at)}
+                <Eye size={11} /> {selectedPost.views_count}
               </span>
             </div>
 
-            <div className="text-sm leading-relaxed text-brand-brown-dark/90 whitespace-pre-wrap flex-1 mb-6">
+            {/* Title */}
+            <h1 className="font-display text-xl sm:text-2xl font-black text-brand-brown-dark leading-tight mb-4">
+              {selectedPost.title}
+            </h1>
+
+            {/* Content */}
+            <div className="text-[15px] leading-relaxed text-brand-brown-dark/95 whitespace-pre-wrap mb-6">
               {selectedPost.content}
             </div>
 
-            {/* INTERACTION ROW: LIKE, BOOKMARK, SHARE */}
-            <div className="flex items-center justify-between pt-3 border-t border-brand-terracotta-light/10 shrink-0">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleLikePost(selectedPost.id, true)}
-                  className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-black transition cursor-pointer active:scale-95 ${
-                    likedPosts.has(selectedPost.id)
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30'
-                      : 'border-brand-terracotta-light/15 bg-white/70 text-brand-brown-light hover:text-brand-brown-dark hover:border-brand-terracotta/35 dark:bg-brand-light'
-                  }`}
-                  title="Thích"
-                >
-                  <ThumbsUp size={13} />
-                  <span>{selectedPost.likes_count}</span>
-                </button>
-                <button
-                  onClick={() => handleLikePost(selectedPost.id, false)}
-                  className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-black transition cursor-pointer active:scale-95 ${
-                    dislikedPosts.has(selectedPost.id)
-                      ? 'border-red-200 bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30'
-                      : 'border-brand-terracotta-light/15 bg-white/70 text-brand-brown-light hover:text-brand-brown-dark hover:border-brand-terracotta/35 dark:bg-brand-light'
-                  }`}
-                  title="Không thích"
-                >
-                  <ThumbsDown size={13} />
-                  <span>{selectedPost.dislikes_count}</span>
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleBookmarkPost(selectedPost.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-black transition cursor-pointer active:scale-95 ${
-                    bookmarkedPosts.has(selectedPost.id)
-                      ? 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30'
-                      : 'border-brand-terracotta-light/15 bg-white/70 text-brand-brown-light hover:text-brand-brown-dark hover:border-brand-terracotta/35 dark:bg-brand-light'
-                  }`}
-                  title="Lưu"
-                >
-                  <Bookmark size={13} fill={bookmarkedPosts.has(selectedPost.id) ? 'currentColor' : 'none'} />
-                  <span>Lưu</span>
-                </button>
-                <button
-                  onClick={() => handleSharePost(selectedPost.id)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-brand-terracotta-light/15 bg-white/70 px-3 py-2 text-xs font-black text-brand-brown-light hover:text-brand-brown-dark hover:border-brand-terracotta/35 transition cursor-pointer active:scale-95 dark:bg-brand-light"
-                  title="Chia sẻ"
-                >
-                  {copiedPostId === selectedPost.id ? <Check size={13} className="text-emerald-500" /> : <Share2 size={13} />}
-                  <span>{copiedPostId === selectedPost.id ? 'Đã sao chép' : 'Chia sẻ'}</span>
-                </button>
-
-                {(isAdmin || selectedPost.user_id === currentUserId) && (
-                  <button
-                    onClick={() => handleDeletePost(selectedPost.id)}
-                    className="p-2 rounded-xl border border-red-100 bg-red-50 text-red-600 hover:bg-red-100 transition cursor-pointer active:scale-95 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30"
-                    title="Xóa bài viết"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                )}
-              </div>
+            {/* Action pills */}
+            <div className="flex flex-wrap items-center gap-2 pb-5 border-b border-brand-terracotta-light/20">
+              <button
+                onClick={() => handleLikePost(selectedPost.id, true)}
+                className={`forum-action-pill ${likedPosts.has(selectedPost.id) ? 'is-like' : ''}`}
+              >
+                <ThumbsUp size={14} fill={likedPosts.has(selectedPost.id) ? 'currentColor' : 'none'} />
+                <span>{selectedPost.likes_count}</span>
+              </button>
+              <button
+                onClick={() => handleLikePost(selectedPost.id, false)}
+                className={`forum-action-pill ${dislikedPosts.has(selectedPost.id) ? 'is-dislike' : ''}`}
+              >
+                <ThumbsDown size={14} fill={dislikedPosts.has(selectedPost.id) ? 'currentColor' : 'none'} />
+                <span>{selectedPost.dislikes_count}</span>
+              </button>
+              <button
+                onClick={() => handleSharePost(selectedPost.id)}
+                className="forum-action-pill ml-auto"
+              >
+                {copiedPostId === selectedPost.id ? <Check size={14} className="text-emerald-500" /> : <Share2 size={14} />}
+                <span>{copiedPostId === selectedPost.id ? 'Đã copy' : 'Chia sẻ'}</span>
+              </button>
             </div>
-          </section>
+          </article>
 
-          {/* RIGHT COLUMN: COMMENTS TIMELINE & INPUT BAR */}
-          <aside className="w-full md:w-[380px] lg:w-[420px] rounded-[28px] border border-brand-terracotta-light/20 bg-white/88 p-4 shadow-sm flex flex-col min-h-0 dark:bg-brand-panel/88">
-            <h4 className="font-display font-black text-sm text-brand-brown-dark mb-3 shrink-0 flex items-center gap-1.5">
-              <MessageCircle size={16} className="text-brand-terracotta" />
-              Bình luận ({selectedPost.comments_count})
-            </h4>
+          {/* Comments */}
+          <section className="px-4 sm:px-6 pt-5">
+            <h2 className="text-sm font-black text-brand-brown-dark mb-4">
+              Bình luận <span className="text-brand-brown-light">{selectedPost.comments_count}</span>
+            </h2>
 
-            {/* COMMENTS DISPLAY LIST */}
-            <div className="flex-1 overflow-y-auto pr-1 space-y-3 mb-3 custom-scrollbar min-h-0">
-              {rootComments.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <MessageSquare size={26} className="text-brand-terracotta/40 mb-2" />
-                  <p className="text-xs font-bold text-brand-brown-light">Chưa có bình luận nào</p>
-                  <p className="text-[10px] text-brand-brown-light/75">Gửi bình luận ẩn danh đầu tiên để bắt đầu cuộc trò chuyện!</p>
-                </div>
-              ) : (
-                rootComments.map(comment => {
+            {rootComments.length === 0 ? (
+              <div className="text-center py-10">
+                <MessageCircle size={32} className="text-brand-terracotta/30 mx-auto mb-2" />
+                <p className="text-sm font-bold text-brand-brown-light">Chưa có bình luận</p>
+                <p className="text-xs text-brand-brown-light/70 mt-1">Hãy là người đầu tiên chia sẻ</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {rootComments.map(comment => {
                   const replies = commentReplies(comment.id)
                   return (
-                    <div key={comment.id} className="space-y-2">
+                    <div key={comment.id}>
                       <CommentItem
                         comment={comment}
                         liked={likedComments.has(comment.id)}
                         onLike={() => handleLikeComment(comment.id)}
                         onReply={() => {
                           setReplyToCommentId(comment.id)
-                          setNewComment(`@${comment.display_name} `)
+                          setReplyToDisplayName(comment.display_name)
                         }}
                         onDelete={() => handleDeleteComment(comment.id)}
                         isAdminOrOwner={isAdmin || comment.user_id === currentUserId}
                       />
-                      
-                      {/* Nested Replies with Gray Indent Line */}
-                      {replies.map(reply => (
-                        <div key={reply.id} className="pl-6 relative flex gap-2">
-                          <span className="absolute left-2.5 top-0 bottom-4 w-[1.5px] border-l border-b border-brand-terracotta-light/30 rounded-bl-md pointer-events-none" />
-                          <div className="flex-1">
-                            <CommentItem
-                              comment={reply}
-                              liked={likedComments.has(reply.id)}
-                              onLike={() => handleLikeComment(reply.id)}
-                              onReply={() => {
-                                setReplyToCommentId(comment.id)
-                                setNewComment(`@${reply.display_name} `)
-                              }}
-                              onDelete={() => handleDeleteComment(reply.id)}
-                              isAdminOrOwner={isAdmin || reply.user_id === currentUserId}
-                            />
-                          </div>
+                      {replies.length > 0 && (
+                        <div className="forum-reply-thread mt-3 ml-5 space-y-3">
+                          {replies.map((reply, idx) => (
+                            <div
+                              key={reply.id}
+                              className={`forum-reply-item ${idx === replies.length - 1 ? 'is-last' : ''}`}
+                            >
+                              <CommentItem
+                                comment={reply}
+                                liked={likedComments.has(reply.id)}
+                                onLike={() => handleLikeComment(reply.id)}
+                                onReply={() => {
+                                  setReplyToCommentId(comment.id)
+                                  setReplyToDisplayName(reply.display_name)
+                                }}
+                                onDelete={() => handleDeleteComment(reply.id)}
+                                isAdminOrOwner={isAdmin || reply.user_id === currentUserId}
+                                isReply
+                              />
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )
-                })
-              )}
-            </div>
-
-            {/* COMMENT INPUT BAR */}
-            <form onSubmit={handleSubmitComment} className="border-t border-brand-terracotta-light/10 pt-3 shrink-0">
-              {replyToCommentId && (
-                <div className="flex items-center justify-between bg-brand-cream/80 rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-brand-terracotta mb-2 dark:bg-brand-light">
-                  <span>Đang phản hồi bình luận...</span>
-                  <button type="button" onClick={() => { setReplyToCommentId(null); setNewComment(''); }}>
-                    <X size={10} />
-                  </button>
-                </div>
-              )}
-
-              {/* ANONYMOUS TOGGLE BUTTON SWITCH */}
-              <div className="flex items-center justify-between mb-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!currentUserId) return
-                    setIsAnonComment(prev => !prev)
-                  }}
-                  className={`cm-comment-anon-toggle inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[10px] font-bold border transition cursor-pointer select-none ${
-                    !currentUserId || isAnonComment
-                      ? 'cm-comment-anon-toggle active'
-                      : 'border-brand-terracotta-light/15 bg-white/70 text-brand-brown-light dark:bg-brand-panel'
-                  }`}
-                  disabled={!currentUserId}
-                >
-                  <span className="cm-comment-switch" />
-                  <span className="cm-comment-anon-text flex items-center gap-1">
-                    {!currentUserId 
-                      ? (
-                        <>
-                          <ShieldCheck size={12} className="text-blue-500 shrink-0 stroke-[2.2]" />
-                          <span>{t('forum.anonGuest')}</span>
-                        </>
-                      ) 
-                      : (isAnonComment ? (
-                        <>
-                          <ShieldCheck size={12} className="text-blue-500 shrink-0 stroke-[2.2]" />
-                          <span>{t('forum.anonymous')}</span>
-                        </>
-                      ) : `👤 ${t('forum.publicAs')} (${username})`)}
-                  </span>
-                </button>
-              </div>
-
-              {/* Text Input Row */}
-              <div className="relative flex items-center rounded-2xl border border-brand-terracotta-light/20 bg-brand-cream/70 p-1.5 dark:bg-brand-panel">
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={e => setNewComment(e.target.value)}
-                  placeholder={t('forum.commentPlaceholder')}
-                  className="flex-1 bg-transparent px-3 py-2 text-xs font-medium text-brand-brown-dark outline-none placeholder:text-brand-brown-light/60"
-                  maxLength={1000}
-                />
-                <button
-                  type="submit"
-                  disabled={!newComment.trim() || submittingComment}
-                  className="inline-flex h-8 w-8 shrink-0 place-items-center justify-center rounded-xl bg-brand-terracotta text-white hover:bg-brand-brown-dark transition active:scale-95 cursor-pointer disabled:opacity-40"
-                >
-                  <Send size={13} />
-                </button>
-              </div>
-            </form>
-          </aside>
-        </div>
-      ) : isWriting ? (
-        
-        /* WRITE NEW POST FULLSCREEN/OVERLAY SCREEN */
-        <section className="flex-1 rounded-[28px] border border-brand-terracotta-light/25 bg-white/85 p-4 sm:p-6 shadow-sm overflow-y-auto custom-scrollbar flex flex-col dark:bg-brand-panel/85">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-black text-base text-brand-brown-dark">{t('forum.newPost')}</h3>
-            <button
-              onClick={() => setIsWriting(false)}
-              className="p-1.5 rounded-full hover:bg-brand-light text-brand-brown-light transition cursor-pointer"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmitPost} className="flex-1 flex flex-col gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Category selector */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-black uppercase text-brand-brown-light">{t('forum.writeCategory')}</label>
-                <div className="flex flex-wrap gap-2">
-                  {CATEGORIES.slice(1).map(cat => (
-                    <button
-                      key={cat.value}
-                      type="button"
-                      onClick={() => setWriteCat(cat.value as any)}
-                      className={`px-3 py-2 rounded-xl text-xs font-black border transition cursor-pointer active:scale-95 ${
-                        writeCat === cat.value
-                          ? 'bg-brand-terracotta border-brand-terracotta text-white'
-                          : 'border-brand-terracotta-light/15 bg-white text-brand-brown-light hover:text-brand-brown-dark dark:bg-brand-panel'
-                      }`}
-                    >
-                      {t(cat.labelKey)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Anonymous Post Toggle */}
-              <div className="flex flex-col gap-1.5 justify-center md:items-end">
-                <label className="text-[11px] font-black uppercase text-brand-brown-light">{t('forum.displayMode')}</label>
-                <button
-                  type="button"
-                  onClick={() => setIsAnon(prev => !prev)}
-                  className={`inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-black transition cursor-pointer select-none active:scale-95 ${
-                    isAnon
-                      ? 'border-emerald-100/40 text-emerald-700 bg-emerald-50/20'
-                      : 'border-brand-terracotta-light/15 bg-white text-brand-brown-light dark:bg-brand-panel'
-                  }`}
-                >
-                  {isAnon ? <ShieldCheck size={14} className="text-emerald-500" /> : <User size={14} />}
-                  <span>{isAnon ? 'Đăng Ẩn danh (Mặc định bảo mật)' : `Đăng công khai (${username})`}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Post Title input */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-black uppercase text-brand-brown-light">Tiêu đề bài viết</label>
-              <input
-                type="text"
-                value={writeTitle}
-                onChange={e => setWriteTitle(e.target.value)}
-                placeholder="Tóm tắt trải nghiệm của bạn (ví dụ: Chia sẻ bí quyết thi TOPIK II)..."
-                className="rounded-xl border border-brand-terracotta-light/20 bg-brand-cream/60 px-4 py-3.5 text-xs font-bold text-brand-brown-dark placeholder:text-brand-brown-light/50 outline-none focus:ring-2 focus:ring-brand-terracotta/30 dark:bg-brand-panel"
-                required
-                maxLength={100}
-              />
-            </div>
-
-            {/* Post Content Input */}
-            <div className="flex-1 flex flex-col gap-1.5 min-h-[220px]">
-              <label className="text-[11px] font-black uppercase text-brand-brown-light">Nội dung chi tiết</label>
-              <textarea
-                value={writeContent}
-                onChange={e => setWriteContent(e.target.value)}
-                placeholder="Chia sẻ chi tiết trải nghiệm thực tế, lời khuyên học tập, sinh sống, hoặc cơ hội việc làm tại Hàn Quốc..."
-                className="flex-1 rounded-xl border border-brand-terracotta-light/20 bg-brand-cream/60 px-4 py-3.5 text-xs font-medium text-brand-brown-dark placeholder:text-brand-brown-light/50 outline-none focus:ring-2 focus:ring-brand-terracotta/30 resize-none custom-scrollbar dark:bg-brand-panel"
-                required
-                maxLength={4000}
-              />
-              <div className="text-[10px] text-brand-brown-light text-right">
-                {writeContent.length}/4000 ký tự
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => { setIsWriting(false); setWriteTitle(''); setWriteContent(''); }}
-                className="px-4 py-2.5 rounded-xl border border-brand-terracotta-light/20 bg-white text-xs font-black text-brand-brown-light hover:text-brand-brown-dark transition cursor-pointer active:scale-95 dark:bg-brand-panel"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                type="submit"
-                disabled={!writeTitle.trim() || !writeContent.trim() || submittingPost}
-                className="px-5 py-2.5 rounded-xl bg-brand-terracotta text-xs font-black text-white hover:bg-brand-brown-dark transition cursor-pointer active:scale-95 disabled:opacity-40"
-              >
-              {submittingPost ? t('forum.submitting') : t('forum.submitPost')}
-              </button>
-            </div>
-          </form>
-        </section>
-      ) : (
-
-        /* FORUM POSTS FEED CONTAINER */
-        <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 overflow-hidden">
-          
-          {/* LEFT SIDEBAR: FILTERS AND SEARCH */}
-          <aside className="w-full lg:w-[240px] flex flex-col gap-3 shrink-0">
-            {/* Search inputs */}
-            <div className="relative flex items-center rounded-2xl border border-brand-terracotta-light/20 bg-white/80 px-3.5 py-2.5 shadow-sm dark:bg-brand-panel">
-              <Search size={15} className="text-brand-brown-light mr-2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm bài viết..."
-                className="w-full bg-transparent text-xs font-medium text-brand-brown-dark outline-none placeholder:text-brand-brown-light/50"
-              />
-            </div>
-
-            {/* Category selection */}
-            <div className="rounded-[28px] border border-brand-terracotta-light/20 bg-white/85 p-3.5 shadow-sm dark:bg-brand-panel">
-              <h3 className="text-[10px] font-black uppercase text-brand-brown-light mb-2.5 px-1.5 hidden sm:block">{t('forum.section')}</h3>
-              <div className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto pb-1 lg:pb-0 custom-scrollbar">
-                {CATEGORIES.map(cat => {
-                  const CatIcon = cat.Icon
-                  return (
-                    <button
-                      key={cat.value}
-                      onClick={() => setCatFilter(cat.value)}
-                      title={t(cat.labelKey)}
-                      className={`flex items-center gap-2 w-full text-left px-3 sm:px-3.5 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap active:scale-95 ${
-                        catFilter === cat.value
-                          ? 'bg-brand-terracotta text-white shadow-sm'
-                          : 'text-brand-brown-light hover:bg-brand-light'
-                      }`}
-                    >
-                      <CatIcon size={14} className="shrink-0" />
-                      <span className="hidden sm:inline">{t(cat.labelKey)}</span>
-                    </button>
                   )
                 })}
               </div>
-            </div>
-          </aside>
+            )}
+          </section>
+        </div>
 
-          {/* MAIN POSTS TIMELINE TIMELINE FEED */}
-          <main className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar min-h-0">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <Clock className="animate-spin text-brand-terracotta/40 mb-2" size={32} />
-                <p className="text-sm font-bold text-brand-brown-light">{t('forum.loading')}</p>
+        {/* Fixed bottom comment bar */}
+        <form
+          onSubmit={handleSubmitComment}
+          className="forum-comment-bar sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-brand-terracotta-light/20 px-3 py-2.5 z-20"
+        >
+          {replyToCommentId && (
+            <div className="flex items-center justify-between gap-2 mb-2 px-3 py-1.5 bg-brand-light rounded-lg text-[11px] font-bold text-brand-terracotta">
+              <span className="truncate">Đang trả lời <strong>{replyToDisplayName}</strong></span>
+              <button
+                type="button"
+                onClick={() => { setReplyToCommentId(null); setReplyToDisplayName(''); setNewComment(''); }}
+                className="grid h-5 w-5 place-items-center rounded-full hover:bg-white"
+              >
+                <X size={11} />
+              </button>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={!currentUserId}
+              onClick={() => setIsAnonComment(v => !v)}
+              className={`forum-anon-toggle shrink-0 ${(!currentUserId || isAnonComment) ? 'is-anon' : 'is-public'}`}
+              title={!currentUserId ? 'Khách luôn ẩn danh' : (isAnonComment ? 'Đang ẩn danh' : `Đăng với tên ${username}`)}
+            >
+              <span className="forum-anon-switch" />
+              {(!currentUserId || isAnonComment) ? (
+                <><ShieldCheck size={12} /><span>Ẩn danh</span></>
+              ) : (
+                <><User size={12} /><span className="truncate max-w-[60px]">{username}</span></>
+              )}
+            </button>
+            <input
+              type="text"
+              value={newComment}
+              onChange={e => setNewComment(e.target.value)}
+              placeholder="Viết bình luận..."
+              maxLength={1000}
+              className="flex-1 h-10 px-4 rounded-full bg-brand-light text-sm font-medium text-brand-brown-dark outline-none placeholder:text-brand-brown-light/60 focus:ring-2 focus:ring-brand-terracotta/30"
+            />
+            <button
+              type="submit"
+              disabled={!newComment.trim() || submittingComment}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-terracotta text-white hover:bg-brand-brown-dark transition active:scale-95 disabled:opacity-40 shadow-md shadow-brand-terracotta/20"
+            >
+              {submittingComment ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+            </button>
+          </div>
+        </form>
+      </div>
+    )
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // WRITE COMPOSER (fullscreen overlay)
+  // ─────────────────────────────────────────────────────────────────────────
+  if (isWriting) {
+    return (
+      <div className="forum-v2 flex-1 w-full max-w-[760px] mx-auto flex flex-col min-h-0">
+        <header className="sticky top-0 z-30 flex items-center gap-2 px-4 py-3 bg-white/95 backdrop-blur-md border-b border-brand-terracotta-light/15">
+          <button
+            onClick={() => setIsWriting(false)}
+            className="grid h-10 w-10 place-items-center rounded-full text-brand-brown-dark hover:bg-brand-light transition active:scale-95"
+            aria-label="Hủy"
+          >
+            <X size={18} />
+          </button>
+          <div className="flex-1 text-center">
+            <p className="text-sm font-black text-brand-brown-dark">{t('forum.newPost')}</p>
+          </div>
+          <button
+            type="submit"
+            form="forum-write-form"
+            disabled={!writeTitle.trim() || !writeContent.trim() || submittingPost}
+            className="px-4 h-9 rounded-full bg-brand-terracotta text-white text-xs font-black hover:bg-brand-brown-dark transition active:scale-95 disabled:opacity-40"
+          >
+            {submittingPost ? '...' : 'Đăng'}
+          </button>
+        </header>
+
+        <form id="forum-write-form" onSubmit={handleSubmitPost} className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
+          {/* Category chips */}
+          <div className="px-4 pt-4 pb-2">
+            <div className="flex gap-2 overflow-x-auto pb-1 forum-scrollbar-hide">
+              {CATEGORIES.slice(1).map(cat => {
+                const CatIcon = cat.Icon
+                const active = writeCat === cat.value
+                return (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => setWriteCat(cat.value as any)}
+                    className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-black border transition active:scale-95 ${
+                      active
+                        ? 'bg-brand-brown-dark text-white border-brand-brown-dark'
+                        : 'bg-white text-brand-brown-light border-brand-terracotta-light/25 hover:border-brand-terracotta/40'
+                    }`}
+                  >
+                    <CatIcon size={13} />
+                    {t(cat.labelKey)}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Title */}
+          <input
+            type="text"
+            value={writeTitle}
+            onChange={e => setWriteTitle(e.target.value)}
+            placeholder="Tiêu đề bài viết"
+            maxLength={100}
+            required
+            className="mx-4 mt-3 py-3 text-lg font-black text-brand-brown-dark bg-transparent outline-none border-b border-brand-terracotta-light/20 placeholder:text-brand-brown-light/40"
+          />
+
+          {/* Content */}
+          <textarea
+            value={writeContent}
+            onChange={e => setWriteContent(e.target.value)}
+            placeholder="Chia sẻ trải nghiệm, hỏi đáp, lời khuyên..."
+            maxLength={4000}
+            required
+            className="flex-1 mx-4 mt-3 mb-4 py-2 text-sm leading-relaxed text-brand-brown-dark bg-transparent outline-none placeholder:text-brand-brown-light/40 resize-none min-h-[300px]"
+          />
+
+          {/* Footer: anonymous toggle */}
+          <div className="sticky bottom-0 left-0 right-0 px-4 py-3 bg-white/95 backdrop-blur-md border-t border-brand-terracotta-light/15 flex items-center justify-between">
+            <div className="text-[11px] text-brand-brown-light/70 font-medium">
+              {writeContent.length}/4000
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAnon(v => !v)}
+              className={`forum-anon-toggle ${isAnon ? 'is-anon' : 'is-public'}`}
+            >
+              <span className="forum-anon-switch" />
+              {isAnon ? (
+                <><ShieldCheck size={12} /><span>Ẩn danh</span></>
+              ) : (
+                <><User size={12} /><span className="truncate max-w-[80px]">{username}</span></>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    )
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // FEED VIEW
+  // ─────────────────────────────────────────────────────────────────────────
+  return (
+    <div className="forum-v2 flex-1 w-full max-w-[760px] mx-auto flex flex-col min-h-0 relative">
+      {/* Sticky glassmorphism header */}
+      <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-brand-terracotta-light/15">
+        <div className="flex items-center gap-2 px-4 py-3">
+          <button
+            onClick={onBackToLobby}
+            className="grid h-10 w-10 place-items-center rounded-full text-brand-brown-dark hover:bg-brand-light transition active:scale-95 lg:hidden"
+            aria-label="Lobby"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h1 className="font-display text-xl sm:text-2xl font-black tracking-tight text-brand-brown-dark">
+              Bảng tin
+            </h1>
+            <div className="h-[3px] w-12 mt-0.5 rounded-full bg-gradient-to-r from-brand-terracotta to-brand-brown-dark" />
+          </div>
+          <button
+            onClick={() => setShowSearch(v => !v)}
+            className={`grid h-10 w-10 place-items-center rounded-full transition active:scale-95 ${
+              showSearch ? 'bg-brand-terracotta text-white' : 'text-brand-brown-dark hover:bg-brand-light'
+            }`}
+            aria-label="Tìm kiếm"
+          >
+            <Search size={17} />
+          </button>
+        </div>
+
+        {/* Search bar (expandable) */}
+        {showSearch && (
+          <div className="px-4 pb-3">
+            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-brand-light border border-brand-terracotta-light/15">
+              <Search size={14} className="text-brand-brown-light shrink-0" />
+              <input
+                type="text"
+                autoFocus
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Tìm bài viết..."
+                className="flex-1 bg-transparent text-sm font-medium text-brand-brown-dark outline-none placeholder:text-brand-brown-light/60"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="grid h-5 w-5 place-items-center rounded-full hover:bg-white"
+                >
+                  <X size={11} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Category pill tabs */}
+        <div className="px-4 pb-3">
+          <div className="flex gap-2 overflow-x-auto forum-scrollbar-hide">
+            {CATEGORIES.map(cat => {
+              const CatIcon = cat.Icon
+              const active = catFilter === cat.value
+              return (
+                <button
+                  key={cat.value}
+                  onClick={() => setCatFilter(cat.value)}
+                  className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black border transition active:scale-95 ${
+                    active
+                      ? 'bg-brand-brown-dark text-white border-brand-brown-dark'
+                      : 'bg-white text-brand-brown-light border-brand-terracotta-light/25 hover:border-brand-terracotta/40'
+                  }`}
+                >
+                  <CatIcon size={12} />
+                  {t(cat.labelKey)}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </header>
+
+      {/* Scrollable feed */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar pb-24">
+        {/* Trending card */}
+        {trendingPost && catFilter === 'all' && !searchQuery && (
+          <button
+            onClick={() => handlePostClick(trendingPost)}
+            className="forum-trending-card w-full text-left mx-auto mt-4 mb-3 block"
+          >
+            <div className="mx-4 rounded-2xl border border-brand-terracotta-light/20 bg-gradient-to-br from-white via-white to-brand-light/40 p-4 shadow-[0_8px_24px_rgba(76,55,49,0.06)] hover:shadow-[0_12px_32px_rgba(76,55,49,0.10)] transition group">
+              <div className="flex items-center gap-1.5 text-[11px] font-black text-orange-600 mb-2">
+                <Flame size={13} className="fill-orange-500 text-orange-500" />
+                <span>Đang hot</span>
+                <span className="ml-auto text-brand-brown-light/60 font-bold">{timeAgo(trendingPost.created_at)}</span>
               </div>
-            ) : filteredPosts.length === 0 ? (
-              <div className="rounded-[28px] border border-brand-terracotta-light/20 bg-white/70 p-10 text-center">
-                <MessageSquare size={36} className="text-brand-terracotta/30 mx-auto mb-2" />
-                <h4 className="font-display font-black text-base text-brand-brown-dark mb-1">{t('forum.empty')}</h4>
-                <p className="text-xs text-brand-brown-light">{t('forum.emptyDesc')}</p>
+              <h3 className="font-display font-black text-base text-brand-brown-dark group-hover:text-brand-terracotta transition leading-snug line-clamp-2">
+                {trendingPost.title}
+              </h3>
+              <p className="text-xs text-brand-brown-light line-clamp-1 mt-1.5">
+                {trendingPost.content}
+              </p>
+              <div className="flex items-center gap-3 mt-3 text-[11px] font-bold text-brand-brown-light/80">
+                <span className="inline-flex items-center gap-1"><ThumbsUp size={11} />{trendingPost.likes_count}</span>
+                <span className="inline-flex items-center gap-1"><MessageCircle size={11} />{trendingPost.comments_count}</span>
+                <span className="inline-flex items-center gap-1"><Eye size={11} />{trendingPost.views_count}</span>
               </div>
-            ) : (
-              filteredPosts.map(post => (
+            </div>
+          </button>
+        )}
+
+        {/* Posts list */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Loader2 className="animate-spin text-brand-terracotta/50 mb-2" size={28} />
+            <p className="text-sm font-bold text-brand-brown-light">Đang tải bài viết...</p>
+          </div>
+        ) : filteredPosts.length === 0 ? (
+          <div className="text-center py-20 px-6">
+            <MessageSquare size={36} className="text-brand-terracotta/30 mx-auto mb-3" />
+            <h4 className="font-display font-black text-base text-brand-brown-dark mb-1">
+              {searchQuery ? 'Không tìm thấy' : 'Chưa có bài viết'}
+            </h4>
+            <p className="text-xs text-brand-brown-light">
+              {searchQuery ? 'Thử từ khóa khác hoặc đổi bộ lọc' : 'Hãy là người đầu tiên chia sẻ!'}
+            </p>
+          </div>
+        ) : (
+          <div>
+            {filteredPosts.map(post => {
+              const cat = getCat(post.category)
+              return (
                 <article
                   key={post.id}
                   onClick={() => handlePostClick(post)}
-                  className="rounded-[24px] border border-brand-terracotta-light/15 bg-white/86 p-4.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md cursor-pointer flex flex-col gap-3 group dark:bg-brand-panel/85"
+                  className="cursor-pointer border-b border-brand-terracotta-light/12 px-4 py-4 hover:bg-brand-light/30 transition active:bg-brand-light/50"
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <span
+                    className="inline-block rounded-md px-2 py-0.5 text-[10px] font-black mb-2"
+                    style={{ color: cat.color, background: cat.bg }}
+                  >
+                    {t(cat.labelKey)}
+                  </span>
+                  <div className="flex gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                        <span className="rounded-full border border-brand-terracotta/20 bg-brand-cream/80 px-2 py-0.5 text-[9px] font-black text-brand-terracotta dark:bg-brand-light">
-                          {t(CATEGORIES.find(c => c.value === post.category)?.labelKey || 'forum.cat.free')}
-                        </span>
-                        <span className="text-[10px] font-bold text-brand-brown-light inline-flex items-center gap-1">
-                          {post.is_anonymous ? <ShieldCheck size={11} className="text-emerald-500" /> : <User size={11} />}
-                          {post.display_name}
-                        </span>
-                        <span className="text-[10px] text-brand-brown-light">·</span>
-                        <span className="text-[10px] text-brand-brown-light">{timeAgo(post.created_at)}</span>
-                      </div>
-                      <h3 className="font-display text-sm sm:text-base font-black text-brand-brown-dark group-hover:text-brand-terracotta transition leading-snug truncate">
+                      <h3 className="font-display font-black text-[15px] text-brand-brown-dark leading-snug line-clamp-2">
                         {post.title}
                       </h3>
-                      <p className="text-xs leading-relaxed text-brand-brown-light line-clamp-2 mt-1 whitespace-pre-wrap">
+                      <p className="mt-1.5 text-[13px] text-brand-brown-light line-clamp-1 leading-snug">
                         {post.content}
                       </p>
+                      <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-brand-brown-light/80">
+                        <span className="inline-flex items-center gap-1 font-bold text-brand-brown-dark/80">
+                          {post.is_anonymous
+                            ? <ShieldCheck size={11} className="text-emerald-500" />
+                            : <User size={11} />}
+                          {post.display_name}
+                        </span>
+                        <span>·</span>
+                        <span>{timeAgo(post.created_at)}</span>
+                        <span className="ml-auto flex items-center gap-2.5 font-bold">
+                          <span className="inline-flex items-center gap-1"><ThumbsUp size={11} />{post.likes_count}</span>
+                          <span className="inline-flex items-center gap-1"><MessageCircle size={11} />{post.comments_count}</span>
+                        </span>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-between border-t border-brand-terracotta-light/10 pt-2 text-[10px] font-black text-brand-brown-light shrink-0">
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex items-center gap-1">
-                        <ThumbsUp size={12} />
-                        {post.likes_count} thích
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <MessageSquare size={12} />
-                        {post.comments_count} bình luận
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Eye size={12} />
-                        {post.views_count} xem
-                      </span>
-                    </div>
-
-                    {(isAdmin || post.user_id === currentUserId) && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); void handleDeletePost(post.id); }}
-                        className="p-1.5 rounded-lg border border-red-50 text-red-600 hover:bg-red-50 transition cursor-pointer"
-                        title="Xóa bài viết"
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                    {post.image_urls && post.image_urls.length > 0 && (
+                      <div className="h-20 w-20 shrink-0 rounded-xl overflow-hidden bg-brand-light">
+                        <img src={post.image_urls[0]} alt="" className="h-full w-full object-cover" />
+                      </div>
                     )}
                   </div>
                 </article>
-              ))
-            )}
-          </main>
-        </div>
-      )}
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* FAB Viết bài */}
+      <button
+        onClick={() => setIsWriting(true)}
+        className="forum-fab fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 h-12 px-5 rounded-full bg-brand-terracotta text-white font-black text-sm shadow-[0_8px_24px_rgba(193,124,99,0.4)] hover:bg-brand-brown-dark transition active:scale-95"
+      >
+        <Plus size={18} />
+        <span>Viết bài</span>
+      </button>
     </div>
   )
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// COMMENT ITEM COMPONENT
+// ─────────────────────────────────────────────────────────────────────────
 function CommentItem({
   comment,
   liked,
   onLike,
   onReply,
   onDelete,
-  isAdminOrOwner
+  isAdminOrOwner,
+  isReply = false
 }: {
   comment: CommunityComment
   liked: boolean
@@ -1003,6 +949,7 @@ function CommentItem({
   onReply: () => void
   onDelete: () => void
   isAdminOrOwner: boolean
+  isReply?: boolean
 }) {
   const [remainingMs, setRemainingMs] = useState<number | null>(() => {
     if (!comment.expires_at) return null
@@ -1011,82 +958,97 @@ function CommentItem({
 
   useEffect(() => {
     if (!comment.expires_at) return
-    const tick = () => {
-      setRemainingMs(new Date(comment.expires_at!).getTime() - Date.now())
-    }
+    const tick = () => setRemainingMs(new Date(comment.expires_at!).getTime() - Date.now())
     tick()
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
   }, [comment.expires_at])
 
   const showCountdown = remainingMs !== null && remainingMs > 0
+  const totalDurationMs = 3 * 3600 * 1000
+  const progressPct = showCountdown ? Math.max(0, Math.min(100, (remainingMs! / totalDurationMs) * 100)) : 0
 
   if (comment.expires_at && remainingMs !== null && remainingMs <= 0) {
-    return null // Filter out expired guest comments
+    return null
   }
 
+  // Initials avatar
+  const initial = comment.display_name.charAt(0).toUpperCase()
+  const isAnon = comment.is_anonymous
+
   return (
-    <article className="rounded-2xl border border-brand-terracotta-light/10 bg-brand-cream/45 p-3.5 flex flex-col gap-1.5 relative dark:bg-brand-panel">
-      
-      {/* Comment Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <strong className={`text-xs font-black text-brand-brown-dark ${comment.is_author ? 'text-brand-terracotta border-b border-brand-terracotta/20 pb-0.5' : ''}`}>
+    <div className={`flex gap-2.5 ${isReply ? '' : ''}`}>
+      {/* Avatar */}
+      <div className={`shrink-0 grid place-items-center rounded-full font-black text-white text-xs ${
+        isAnon ? 'bg-gradient-to-br from-slate-400 to-slate-500' : 'bg-gradient-to-br from-brand-terracotta to-brand-brown-dark'
+      } ${isReply ? 'h-7 w-7' : 'h-8 w-8'}`}>
+        {isAnon ? <ShieldCheck size={isReply ? 12 : 14} /> : initial}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2 mb-0.5">
+          <strong className={`text-[13px] font-black ${comment.is_author ? 'text-brand-terracotta' : 'text-brand-brown-dark'}`}>
             {comment.display_name}
-            {comment.is_author && <span className="text-[9px] font-bold ml-1 text-brand-terracotta uppercase">(Tác giả)</span>}
           </strong>
-          <span className="text-[10px] text-brand-brown-light/70">{timeAgo(comment.created_at)}</span>
+          {comment.is_author && (
+            <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-brand-terracotta/10 text-brand-terracotta">
+              Tác giả
+            </span>
+          )}
+          <span className="text-[11px] text-brand-brown-light/70 ml-auto">{timeAgo(comment.created_at)}</span>
+          {isAdminOrOwner && (
+            <button
+              onClick={onDelete}
+              className="text-brand-brown-light/60 hover:text-red-500 transition"
+              title="Xóa"
+            >
+              <Trash2 size={11} />
+            </button>
+          )}
         </div>
 
-        {isAdminOrOwner && (
+        <p className="text-sm text-brand-brown-dark/90 leading-relaxed whitespace-pre-wrap break-words">
+          {comment.content}
+        </p>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3 mt-1.5 text-[12px]">
           <button
-            onClick={onDelete}
-            className="p-1 rounded-md text-brand-brown-light hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
-            title="Xóa bình luận"
+            type="button"
+            onClick={onReply}
+            className="font-bold text-brand-brown-light hover:text-brand-terracotta transition"
           >
-            <Trash2 size={11} />
+            Trả lời
           </button>
+          <button
+            type="button"
+            onClick={onLike}
+            className={`inline-flex items-center gap-1 transition ${
+              liked ? 'text-brand-terracotta font-bold' : 'text-brand-brown-light hover:text-brand-brown-dark'
+            }`}
+          >
+            <ThumbsUp size={11} fill={liked ? 'currentColor' : 'none'} />
+            <span>{comment.likes_count}</span>
+          </button>
+        </div>
+
+        {/* Countdown bar — 3h self destruct */}
+        {showCountdown && (
+          <div className="mt-2 flex items-center gap-2">
+            <Clock size={10} className="text-amber-500 shrink-0" />
+            <span className="text-[10px] font-black text-amber-700 tabular-nums shrink-0">
+              {fmtCountdownHMS(remainingMs!)}
+            </span>
+            <div className="flex-1 h-1 rounded-full bg-amber-100 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-[width] duration-1000 ease-linear"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
         )}
       </div>
-
-      {/* Comment Content body */}
-      <p className="text-xs text-brand-brown-dark/90 leading-relaxed whitespace-pre-wrap">
-        {comment.content}
-      </p>
-
-      {/* Comment Interaction Actions Row matching mockup exactly */}
-      <div className="flex items-center gap-3 text-xs mt-1 shrink-0 select-none">
-        <button
-          type="button"
-          onClick={onReply}
-          className="text-blue-500 hover:text-blue-700 font-bold transition cursor-pointer"
-        >
-          Trả lời
-        </button>
-        <button
-          type="button"
-          onClick={onLike}
-          className={`inline-flex items-center gap-1 transition cursor-pointer ${
-            liked 
-              ? 'text-brand-terracotta font-bold' 
-              : 'text-gray-400 hover:text-brand-brown-dark'
-          }`}
-        >
-          <ThumbsUp size={12} className="stroke-[1.8]" />
-          <span className="text-[11px] font-medium">{comment.likes_count}</span>
-        </button>
-      </div>
-
-      {/* Vivid orange-red divider bar matching the screenshot exactly */}
-      {showCountdown && <div className="cm-comment-self-destruct-divider" />}
-
-      {/* Self-Destruct Countdown Text underneath the divider with clock icon */}
-      {showCountdown && (
-        <div className="flex items-center gap-1.5 text-[10px] font-bold text-orange-600 dark:text-orange-400 select-none mt-0.5">
-          <Clock size={11} className="text-gray-700 dark:text-gray-300 stroke-[2.2]" />
-          <span>xóa sau {fmtCountdownHMS(remainingMs!)}</span>
-        </div>
-      )}
-    </article>
+    </div>
   )
 }
