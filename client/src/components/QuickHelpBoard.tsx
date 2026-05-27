@@ -368,14 +368,14 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
     <div className="help-board w-full overflow-hidden rounded-[28px] bg-white border border-brand-terracotta-light/15 shadow-[0_8px_28px_rgba(76,55,49,0.08)] flex flex-col dark:bg-brand-panel dark:border-brand-terracotta-light/10">
 
       {/* ─── HERO BANNER ─── */}
-      <div className="relative bg-gradient-to-br from-brand-terracotta via-[#b16a55] to-brand-brown-dark px-5 py-5 sm:px-8 sm:py-7 text-white shrink-0 overflow-hidden">
+      <div className="relative bg-gradient-to-br from-brand-terracotta via-[#b16a55] to-brand-brown-dark px-5 py-3.5 sm:px-8 sm:py-4 lg:py-3 text-white shrink-0 overflow-hidden">
         {/* Decorative blobs */}
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -left-6 -bottom-12 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
         <div className="relative flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="font-display text-xl sm:text-2xl font-black tracking-tight">{t('help.title')}</h2>
-            <p className="mt-1 text-xs sm:text-sm text-white/80 font-medium">{t('help.subtitle')}</p>
+            <h2 className="font-display text-lg sm:text-xl lg:text-lg font-black tracking-tight">Bảng tin nhanh</h2>
+            <p className="mt-0.5 text-[10px] sm:text-xs lg:text-[10px] text-white/75 font-medium hidden sm:block">{t('help.subtitle')}</p>
           </div>
           <button
             onClick={() => setShowSearch(v => !v)}
@@ -409,20 +409,20 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
         )}
       </div>
 
-      <div className="relative flex flex-col gap-4 min-h-0 overflow-y-auto custom-scrollbar">
+      <div className="relative flex flex-col gap-3 lg:gap-2.5 min-h-0 overflow-y-auto custom-scrollbar">
 
         {/* ─── CATEGORY TABS (sticky) ─── */}
-        <div className="sticky top-0 z-20 bg-white/95 dark:bg-brand-panel/95 backdrop-blur-md border-b border-brand-terracotta-light/15 px-4 sm:px-6 py-3">
-          <div className="flex gap-2 overflow-x-auto pb-1 forum-scrollbar-hide">
+        <div className="sticky top-0 z-20 bg-white/95 dark:bg-brand-panel/95 backdrop-blur-md border-b border-brand-terracotta-light/15 px-4 sm:px-6 py-2 lg:py-1.5">
+          <div className="flex gap-1.5 lg:gap-1 overflow-x-auto pb-1 forum-scrollbar-hide">
             <button
               onClick={() => setActiveCategory('all')}
-              className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black border transition active:scale-95 ${
+              className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 lg:px-2.5 lg:py-1 rounded-full text-xs lg:text-[11px] font-black border transition active:scale-95 ${
                 activeCategory === 'all'
                   ? 'bg-brand-brown-dark text-white border-brand-brown-dark'
                   : 'bg-white text-brand-brown-light border-brand-terracotta-light/25 hover:border-brand-terracotta/40 dark:bg-brand-panel'
               }`}
             >
-              <Flame size={12} />
+              <Flame size={11} />
               {t('help.cat.all')}
             </button>
             {CATEGORIES.map(category => {
@@ -433,13 +433,13 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
                 <button
                   key={category}
                   onClick={() => setActiveCategory(category)}
-                  className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black border transition active:scale-95 ${
+                  className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 lg:px-2.5 lg:py-1 rounded-full text-xs lg:text-[11px] font-black border transition active:scale-95 ${
                     active
                       ? 'bg-brand-brown-dark text-white border-brand-brown-dark'
                       : 'bg-white text-brand-brown-light border-brand-terracotta-light/25 hover:border-brand-terracotta/40 dark:bg-brand-panel'
                   }`}
                 >
-                  <CatIcon size={12} />
+                  <CatIcon size={11} />
                   {t(`help.cat.${category}`)}
                 </button>
               )
@@ -447,7 +447,7 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
           </div>
         </div>
 
-        <div className="px-4 sm:px-6 pb-24 flex flex-col gap-4">
+        <div className="px-4 sm:px-6 pb-24 flex flex-col gap-3 lg:gap-2.5">
 
         {/* ─── QUICK POST ENTRY (only logged in) ─── */}
         {user && !showForm && (
@@ -614,7 +614,7 @@ export default function QuickHelpBoard({ initialExpandedPostId }: QuickHelpBoard
         )}
 
         {/* ─── POSTS FEED ─── */}
-        <div className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-3 lg:gap-2.5">
           {filtered.length === 0 ? (
             <div className="space-y-2 py-12 text-center rounded-2xl border border-dashed border-brand-terracotta-light/30 bg-white dark:bg-brand-panel">
               <AlertCircle size={36} className="mx-auto text-brand-terracotta-light/40" />
