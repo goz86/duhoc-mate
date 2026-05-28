@@ -112,21 +112,28 @@ function extractJson(raw: string): string {
 }
 
 /**
- * Tạo câu ví dụ cho 1 từ vựng
+ * Tạo câu ví dụ cho 1 từ vựng (tạo 2 câu ví dụ)
  */
-export async function generateExample(word: string): Promise<AiGeneratedExample> {
-  const prompt = `Tạo 1 câu ví dụ thực tế bằng tiếng Hàn có sử dụng từ "${word}".
-Trả lời bằng JSON theo format sau (KHÔNG markdown, KHÔNG giải thích thêm):
-{"sentence": "câu tiếng Hàn", "meaning": "nghĩa tiếng Việt của câu"}`
+export async function generateExample(word: string): Promise<AiGeneratedExample[]> {
+  const prompt = `Tạo 2 câu ví dụ thực tế khác nhau bằng tiếng Hàn có sử dụng từ "${word}".
+Trả lời bằng JSON array theo format sau (KHÔNG markdown, KHÔNG giải thích thêm):
+[
+  {"sentence": "câu tiếng Hàn 1", "meaning": "nghĩa tiếng Việt của câu 1"},
+  {"sentence": "câu tiếng Hàn 2", "meaning": "nghĩa tiếng Việt của câu 2"}
+]`
 
   const raw = await callDeepSeek(prompt)
   const json = extractJson(raw)
   const parsed = JSON.parse(json)
 
-  return {
-    sentence: parsed.sentence || '',
-    meaning: parsed.meaning || '',
+  if (!Array.isArray(parsed)) {
+    throw new Error('Kết quả ví dụ AI không phải mảng')
   }
+
+  return parsed.map((item: any) => ({
+    sentence: item.sentence || '',
+    meaning: item.meaning || '',
+  }))
 }
 
 /**

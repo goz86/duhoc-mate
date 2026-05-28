@@ -129,7 +129,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
   const [apiKeyInput, setApiKeyInput] = useState(() => getApiKey())
   const [aiLoading, setAiLoading] = useState(false)
   const [aiGenLoading, setAiGenLoading] = useState(false)
-  const [aiExample, setAiExample] = useState<AiGeneratedExample | null>(null)
+  const [aiExamples, setAiExamples] = useState<AiGeneratedExample[]>([])
   const [aiError, setAiError] = useState('')
 
   // ── Load exam date from database on mount ──────────────────────
@@ -179,7 +179,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
       setSelectedLevel(level)
       setCardIndex(index)
       setShowAnswer(false)
-      setAiExample(null)
+      setAiExamples([])
     }
     socket.on('topik-sync', handler)
     return () => { socket.off('topik-sync', handler) }
@@ -194,7 +194,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
     const next = (cardIndex + 1) % allCards.length
     setCardIndex(next)
     setShowAnswer(false)
-    setAiExample(null)
+    setAiExamples([])
     syncToRoom(selectedLevel, next)
   }, [cardIndex, allCards.length, selectedLevel, syncToRoom])
 
@@ -202,7 +202,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
     const prev = (cardIndex - 1 + allCards.length) % allCards.length
     setCardIndex(prev)
     setShowAnswer(false)
-    setAiExample(null)
+    setAiExamples([])
     syncToRoom(selectedLevel, prev)
   }, [cardIndex, allCards.length, selectedLevel, syncToRoom])
 
@@ -237,7 +237,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
     setShowAnswer(false)
     setKnown(new Set())
     setUnknown(new Set())
-    setAiExample(null)
+    setAiExamples([])
     syncToRoom(selectedLevel, 0)
   }
 
@@ -247,7 +247,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
     setShowAnswer(false)
     setKnown(new Set())
     setUnknown(new Set())
-    setAiExample(null)
+    setAiExamples([])
     syncToRoom(level, 0)
   }
 
@@ -287,8 +287,8 @@ export default function TopikStudy({ roomId, socket }: Props) {
     setAiLoading(true)
     setAiError('')
     try {
-      const example = await generateExample(currentCard.ko)
-      setAiExample(example)
+      const examples = await generateExample(currentCard.ko)
+      setAiExamples(examples)
     } catch (err: any) {
       setAiError(err.message || 'Lỗi tạo ví dụ')
     } finally {
@@ -494,7 +494,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
 
                 {/* Slide-up meaning panel */}
                 <div className={`flashcard-meaning-panel ${showAnswer ? 'flashcard-meaning-panel-visible' : ''}`}>
-                  <div className="text-center space-y-3 w-full my-auto flex flex-col items-center">
+                  <div className="text-center space-y-3 w-full my-auto flex flex-col items-center py-4">
                     {/* Từ tiếng Hàn ban đầu để đối chiếu */}
                     <div className="flex items-center gap-2 mb-1 justify-center">
                       <span className="text-xl font-black text-brand-brown-dark">{currentCard.ko}</span>
@@ -523,14 +523,27 @@ export default function TopikStudy({ roomId, socket }: Props) {
                       </div>
                     )}
 
-                    {/* AI Example */}
-                    {aiExample && (
-                      <div className="ai-example-bubble text-left space-y-1 mt-2">
-                        <div className="flex items-center gap-1 text-xs font-bold text-brand-terracotta">
+                    {/* AI Examples */}
+                    {aiExamples && aiExamples.length > 0 && (
+                      <div className="space-y-2 mt-2 w-full max-w-[280px]">
+                        <div className="text-xs font-bold text-brand-terracotta text-center select-none">
                           AI Ví dụ
                         </div>
-                        <p className="text-sm text-brand-brown-dark">🇰🇷 {aiExample.sentence}</p>
-                        <p className="text-xs text-brand-brown-light">🇻🇳 {aiExample.meaning}</p>
+                        {aiExamples.map((ex, idx) => (
+                          <div key={idx} className="ai-example-bubble text-left space-y-1 w-full">
+                            <div className="flex items-start justify-between gap-1.5 w-full">
+                              <p className="text-[13px] font-black text-brand-brown-dark flex-1 leading-snug">🇰🇷 {ex.sentence}</p>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); playAudio(ex.sentence); }}
+                                className="p-1 rounded-full text-brand-terracotta/75 hover:text-brand-terracotta transition cursor-pointer active:scale-90 flex items-center justify-center shrink-0"
+                                title="Phát âm câu ví dụ AI"
+                              >
+                                <Volume2 size={12} />
+                              </button>
+                            </div>
+                            <p className="text-[11px] font-semibold text-brand-brown-light leading-snug">🇻🇳 {ex.meaning}</p>
+                          </div>
+                        ))}
                       </div>
                     )}
 
