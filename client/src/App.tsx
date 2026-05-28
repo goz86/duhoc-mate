@@ -6,7 +6,7 @@ import {
   Users, ThumbsUp, Play, Pause, RotateCcw, Send,
   CloudRain,
   Clock, FileText, Video,
-  Headphones, Music2, ChevronRight, Search, Sparkles,
+  Headphones, Music2, ChevronRight, Search,
   Minimize2, Palette, Settings, Crown,
   Link2, Volume2, VolumeX, SkipForward, Plus, X, Trash2,
   Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical
@@ -2552,7 +2552,7 @@ export default function App() {
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[10000] max-w-sm w-full bg-white rounded-2xl shadow-xl border border-brand-terracotta-light/20 p-4 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-terracotta/10 flex items-center justify-center text-brand-terracotta">
-              <Sparkles size={16} />
+              <Coffee size={16} />
             </div>
             <div className="flex-grow">
               <p className="text-xs font-bold text-brand-brown-dark">{customAlert.message}</p>
@@ -3099,7 +3099,7 @@ export default function App() {
                                 { label: 'Chọn video', Icon: Play, done: false },
                                 { label: 'Thêm playlist', Icon: Plus, done: false },
                                 { label: 'Sẵn sàng', Icon: ListMusic, done: false },
-                                { label: 'Phát cùng nhau', Icon: Sparkles, done: false },
+                                { label: 'Phát cùng nhau', Icon: Headphones, done: false },
                               ].map((step, stepIndex) => {
                                 const StepIcon = step.Icon;
                                 const isActive = stepIndex === 1;
@@ -3825,7 +3825,7 @@ export default function App() {
                       {/* Quick Tags */}
                       <div className="flex flex-wrap gap-2 items-center">
                         {[
-                          { icon: <Sparkles size={13} />, label: 'Lofi Girl', q: 'lofi girl study' },
+                          { icon: <Coffee size={13} />, label: 'Lofi Girl', q: 'lofi girl study' },
                           { icon: <CloudRain size={13} />, label: 'Tiếng Mưa Cozy', q: 'rain cozy study music' },
                           { icon: <Music2 size={13} />, label: 'Piano Nhẹ', q: 'piano soft study music' },
                         ].map(tag => (
@@ -4587,7 +4587,7 @@ export default function App() {
               <Music2 size={20} className="text-brand-cream animate-pulse" />
             )}
             <div className="absolute inset-0 bg-black/10 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-              <Sparkles size={16} className="text-white" />
+              <Headphones size={16} className="text-white" />
             </div>
           </div>
 

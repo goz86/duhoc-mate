@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ChevronLeft, ChevronRight, Calendar, RotateCcw, BookOpen,
-  CheckCircle2, XCircle, Volume2, Sparkles, Settings, Loader2,
+  CheckCircle2, XCircle, Volume2, Settings, Loader2,
   Plus, Zap, Key,
 } from 'lucide-react'
 import {
@@ -453,7 +453,6 @@ export default function TopikStudy({ roomId, socket }: Props) {
             {aiWords.filter(w => w.level === selectedLevel).length > 0 && (
               <div className="flex items-center gap-1 mt-1.5 justify-end">
                 <span className="topik-word-chip">
-                  <Sparkles size={10} />
                   +{aiWords.filter(w => w.level === selectedLevel).length} từ AI
                 </span>
               </div>
@@ -472,7 +471,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
                     <span>TOPIK {selectedLevel} · {cardIndex + 1}/{allCards.length}</span>
                     {currentCard.isAi && (
                       <span className="topik-word-chip">
-                        <Sparkles size={9} /> AI
+                        AI
                       </span>
                     )}
                   </div>
@@ -528,7 +527,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
                     {aiExample && (
                       <div className="ai-example-bubble text-left space-y-1 mt-2">
                         <div className="flex items-center gap-1 text-xs font-bold text-brand-terracotta">
-                          <Sparkles size={11} /> AI Ví dụ
+                          AI Ví dụ
                         </div>
                         <p className="text-sm text-brand-brown-dark">🇰🇷 {aiExample.sentence}</p>
                         <p className="text-xs text-brand-brown-light">🇻🇳 {aiExample.meaning}</p>
@@ -545,7 +544,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
                         {aiLoading ? (
                           <><Loader2 size={12} className="animate-spin" /> Đang tạo...</>
                         ) : (
-                          <><Sparkles size={12} /> Tạo ví dụ AI</>
+                          <>Tạo ví dụ AI</>
                         )}
                       </button>
                     )}

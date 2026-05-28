@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { X, Mail, Lock, User, MapPin, Sparkles, AlertCircle } from 'lucide-react'
+import { X, Mail, Lock, User, MapPin, Coffee, AlertCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 interface AuthModalProps {
@@ -83,7 +83,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: Au
           {/* Logo */}
           <div className="flex items-center gap-2 mb-6">
             <div className="w-10 h-10 rounded-xl bg-brand-terracotta flex items-center justify-center text-white shadow-md">
-              <Sparkles size={20} />
+              <Coffee size={20} />
             </div>
             <span className="font-display font-extrabold text-xl text-brand-brown-dark">Duhoc Mate</span>
           </div>

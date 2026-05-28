@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import type { FormEvent } from 'react'
-import { CheckCircle2, ClipboardList, Plus, Sparkles, Trash2, UserRound, ChevronDown } from 'lucide-react'
+import { CheckCircle2, ClipboardList, Plus, Trash2, UserRound, ChevronDown } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import type { IdeaStatus, IdeaTask } from '../lib/communityTemplates'
 import { createIdeaTask } from '../lib/communityTemplates'
@@ -291,7 +291,7 @@ export default function IdeaBoard({ tasks, members, onChange }: Props) {
 
         {tasks.length === 0 ? (
           <div className="flex min-h-[260px] flex-1 flex-col items-center justify-center gap-3 rounded-[28px] border-2 border-dashed border-brand-terracotta-light/30 bg-white/70 p-8 text-center">
-            <Sparkles size={36} className="text-brand-terracotta/45" />
+            <ClipboardList size={36} className="text-brand-terracotta/45" />
             <div>
               <p className="font-display font-black text-brand-brown-dark">Chưa có ý tưởng nào trong phòng</p>
               <p className="mt-1 text-sm text-brand-brown-light">Thêm task đầu tiên hoặc chọn chip gợi ý ở trên.</p>
