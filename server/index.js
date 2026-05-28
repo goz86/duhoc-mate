@@ -469,6 +469,8 @@ const serializeRoomState = (room) => ({
   hostReconnectUntil: room.hostReconnectUntil || null,
   studyTable: room.studyTable || createDefaultStudyTable(),
   pinnedMessage: room.pinnedMessage || null,
+  roomAvatarUrl: room.roomAvatarUrl || '',
+  roomBackgroundUrl: room.roomBackgroundUrl || '',
 });
 
 const saveRoomState = () => {
@@ -635,6 +637,7 @@ const getRoomDirectoryList = () => {
         roomTitle: liveRoom?.roomTitle || entry.roomTitle || 'Phong hoc tap',
         isPrivate: liveRoom ? !!liveRoom.isPrivate : !!entry.isPrivate,
         hostAvatarUrl: liveRoom?.hostAvatarUrl || entry.hostAvatarUrl || '',
+        roomAvatarUrl: liveRoom?.roomAvatarUrl || entry.roomAvatarUrl || '',
         lastActiveAt: liveRoom ? new Date().toISOString() : entry.lastActiveAt
       };
     })
@@ -659,6 +662,7 @@ const rememberRoom = (room, hostName) => {
     isPrivate: !!room.isPrivate,
     password: room.password || existing?.password || '',
     hostAvatarUrl: room.hostAvatarUrl || existing?.hostAvatarUrl || '',
+    roomAvatarUrl: room.roomAvatarUrl || existing?.roomAvatarUrl || '',
     createdAt: existing?.createdAt || now,
     lastActiveAt: now
   });
@@ -775,6 +779,8 @@ io.on('connection', (socket) => {
         hostReconnectUntil: restoredState.hostReconnectUntil || null,
         studyTable: restoredState.studyTable || createDefaultStudyTable(),
         pinnedMessage: restoredState.pinnedMessage || null,
+        roomAvatarUrl: restoredState.roomAvatarUrl || rememberedRoom?.roomAvatarUrl || '',
+        roomBackgroundUrl: restoredState.roomBackgroundUrl || '',
         whiteboard: { elements: [] },  // bảng vẽ chung: [{id,type:'stroke'|'image',...}]
         voiceUsers: {}  // { [socketId]: { muted, speaking } }
       });
@@ -885,7 +891,9 @@ io.on('connection', (socket) => {
       slideUrl: room.slideUrl || '',
       whiteboard: room.whiteboard || { elements: [] },
       studyTable: syncStudyMembers(room),
-      pinnedMessage: room.pinnedMessage || null
+      pinnedMessage: room.pinnedMessage || null,
+      roomAvatarUrl: room.roomAvatarUrl || '',
+      roomBackgroundUrl: room.roomBackgroundUrl || ''
     });
     emitStudyTable(roomId);
 
@@ -1467,7 +1475,7 @@ io.on('connection', (socket) => {
   });
 
   // 6. Ngắt kết nối
-  socket.on('room-settings-update', ({ roomId, roomTitle, isPrivate, password }) => {
+  socket.on('room-settings-update', ({ roomId, roomTitle, isPrivate, password, roomAvatarUrl, roomBackgroundUrl }) => {
     const room = rooms.get(roomId);
     if (!room) return;
     const sender = room.members.find(m => m.id === socket.id);
@@ -1476,12 +1484,16 @@ io.on('connection', (socket) => {
     if (roomTitle) room.roomTitle = roomTitle;
     if (typeof isPrivate === 'boolean') room.isPrivate = isPrivate;
     if (password !== undefined) room.password = password || '';
+    if (typeof roomAvatarUrl === 'string') room.roomAvatarUrl = roomAvatarUrl;
+    if (typeof roomBackgroundUrl === 'string') room.roomBackgroundUrl = roomBackgroundUrl;
     rememberRoom(room, room.members.find(m => m.isHost)?.username || sender.username);
     rememberRoomState(room);
 
     io.to(roomId).emit('room-settings-updated', {
       roomTitle: room.roomTitle,
-      isPrivate: room.isPrivate
+      isPrivate: room.isPrivate,
+      roomAvatarUrl: room.roomAvatarUrl || '',
+      roomBackgroundUrl: room.roomBackgroundUrl || ''
     });
     broadcastRoomDirectory();
   });

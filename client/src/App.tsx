@@ -640,8 +640,10 @@ export default function App() {
       if (me) setIsHost(me.isHost);
     });
 
-    socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost, tiktokVideoId, ideaTasks, studyTable, pinnedMessage: initPinnedMessage }) => {
+    socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost, tiktokVideoId, ideaTasks, studyTable, pinnedMessage: initPinnedMessage, roomAvatarUrl: initRoomAvatar, roomBackgroundUrl: initRoomBg }) => {
       setPlaylist(playlist);
+      if (typeof initRoomAvatar === 'string') setCurrentRoomAvatarUrl(initRoomAvatar);
+      if (typeof initRoomBg === 'string') setRoomBackgroundUrl(initRoomBg);
       setCurrentVideo(videoState);
       setVideoError(false);
       // Reset session tracking
@@ -679,7 +681,7 @@ export default function App() {
       }
     });
 
-    socket.on('room-settings-updated', ({ roomTitle, isPrivate }: { roomTitle?: string; isPrivate?: boolean }) => {
+    socket.on('room-settings-updated', ({ roomTitle, isPrivate, roomAvatarUrl: updRoomAvatar, roomBackgroundUrl: updRoomBg }: { roomTitle?: string; isPrivate?: boolean; roomAvatarUrl?: string; roomBackgroundUrl?: string }) => {
       if (roomTitle) {
         setCurrentRoomTitle(roomTitle);
         setRoomSettingsName(roomTitle);
@@ -687,6 +689,8 @@ export default function App() {
       if (typeof isPrivate === 'boolean') {
         setRoomSettingsPublic(!isPrivate);
       }
+      if (typeof updRoomAvatar === 'string') setCurrentRoomAvatarUrl(updRoomAvatar);
+      if (typeof updRoomBg === 'string') setRoomBackgroundUrl(updRoomBg);
     });
 
     socket.on('room-closed', ({ roomId: closedRoomId }: { roomId: string }) => {
@@ -1792,37 +1796,47 @@ export default function App() {
     setCurrentRoomTitle(nextName);
     setRoomAvatarUploading(true);
     let finalAvatarUrl = roomAvatarUrl || currentRoomAvatarUrl;
+    // RLS bucket 'avatars' yêu cầu folder đầu = auth.uid() → path PHẢI bắt đầu bằng user.id
+    if ((roomAvatarFile || roomBgFile) && supabase && !user?.id) {
+      setRoomAvatarUploading(false);
+      setCustomAlert({ message: 'Bạn cần đăng nhập để tải ảnh phòng lên.', show: true });
+      return;
+    }
     // Upload ảnh đại diện phòng lên Supabase Storage nếu có file mới
-    if (roomAvatarFile && supabase) {
+    if (roomAvatarFile && supabase && user?.id) {
       try {
         const ext = roomAvatarFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-        const path = `rooms/${roomId}/${Date.now()}.${ext}`;
+        const path = `${user.id}/rooms/${roomId}/${Date.now()}.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(path, roomAvatarFile, { cacheControl: '3600', upsert: true });
-        if (!uploadError) {
-          const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-          finalAvatarUrl = data.publicUrl;
-        }
+        if (uploadError) throw uploadError;
+        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+        finalAvatarUrl = data.publicUrl;
       } catch (e) {
         console.error('Upload room avatar error:', e);
+        setRoomAvatarUploading(false);
+        setCustomAlert({ message: 'Không tải được ảnh đại diện phòng. Hãy thử lại.', show: true });
+        return;
       }
     }
     // Upload ảnh nền phòng nếu có file mới
     let finalBgUrl = roomBackgroundUrl;
-    if (roomBgFile && supabase) {
+    if (roomBgFile && supabase && user?.id) {
       try {
         const ext = roomBgFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-        const path = `rooms/${roomId}/bg_${Date.now()}.${ext}`;
+        const path = `${user.id}/rooms/${roomId}/bg_${Date.now()}.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(path, roomBgFile, { cacheControl: '3600', upsert: true });
-        if (!uploadError) {
-          const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-          finalBgUrl = data.publicUrl;
-        }
+        if (uploadError) throw uploadError;
+        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+        finalBgUrl = data.publicUrl;
       } catch (e) {
         console.error('Upload room background error:', e);
+        setRoomAvatarUploading(false);
+        setCustomAlert({ message: 'Không tải được ảnh nền phòng. Hãy thử lại.', show: true });
+        return;
       }
     }
     setRoomAvatarUploading(false);

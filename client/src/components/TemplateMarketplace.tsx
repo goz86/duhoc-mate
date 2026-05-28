@@ -13,6 +13,7 @@ type ActiveRoom = {
   roomTitle?: string
   isPrivate?: boolean
   hostAvatarUrl?: string
+  roomAvatarUrl?: string
   createdAt?: string
   lastActiveAt?: string
 }
@@ -25,6 +26,7 @@ type RecentRoom = {
   roomTitle?: string
   isPrivate?: boolean
   hostAvatarUrl?: string
+  roomAvatarUrl?: string
 }
 
 type FriendStatus = { code: string; username: string; online: boolean; currentRoomId: string | null; currentSong: string | null }
@@ -175,8 +177,8 @@ export default function TemplateMarketplace({
             className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-[15px] border border-black/[0.05] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-sm"
           >
             <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-black/[0.06] bg-[#fbf6ef]">
-              {roomAvatarUrl(room.hostName, room.hostAvatarUrl) ? (
-                <img src={roomAvatarUrl(room.hostName, room.hostAvatarUrl)} alt={room.hostName} className="h-full w-full object-cover" />
+              {roomAvatarUrl(room.hostName, room.roomAvatarUrl || room.hostAvatarUrl) ? (
+                <img src={roomAvatarUrl(room.hostName, room.roomAvatarUrl || room.hostAvatarUrl)} alt={room.hostName} className="h-full w-full object-cover" />
               ) : (
                 <div className={`flex h-full w-full items-center justify-center text-xs font-black ${getAvatarColor(room.hostName)}`}>
                   {room.hostName.substring(0, 2).toUpperCase()}
@@ -231,8 +233,8 @@ export default function TemplateMarketplace({
             className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-[15px] border border-black/[0.05] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-sm"
           >
             <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-black/[0.06] bg-[#fbf6ef]">
-              {roomAvatarUrl(room.hostName, room.hostAvatarUrl) ? (
-                <img src={roomAvatarUrl(room.hostName, room.hostAvatarUrl)} alt={room.hostName} className="h-full w-full object-cover" />
+              {roomAvatarUrl(room.hostName, room.roomAvatarUrl || room.hostAvatarUrl) ? (
+                <img src={roomAvatarUrl(room.hostName, room.roomAvatarUrl || room.hostAvatarUrl)} alt={room.hostName} className="h-full w-full object-cover" />
               ) : (
                 <div className={`flex h-full w-full items-center justify-center text-xs font-black ${getAvatarColor(room.hostName)}`}>
                   {room.hostName.substring(0, 2).toUpperCase()}
