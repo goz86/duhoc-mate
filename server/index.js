@@ -775,6 +775,7 @@ io.on('connection', (socket) => {
         hostReconnectUntil: restoredState.hostReconnectUntil || null,
         studyTable: restoredState.studyTable || createDefaultStudyTable(),
         pinnedMessage: restoredState.pinnedMessage || null,
+        whiteboard: { elements: [] },  // bảng vẽ chung: [{id,type:'stroke'|'image',...}]
         voiceUsers: {}  // { [socketId]: { muted, speaking } }
       });
     }
@@ -882,6 +883,7 @@ io.on('connection', (socket) => {
       ideaTasks: room.ideaTasks || [],
       voiceUsers: room.voiceUsers || {},
       slideUrl: room.slideUrl || '',
+      whiteboard: room.whiteboard || { elements: [] },
       studyTable: syncStudyMembers(room),
       pinnedMessage: room.pinnedMessage || null
     });
@@ -1070,6 +1072,82 @@ io.on('connection', (socket) => {
     room.slideUrl = url || '';
     // Broadcast tới tất cả người trong phòng (kể cả người gửi để confirm)
     io.to(roomId).emit('slide-url-sync', { url: room.slideUrl });
+  });
+
+  // 4c. WHITEBOARD (Bảng vẽ chung real-time) ──────────────────────────
+  const MAX_WB_ELEMENTS = 4000; // chặn phình bộ nhớ
+  const ensureWhiteboard = (room) => {
+    if (!room.whiteboard) room.whiteboard = { elements: [] };
+    return room.whiteboard;
+  };
+
+  // Bắt đầu 1 nét vẽ mới
+  socket.on('whiteboard-stroke-start', ({ roomId, stroke }) => {
+    const room = rooms.get(roomId);
+    if (!room || !stroke?.id) return;
+    const wb = ensureWhiteboard(room);
+    wb.elements.push({
+      id: stroke.id,
+      type: 'stroke',
+      tool: stroke.tool === 'eraser' ? 'eraser' : 'pen',
+      color: String(stroke.color || '#4c3731').slice(0, 32),
+      size: Math.max(0.0005, Math.min(0.2, Number(stroke.size) || 0.006)),
+      points: Array.isArray(stroke.points) ? stroke.points.slice(0, 4) : [],
+      by: socket.id,
+    });
+    if (wb.elements.length > MAX_WB_ELEMENTS) wb.elements.splice(0, wb.elements.length - MAX_WB_ELEMENTS);
+    socket.to(roomId).emit('whiteboard-stroke-start', { stroke: wb.elements[wb.elements.length - 1] });
+  });
+
+  // Thêm điểm vào nét đang vẽ (relay + lưu)
+  socket.on('whiteboard-stroke-point', ({ roomId, strokeId, points }) => {
+    const room = rooms.get(roomId);
+    if (!room || !strokeId || !Array.isArray(points)) return;
+    const wb = ensureWhiteboard(room);
+    const el = wb.elements.find(e => e.id === strokeId);
+    if (el && el.type === 'stroke') {
+      for (const p of points) {
+        if (p && typeof p.x === 'number' && typeof p.y === 'number') el.points.push({ x: p.x, y: p.y });
+      }
+    }
+    socket.to(roomId).emit('whiteboard-stroke-point', { strokeId, points });
+  });
+
+  // Dán/upload ảnh lên bảng
+  socket.on('whiteboard-image', ({ roomId, image }) => {
+    const room = rooms.get(roomId);
+    if (!room || !image?.id || !image?.src) return;
+    // chặn ảnh quá lớn (dataURL ~ < 3MB)
+    if (typeof image.src !== 'string' || image.src.length > 3_000_000) return;
+    const wb = ensureWhiteboard(room);
+    const el = {
+      id: image.id,
+      type: 'image',
+      src: image.src,
+      x: Number(image.x) || 0.5,
+      y: Number(image.y) || 0.5,
+      w: Math.min(1, Number(image.w) || 0.4),
+      h: Math.min(1, Number(image.h) || 0.3),
+      by: socket.id,
+    };
+    wb.elements.push(el);
+    if (wb.elements.length > MAX_WB_ELEMENTS) wb.elements.splice(0, wb.elements.length - MAX_WB_ELEMENTS);
+    socket.to(roomId).emit('whiteboard-image', { image: el });
+  });
+
+  // Xoá toàn bộ bảng (mọi người đều được phép)
+  socket.on('whiteboard-clear', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    ensureWhiteboard(room).elements = [];
+    io.to(roomId).emit('whiteboard-clear', {});
+  });
+
+  // Lấy toàn bộ trạng thái bảng (khi mở tab Vẽ) → bắt kịp nét vẽ lúc ở tab khác
+  socket.on('whiteboard-request', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    socket.emit('whiteboard-state', { elements: ensureWhiteboard(room).elements });
   });
 
   // 4. Playlist & Upvote Jukebox

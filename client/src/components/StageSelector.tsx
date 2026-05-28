@@ -1,4 +1,4 @@
-import { BookOpen, FileText, LayoutDashboard, Play, Table2 } from 'lucide-react'
+import { BookOpen, Pencil, LayoutDashboard, Play, Table2 } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { StageMode } from '../types'
@@ -20,7 +20,7 @@ export default function StageSelector({ stageMode, onChange }: StageSelectorProp
 
   const stages: StageOption[] = [
     { key: 'youtube', icon: Play, label: t('room.stage.youtube'), aspect: '16:9' },
-    { key: 'pdf', icon: FileText, label: t('room.stage.pdf') },
+    { key: 'pdf', icon: Pencil, label: 'Vẽ' },
     { key: 'topik', icon: BookOpen, label: t('room.stage.topik') },
     { key: 'video', icon: Table2, label: 'Bàn học' },
     { key: 'ideas', icon: LayoutDashboard, label: 'Idea Board' },

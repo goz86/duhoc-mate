@@ -27,6 +27,7 @@ import { getTemplateRoomId, seedRoomIds } from './lib/templateRooms';
 import RoomHeader from './components/RoomHeader';
 import StageSelector from './components/StageSelector';
 import StudyTableStage from './components/StudyTableStage';
+import Whiteboard from './components/Whiteboard';
 import {
   cloneTasks,
   loadRoomTasks,
@@ -572,8 +573,6 @@ export default function App() {
   const voiceChat = useVoiceChat((socket as Socket | null) ?? null, roomId, isHost);
 
   // Slide URL states (Google Slides / Canva embed)
-  const [slideUrl, setSlideUrl] = useState('');
-  const [slideInputUrl, setSlideInputUrl] = useState('');
 
   // Pomodoro states
   const [pomodoro, setPomodoro] = useState<PomodoroState>({
@@ -641,7 +640,7 @@ export default function App() {
       if (me) setIsHost(me.isHost);
     });
 
-    socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost, tiktokVideoId, ideaTasks, slideUrl: initSlideUrl, studyTable, pinnedMessage: initPinnedMessage }) => {
+    socket.on('init-room-state', ({ playlist, videoState, pomodoro, chatMessages, isHost, tiktokVideoId, ideaTasks, studyTable, pinnedMessage: initPinnedMessage }) => {
       setPlaylist(playlist);
       setCurrentVideo(videoState);
       setVideoError(false);
@@ -654,7 +653,6 @@ export default function App() {
       setPinnedMessage(initPinnedMessage || null);
       setIdeaTasks(ideaTasks || []);
       setStudyTable(studyTable || { seats: {}, reactions: [] });
-      if (initSlideUrl) { setSlideUrl(initSlideUrl); setSlideInputUrl(initSlideUrl); }
       setIsHost(isHost);
       // Khởi tạo trạng thái host pause khi vào phòng
       const hostPaused = !!videoState?.pausedByHost;
@@ -822,12 +820,6 @@ export default function App() {
       alert(isBreak ? "Đã hết giờ học! Đến giờ nghỉ giải lao 5 phút rồi." : "Hết giờ giải lao! Bắt đầu tập trung học tiếp nào.");
     });
 
-    // Đồng bộ Slide URL (Google Slides / Canva embed)
-    socket.on('slide-url-sync', ({ url }: { url: string }) => {
-      setSlideUrl(url);
-      setSlideInputUrl(url);
-    });
-
     // Nhận danh sách phòng hoạt động
     socket.on('active-rooms-list', (rooms: any[]) => {
       setActiveRooms(rooms);
@@ -886,7 +878,6 @@ export default function App() {
         socket.off('study-table-sync');
         socket.off('idea-board-sync');
         socket.off('pomodoro-done');
-        socket.off('slide-url-sync');
         socket.off('active-rooms-list');
         socket.off('tiktok-sync');
         socket.off('online-users-changed');
@@ -2175,43 +2166,6 @@ export default function App() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // 6. Slide URL (Google Slides / Canva embed) - sync tới tất cả người trong phòng
-  const convertToEmbedUrl = (rawUrl: string): string => {
-    try {
-      const url = rawUrl.trim();
-      // Google Slides: /edit, /pub, /present → /embed
-      const gSlides = url.match(/docs\.google\.com\/presentation\/d\/([^/]+)/);
-      if (gSlides) {
-        return `https://docs.google.com/presentation/d/${gSlides[1]}/embed?start=false&loop=false&delayms=3000`;
-      }
-      // Google Drive PDF: /view → /preview
-      const gDrive = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-      if (gDrive) {
-        return `https://drive.google.com/file/d/${gDrive[1]}/preview`;
-      }
-      // Canva: thêm ?embed nếu chưa có
-      if (url.includes('canva.com')) {
-        return url.includes('?') ? url : url + '?embed';
-      }
-      // Giữ nguyên các URL khác (iframe-friendly)
-      return url;
-    } catch {
-      return rawUrl;
-    }
-  };
-
-  const handleSlideUrlSubmit = () => {
-    if (!isHost) return;
-    const embedUrl = convertToEmbedUrl(slideInputUrl);
-    socket?.emit('slide-url-set', { roomId, url: embedUrl });
-  };
-
-  const handleClearSlide = () => {
-    if (!isHost) return;
-    setSlideInputUrl('');
-    socket?.emit('slide-url-set', { roomId, url: '' });
-  };
-
   useEffect(() => {
     if (sidebarTab === 'chat') {
       setTimeout(scrollToBottom, 50);
@@ -2997,7 +2951,7 @@ export default function App() {
               }} />}
 
               {/* ── STAGE DISPLAY AREA – adapts per stageMode ── */}
-              <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : `glass-panel rounded-3xl p-2.5 sm:p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col ${(stageMode === 'pdf' || stageMode === 'topik') ? 'h-auto shrink-0' : 'flex-1'}`} relative ${(stageMode === 'pdf' || stageMode === 'topik') ? 'overflow-visible' : 'overflow-hidden'}`}>
+              <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : `glass-panel rounded-3xl p-2.5 sm:p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col ${stageMode === 'topik' ? 'h-auto shrink-0' : 'flex-1'}`} relative ${stageMode === 'topik' ? 'overflow-visible' : 'overflow-hidden'}`}>
 
                 {roomCollapsed && (
                   <div className="w-full max-w-xl space-y-5 text-center">
@@ -3666,72 +3620,9 @@ export default function App() {
                   </div>
                 )}
 
-                {/* ── 4. SLIDE STAGE (Google Slides / Canva embed) ── */}
+                {/* ── 4. WHITEBOARD STAGE (Bảng vẽ chung real-time) ── */}
                 {stageMode === 'pdf' && (
-                  <div className="flex-1 flex flex-col gap-3 h-full min-h-0">
-                    {/* URL Input bar - chỉ host thấy */}
-                    {isHost && (
-                      <div className="w-full flex items-center gap-2 bg-brand-light/60 p-2.5 rounded-2xl border border-brand-terracotta-light/20 flex-shrink-0">
-                        <Link2 size={14} className="text-brand-brown-light shrink-0" />
-                        <input
-                          type="text"
-                          value={slideInputUrl}
-                          onChange={e => setSlideInputUrl(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && handleSlideUrlSubmit()}
-                          placeholder="Paste link Google Slides, Canva, Google Drive PDF..."
-                          className="flex-1 text-xs bg-transparent outline-none text-brand-brown-dark placeholder:text-brand-brown-light/50 min-w-0"
-                        />
-                        {slideUrl && (
-                          <button onClick={handleClearSlide} className="text-xs text-red-400 hover:text-red-600 font-bold shrink-0 cursor-pointer px-1">
-                            ✕
-                          </button>
-                        )}
-                        <button
-                          onClick={handleSlideUrlSubmit}
-                          disabled={!slideInputUrl.trim()}
-                          className="shrink-0 px-3 py-1.5 rounded-xl bg-brand-terracotta text-white text-xs font-bold hover:bg-brand-brown-dark disabled:opacity-40 transition cursor-pointer"
-                        >
-                          Chia sẻ
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Embed area */}
-                    <div className="w-full rounded-2xl overflow-hidden border border-brand-terracotta-light/20 bg-white/20" style={{ height: 'calc(100vh - 260px)', minHeight: '420px' }}>
-                      {slideUrl ? (
-                        <iframe
-                          src={slideUrl}
-                          className="w-full h-full"
-                          style={{ border: 'none' }}
-                          allow="autoplay"
-                          allowFullScreen
-                          title="Slide trình chiếu"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full gap-4 p-6 text-center">
-                          <div className="w-16 h-16 rounded-full bg-brand-terracotta/10 border-2 border-brand-terracotta/20 flex items-center justify-center">
-                            <FileText size={28} className="text-brand-terracotta/60" />
-                          </div>
-                          <div className="space-y-1.5 max-w-xs">
-                            <h4 className="font-display font-extrabold text-sm text-brand-brown-dark">Chưa có Slide nào</h4>
-                            <p className="text-xs text-brand-brown-light leading-relaxed">
-                              {isHost
-                                ? 'Paste link Google Slides hoặc Canva vào ô phía trên → tất cả trong phòng cùng xem!'
-                                : 'Host chưa chia sẻ slide. Hãy chờ host paste link Google Slides / Canva.'}
-                            </p>
-                          </div>
-                          {isHost && (
-                            <div className="flex flex-col gap-1.5 text-xs text-brand-brown-light/70 bg-brand-light/60 rounded-xl p-3 w-full max-w-xs text-left">
-                              <p className="font-bold text-brand-brown-dark mb-1">Hỗ trợ:</p>
-                              <p>📊 <span className="font-medium">Google Slides</span> — docs.google.com/presentation/...</p>
-                              <p>🎨 <span className="font-medium">Canva</span> — canva.com/design/...</p>
-                              <p>📄 <span className="font-medium">Google Drive PDF</span> — drive.google.com/file/...</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <Whiteboard socket={socket} roomId={roomId} />
                 )}
 
                 {/* ── 5. POMODORO STAGE ── */}
