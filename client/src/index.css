@@ -396,6 +396,34 @@ input, select, textarea {
   animation: studyReactionFloat 2.6s ease-out forwards;
 }
 
+/* Reaction "bay tung toé" — bắn ra nhiều hướng ngẫu nhiên qua --tx/--ty/--rot */
+@keyframes studyReactionScatter {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.3) rotate(0deg);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--tx) * 0.4), calc(var(--ty) * 0.4)) scale(1.08) rotate(calc(var(--rot) * 0.5));
+  }
+  70% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--tx) * 0.92), calc(var(--ty) * 0.92)) scale(1) rotate(var(--rot));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--tx)), var(--ty)) scale(0.8) rotate(var(--rot));
+  }
+}
+
+.study-reaction-scatter {
+  --tx: 0px;
+  --ty: -70px;
+  --rot: 0deg;
+  animation: studyReactionScatter 2.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  white-space: nowrap;
+}
+
 /* ── Activity Ticker ── */
 .activity-ticker {
   height: 24px;

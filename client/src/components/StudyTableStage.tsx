@@ -51,6 +51,8 @@ type StudyTableReaction = {
   memberId: string
   label: string
   createdAt: number
+  senderId?: string
+  senderName?: string
 }
 
 type StudyTableState = {
@@ -103,6 +105,13 @@ const reactionOptions: Array<{ label: string; Icon: LucideIcon; tone: string }> 
 ]
 
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase() || 'DM'
+
+// hash ổn định từ id → seed cho hướng bay reaction (không đổi mỗi render)
+const hashSeed = (str: string) => {
+  let h = 0
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0
+  return h
+}
 
 const formatMinuteTime = (seconds: number) => {
   const minutes = Math.floor(seconds / 60)
@@ -302,20 +311,33 @@ export default function StudyTableStage({
 
                       <div className="relative">
 
-                        {/* Reaction bubbles – hiện 3s khi nhận reaction */}
-                        <div className="absolute left-1/2 top-0 z-20 flex -translate-x-1/2 -translate-y-2 flex-col items-center gap-1">
+                        {/* Reaction bubbles – bắn tung toé nhiều hướng, kèm tên người bấm */}
+                        <div className="pointer-events-none absolute left-1/2 top-1 z-30 h-0 w-0">
                           {activeReactions.map((reaction, reactionIndex) => {
                             const reactionMeta = reactionOptions.find(option => option.label === reaction.label) || reactionOptions[0]
                             const ReactionIcon = reactionMeta.Icon
+                            // hướng bay ngẫu nhiên nhưng ổn định theo id (không nhảy mỗi render)
+                            const seed = hashSeed(reaction.id)
+                            const tx = ((seed % 121) - 60) * 1.5          // -90..90 px
+                            const ty = -48 - (Math.floor(seed / 7) % 55)  // bay lên -48..-102 px
+                            const rot = ((seed % 41) - 20)                // -20..20 deg
 
                             return (
                               <span
                                 key={reaction.id}
-                                className={`study-reaction-bubble inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black shadow-sm ${reactionMeta.tone}`}
-                                style={{ animationDelay: `${reactionIndex * 80}ms` }}
+                                className={`study-reaction-scatter absolute left-0 top-0 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black shadow-md ${reactionMeta.tone}`}
+                                style={{
+                                  ['--tx' as string]: `${tx}px`,
+                                  ['--ty' as string]: `${ty}px`,
+                                  ['--rot' as string]: `${rot}deg`,
+                                  animationDelay: `${reactionIndex * 70}ms`,
+                                }}
                               >
                                 <ReactionIcon size={11} />
                                 {reaction.label}
+                                {reaction.senderName && (
+                                  <span className="font-bold opacity-80">· {reaction.senderName}</span>
+                                )}
                               </span>
                             )
                           })}

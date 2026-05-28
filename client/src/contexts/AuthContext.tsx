@@ -61,15 +61,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select('*')
       .eq('id', userId)
       .single()
+    // Google OAuth lưu avatar ở user_metadata.avatar_url HOẶC .picture
+    const googleAvatar = metadata?.avatar_url || metadata?.picture || ''
     if (data) {
-      setProfile(data as Profile)
+      const existing = data as Profile
+      // Backfill avatar từ tài khoản Google nếu profile cũ chưa có ảnh
+      if (!existing.avatar_url && googleAvatar) {
+        existing.avatar_url = googleAvatar
+        // cập nhật DB (best-effort, không chặn UI)
+        void supabase.from('profiles').update({ avatar_url: googleAvatar }).eq('id', userId)
+      }
+      setProfile(existing)
     } else {
       // Tạo profile cho user Google OAuth nếu chưa tồn tại
       const fallbackUsername = metadata?.full_name || metadata?.name || userEmail?.split('@')[0] || `user_${userId.substring(0, 5)}`;
       const newProfile = {
         id: userId,
         username: fallbackUsername,
-        avatar_url: metadata?.avatar_url || '',
+        avatar_url: googleAvatar,
         language: 'vi' as const,
         created_at: new Date().toISOString()
       }

@@ -896,6 +896,14 @@ export default function App() {
     }
   }, [profile]);
 
+  // Khi avatar từ tài khoản load xong (sau khi đã vào phòng) → cập nhật cho cả phòng
+  // Khắc phục trường hợp join-room chạy trước khi profile tải xong → avatar bị rỗng
+  useEffect(() => {
+    if (view === 'room' && roomId && profile?.avatar_url) {
+      socket?.emit('update-avatar', { roomId, avatarUrl: profile.avatar_url });
+    }
+  }, [profile?.avatar_url, view, roomId]);
+
   useEffect(() => {
     if (view !== 'room' || !roomId) return;
     loadRoomTasks(roomId).then(tasks => {

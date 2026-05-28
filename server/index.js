@@ -1416,6 +1416,7 @@ io.on('connection', (socket) => {
             id: `${socket.id}-${Date.now()}`,
             memberId: targetMemberId,   // hiển thị trên card của người NHẬN
             senderId: socket.id,        // ai gửi
+            senderName: member.username || 'Bạn học',  // tên người bấm
             label,
             createdAt: Date.now(),
           }
@@ -1424,6 +1425,21 @@ io.on('connection', (socket) => {
     }
 
     rememberRoomState(room);
+    emitStudyTable(roomId);
+  });
+
+  // Cập nhật avatar của member (khi profile tải xong sau lúc join) → broadcast cả phòng
+  socket.on('update-avatar', ({ roomId, avatarUrl }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const member = room.members.find(m => m.id === socket.id);
+    if (!member) return;
+    const url = typeof avatarUrl === 'string' ? avatarUrl : '';
+    if (member.avatarUrl === url) return; // không đổi → bỏ qua
+    member.avatarUrl = url;
+    if (member.isHost && url) room.hostAvatarUrl = url;
+    rememberRoomState(room);
+    io.to(roomId).emit('room-users', room.members);
     emitStudyTable(roomId);
   });
 
