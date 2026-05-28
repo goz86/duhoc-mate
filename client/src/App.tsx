@@ -307,6 +307,12 @@ export default function App() {
       } else if (view === 'admin') {
         setView('landing');
         navigateToLanding();
+      } else if (view === 'landing') {
+        if (hash === '#forum') {
+          setShowHelpBoard(true);
+        } else if (hash === '') {
+          setShowHelpBoard(false);
+        }
       }
     };
 
@@ -333,11 +339,23 @@ export default function App() {
 
   // Help board – persists tab across page reloads
   const [showHelpBoard, setShowHelpBoard] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#forum') return true;
     try { return localStorage.getItem('duhocmate_show_forum') === 'true' } catch { return false }
   });
   useEffect(() => {
     try { localStorage.setItem('duhocmate_show_forum', String(showHelpBoard)) } catch {}
   }, [showHelpBoard]);
+
+  const handleSetShowHelpBoard = (val: boolean) => {
+    setShowHelpBoard(val);
+    if (val) {
+      window.location.hash = 'forum';
+    } else {
+      if (window.location.hash === '#forum') {
+        window.location.hash = '';
+      }
+    }
+  };
 
   // Lobby (landing card) states
   // lobbyTab removed — new design uses sections instead of tabs
@@ -2426,6 +2444,80 @@ export default function App() {
     );
   }
 
+  // Dragging logic for the global floating widget
+  const [widgetPosition, setWidgetPosition] = useState({ x: 0, y: 0 });
+  const [isWidgetDragging, setIsWidgetDragging] = useState(false);
+  const widgetDragStartRef = useRef({ x: 0, y: 0 });
+  const widgetDragOffsetRef = useRef({ x: 0, y: 0 });
+  const widgetDragDistanceRef = useRef(0);
+
+  const handleWidgetDragStart = (clientX: number, clientY: number) => {
+    setIsWidgetDragging(true);
+    widgetDragStartRef.current = { x: clientX, y: clientY };
+    widgetDragOffsetRef.current = { x: widgetPosition.x, y: widgetPosition.y };
+    widgetDragDistanceRef.current = 0;
+  };
+
+  const handleWidgetDragMove = (clientX: number, clientY: number) => {
+    if (!isWidgetDragging) return;
+    const dx = clientX - widgetDragStartRef.current.x;
+    const dy = clientY - widgetDragStartRef.current.y;
+    widgetDragDistanceRef.current = Math.sqrt(dx * dx + dy * dy);
+    setWidgetPosition({
+      x: widgetDragOffsetRef.current.x + dx,
+      y: widgetDragOffsetRef.current.y + dy
+    });
+  };
+
+  const handleWidgetMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Only left-click drags
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('a') || target.closest('input')) return;
+
+    handleWidgetDragStart(e.clientX, e.clientY);
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      handleWidgetDragMove(moveEvent.clientX, moveEvent.clientY);
+    };
+
+    const onMouseUp = () => {
+      setIsWidgetDragging(false);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleWidgetTouchStart = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('a') || target.closest('input')) return;
+
+    const touch = e.touches[0];
+    handleWidgetDragStart(touch.clientX, touch.clientY);
+  };
+
+  const handleWidgetTouchMove = (e: React.TouchEvent) => {
+    if (!isWidgetDragging) return;
+    const touch = e.touches[0];
+    handleWidgetDragMove(touch.clientX, touch.clientY);
+  };
+
+  const handleWidgetTouchEnd = () => {
+    setIsWidgetDragging(false);
+  };
+
+  const handleWidgetClick = (e: React.MouseEvent) => {
+    if (widgetDragDistanceRef.current > 5) {
+      // It was dragged, do not maximize
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+    setView('room');
+  };
+
   return (
     <div className={`min-h-screen bg-transparent text-brand-brown-dark font-sans selection:bg-brand-accent selection:text-white flex flex-col items-center ${view === 'room' ? 'lg:h-screen lg:overflow-hidden bg-brand-cream' : ''}`}>
       <style>{`
@@ -2462,7 +2554,7 @@ export default function App() {
           handleAddFriend={handleAddFriend}
           friendsWithStatus={friendsWithStatus}
           showHelpBoard={showHelpBoard}
-          setShowHelpBoard={setShowHelpBoard}
+          setShowHelpBoard={handleSetShowHelpBoard}
           isDarkMode={isDarkMode}
           toggleDarkMode={toggleDarkMode}
           onEnterAdmin={() => setView('admin')}
@@ -3114,7 +3206,7 @@ export default function App() {
                           <Music2 size={12} /> {showLyrics ? 'Ẩn lời video' : 'Hiện lời video'}
                         </button>
                         {showLyrics && (
-                          <div ref={miniLyricsScrollRef} className="mt-4 max-h-56 overflow-y-auto pr-2">
+                          <div ref={miniLyricsScrollRef} className="relative mt-4 max-h-56 overflow-y-auto pr-2">
                             <p className="mb-3 text-center text-[11px] font-bold text-brand-brown-light/75">
                               Nhấn đúp vào một dòng để chỉnh lời bài hát khớp với video.
                             </p>
@@ -4663,10 +4755,26 @@ export default function App() {
 
       {/* GLOBAL IN-APP FLOATING PLAYER WIDGET */}
       {roomId !== '' && view !== 'room' && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 bg-[#FAF6F0]/90 dark:bg-slate-900/90 backdrop-blur-md border border-brand-terracotta/20 rounded-2xl p-3 shadow-[0_12px_40px_rgba(76,55,49,0.15)] animate-custom-fade-in w-72 sm:w-80 group transition-all duration-300 hover:border-brand-terracotta/40">
+        <div 
+          onMouseDown={handleWidgetMouseDown}
+          onTouchStart={handleWidgetTouchStart}
+          onTouchMove={handleWidgetTouchMove}
+          onTouchEnd={handleWidgetTouchEnd}
+          style={{
+            transform: `translate(${widgetPosition.x}px, ${widgetPosition.y}px)`,
+            cursor: isWidgetDragging ? 'grabbing' : 'grab',
+            touchAction: 'none'
+          }}
+          className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 bg-[#FAF6F0]/90 dark:bg-slate-900/90 backdrop-blur-md border border-brand-terracotta/20 rounded-2xl p-3 shadow-[0_12px_40px_rgba(76,55,49,0.15)] animate-custom-fade-in w-72 sm:w-80 group transition-all duration-300 hover:border-brand-terracotta/40"
+        >
+          {/* Drag Handle indicator inside the widget (shows up on hover) */}
+          <div className="absolute -top-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-brand-terracotta text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm pointer-events-none select-none">
+            kéo để di chuyển
+          </div>
+
           {/* Animated vinyl / CD visualizer */}
           <div 
-            onClick={() => { setView('room'); }}
+            onClick={handleWidgetClick}
             className="relative w-12 h-12 rounded-full bg-brand-brown-dark flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 shadow-md ring-2 ring-brand-terracotta/20 group-hover:ring-brand-terracotta/40 transition"
           >
             {currentVideo.id ? (
@@ -4685,7 +4793,7 @@ export default function App() {
 
           {/* Song text area */}
           <div 
-            onClick={() => { setView('room'); }}
+            onClick={handleWidgetClick}
             className="flex-1 min-w-0 cursor-pointer space-y-0.5"
           >
             <p className="text-xs font-bold text-brand-terracotta uppercase tracking-wider select-none">Đang học nhóm</p>
@@ -4717,7 +4825,7 @@ export default function App() {
 
             {/* Expand / Maximize button */}
             <button
-              onClick={() => { setView('room'); }}
+              onClick={handleWidgetClick}
               className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 text-brand-brown-dark dark:text-white border border-brand-terracotta/20 flex items-center justify-center hover:bg-brand-light transition cursor-pointer active:scale-90 shadow-sm"
               title="Quay lại phòng"
             >
