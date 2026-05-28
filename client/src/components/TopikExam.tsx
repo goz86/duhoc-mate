@@ -616,7 +616,7 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
           DASHBOARD ĐỀ THI (Danh sách đề thi và tạo đề AI)
           ───────────────────────────────────────────────────────────── */}
       {!isTesting && (
-        <div className="w-full max-w-3xl mx-auto flex flex-col gap-4 px-3 sm:px-0">
+        <div className="w-full max-w-5xl mx-auto flex flex-col gap-4 px-3 sm:px-0">
           <div className="flex items-center justify-between flex-wrap gap-3 p-4 rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md backdrop-blur">
             <div>
               <h2 className="font-display font-black text-lg sm:text-xl text-brand-brown-dark">
