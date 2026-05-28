@@ -682,10 +682,10 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
                     </div>
 
                     <div className="flex items-center justify-between mt-4 relative z-10 border-t border-brand-terracotta-light/10 pt-3">
-                      <p className="text-[10px] font-bold text-brand-brown-light">
+                      <p className="text-[10px] font-bold text-brand-brown-light truncate">
                         {isListening ? '10 câu hỏi nghe · 20p' : '15 câu hỏi đọc · 30p'}
                       </p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         {isAdmin && (
                           <button
                             onClick={() => handleDeleteExam(exam.id!, exam.title)}
@@ -697,7 +697,7 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
                         )}
                         <button
                           onClick={() => handleStartTest(exam)}
-                          className="px-3.5 py-1.5 rounded-full bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-brand-terracotta text-[11px] font-black transition cursor-pointer flex items-center gap-1"
+                          className="px-3.5 py-1.5 rounded-full bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-brand-terracotta text-[11px] font-black transition cursor-pointer flex items-center gap-1 whitespace-nowrap"
                         >
                           {isListening ? <Volume2 size={12} /> : <BookOpen size={12} />}
                           Luyện đề
