@@ -855,7 +855,7 @@ export default function CommunityForum({
               onChange={e => setNewComment(e.target.value)}
               placeholder="Viết bình luận..."
               maxLength={1000}
-              className="flex-1 h-10 px-4 rounded-full bg-brand-light text-sm font-medium text-brand-brown-dark outline-none placeholder:text-brand-brown-light/60 focus:ring-2 focus:ring-brand-terracotta/30"
+              className="flex-1 min-w-0 h-10 px-4 rounded-full bg-brand-light text-sm font-medium text-brand-brown-dark outline-none placeholder:text-brand-brown-light/60 focus:ring-2 focus:ring-brand-terracotta/30"
             />
             <button
               type="submit"
