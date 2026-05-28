@@ -142,6 +142,67 @@ export async function getAllSavedKoWords(): Promise<string[]> {
 }
 
 
+// ─── Exam Date Persistence (Supabase + localStorage) ────────────
+
+const EXAM_DATE_KEY = 'topik_exam_date'
+
+/** Lấy device ID duy nhất để lưu settings */
+function getDeviceId(): string {
+  let id = localStorage.getItem('topik_device_id')
+  if (!id) {
+    id = crypto.randomUUID?.() || `dev_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    localStorage.setItem('topik_device_id', id)
+  }
+  return id
+}
+
+/**
+ * Lưu ngày thi TOPIK vào Supabase + localStorage
+ */
+export async function saveExamDate(date: string): Promise<void> {
+  localStorage.setItem(EXAM_DATE_KEY, date)
+
+  if (supabaseEnabled && supabase) {
+    try {
+      const deviceId = getDeviceId()
+      await supabase.from('topik_settings').upsert({
+        device_id: deviceId,
+        exam_date: date,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'device_id' })
+    } catch (err) {
+      console.warn('[TopikStorage] Supabase saveExamDate fallback:', err)
+    }
+  }
+}
+
+/**
+ * Đọc ngày thi TOPIK từ Supabase, fallback localStorage
+ */
+export async function loadExamDate(): Promise<string> {
+  // Thử Supabase trước
+  if (supabaseEnabled && supabase) {
+    try {
+      const deviceId = getDeviceId()
+      const { data, error } = await supabase
+        .from('topik_settings')
+        .select('exam_date')
+        .eq('device_id', deviceId)
+        .single()
+
+      if (!error && data?.exam_date) {
+        // Đồng bộ xuống localStorage
+        localStorage.setItem(EXAM_DATE_KEY, data.exam_date)
+        return data.exam_date
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  return localStorage.getItem(EXAM_DATE_KEY) || ''
+}
+
 // ─── Seed-based Shuffle (Fisher-Yates) ──────────────────────────
 
 /**

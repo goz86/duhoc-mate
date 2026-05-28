@@ -11,6 +11,7 @@ import {
 } from '../lib/aiService'
 import {
   saveWords, getWordsByLevel, getAllSavedKoWords, seedShuffle,
+  saveExamDate as saveExamDateToDb, loadExamDate,
   type TopikWord,
 } from '../lib/topikStorage'
 
@@ -118,7 +119,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
   const [showAnswer, setShowAnswer] = useState(false)
   const [known, setKnown] = useState<Set<number>>(new Set())
   const [unknown, setUnknown] = useState<Set<number>>(new Set())
-  const [examDate, setExamDate] = useState<string>(() => localStorage.getItem('topik_exam_date') || '')
+  const [examDate, setExamDate] = useState<string>('')
   const [showDateInput, setShowDateInput] = useState(false)
   const [activeTab, setActiveTab] = useState<'flashcard' | 'countdown'>('flashcard')
 
@@ -130,6 +131,13 @@ export default function TopikStudy({ roomId, socket }: Props) {
   const [aiGenLoading, setAiGenLoading] = useState(false)
   const [aiExample, setAiExample] = useState<AiGeneratedExample | null>(null)
   const [aiError, setAiError] = useState('')
+
+  // ── Load exam date from database on mount ──────────────────────
+  useEffect(() => {
+    loadExamDate().then(date => {
+      if (date) setExamDate(date)
+    })
+  }, [])
 
   // ── Load AI words from storage on level change ─────────────────
   useEffect(() => {
@@ -243,9 +251,9 @@ export default function TopikStudy({ roomId, socket }: Props) {
     syncToRoom(level, 0)
   }
 
-  const saveExamDate = (date: string) => {
+  const handleSaveExamDate = (date: string) => {
     setExamDate(date)
-    localStorage.setItem('topik_exam_date', date)
+    saveExamDateToDb(date) // Lưu vào Supabase + localStorage
     setShowDateInput(false)
   }
 
@@ -637,7 +645,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
                   type="date"
                   defaultValue={examDate}
                   min={new Date().toISOString().split('T')[0]}
-                  onChange={e => saveExamDate(e.target.value)}
+                  onChange={e => handleSaveExamDate(e.target.value)}
                   className="px-4 py-2.5 rounded-xl border border-brand-terracotta-light/40 text-brand-brown-dark text-sm focus:outline-none focus:ring-2 focus:ring-brand-terracotta/40 bg-white"
                 />
               </div>
@@ -646,11 +654,15 @@ export default function TopikStudy({ roomId, socket }: Props) {
 
           {/* TOPIK Exam Schedule Info */}
           <div className="w-full max-w-sm p-4 rounded-2xl bg-brand-light/60 border border-brand-terracotta-light/20">
-            <h4 className="font-bold text-sm text-brand-brown-dark mb-2">📅 Lịch thi TOPIK 2024-2025</h4>
+            <h4 className="font-bold text-sm text-brand-brown-dark mb-2">📅 Lịch thi TOPIK 2026</h4>
             <div className="space-y-1.5 text-xs text-brand-brown-light">
-              <div className="flex justify-between"><span>TOPIK I & II</span><span className="font-bold text-brand-terracotta">Tháng 4, 7, 10, 11</span></div>
-              <div className="flex justify-between"><span>Đăng ký online</span><span>topik.go.kr</span></div>
-              <div className="flex justify-between"><span>Phí thi</span><span>40,000₩</span></div>
+              <div className="flex justify-between"><span>TOPIK IBT 제14회</span><span className="font-bold text-brand-terracotta">09.12 (토)</span></div>
+              <div className="flex justify-between"><span>TOPIK IBT 제15회</span><span className="font-bold text-brand-terracotta">10.24 (토)</span></div>
+              <div className="flex justify-between"><span>TOPIK IBT 제16회</span><span className="font-bold text-brand-terracotta">11.28 (토)</span></div>
+              <div className="flex justify-between"><span>TOPIK PBT 제108회</span><span className="font-bold text-brand-terracotta">10.18 (일)</span></div>
+              <div className="flex justify-between"><span>TOPIK PBT 제109회</span><span className="font-bold text-brand-terracotta">11.15 (일)</span></div>
+              <div className="flex justify-between mt-2 pt-2 border-t border-brand-terracotta-light/15"><span>Đăng ký online</span><span>topik.go.kr</span></div>
+              <div className="flex justify-between"><span>Phí thi</span><span className="font-bold">55,000₩</span></div>
             </div>
           </div>
         </div>
