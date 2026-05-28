@@ -495,11 +495,23 @@ export default function TopikStudy({ roomId, socket }: Props) {
 
                 {/* Slide-up meaning panel */}
                 <div className={`flashcard-meaning-panel ${showAnswer ? 'flashcard-meaning-panel-visible' : ''}`}>
-                  <div className="text-center space-y-2">
-                    <div className="text-xl font-bold text-brand-terracotta">{getTranslation(currentCard)}</div>
+                  <div className="text-center space-y-3 w-full my-auto flex flex-col items-center">
+                    {/* Từ tiếng Hàn ban đầu để đối chiếu */}
+                    <div className="flex items-center gap-2 mb-1 justify-center">
+                      <span className="text-xl font-black text-brand-brown-dark">{currentCard.ko}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); playAudio(currentCard.ko); }}
+                        className="p-1.5 rounded-full bg-brand-light text-brand-terracotta hover:bg-brand-terracotta hover:text-white transition cursor-pointer"
+                        title="Phát âm"
+                      >
+                        <Volume2 size={12} />
+                      </button>
+                    </div>
+
+                    <div className="text-2xl font-black text-brand-terracotta">{getTranslation(currentCard)}</div>
                     {currentCard.example && (
-                      <div className="ai-example-bubble flex items-center gap-2 justify-center">
-                        <span className="text-sm text-brand-brown-light italic leading-relaxed">
+                      <div className="ai-example-bubble flex items-center gap-2 justify-center w-full max-w-[280px]">
+                        <span className="text-xs text-brand-brown-light italic leading-relaxed text-center">
                           "{currentCard.example}"
                         </span>
                         <button
@@ -507,7 +519,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
                           className="p-1 rounded-full text-brand-terracotta/70 hover:text-brand-terracotta transition cursor-pointer active:scale-90 flex items-center justify-center shrink-0"
                           title="Phát âm câu ví dụ"
                         >
-                          <Volume2 size={13} />
+                          <Volume2 size={12} />
                         </button>
                       </div>
                     )}

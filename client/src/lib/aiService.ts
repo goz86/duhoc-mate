@@ -1,11 +1,14 @@
 /**
  * DeepSeek AI Service — Tạo câu ví dụ & mở rộng từ vựng TOPIK
- * API Key: ưu tiên localStorage, dự phòng VITE_DEEPSEEK_API_KEY trong .env
+ * 
+ * Ưu tiên gọi qua Vercel Serverless Proxy (/api/deepseek) → không cần API Key
+ * Fallback: gọi trực tiếp DeepSeek nếu có API Key cá nhân
  */
 
 const DEEPSEEK_ENDPOINT = 'https://api.deepseek.com/chat/completions'
+const PROXY_ENDPOINT = '/api/deepseek'
 
-/** Lấy API key: localStorage > .env */
+/** Lấy API key cá nhân (dự phòng): localStorage > .env */
 export function getApiKey(): string {
   return localStorage.getItem('deepseek_api_key') || import.meta.env.VITE_DEEPSEEK_API_KEY || ''
 }
@@ -15,14 +18,14 @@ export function setApiKey(key: string) {
   localStorage.setItem('deepseek_api_key', key.trim())
 }
 
-/** Kiểm tra đã có API key chưa */
+/** Luôn trả true vì có server proxy — không bắt buộc nhập key nữa */
 export function hasApiKey(): boolean {
-  return getApiKey().length > 0
+  return true
 }
 
 export interface AiGeneratedExample {
-  sentence: string  // Câu ví dụ tiếng Hàn
-  meaning: string   // Nghĩa tiếng Việt
+  sentence: string
+  meaning: string
 }
 
 export interface AiGeneratedWord {
@@ -33,10 +36,30 @@ export interface AiGeneratedWord {
   example: string
 }
 
-/** Gọi DeepSeek API với prompt tuỳ chỉnh */
+/**
+ * Gọi qua Vercel Proxy trước, fallback gọi trực tiếp DeepSeek
+ */
 async function callDeepSeek(prompt: string): Promise<string> {
+  // ── Thử qua Server Proxy (không cần API Key) ──────────────────
+  try {
+    const proxyRes = await fetch(PROXY_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, max_tokens: 4096 }),
+    })
+
+    if (proxyRes.ok) {
+      const data = await proxyRes.json()
+      if (data.content) return data.content
+    }
+    // Nếu proxy trả lỗi, tiếp tục fallback
+  } catch {
+    // Proxy không khả dụng (local dev hoặc lỗi network), fallback
+  }
+
+  // ── Fallback: gọi trực tiếp DeepSeek với API Key cá nhân ─────
   const apiKey = getApiKey()
-  if (!apiKey) throw new Error('Chưa nhập API Key DeepSeek!')
+  if (!apiKey) throw new Error('Không thể kết nối AI. Vui lòng thử lại sau hoặc nhập API Key DeepSeek trong phần Cài đặt.')
 
   const res = await fetch(DEEPSEEK_ENDPOINT, {
     method: 'POST',
@@ -69,22 +92,17 @@ async function callDeepSeek(prompt: string): Promise<string> {
 
 /** Trích xuất JSON từ response (xử lý markdown code block + recovery) */
 function extractJson(raw: string): string {
-  // Remove markdown code blocks if present
   const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
   let json = match ? match[1].trim() : raw.trim()
 
-  // Recovery: nếu JSON bị cắt giữa chừng (unterminated string)
-  // Thử sửa bằng cách đóng ngoặc còn thiếu
   try {
     JSON.parse(json)
     return json
   } catch {
-    // Cố gắng khôi phục JSON array bị cắt
-    // Tìm object hoàn chỉnh cuối cùng trong array
+    // Recovery: tìm object hoàn chỉnh cuối cùng
     const lastCompleteObj = json.lastIndexOf('}')
     if (lastCompleteObj > 0) {
       json = json.substring(0, lastCompleteObj + 1)
-      // Đảm bảo đóng array nếu là array
       if (json.trimStart().startsWith('[') && !json.trimEnd().endsWith(']')) {
         json = json + ']'
       }
@@ -119,7 +137,7 @@ export async function generateNewWords(
   existingWords: string[],
   count: number = 5,
 ): Promise<AiGeneratedWord[]> {
-  const existingList = existingWords.slice(0, 100).join(', ') // tránh prompt quá dài
+  const existingList = existingWords.slice(0, 100).join(', ')
   const prompt = `Tạo ${count} từ vựng tiếng Hàn mới phù hợp cấp độ TOPIK ${level}.
 KHÔNG được trùng với các từ sau: [${existingList}]
 
