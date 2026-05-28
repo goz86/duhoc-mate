@@ -1,17 +1,30 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, Calendar, RotateCcw, BookOpen, CheckCircle2, XCircle, Volume2 } from 'lucide-react'
+import {
+  ChevronLeft, ChevronRight, Calendar, RotateCcw, BookOpen,
+  CheckCircle2, XCircle, Volume2, Sparkles, Settings, Loader2,
+  Plus, Zap, Key,
+} from 'lucide-react'
+import {
+  generateExample, generateNewWords, hasApiKey, getApiKey, setApiKey,
+  type AiGeneratedExample,
+} from '../lib/aiService'
+import {
+  saveWords, getWordsByLevel, getAllSavedKoWords, seedShuffle,
+  type TopikWord,
+} from '../lib/topikStorage'
 
 interface TopikCard {
   id: number
-  ko: string        // Tiếng Hàn
-  vi: string        // Tiếng Việt
-  en: string        // Tiếng Anh
-  level: number     // 1-6 (TOPIK level)
-  example?: string  // Ví dụ câu
+  ko: string
+  vi: string
+  en: string
+  level: number
+  example?: string
+  isAi?: boolean // Được tạo bởi AI
 }
 
-// Bộ từ vựng TOPIK mở rộng chất lượng cao theo cấp độ 1-6
+// ── Bộ từ vựng TOPIK tĩnh (70 từ core) ─────────────────────────
 const VOCAB_BANK: TopikCard[] = [
   // Level 1
   { id: 1, ko: '안녕하세요', vi: 'Xin chào (lịch sự)', en: 'Hello (formal)', level: 1, example: '안녕하세요! 반갑습니다.' },
@@ -27,7 +40,6 @@ const VOCAB_BANK: TopikCard[] = [
   { id: 11, ko: '책', vi: 'Sách', en: 'Book', level: 1, example: '매일 도서관에서 책을 읽어요.' },
   { id: 12, ko: '공부', vi: 'Học tập', en: 'Study', level: 1, example: '한국어 공부가 재미있어요.' },
   { id: 13, ko: '집', vi: 'Nhà', en: 'Home/House', level: 1, example: '학교가 집에서 가까워요.' },
-
   // Level 2
   { id: 14, ko: '여행', vi: 'Du lịch', en: 'Travel', level: 2, example: '한국 여행이 즐거워요.' },
   { id: 15, ko: '날씨', vi: 'Thời tiết', en: 'Weather', level: 2, example: '오늘 날씨가 어때요?' },
@@ -42,7 +54,6 @@ const VOCAB_BANK: TopikCard[] = [
   { id: 24, ko: '약속', vi: 'Cuộc hẹn/Lời hứa', en: 'Appointment/Promise', level: 2, example: '오늘 친구와 약속이 있어요.' },
   { id: 25, ko: '취미', vi: 'Sở thích', en: 'Hobby', level: 2, example: '제 취미는 음악 감상입니다.' },
   { id: 26, ko: '계획', vi: 'Kế hoạch', en: 'Plan', level: 2, example: '방학 계획을 세우고 있어요.' },
-
   // Level 3
   { id: 27, ko: '환경', vi: 'Môi trường', en: 'Environment', level: 3, example: '환경 보호가 중요합니다.' },
   { id: 28, ko: '경제', vi: 'Kinh tế', en: 'Economy', level: 3, example: '세계 경제가 빠르게 변화하고 있다.' },
@@ -55,8 +66,7 @@ const VOCAB_BANK: TopikCard[] = [
   { id: 35, ko: '상황', vi: 'Tình huống/Hoàn cảnh', en: 'Situation', level: 3, example: '급한 상황에서는 먼저 전화를 하세요.' },
   { id: 36, ko: '노력', vi: 'Nỗ lực/Cố gắng', en: 'Effort', level: 3, example: '꿈을 이루기 위해 끊임없이 노력한다.' },
   { id: 37, ko: '태도', vi: 'Thái độ', en: 'Attitude', level: 3, example: '긍정적인 태도가 성공을 이끈다.' },
-  { id: 38, ko: '역할', vi: 'Vai trò', en: 'Role', level: 3, example: '부모의 역할은 자녀 교육 e느 매우 중요하다.' },
-
+  { id: 38, ko: '역할', vi: 'Vai trò', en: 'Role', level: 3, example: '부모의 역할은 자녀 교육에 매우 중요하다.' },
   // Level 4
   { id: 39, ko: '복지', vi: 'Phúc lợi', en: 'Welfare', level: 4, example: '노인 복지 제도를 개선해야 합니다.' },
   { id: 40, ko: '소통', vi: 'Giao tiếp/Thông tin', en: 'Communication', level: 4, example: '세대 간의 소통이 필요한 시점이다.' },
@@ -69,7 +79,6 @@ const VOCAB_BANK: TopikCard[] = [
   { id: 47, ko: '효율적', vi: 'Hiệu quả/Tính hiệu suất', en: 'Efficient', level: 4, example: '시간을 효율적으로 활용해야 합니다.' },
   { id: 48, ko: '다양성', vi: 'Tính đa dạng', en: 'Diversity', level: 4, example: '문화의 다양성을 존중해야 한다.' },
   { id: 49, ko: '대중매체', vi: 'Phương tiện truyền thông đại chúng', en: 'Mass Media', level: 4, example: '대중매체는 여론 형성에 큰 영향을 준다.' },
-
   // Level 5
   { id: 50, ko: '논리적', vi: 'Có logic/Hợp lý', en: 'Logical', level: 5, example: '자신의 생각을 논리적으로 설명해야 한다.' },
   { id: 51, ko: '상호작용', vi: 'Tương tác qua lại', en: 'Interaction', level: 5, example: '인간과 환경은 끊임없이 상호작용한다.' },
@@ -80,8 +89,7 @@ const VOCAB_BANK: TopikCard[] = [
   { id: 56, ko: '민주주의', vi: 'Chủ nghĩa dân chủ', en: 'Democracy', level: 5, example: '민주주의의 핵심은 국민의 주권이다.' },
   { id: 57, ko: '세계화', vi: 'Toàn cầu hóa', en: 'Globalization', level: 5, example: '세계화 흐름 속에서 경쟁력을 갖추어야 한다.' },
   { id: 58, ko: '지속가능', vi: 'Bền vững/Có thể duy trì', en: 'Sustainable', level: 5, example: '지속가능한 개발을 목표로 삼아야 한다.' },
-  { id: 59, ko: '창의성', vi: 'Tính sáng tạo', en: 'Creativity', level: 5, example: '미era 사회는 인재의 창의성을 요구한다.' },
-
+  { id: 59, ko: '창의성', vi: 'Tính sáng tạo', en: 'Creativity', level: 5, example: '미래 사회는 인재의 창의성을 요구한다.' },
   // Level 6
   { id: 60, ko: '패러다임', vi: 'Mô thức/Paradigm', en: 'Paradigm', level: 6, example: '기술 혁신이 새로운 패러다임을 열었다.' },
   { id: 61, ko: '내재화', vi: 'Nội tâm hóa', en: 'Internalization', level: 6, example: '도덕적 가치관의 내재화가 필요하다.' },
@@ -104,6 +112,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
   const { t, i18n } = useTranslation()
   const lang = ((i18n.resolvedLanguage || i18n.language).split('-')[0] || 'vi') as 'vi' | 'ko' | 'en'
 
+  // ── Core states ────────────────────────────────────────────────
   const [selectedLevel, setSelectedLevel] = useState(1)
   const [cardIndex, setCardIndex] = useState(0)
   const [showAnswer, setShowAnswer] = useState(false)
@@ -113,33 +122,83 @@ export default function TopikStudy({ roomId, socket }: Props) {
   const [showDateInput, setShowDateInput] = useState(false)
   const [activeTab, setActiveTab] = useState<'flashcard' | 'countdown'>('flashcard')
 
-  const filteredCards = VOCAB_BANK.filter(c => c.level === selectedLevel)
-  const currentCard = filteredCards[cardIndex]
+  // ── AI states ──────────────────────────────────────────────────
+  const [aiWords, setAiWords] = useState<TopikCard[]>([])
+  const [showAiSettings, setShowAiSettings] = useState(false)
+  const [apiKeyInput, setApiKeyInput] = useState(() => getApiKey())
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiGenLoading, setAiGenLoading] = useState(false)
+  const [aiExample, setAiExample] = useState<AiGeneratedExample | null>(null)
+  const [aiError, setAiError] = useState('')
 
-  // Đồng bộ thẻ với phòng học qua socket
+  // ── Load AI words from storage on level change ─────────────────
+  useEffect(() => {
+    let cancelled = false
+    getWordsByLevel(selectedLevel).then(stored => {
+      if (cancelled) return
+      const mapped: TopikCard[] = stored.map((w, i) => ({
+        id: 1000 + i + (selectedLevel * 100),
+        ko: w.ko,
+        vi: w.vi,
+        en: w.en,
+        level: w.level,
+        example: w.example,
+        isAi: true,
+      }))
+      setAiWords(mapped)
+    })
+    return () => { cancelled = true }
+  }, [selectedLevel])
+
+  // ── Merge static + AI, then seed-shuffle ──────────────────────
+  const allCards = useMemo(() => {
+    const staticCards = VOCAB_BANK.filter(c => c.level === selectedLevel)
+    // Loại bỏ trùng lặp (AI trùng với static)
+    const aiFiltered = aiWords.filter(
+      ai => !staticCards.some(s => s.ko === ai.ko)
+    )
+    const merged = [...staticCards, ...aiFiltered]
+    // Seed-shuffle theo roomId để đồng bộ thứ tự
+    return seedShuffle(merged, roomId)
+  }, [selectedLevel, aiWords, roomId])
+
+  const currentCard = allCards[cardIndex]
+
+  // ── Socket sync ────────────────────────────────────────────────
   useEffect(() => {
     if (!socket) return
     const handler = ({ level, index }: { level: number; index: number }) => {
       setSelectedLevel(level)
       setCardIndex(index)
       setShowAnswer(false)
+      setAiExample(null)
     }
     socket.on('topik-sync', handler)
     return () => { socket.off('topik-sync', handler) }
   }, [socket])
 
-  const syncToRoom = (level: number, index: number) => {
+  const syncToRoom = useCallback((level: number, index: number) => {
     socket?.emit('topik-action', { roomId, level, index })
-  }
+  }, [socket, roomId])
 
-  const goNext = () => {
-    const next = (cardIndex + 1) % filteredCards.length
+  // ── Navigation ─────────────────────────────────────────────────
+  const goNext = useCallback(() => {
+    const next = (cardIndex + 1) % allCards.length
     setCardIndex(next)
     setShowAnswer(false)
+    setAiExample(null)
     syncToRoom(selectedLevel, next)
-  }
+  }, [cardIndex, allCards.length, selectedLevel, syncToRoom])
 
-  const playAudio = (text: string) => {
+  const goPrev = useCallback(() => {
+    const prev = (cardIndex - 1 + allCards.length) % allCards.length
+    setCardIndex(prev)
+    setShowAnswer(false)
+    setAiExample(null)
+    syncToRoom(selectedLevel, prev)
+  }, [cardIndex, allCards.length, selectedLevel, syncToRoom])
+
+  const playAudio = useCallback((text: string) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel()
       const utterance = new SpeechSynthesisUtterance(text)
@@ -148,25 +207,18 @@ export default function TopikStudy({ roomId, socket }: Props) {
       const koVoice = voices.find(voice => voice.lang.startsWith('ko'))
       if (koVoice) utterance.voice = koVoice
       window.speechSynthesis.speak(utterance)
-    } else {
-      alert('Trình duyệt của bạn không hỗ trợ phát âm tiếng Hàn.')
     }
-  }
-
-  const goPrev = () => {
-    const prev = (cardIndex - 1 + filteredCards.length) % filteredCards.length
-    setCardIndex(prev)
-    setShowAnswer(false)
-    syncToRoom(selectedLevel, prev)
-  }
+  }, [])
 
   const markKnown = () => {
+    if (!currentCard) return
     setKnown(prev => new Set([...prev, currentCard.id]))
     setUnknown(prev => { const s = new Set(prev); s.delete(currentCard.id); return s })
     goNext()
   }
 
   const markUnknown = () => {
+    if (!currentCard) return
     setUnknown(prev => new Set([...prev, currentCard.id]))
     setKnown(prev => { const s = new Set(prev); s.delete(currentCard.id); return s })
     goNext()
@@ -177,6 +229,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
     setShowAnswer(false)
     setKnown(new Set())
     setUnknown(new Set())
+    setAiExample(null)
     syncToRoom(selectedLevel, 0)
   }
 
@@ -186,6 +239,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
     setShowAnswer(false)
     setKnown(new Set())
     setUnknown(new Set())
+    setAiExample(null)
     syncToRoom(level, 0)
   }
 
@@ -199,8 +253,8 @@ export default function TopikStudy({ roomId, socket }: Props) {
     ? Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000)
     : null
 
-  const progress = filteredCards.length > 0
-    ? Math.round(((known.size + unknown.size) / filteredCards.length) * 100)
+  const progress = allCards.length > 0
+    ? Math.round(((known.size + unknown.size) / allCards.length) * 100)
     : 0
 
   const getTranslation = (card: TopikCard) => {
@@ -209,6 +263,79 @@ export default function TopikStudy({ roomId, socket }: Props) {
     return card.vi
   }
 
+  // ── AI: Save API Key ──────────────────────────────────────────
+  const handleSaveApiKey = () => {
+    setApiKey(apiKeyInput)
+    setShowAiSettings(false)
+    setAiError('')
+  }
+
+  // ── AI: Generate Example ──────────────────────────────────────
+  const handleGenerateExample = async () => {
+    if (!currentCard || !hasApiKey()) {
+      setShowAiSettings(true)
+      return
+    }
+    setAiLoading(true)
+    setAiError('')
+    try {
+      const example = await generateExample(currentCard.ko)
+      setAiExample(example)
+    } catch (err: any) {
+      setAiError(err.message || 'Lỗi tạo ví dụ')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  // ── AI: Generate New Words ────────────────────────────────────
+  const handleGenerateWords = async () => {
+    if (!hasApiKey()) {
+      setShowAiSettings(true)
+      return
+    }
+    setAiGenLoading(true)
+    setAiError('')
+    try {
+      // Lấy tất cả từ đã có để tránh trùng
+      const existingKo = [
+        ...VOCAB_BANK.map(w => w.ko),
+        ...aiWords.map(w => w.ko),
+        ...(await getAllSavedKoWords()),
+      ]
+      const uniqueExisting = [...new Set(existingKo)]
+
+      const newWords = await generateNewWords(selectedLevel, uniqueExisting, 20)
+
+      // Lưu vào storage
+      const toSave: TopikWord[] = newWords.map(w => ({
+        ko: w.ko,
+        vi: w.vi,
+        en: w.en,
+        level: w.level,
+        example: w.example,
+      }))
+      await saveWords(toSave)
+
+      // Cập nhật UI
+      const newCards: TopikCard[] = newWords.map((w, i) => ({
+        id: 2000 + Date.now() + i,
+        ko: w.ko,
+        vi: w.vi,
+        en: w.en,
+        level: w.level,
+        example: w.example,
+        isAi: true,
+      }))
+      setAiWords(prev => [...prev, ...newCards])
+    } catch (err: any) {
+      setAiError(err.message || 'Lỗi tạo từ mới')
+    } finally {
+      setAiGenLoading(false)
+    }
+  }
+
+  // ── Render ─────────────────────────────────────────────────────
   return (
     <div className="flex-1 flex flex-col gap-5 py-4">
       {/* Tab: Flashcard / Countdown */}
@@ -230,7 +357,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
       {activeTab === 'flashcard' && (
         <>
           {/* Level selector */}
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 flex-wrap">
             <span className="text-sm font-bold text-brand-brown-light">{t('topik.level')}:</span>
             {[1, 2, 3, 4, 5, 6].map(lvl => (
               <button
@@ -248,12 +375,64 @@ export default function TopikStudy({ roomId, socket }: Props) {
             <button onClick={reset} className="p-2 rounded-full hover:bg-brand-light transition cursor-pointer ml-2" title="Reset">
               <RotateCcw size={15} className="text-brand-brown-light" />
             </button>
+            {/* AI Settings toggle */}
+            <button
+              onClick={() => setShowAiSettings(!showAiSettings)}
+              className={`p-2 rounded-full transition cursor-pointer ml-1 ${
+                hasApiKey()
+                  ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200'
+                  : 'bg-brand-light hover:bg-brand-terracotta-light/30 text-brand-brown-light'
+              }`}
+              title="Cài đặt AI DeepSeek"
+            >
+              <Settings size={15} />
+            </button>
           </div>
+
+          {/* AI Settings Panel */}
+          {showAiSettings && (
+            <div className="ai-settings-panel p-4 w-full max-w-sm mx-auto">
+              <div className="flex items-center gap-2 mb-3">
+                <Key size={16} className="text-brand-terracotta" />
+                <span className="text-sm font-bold text-brand-brown-dark">DeepSeek API Key</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={apiKeyInput}
+                  onChange={e => setApiKeyInput(e.target.value)}
+                  placeholder="sk-..."
+                  className="flex-1 px-3 py-2 rounded-xl border border-brand-terracotta-light/30 text-sm bg-white/80 text-brand-brown-dark focus:outline-none focus:ring-2 focus:ring-brand-terracotta/30"
+                />
+                <button
+                  onClick={handleSaveApiKey}
+                  className="px-4 py-2 rounded-xl bg-brand-terracotta text-white text-sm font-bold hover:bg-brand-brown-dark transition cursor-pointer"
+                >
+                  Lưu
+                </button>
+              </div>
+              {hasApiKey() && (
+                <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+                  <CheckCircle2 size={12} /> API Key đã được lưu an toàn
+                </p>
+              )}
+              <p className="text-xs text-brand-brown-light/70 mt-2">
+                Key chỉ lưu trên trình duyệt của bạn, không gửi lên server.
+              </p>
+            </div>
+          )}
+
+          {/* AI Error */}
+          {aiError && (
+            <div className="w-full max-w-sm mx-auto px-4 py-2 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs">
+              ⚠️ {aiError}
+            </div>
+          )}
 
           {/* Progress bar */}
           <div className="w-full max-w-sm mx-auto">
             <div className="flex justify-between text-xs text-brand-brown-light mb-1">
-              <span>{t('topik.progress')}: {known.size + unknown.size}/{filteredCards.length}</span>
+              <span>{t('topik.progress')}: {known.size + unknown.size}/{allCards.length}</span>
               <span className="text-emerald-600 font-bold">{known.size} ✓  <span className="text-red-400">{unknown.size} ✗</span></span>
             </div>
             <div className="h-2 bg-brand-light rounded-full overflow-hidden">
@@ -262,49 +441,61 @@ export default function TopikStudy({ roomId, socket }: Props) {
                 style={{ width: `${progress}%` }}
               />
             </div>
+            {/* AI word count indicator */}
+            {aiWords.filter(w => w.level === selectedLevel).length > 0 && (
+              <div className="flex items-center gap-1 mt-1.5 justify-end">
+                <span className="topik-word-chip">
+                  <Sparkles size={10} />
+                  +{aiWords.filter(w => w.level === selectedLevel).length} từ AI
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Flashcard */}
+          {/* ═══ Flashcard Pro ═══ */}
           {currentCard ? (
             <div className="flex flex-col items-center gap-4">
               <div
-                className={`w-full max-w-sm min-h-[200px] rounded-3xl shadow-xl border-2 flex flex-col items-center justify-center gap-3 p-8 cursor-pointer transition-all select-none ${
-                  showAnswer
-                    ? 'bg-gradient-to-br from-brand-terracotta-light/30 to-brand-accent/20 border-brand-terracotta/30'
-                    : 'bg-white border-brand-terracotta-light/20 hover:shadow-2xl hover:border-brand-terracotta/30'
-                }`}
+                className="flashcard-pro w-full max-w-sm shadow-xl border-2 border-brand-terracotta-light/20"
                 onClick={() => setShowAnswer(!showAnswer)}
               >
-                <div className="text-xs font-bold uppercase text-brand-brown-light">
-                  TOPIK {selectedLevel} · {cardIndex + 1}/{filteredCards.length}
-                </div>
-                <div className="flex items-center gap-3 justify-center">
-                  <div className="text-4xl font-black text-brand-brown-dark text-center leading-normal">{currentCard.ko}</div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      playAudio(currentCard.ko);
-                    }}
-                    className="p-2.5 rounded-full bg-brand-light/80 text-brand-terracotta hover:bg-brand-terracotta hover:text-white transition cursor-pointer active:scale-90 flex items-center justify-center shrink-0 border border-brand-terracotta-light/10 shadow-sm"
-                    title="Phát âm"
-                  >
-                    <Volume2 size={18} />
-                  </button>
+                <div className="flashcard-surface">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase text-brand-brown-light">
+                    <span>TOPIK {selectedLevel} · {cardIndex + 1}/{allCards.length}</span>
+                    {currentCard.isAi && (
+                      <span className="topik-word-chip">
+                        <Sparkles size={9} /> AI
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 justify-center">
+                    <div className="text-4xl font-black text-brand-brown-dark text-center leading-normal">{currentCard.ko}</div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); playAudio(currentCard.ko); }}
+                      className="p-2.5 rounded-full bg-brand-light/80 text-brand-terracotta hover:bg-brand-terracotta hover:text-white transition cursor-pointer active:scale-90 flex items-center justify-center shrink-0 border border-brand-terracotta-light/10 shadow-sm"
+                      title="Phát âm"
+                    >
+                      <Volume2 size={18} />
+                    </button>
+                  </div>
+
+                  {!showAnswer && (
+                    <div className="text-sm text-brand-brown-light/70 italic mt-1">{t('topik.show')} →</div>
+                  )}
                 </div>
 
-                {showAnswer ? (
-                  <div className="text-center space-y-2 animate-fade-in">
+                {/* Slide-up meaning panel */}
+                <div className={`flashcard-meaning-panel ${showAnswer ? 'flashcard-meaning-panel-visible' : ''}`}>
+                  <div className="text-center space-y-2">
                     <div className="text-xl font-bold text-brand-terracotta">{getTranslation(currentCard)}</div>
                     {currentCard.example && (
-                      <div className="flex items-center gap-2 bg-brand-light/50 px-3.5 py-2 rounded-xl border border-brand-terracotta-light/10 justify-center">
+                      <div className="ai-example-bubble flex items-center gap-2 justify-center">
                         <span className="text-sm text-brand-brown-light italic leading-relaxed">
                           "{currentCard.example}"
                         </span>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            playAudio(currentCard.example || '');
-                          }}
+                          onClick={(e) => { e.stopPropagation(); playAudio(currentCard.example || ''); }}
                           className="p-1 rounded-full text-brand-terracotta/70 hover:text-brand-terracotta transition cursor-pointer active:scale-90 flex items-center justify-center shrink-0"
                           title="Phát âm câu ví dụ"
                         >
@@ -312,10 +503,34 @@ export default function TopikStudy({ roomId, socket }: Props) {
                         </button>
                       </div>
                     )}
+
+                    {/* AI Example */}
+                    {aiExample && (
+                      <div className="ai-example-bubble text-left space-y-1 mt-2">
+                        <div className="flex items-center gap-1 text-xs font-bold text-brand-terracotta">
+                          <Sparkles size={11} /> AI Ví dụ
+                        </div>
+                        <p className="text-sm text-brand-brown-dark">🇰🇷 {aiExample.sentence}</p>
+                        <p className="text-xs text-brand-brown-light">🇻🇳 {aiExample.meaning}</p>
+                      </div>
+                    )}
+
+                    {/* AI Generate Example button */}
+                    {showAnswer && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleGenerateExample(); }}
+                        disabled={aiLoading}
+                        className="ai-glow-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-brand-terracotta/10 hover:bg-brand-terracotta/20 text-brand-terracotta text-xs font-bold transition cursor-pointer mt-1 disabled:opacity-50"
+                      >
+                        {aiLoading ? (
+                          <><Loader2 size={12} className="animate-spin" /> Đang tạo...</>
+                        ) : (
+                          <><Sparkles size={12} /> Tạo ví dụ AI</>
+                        )}
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <div className="text-sm text-brand-brown-light/70 italic mt-1">{t('topik.show')} →</div>
-                )}
+                </div>
               </div>
 
               {/* Navigation buttons */}
@@ -339,6 +554,35 @@ export default function TopikStudy({ roomId, socket }: Props) {
                   <ChevronRight size={18} className="text-brand-brown-dark" />
                 </button>
               </div>
+
+              {/* AI Generate New Words button */}
+              <button
+                onClick={handleGenerateWords}
+                disabled={aiGenLoading}
+                className="ai-glow-btn flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-brand-terracotta to-brand-accent text-white text-sm font-bold transition cursor-pointer shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {aiGenLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>AI đang tạo từ mới...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap size={16} />
+                    <span>Tạo 20 từ mới bằng AI</span>
+                    <Plus size={14} />
+                  </>
+                )}
+              </button>
+
+              {/* AI loading shimmer */}
+              {aiGenLoading && (
+                <div className="w-full max-w-sm space-y-2">
+                  <div className="ai-shimmer h-10 w-full" />
+                  <div className="ai-shimmer h-10 w-4/5" />
+                  <div className="ai-shimmer h-10 w-3/5" />
+                </div>
+              )}
 
               <p className="text-xs text-brand-brown-light text-center">
                 {t('topik.sync')}

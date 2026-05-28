@@ -915,3 +915,196 @@ button.ticker-inner {
   padding-bottom: max(10px, env(safe-area-inset-bottom));
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   TOPIK Flashcard Pro — Slide-up Glassmorphism Effect
+   ═══════════════════════════════════════════════════════════════ */
+
+.flashcard-pro {
+  position: relative;
+  border-radius: 32px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1),
+              box-shadow 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+  user-select: none;
+}
+
+.flashcard-pro:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 20px 60px -12px rgba(167, 122, 108, 0.25),
+              0 0 0 1px rgba(167, 122, 108, 0.08);
+}
+
+.flashcard-pro:active {
+  transform: translateY(-1px) scale(0.995);
+}
+
+.flashcard-surface {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 220px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.92),
+    rgba(250, 246, 240, 0.88)
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(167, 122, 108, 0.12);
+}
+
+.dark .flashcard-surface {
+  background: linear-gradient(
+    145deg,
+    rgba(32, 22, 20, 0.95),
+    rgba(20, 13, 12, 0.9)
+  );
+  border: 1px solid rgba(200, 141, 127, 0.15);
+}
+
+/* Panel nghĩa trượt lên từ dưới */
+.flashcard-meaning-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: 1.5rem;
+  border-radius: 0 0 32px 32px;
+  background: linear-gradient(
+    180deg,
+    rgba(228, 193, 181, 0.15) 0%,
+    rgba(167, 122, 108, 0.08) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(167, 122, 108, 0.15);
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+              opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.dark .flashcard-meaning-panel {
+  background: linear-gradient(
+    180deg,
+    rgba(51, 36, 33, 0.9) 0%,
+    rgba(40, 29, 27, 0.95) 100%
+  );
+  border-top: 1px solid rgba(200, 141, 127, 0.12);
+}
+
+.flashcard-meaning-panel-visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* AI Example bubble */
+.ai-example-bubble {
+  background: linear-gradient(135deg, rgba(167, 122, 108, 0.08), rgba(229, 168, 147, 0.1));
+  border: 1px solid rgba(167, 122, 108, 0.12);
+  border-radius: 16px;
+  padding: 0.75rem 1rem;
+  animation: slideUp 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dark .ai-example-bubble {
+  background: linear-gradient(135deg, rgba(200, 141, 127, 0.1), rgba(216, 159, 146, 0.08));
+  border: 1px solid rgba(200, 141, 127, 0.1);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+/* AI Settings panel */
+.ai-settings-panel {
+  background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(250,246,240,0.9));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(167, 122, 108, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(167, 122, 108, 0.08);
+  animation: slideUp 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dark .ai-settings-panel {
+  background: linear-gradient(145deg, rgba(32,22,20,0.98), rgba(20,13,12,0.95));
+  border: 1px solid rgba(200, 141, 127, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* AI button glow */
+.ai-glow-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-glow-btn::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(45deg, #a77a6c, #e5a893, #a77a6c, #e5a893);
+  background-size: 400% 400%;
+  border-radius: inherit;
+  z-index: -1;
+  animation: glowRotate 3s ease infinite;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.ai-glow-btn:hover::before {
+  opacity: 1;
+}
+
+@keyframes glowRotate {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Shimmer loading effect */
+.ai-shimmer {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(167, 122, 108, 0.15) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 12px;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Word chip (AI generated tag) */
+.topik-word-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(167,122,108,0.12), rgba(229,168,147,0.15));
+  border: 1px solid rgba(167,122,108,0.15);
+  color: var(--color-brand-terracotta);
+  animation: slideUp 0.3s cubic-bezier(0.23,1,0.32,1);
+}
+
+.dark .topik-word-chip {
+  background: linear-gradient(135deg, rgba(200,141,127,0.12), rgba(216,159,146,0.1));
+  border: 1px solid rgba(200,141,127,0.12);
+}
+
