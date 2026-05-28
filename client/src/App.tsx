@@ -3715,7 +3715,7 @@ export default function App() {
 
                 {/* ── 6. TOPIK STAGE ── */}
                 {stageMode === 'topik' && (
-                  <TopikStudy roomId={roomId} socket={socket} />
+                  <TopikStudy roomId={roomId} socket={socket} isAdmin={!!profile?.is_admin} />
                 )}
 
                 {stageMode === 'video' && (

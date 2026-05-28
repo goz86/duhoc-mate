@@ -8,16 +8,17 @@ import {
   generateReadingExam, generateListeningExam, type AiGeneratedQuestion
 } from '../lib/aiService'
 import {
-  saveExamToDb, loadExamsFromDb, loadExamQuestions,
+  saveExamToDb, loadExamsFromDb, loadExamQuestions, deleteExamFromDb,
   type TopikExam, type TopikExamQuestion
 } from '../lib/topikStorage'
 import ConfirmDialog from './modals/ConfirmDialog'
 
 interface Props {
   roomId?: string
+  isAdmin?: boolean
 }
 
-export default function TopikExamComponent({ roomId }: Props) {
+export default function TopikExamComponent({ roomId, isAdmin }: Props) {
   
   // ── States ──────────────────────────────────────────────────────
   const [exams, setExams] = useState<TopikExam[]>([])
@@ -285,6 +286,24 @@ export default function TopikExamComponent({ roomId }: Props) {
     } finally {
       setAiLoading(false)
     }
+  }
+
+  const handleDeleteExam = async (examId: string, examTitle: string) => {
+    showConfirm({
+      message: 'Xóa đề thi thử?',
+      description: `Bạn có chắc chắn muốn xóa "${examTitle}" khỏi hệ thống không? Hành động này không thể hoàn tác.`,
+      confirmText: 'Đồng ý xóa',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteExamFromDb(examId)
+          setSuccessMsg('Đã xóa đề thi thử thành công!')
+          fetchExams()
+        } catch (err: any) {
+          setErrorMsg(err.message || 'Lỗi khi xóa đề thi')
+        }
+      }
+    })
   }
 
   // ── Calculate Score ─────────────────────────────────────────────
@@ -666,13 +685,24 @@ export default function TopikExamComponent({ roomId }: Props) {
                       <p className="text-[10px] font-bold text-brand-brown-light">
                         {isListening ? '10 câu hỏi nghe · 20p' : '15 câu hỏi đọc · 30p'}
                       </p>
-                      <button
-                        onClick={() => handleStartTest(exam)}
-                        className="px-3.5 py-1.5 rounded-full bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-brand-terracotta text-[11px] font-black transition cursor-pointer flex items-center gap-1"
-                      >
-                        {isListening ? <Volume2 size={12} /> : <BookOpen size={12} />}
-                        Luyện đề
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDeleteExam(exam.id!, exam.title)}
+                            className="px-3 py-1.5 rounded-full bg-red-50 hover:bg-red-500 text-red-500 hover:text-white text-[11px] font-black transition cursor-pointer flex items-center gap-1 border border-red-200/20"
+                            title="Xóa đề thi này"
+                          >
+                            Xóa
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleStartTest(exam)}
+                          className="px-3.5 py-1.5 rounded-full bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-brand-terracotta text-[11px] font-black transition cursor-pointer flex items-center gap-1"
+                        >
+                          {isListening ? <Volume2 size={12} /> : <BookOpen size={12} />}
+                          Luyện đề
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )

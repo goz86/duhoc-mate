@@ -108,9 +108,10 @@ const VOCAB_BANK: TopikCard[] = [
 interface Props {
   roomId: string
   socket: any
+  isAdmin?: boolean
 }
 
-export default function TopikStudy({ roomId, socket }: Props) {
+export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
   const { t, i18n } = useTranslation()
   const lang = ((i18n.resolvedLanguage || i18n.language).split('-')[0] || 'vi') as 'vi' | 'ko' | 'en'
 
@@ -732,7 +733,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
       )}
 
       {activeTab === 'exam' && (
-        <TopikExamComponent roomId={roomId} />
+        <TopikExamComponent roomId={roomId} isAdmin={isAdmin} />
       )}
     </div>
   )

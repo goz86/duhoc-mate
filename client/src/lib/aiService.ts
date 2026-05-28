@@ -188,15 +188,20 @@ export async function generateReadingExam(level: number): Promise<AiGeneratedQue
   const prompt = `Bạn là một chuyên gia khảo thí tiếng Hàn chuyên nghiệp chuyên soạn thảo đề thi TOPIK quốc tế cho Viện Giáo dục Quốc tế Quốc gia Hàn Quốc (NIIED).
 Hãy tạo một Đề thi thử Đọc TOPIK ${level === 1 ? 'I (Sơ cấp)' : 'II (Trung-Cao cấp)'} hệ Mini gồm đúng 15 câu hỏi trắc nghiệm cực kỳ chất lượng, bám sát các cấu trúc ngữ pháp và từ vựng thực tế của đề thi chính thức.
 
-Phân bổ 15 câu hỏi Đọc như sau:
-- Câu 1-2: Điền ngữ pháp thích hợp vào chỗ trống (dạng [1~2] ()에 들어갈 말)
-- Câu 3-4: Chọn ngữ pháp có nghĩa tương đồng với phần gạch chân (dạng [3~4] 밑줄 친 부분과 의미가 비슷한 것)
-- Câu 5-6: Đọc hiểu bảng quảng cáo, biển báo công cộng, nhãn hiệu (dạng [5~8] 무엇에 대한 글인가)
-- Câu 7-8: Sắp xếp 4 câu 가, 나, 다, 라 theo đúng thứ tự logic thành đoạn văn (dạng [13~15] 순서대로 맞게 배열한 것)
-- Câu 9-11: Điền cụm từ phù hợp nhất vào chỗ trống của một đoạn văn ngắn 2-3 câu (dạng [16~18] 빈칸에 들어갈 가장 알맞은 것)
+PHÂN BỔ 15 CÂU HỎI ĐỌC NHƯ SAU:
+- Câu 1-2: Điền ngữ pháp thích hợp vào chỗ trống
+- Câu 3-4: Chọn ngữ pháp có nghĩa tương đồng với phần gạch chân
+- Câu 5-6: Đọc hiểu bảng quảng cáo, biển báo công cộng, nhãn hiệu
+- Câu 7-8: Sắp xếp 4 câu 가, 나, 다, 라 theo đúng thứ tự logic thành đoạn văn
+- Câu 9-11: Điền cụm từ phù hợp nhất vào chỗ trống của một đoạn văn ngắn 2-3 câu
 - Câu 12-15: Đọc hiểu đoạn văn trung cấp (chọn câu đúng với nội dung đoạn văn, chọn suy nghĩ/thái độ chính của tác giả, giải nghĩa cụm từ gạch chân).
 
-Trả lời bằng JSON array chuẩn, KHÔNG markdown (như \`\`\`json), KHÔNG giải thích dông dài bên ngoài. Đúng định dạng sau:
+YÊU CẦU ĐỘ CHÍNH XÁC TUYỆT ĐỐI (TRÁNH SAI ĐÁP ÁN):
+1. CHỈ CÓ DUY NHẤT MỘT phương án trong "options" là chính xác hoàn toàn về ngữ pháp và ngữ cảnh. Các phương án nhiễu phải sai rõ ràng về mặt cấu trúc ngữ pháp hoặc ngữ nghĩa.
+2. Kiểm tra chéo: Chỉ số "correct_option" (từ 1 đến 4) bắt buộc phải trỏ chính xác vào phần tử đúng trong mảng "options".
+3. Tự giải thích: Trong phần "explanation", hãy viết rõ ràng vì sao đáp án đó đúng và tại sao các đáp án còn lại sai bằng tiếng Việt.
+
+Trả lời bằng JSON array chuẩn, KHÔNG dùng markdown code blocks, KHÔNG giải thích dông dài bên ngoài. Định dạng:
 [
   {
     "question_number": 1,
@@ -233,13 +238,18 @@ export async function generateListeningExam(level: number): Promise<AiGeneratedQ
   const prompt = `Bạn là một chuyên gia khảo thí tiếng Hàn chuyên nghiệp chuyên soạn thảo đề thi TOPIK quốc tế cho NIIED.
 Hãy tạo một Đề thi thử Nghe TOPIK ${level === 1 ? 'I (Sơ cấp)' : 'II (Trung-Cao cấp)'} hệ Mini gồm đúng 10 câu hỏi trắc nghiệm cực kỳ chất lượng, kèm theo kịch bản hội thoại tiếng Hàn tự nhiên, bám sát các dạng câu hỏi chính thức.
 
-Phân bổ 10 câu hỏi Nghe như sau:
-- Câu 1-2: Nghe kịch bản và chọn hành động tiếp theo của nhân vật nữ hoặc nam.
-- Câu 3-4: Nghe kịch bản và chọn bức tranh mô tả đúng tình huống hội thoại nhất (phần tranh/ảnh này chỉ cần mô tả bằng văn bản tiếng Hàn trong các phương án chọn).
-- Câu 5-7: Nghe và chọn phát biểu đúng với nội dung cuộc đối thoại.
-- Câu 8-10: Nghe đoạn hội thoại dài và trả lời các câu hỏi kép (chủ đề chính của người nói, chi tiết câu đúng).
+PHÂN BỔ 10 CÂU HỎI NGHE NHƯ SAU:
+- Câu 1-2: Nghe và chọn hành động tiếp theo.
+- Câu 3-4: Nghe và chọn bức tranh/tình huống mô tả đúng.
+- Câu 5-7: Nghe và chọn phát biểu đúng với nội dung.
+- Câu 8-10: Nghe đoạn hội thoại dài và trả lời các câu hỏi kép.
 
-Trả lời bằng JSON array chuẩn, KHÔNG markdown, KHÔNG giải thích dông dài bên ngoài. Đúng định dạng sau:
+YÊU CẦU ĐỘ CHÍNH XÁC TUYỆT ĐỐI (TRÁNH SAI ĐÁP ÁN):
+1. CHỈ CÓ DUY NHẤT MỘT phương án trong "options" là chính xác hoàn toàn. Các phương án nhiễu phải sai rõ ràng về mặt thông tin đã nghe hoặc cấu trúc logic.
+2. Kiểm tra chéo: Chỉ số "correct_option" (từ 1 đến 4) bắt buộc phải trỏ chính xác vào phần tử đúng trong mảng "options".
+3. Tự giải thích: Trong phần "explanation", hãy phân tích kịch bản nghe và chứng minh vì sao đáp án đó đúng bằng tiếng Việt.
+
+Trả lời bằng JSON array chuẩn, KHÔNG dùng markdown code blocks, KHÔNG giải thích dông dài bên ngoài. Định dạng:
 [
   {
     "question_number": 1,

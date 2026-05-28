@@ -373,3 +373,22 @@ export async function loadExamQuestions(examId: string): Promise<TopikExamQuesti
   }
 }
 
+/**
+ * Xóa một đề thi khỏi cơ sở dữ liệu
+ */
+export async function deleteExamFromDb(examId: string): Promise<void> {
+  if (!supabaseEnabled || !supabase) {
+    throw new Error('Supabase không khả dụng')
+  }
+
+  const { error } = await supabase
+    .from('topik_exams')
+    .delete()
+    .eq('id', examId)
+
+  if (error) {
+    throw new Error(`Lỗi xóa đề thi: ${error.message}`)
+  }
+}
+
+
