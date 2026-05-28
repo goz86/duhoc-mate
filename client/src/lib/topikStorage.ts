@@ -246,3 +246,130 @@ export function seedShuffle<T>(array: T[], roomId: string): T[] {
 
   return result
 }
+
+
+// ─── TOPIK Mock Exams Persistence (Supabase Only) ────────────────
+
+export interface TopikExam {
+  id?: string
+  exam_number?: number
+  title: string
+  category: 'reading' | 'listening'
+  level: number // 1: TOPIK I, 2: TOPIK II
+  created_at?: string
+  created_by: string
+}
+
+export interface TopikExamQuestion {
+  id?: string
+  exam_id?: string
+  question_number: number
+  question_type: string
+  instructions: string
+  passage?: string
+  question_text: string
+  options: string[]
+  correct_option: number
+  explanation?: string
+  audio_script?: string
+}
+
+/**
+ * Lưu đề thi mới vào Supabase
+ */
+export async function saveExamToDb(
+  exam: TopikExam,
+  questions: TopikExamQuestion[]
+): Promise<TopikExam> {
+  if (!supabaseEnabled || !supabase) {
+    throw new Error('Supabase không khả dụng')
+  }
+
+  // 1. Insert đề thi
+  const { data: examData, error: examError } = await supabase
+    .from('topik_exams')
+    .insert([exam])
+    .select()
+    .single()
+
+  if (examError || !examData) {
+    throw new Error(`Lỗi tạo đề thi: ${examError?.message || 'Không có dữ liệu trả về'}`)
+  }
+
+  // 2. Insert các câu hỏi
+  const questionsToInsert = questions.map(q => ({
+    exam_id: examData.id,
+    question_number: q.question_number,
+    question_type: q.question_type,
+    instructions: q.instructions,
+    passage: q.passage || null,
+    question_text: q.question_text,
+    options: q.options,
+    correct_option: q.correct_option,
+    explanation: q.explanation || null,
+    audio_script: q.audio_script || null,
+  }))
+
+  const { error: questionsError } = await supabase
+    .from('topik_exam_questions')
+    .insert(questionsToInsert)
+
+  if (questionsError) {
+    // Dọn dẹp đề thi lỗi để tránh rác dữ liệu
+    await supabase.from('topik_exams').delete().eq('id', examData.id)
+    throw new Error(`Lỗi tạo câu hỏi: ${questionsError.message}`)
+  }
+
+  return examData
+}
+
+/**
+ * Tải danh sách đề thi hiện có
+ */
+export async function loadExamsFromDb(category?: 'reading' | 'listening', level?: number): Promise<TopikExam[]> {
+  if (!supabaseEnabled || !supabase) {
+    return []
+  }
+
+  try {
+    let query = supabase.from('topik_exams').select('*').order('exam_number', { ascending: true })
+
+    if (category) {
+      query = query.eq('category', category)
+    }
+    if (level) {
+      query = query.eq('level', level)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  } catch (err) {
+    console.error('[TopikStorage] Lỗi tải danh sách đề thi:', err)
+    return []
+  }
+}
+
+/**
+ * Tải danh sách câu hỏi của một đề thi cụ thể
+ */
+export async function loadExamQuestions(examId: string): Promise<TopikExamQuestion[]> {
+  if (!supabaseEnabled || !supabase) {
+    return []
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('topik_exam_questions')
+      .select('*')
+      .eq('exam_id', examId)
+      .order('question_number', { ascending: true })
+
+    if (error) throw error
+    return data || []
+  } catch (err) {
+    console.error('[TopikStorage] Lỗi tải câu hỏi đề thi:', err)
+    return []
+  }
+}
+

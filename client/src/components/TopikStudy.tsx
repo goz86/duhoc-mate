@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   ChevronLeft, ChevronRight, Calendar, RotateCcw, BookOpen,
   CheckCircle2, XCircle, Volume2, Settings, Loader2,
-  Plus, Zap, Key, Shuffle,
+  Plus, Zap, Key, Shuffle, ClipboardList,
 } from 'lucide-react'
 import {
   generateExample, generateNewWords, hasApiKey, getApiKey, setApiKey,
@@ -14,6 +14,7 @@ import {
   saveExamDate as saveExamDateToDb, loadExamDate,
   type TopikWord,
 } from '../lib/topikStorage'
+import TopikExamComponent from './TopikExam'
 
 interface TopikCard {
   id: number
@@ -121,7 +122,7 @@ export default function TopikStudy({ roomId, socket }: Props) {
   const [unknown, setUnknown] = useState<Set<number>>(new Set())
   const [examDate, setExamDate] = useState<string>('')
   const [showDateInput, setShowDateInput] = useState(false)
-  const [activeTab, setActiveTab] = useState<'flashcard' | 'countdown'>('flashcard')
+  const [activeTab, setActiveTab] = useState<'flashcard' | 'countdown' | 'exam'>('flashcard')
 
   // ── AI states ──────────────────────────────────────────────────
   const [aiWords, setAiWords] = useState<TopikCard[]>([])
@@ -370,6 +371,12 @@ export default function TopikStudy({ roomId, socket }: Props) {
           className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition cursor-pointer ${activeTab === 'flashcard' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
         >
           <BookOpen size={15} /> {t('topik.flashcard')}
+        </button>
+        <button
+          onClick={() => setActiveTab('exam')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition cursor-pointer ${activeTab === 'exam' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
+        >
+          <ClipboardList size={15} /> Luyện đề thi
         </button>
         <button
           onClick={() => setActiveTab('countdown')}
@@ -722,6 +729,10 @@ export default function TopikStudy({ roomId, socket }: Props) {
             </div>
           </div>
         </div>
+      )}
+
+      {activeTab === 'exam' && (
+        <TopikExamComponent roomId={roomId} />
       )}
     </div>
   )
