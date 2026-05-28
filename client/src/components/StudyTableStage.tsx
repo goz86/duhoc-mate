@@ -5,6 +5,7 @@ import {
   Flame,
   Heart,
   Keyboard,
+  Laugh,
   MicOff,
   Moon,
   Pause,
@@ -102,6 +103,7 @@ const reactionOptions: Array<{ label: string; Icon: LucideIcon; tone: string }> 
   { label: 'Cố lên', Icon: Flame, tone: 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30' },
   { label: 'Nghỉ chút', Icon: Coffee, tone: 'bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900/30' },
   { label: 'Thích', Icon: Heart, tone: 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30' },
+  { label: 'Haha', Icon: Laugh, tone: 'bg-yellow-50 text-yellow-700 border-yellow-100 dark:bg-yellow-950/20 dark:text-yellow-400 dark:border-yellow-900/30' },
 ]
 
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase() || 'DM'
@@ -185,7 +187,7 @@ export default function StudyTableStage({
   const isCrowded = seats.length > 6
 
   const visibleReactions = useMemo(() => {
-    const cutoff = now - 3000
+    const cutoff = now - 3800
     return (studyTable?.reactions || []).filter(reaction => reaction.createdAt >= cutoff)
   }, [now, studyTable?.reactions])
 
@@ -311,16 +313,16 @@ export default function StudyTableStage({
 
                       <div className="relative">
 
-                        {/* Reaction bubbles – bắn tung toé nhiều hướng, kèm tên người bấm */}
-                        <div className="pointer-events-none absolute left-1/2 top-1 z-30 h-0 w-0">
+                        {/* Reaction bubbles – bắn tung toé nhẹ nhàng, neo giữa card để không bị box trên che */}
+                        <div className="pointer-events-none absolute left-1/2 top-1/2 z-[45] h-0 w-0 -translate-y-1/2">
                           {activeReactions.map((reaction, reactionIndex) => {
                             const reactionMeta = reactionOptions.find(option => option.label === reaction.label) || reactionOptions[0]
                             const ReactionIcon = reactionMeta.Icon
                             // hướng bay ngẫu nhiên nhưng ổn định theo id (không nhảy mỗi render)
                             const seed = hashSeed(reaction.id)
-                            const tx = ((seed % 121) - 60) * 1.5          // -90..90 px
-                            const ty = -48 - (Math.floor(seed / 7) % 55)  // bay lên -48..-102 px
-                            const rot = ((seed % 41) - 20)                // -20..20 deg
+                            const tx = ((seed % 131) - 65)               // -65..65 px (toé ngang)
+                            const ty = -18 - (Math.floor(seed / 7) % 46) // bay lên vừa: -18..-64 px (ở trong card)
+                            const rot = ((seed % 25) - 12)               // -12..12 deg
 
                             return (
                               <span
@@ -330,14 +332,14 @@ export default function StudyTableStage({
                                   ['--tx' as string]: `${tx}px`,
                                   ['--ty' as string]: `${ty}px`,
                                   ['--rot' as string]: `${rot}deg`,
-                                  animationDelay: `${reactionIndex * 70}ms`,
+                                  animationDelay: `${reactionIndex * 90}ms`,
                                 }}
                               >
-                                <ReactionIcon size={11} />
-                                {reaction.label}
                                 {reaction.senderName && (
-                                  <span className="font-bold opacity-80">· {reaction.senderName}</span>
+                                  <span className="font-bold">{reaction.senderName}</span>
                                 )}
+                                <span className="opacity-80">· {reaction.label}</span>
+                                <ReactionIcon size={11} />
                               </span>
                             )
                           })}
