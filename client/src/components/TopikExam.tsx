@@ -11,6 +11,8 @@ import {
   saveExamToDb, loadExamsFromDb, loadExamQuestions,
   type TopikExam, type TopikExamQuestion
 } from '../lib/topikStorage'
+import ConfirmDialog from './modals/ConfirmDialog'
+
 interface Props {
   roomId?: string
 }
@@ -42,6 +44,41 @@ export default function TopikExamComponent({ roomId }: Props) {
   const [aiLoading, setAiLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
+
+  // Custom Confirm State
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean
+    message: string
+    description?: string
+    confirmText?: string
+    variant?: 'danger' | 'warning' | 'info'
+    onConfirm: () => void
+  }>({
+    open: false,
+    message: '',
+    onConfirm: () => {},
+  })
+
+  const showConfirm = useCallback((options: {
+    message: string
+    description?: string
+    confirmText?: string
+    variant?: 'danger' | 'warning' | 'info'
+    onConfirm: () => void
+  }) => {
+    setConfirmState({
+      open: true,
+      message: options.message,
+      description: options.description,
+      confirmText: options.confirmText,
+      variant: options.variant,
+      onConfirm: options.onConfirm,
+    })
+  }, [])
+
+  const closeConfirm = useCallback(() => {
+    setConfirmState(prev => ({ ...prev, open: false }))
+  }, [])
 
   // ── Load exams on mount ─────────────────────────────────────────
   const fetchExams = useCallback(async () => {
@@ -157,8 +194,17 @@ export default function TopikExamComponent({ roomId }: Props) {
   const handleFinishTest = (auto = false) => {
     stopAudio()
     if (!auto && Object.keys(answers).length < questions.length) {
-      const confirmSubmit = window.confirm('Bạn vẫn chưa hoàn thành tất cả câu hỏi. Bạn có chắc chắn muốn nộp bài?')
-      if (!confirmSubmit) return
+      showConfirm({
+        message: 'Nộp bài thi thử?',
+        description: 'Bạn vẫn chưa hoàn thành tất cả câu hỏi. Bạn có chắc chắn muốn nộp bài thi hiện tại không?',
+        confirmText: 'Đồng ý nộp',
+        variant: 'warning',
+        onConfirm: () => {
+          setIsFinished(true)
+          if (examTimer) clearInterval(examTimer)
+        }
+      })
+      return
     }
     setIsFinished(true)
     if (examTimer) clearInterval(examTimer)
@@ -167,8 +213,19 @@ export default function TopikExamComponent({ roomId }: Props) {
   const handleExitTest = () => {
     stopAudio()
     if (isTesting && !isFinished) {
-      const confirmExit = window.confirm('Bạn có chắc chắn muốn thoát khỏi phòng thi? Bài thi hiện tại sẽ không được lưu kết quả.')
-      if (!confirmExit) return
+      showConfirm({
+        message: 'Thoát khỏi phòng thi?',
+        description: 'Bạn có chắc chắn muốn rời đi? Toàn bộ kết quả bài thi hiện tại sẽ không được lưu lại.',
+        confirmText: 'Đồng ý thoát',
+        variant: 'danger',
+        onConfirm: () => {
+          setIsTesting(false)
+          setIsFinished(false)
+          setSelectedExam(null)
+          setQuestions([])
+        }
+      })
+      return
     }
     setIsTesting(false)
     setIsFinished(false)
@@ -547,7 +604,7 @@ export default function TopikExamComponent({ roomId }: Props) {
                 Kho Đề Luyện Thi Thử TOPIK
               </h2>
               <p className="text-xs text-brand-brown-light leading-relaxed mt-0.5">
-                Các đề thi CBT chất lượng cao mô phỏng chuẩn kỳ thi do AI tự thiết kế và chia sẻ trong cộng đồng.
+                Các đề thi Topik chất lượng cao mô phỏng chuẩn kỳ thi do AI tự thiết kế và chia sẻ trong cộng đồng.
               </p>
             </div>
 
@@ -650,14 +707,14 @@ export default function TopikExamComponent({ roomId }: Props) {
                     onClick={() => setCreateCategory('reading')}
                     className={`py-2 px-3 rounded-xl border text-xs font-black text-center transition cursor-pointer ${createCategory === 'reading' ? 'bg-brand-terracotta text-white border-brand-terracotta' : 'bg-white border-brand-terracotta-light/20 text-brand-brown-light hover:bg-brand-light'}`}
                   >
-                    Đọc hiểu (Reading)
+                    Đọc hiểu (읽기)
                   </button>
                   <button
                     disabled={aiLoading}
                     onClick={() => setCreateCategory('listening')}
                     className={`py-2 px-3 rounded-xl border text-xs font-black text-center transition cursor-pointer ${createCategory === 'listening' ? 'bg-brand-terracotta text-white border-brand-terracotta' : 'bg-white border-brand-terracotta-light/20 text-brand-brown-light hover:bg-brand-light'}`}
                   >
-                    Nghe hiểu (Listening)
+                    Nghe hiểu (듣기)
                   </button>
                 </div>
               </div>
@@ -716,6 +773,20 @@ export default function TopikExamComponent({ roomId }: Props) {
           </div>
         </div>
       )}
+
+      {/* Custom Confirm Dialog */}
+      <ConfirmDialog
+        open={confirmState.open}
+        message={confirmState.message}
+        description={confirmState.description}
+        confirmText={confirmState.confirmText}
+        onConfirm={() => {
+          confirmState.onConfirm()
+          closeConfirm()
+        }}
+        onCancel={closeConfirm}
+        variant={confirmState.variant}
+      />
     </div>
   )
 }
