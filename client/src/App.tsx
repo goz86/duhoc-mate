@@ -9,7 +9,7 @@ import {
   Headphones, Music2, ChevronRight, Search,
   Minimize2, Palette, Settings, Crown,
   Link2, Volume2, VolumeX, SkipForward, Plus, X, Trash2,
-  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical
+  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, Sparkles
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
 import { useTranslation } from 'react-i18next';
@@ -426,6 +426,10 @@ export default function App() {
   const [musicSearchLoading, setMusicSearchLoading] = useState(false);
   const [musicSearchError, setMusicSearchError] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
+  // Gợi ý "nghe tiếp" khi hết danh sách phát (cùng thể loại với bài vừa kết thúc)
+  const [relatedSuggestions, setRelatedSuggestions] = useState<any[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
+  const [relatedBasedOn, setRelatedBasedOn] = useState('');
   const [currentVideo, setCurrentVideo] = useState<VideoState>({
     id: '',
     time: 0,
@@ -542,6 +546,7 @@ export default function App() {
     advancingPlaylistRef.current = true;
     hostWantsToPlayRef.current = true;
     hostLastPauseAtRef.current = 0;
+    setRelatedSuggestions([]); // còn bài để phát → ẩn gợi ý "nghe tiếp"
     const nextVideoState = { id: nextItem.videoId, time: 0, playing: true, playlistItemId: nextItem.id };
     setVideoError(false);
     setCurrentVideo(nextVideoState);
@@ -1080,7 +1085,16 @@ export default function App() {
             // - User explicitly click YouTube native play → ALLOW (sincePause > 2s)
 
             if (state === 0 && !advancingPlaylistRef.current) {
-              advanceToNextPlaylistItem(event.target);
+              const advanced = advanceToNextPlaylistItem(event.target);
+              if (!advanced) {
+                // Hết danh sách phát → gợi ý bài cùng thể loại với bài vừa kết thúc
+                const endedId = currentVideoRef.current?.id;
+                const endedTitle =
+                  event.target.getVideoData?.()?.title ||
+                  playlistRef.current.find(i => i.videoId === endedId)?.title ||
+                  '';
+                if (endedTitle) fetchRelatedSuggestions(endedTitle);
+              }
               return;
             }
 
@@ -1982,6 +1996,51 @@ export default function App() {
     setShowSearchResults(false);
     setMusicSearchResults([]);
     setSidebarTab('playlist');
+  };
+
+  // Tạo từ khóa tìm kiếm "cùng thể loại" từ tiêu đề bài vừa kết thúc
+  // Bỏ phần trong ngoặc, lấy phần chính (tên bài + nghệ sĩ), bỏ các từ nhiễu
+  const buildRelatedQuery = (title: string): string => {
+    if (!title) return '';
+    let q = title
+      .replace(/\([^)]*\)/g, ' ')
+      .replace(/\[[^\]]*\]/g, ' ');
+    const parts = q.split('|').map(s => s.trim()).filter(Boolean);
+    q = parts.slice(0, 2).join(' ');
+    q = q
+      .replace(/official|music video|lyrics?|audio|video|m\/v|\bmv\b|hd|4k|live|performance|topic/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return q;
+  };
+
+  // Khi hết danh sách phát → tìm bài cùng thể loại với bài cuối cùng
+  const fetchRelatedSuggestions = async (title: string) => {
+    const q = buildRelatedQuery(title);
+    if (!q) return;
+    setRelatedBasedOn(title);
+    setRelatedLoading(true);
+    setRelatedSuggestions([]);
+    try {
+      const SEARCH_URL = `${getApiBaseCandidates()[0]}/api/search-music`;
+      const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      const existingIds = new Set(playlistRef.current.map(i => i.videoId));
+      const results = (data.results || [])
+        .filter((r: any) => r?.videoId && !existingIds.has(r.videoId))
+        .slice(0, 6);
+      setRelatedSuggestions(results);
+    } catch {
+      // im lặng - không có gợi ý thì thôi
+    } finally {
+      setRelatedLoading(false);
+    }
+  };
+
+  // Thêm 1 gợi ý "nghe tiếp" vào playlist (và ẩn khỏi danh sách gợi ý)
+  const addRelatedSuggestion = (result: any) => {
+    addSongFromResult(result);
+    setRelatedSuggestions(prev => prev.filter(r => r.videoId !== result.videoId));
   };
 
 
@@ -4075,6 +4134,71 @@ export default function App() {
                           </div>
                           );
                         })
+                      )}
+
+                      {/* Gợi ý "nghe tiếp" — cùng thể loại với bài vừa kết thúc */}
+                      {(relatedLoading || relatedSuggestions.length > 0) && (
+                        <div className="mt-2 rounded-2xl border border-brand-terracotta-light/20 bg-brand-light/30 p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <Sparkles size={13} className="text-brand-terracotta shrink-0" />
+                              <span className="text-[11px] font-black uppercase tracking-wide text-brand-brown-dark truncate">
+                                Nghe tiếp · cùng thể loại
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setRelatedSuggestions([])}
+                              className="p-1 rounded-md text-brand-brown-light/50 hover:text-brand-brown-dark hover:bg-white/60 transition shrink-0"
+                              title="Ẩn gợi ý"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+
+                          {relatedBasedOn && (
+                            <p className="mb-2 text-[10px] text-brand-brown-light truncate">
+                              Dựa trên: <span className="font-bold">{relatedBasedOn}</span>
+                            </p>
+                          )}
+
+                          {relatedLoading ? (
+                            <div className="flex items-center gap-2 py-3 text-xs text-brand-brown-light">
+                              <span className="h-3.5 w-3.5 rounded-full border-2 border-brand-terracotta/30 border-t-brand-terracotta animate-spin" />
+                              Đang tìm bài cùng thể loại…
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {relatedSuggestions.map((s) => (
+                                <button
+                                  key={s.videoId}
+                                  type="button"
+                                  onClick={() => addRelatedSuggestion(s)}
+                                  className="group flex w-full items-center gap-3 rounded-xl border border-brand-terracotta-light/10 bg-white/80 p-2 text-left transition hover:border-brand-terracotta/30 hover:shadow-sm"
+                                >
+                                  <div className="relative h-11 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-brand-light">
+                                    <img
+                                      src={s.thumbnail || `https://i.ytimg.com/vi/${s.videoId}/hqdefault.jpg`}
+                                      alt={s.title}
+                                      className="h-full w-full object-cover"
+                                      onError={(event) => { (event.target as HTMLImageElement).style.display = 'none'; }}
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition group-hover:opacity-100">
+                                      <Play size={13} className="text-white" />
+                                    </div>
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-xs font-black text-brand-brown-dark">{s.title}</p>
+                                    <p className="mt-0.5 text-[10px] font-bold text-brand-brown-light truncate">
+                                      {s.author ? `${s.author} · ` : ''}{s.duration || ''}
+                                    </p>
+                                  </div>
+                                  <span className="rounded-lg bg-brand-terracotta px-2 py-1 text-[10px] font-black text-white shrink-0">+ Thêm</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

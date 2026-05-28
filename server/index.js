@@ -28,6 +28,18 @@ app.get('/health', (req, res) => {
 // ============================================================
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
 
+// Chuyển ISO 8601 (PT4M30S, PT1H2M3S) → "4:30" / "1:02:03"
+const parseISO8601Duration = (iso) => {
+  if (!iso || typeof iso !== 'string') return '0:00';
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return '0:00';
+  const h = parseInt(m[1] || '0', 10);
+  const min = parseInt(m[2] || '0', 10);
+  const s = parseInt(m[3] || '0', 10);
+  if (h > 0) return `${h}:${String(min).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${min}:${String(s).padStart(2, '0')}`;
+};
+
 // 1. Tìm kiếm bằng official YouTube API v3 (nếu có Key)
 const searchWithOfficialApi = async (query) => {
   if (!YOUTUBE_API_KEY) throw new Error('No YOUTUBE_API_KEY configured');
@@ -38,11 +50,31 @@ const searchWithOfficialApi = async (query) => {
     throw new Error(`YouTube API error (${response.status}): ${errorText}`);
   }
   const data = await response.json();
-  return (data.items || []).map(v => ({
+  const items = data.items || [];
+
+  // search endpoint KHÔNG trả duration → gọi thêm videos?part=contentDetails để lấy thời lượng
+  const ids = items.map(v => v.id?.videoId).filter(Boolean);
+  const durationMap = {};
+  if (ids.length > 0) {
+    try {
+      const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${ids.join(',')}&key=${YOUTUBE_API_KEY}`;
+      const detailsRes = await fetch(detailsUrl);
+      if (detailsRes.ok) {
+        const detailsData = await detailsRes.json();
+        for (const item of detailsData.items || []) {
+          durationMap[item.id] = parseISO8601Duration(item.contentDetails?.duration);
+        }
+      }
+    } catch (e) {
+      console.warn('YouTube contentDetails fetch failed:', e.message);
+    }
+  }
+
+  return items.map(v => ({
     videoId: v.id.videoId,
     title: v.snippet.title,
     author: v.snippet.channelTitle || '',
-    duration: '0:00',
+    duration: durationMap[v.id.videoId] || '0:00',
     thumbnail: v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url || `https://img.youtube.com/vi/${v.id.videoId}/mqdefault.jpg`,
     views: 0,
   }));
