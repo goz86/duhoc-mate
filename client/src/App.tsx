@@ -189,6 +189,13 @@ export default function App() {
   const { t } = useTranslation();
   const { user, profile, signOut, loading } = useAuth();
 
+  // Dragging logic for the global floating widget
+  const [widgetPosition, setWidgetPosition] = useState({ x: 0, y: 0 });
+  const [isWidgetDragging, setIsWidgetDragging] = useState(false);
+  const widgetDragStartRef = useRef({ x: 0, y: 0 });
+  const widgetDragOffsetRef = useRef({ x: 0, y: 0 });
+  const widgetDragDistanceRef = useRef(0);
+
   const [customAlert, setCustomAlert] = useState<{ message: string; show: boolean } | null>(null);
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -2443,13 +2450,6 @@ export default function App() {
       </div>
     );
   }
-
-  // Dragging logic for the global floating widget
-  const [widgetPosition, setWidgetPosition] = useState({ x: 0, y: 0 });
-  const [isWidgetDragging, setIsWidgetDragging] = useState(false);
-  const widgetDragStartRef = useRef({ x: 0, y: 0 });
-  const widgetDragOffsetRef = useRef({ x: 0, y: 0 });
-  const widgetDragDistanceRef = useRef(0);
 
   const handleWidgetDragStart = (clientX: number, clientY: number) => {
     setIsWidgetDragging(true);
