@@ -22,8 +22,17 @@ const LOCAL_KEY = 'topik_ai_words'
 function getLocalWords(): TopikWord[] {
   try {
     const raw = localStorage.getItem(LOCAL_KEY)
-    return raw ? JSON.parse(raw) : []
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) {
+      // Dữ liệu bị hỏng, xóa đi
+      localStorage.removeItem(LOCAL_KEY)
+      return []
+    }
+    return parsed
   } catch {
+    // JSON bị lỗi, xóa dữ liệu hỏng
+    localStorage.removeItem(LOCAL_KEY)
     return []
   }
 }

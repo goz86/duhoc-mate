@@ -54,7 +54,7 @@ async function callDeepSeek(prompt: string): Promise<string> {
         { role: 'user', content: prompt },
       ],
       temperature: 0.8,
-      max_tokens: 1024,
+      max_tokens: 4096,
     }),
   })
 
@@ -67,11 +67,30 @@ async function callDeepSeek(prompt: string): Promise<string> {
   return data.choices?.[0]?.message?.content?.trim() || ''
 }
 
-/** Trích xuất JSON từ response (xử lý markdown code block) */
+/** Trích xuất JSON từ response (xử lý markdown code block + recovery) */
 function extractJson(raw: string): string {
   // Remove markdown code blocks if present
   const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
-  return match ? match[1].trim() : raw.trim()
+  let json = match ? match[1].trim() : raw.trim()
+
+  // Recovery: nếu JSON bị cắt giữa chừng (unterminated string)
+  // Thử sửa bằng cách đóng ngoặc còn thiếu
+  try {
+    JSON.parse(json)
+    return json
+  } catch {
+    // Cố gắng khôi phục JSON array bị cắt
+    // Tìm object hoàn chỉnh cuối cùng trong array
+    const lastCompleteObj = json.lastIndexOf('}')
+    if (lastCompleteObj > 0) {
+      json = json.substring(0, lastCompleteObj + 1)
+      // Đảm bảo đóng array nếu là array
+      if (json.trimStart().startsWith('[') && !json.trimEnd().endsWith(']')) {
+        json = json + ']'
+      }
+    }
+    return json
+  }
 }
 
 /**
