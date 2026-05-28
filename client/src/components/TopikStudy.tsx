@@ -553,24 +553,36 @@ export default function TopikStudy({ roomId, socket }: Props) {
               </div>
 
               {/* Navigation buttons */}
-              <div className="flex items-center gap-3">
-                <button onClick={goPrev} className="p-3 rounded-full bg-white border border-brand-terracotta-light/20 hover:bg-brand-light transition cursor-pointer shadow-sm">
-                  <ChevronLeft size={18} className="text-brand-brown-dark" />
+              <div className="flex items-center gap-1.5 sm:gap-3 w-full max-w-sm justify-center">
+                <button 
+                  onClick={goPrev} 
+                  className="p-2 sm:p-3 rounded-full bg-white border border-brand-terracotta-light/20 hover:bg-brand-light transition cursor-pointer shadow-sm flex-shrink-0"
+                >
+                  <ChevronLeft size={16} className="text-brand-brown-dark sm:hidden" />
+                  <ChevronLeft size={18} className="text-brand-brown-dark hidden sm:block" />
                 </button>
                 <button
                   onClick={markUnknown}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-red-100 hover:bg-red-200 text-red-700 font-bold text-sm transition cursor-pointer border border-red-200"
+                  className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-full bg-red-100 hover:bg-red-200 text-red-700 font-bold text-xs sm:text-sm transition cursor-pointer border border-red-200 whitespace-nowrap"
                 >
-                  <XCircle size={16} /> {t('topik.dontKnow')}
+                  <XCircle size={14} className="sm:hidden" />
+                  <XCircle size={16} className="hidden sm:block" /> 
+                  <span>{t('topik.dontKnow')}</span>
                 </button>
                 <button
                   onClick={markKnown}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold text-sm transition cursor-pointer border border-emerald-200"
+                  className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold text-xs sm:text-sm transition cursor-pointer border border-emerald-200 whitespace-nowrap"
                 >
-                  <CheckCircle2 size={16} /> {t('topik.know')}
+                  <CheckCircle2 size={14} className="sm:hidden" />
+                  <CheckCircle2 size={16} className="hidden sm:block" /> 
+                  <span>{t('topik.know')}</span>
                 </button>
-                <button onClick={goNext} className="p-3 rounded-full bg-white border border-brand-terracotta-light/20 hover:bg-brand-light transition cursor-pointer shadow-sm">
-                  <ChevronRight size={18} className="text-brand-brown-dark" />
+                <button 
+                  onClick={goNext} 
+                  className="p-2 sm:p-3 rounded-full bg-white border border-brand-terracotta-light/20 hover:bg-brand-light transition cursor-pointer shadow-sm flex-shrink-0"
+                >
+                  <ChevronRight size={16} className="text-brand-brown-dark sm:hidden" />
+                  <ChevronRight size={18} className="text-brand-brown-dark hidden sm:block" />
                 </button>
               </div>
 
