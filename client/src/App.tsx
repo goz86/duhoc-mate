@@ -208,6 +208,21 @@ export default function App() {
   const [guestJoinTemplate, setGuestJoinTemplate] = useState<RoomTemplate | null>(null);
   const [guestNameInput, setGuestNameInput] = useState('');
 
+  // Custom confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    message: string;
+    description?: string;
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void;
+  }>({ open: false, message: '', onConfirm: () => {} });
+
+  const showConfirm = (message: string, description: string, onConfirm: () => void, confirmText = 'Xác nhận', cancelText = 'Huỷ') => {
+    setConfirmDialog({ open: true, message, description, onConfirm, confirmText, cancelText });
+  };
+  const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, open: false }));
+
   useEffect(() => {
     const originalAlert = window.alert;
     window.alert = (message: any) => {
@@ -1898,16 +1913,22 @@ export default function App() {
       setCustomAlert({ message: 'Chỉ host mới được đóng phòng vĩnh viễn.', show: true });
       return;
     }
-    const ok = window.confirm('Đóng phòng vĩnh viễn? Phòng sẽ bị xóa khỏi danh sách và người khác không vào lại bằng mã này được nữa.');
-    if (!ok) return;
-    socket.emit('close-room', { roomId });
-    await deletePersistentRoom(roomId);
-    const nextRecent = recentRooms.filter(room => room.id !== roomId);
-    setRecentRooms(nextRecent);
-    localStorage.setItem('duhocmate_recent_rooms', JSON.stringify(nextRecent));
-    setView('landing');
-    setRoomId('');
-    socket.emit('request-active-rooms');
+    showConfirm(
+      'Đóng phòng vĩnh viễn?',
+      'Phòng sẽ bị xóa khỏi danh sách và người khác không vào lại bằng mã này được nữa.',
+      async () => {
+        socket.emit('close-room', { roomId });
+        await deletePersistentRoom(roomId);
+        const nextRecent = recentRooms.filter(room => room.id !== roomId);
+        setRecentRooms(nextRecent);
+        localStorage.setItem('duhocmate_recent_rooms', JSON.stringify(nextRecent));
+        setView('landing');
+        setRoomId('');
+        socket.emit('request-active-rooms');
+      },
+      'Đóng phòng',
+      'Huỷ'
+    );
   };
 
   // 3. Chức năng Chat
@@ -4834,16 +4855,37 @@ export default function App() {
 
             {/* Direct close button (leaves the room completely) */}
             <button
-              onClick={() => {
-                if (window.confirm("Bạn có chắc muốn rời phòng hoàn toàn?")) {
-                  confirmLeaveRoom();
-                }
-              }}
+              onClick={handleLeaveRoom}
               className="w-8 h-8 rounded-full bg-red-50 dark:bg-red-950/20 text-red-500 flex items-center justify-center hover:bg-red-100 transition cursor-pointer active:scale-90 shadow-sm"
               title="Rời phòng"
             >
               <X size={14} />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirm Dialog (shared across App.tsx) */}
+      {confirmDialog.open && (
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={closeConfirm} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white shadow-[0_24px_64px_rgba(76,55,49,0.18)] overflow-hidden animate-fade-in-up">
+            <div className="h-1 w-full bg-gradient-to-r from-brand-terracotta to-brand-brown-dark" />
+            <div className="px-6 pt-5 pb-6">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-red-50">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+              </div>
+              <p className="text-[15px] font-bold text-brand-brown-dark leading-snug">{confirmDialog.message}</p>
+              {confirmDialog.description && (
+                <p className="mt-1.5 text-xs text-brand-brown-light leading-normal">{confirmDialog.description}</p>
+              )}
+              <div className="mt-5 flex gap-2.5">
+                <button onClick={closeConfirm} className="flex-1 h-10 rounded-xl border border-brand-terracotta-light/30 bg-brand-light text-sm font-black text-brand-brown-dark hover:bg-brand-terracotta-light/20 transition active:scale-95">{confirmDialog.cancelText || 'Huỷ'}</button>
+                <button onClick={() => { confirmDialog.onConfirm(); closeConfirm(); }} className="flex-1 h-10 rounded-xl bg-red-500 text-sm font-black text-white hover:bg-red-600 transition active:scale-95 shadow-md shadow-red-500/20">{confirmDialog.confirmText || 'Xác nhận'}</button>
+              </div>
+            </div>
           </div>
         </div>
       )}
