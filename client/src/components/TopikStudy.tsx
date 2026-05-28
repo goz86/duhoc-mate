@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   ChevronLeft, ChevronRight, Calendar, RotateCcw, BookOpen,
   CheckCircle2, XCircle, Volume2, Settings, Loader2,
-  Plus, Zap, Key,
+  Plus, Zap, Key, Shuffle,
 } from 'lucide-react'
 import {
   generateExample, generateNewWords, hasApiKey, getApiKey, setApiKey,
@@ -131,6 +131,10 @@ export default function TopikStudy({ roomId, socket }: Props) {
   const [aiGenLoading, setAiGenLoading] = useState(false)
   const [aiExamples, setAiExamples] = useState<AiGeneratedExample[]>([])
   const [aiError, setAiError] = useState('')
+  const [shuffleSeedState, setShuffleSeedState] = useState<string>(() => {
+    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+    return `${roomId}_${today}`
+  })
 
   // ── Load exam date from database on mount ──────────────────────
   useEffect(() => {
@@ -166,27 +170,30 @@ export default function TopikStudy({ roomId, socket }: Props) {
       ai => !staticCards.some(s => s.ko === ai.ko)
     )
     const merged = [...staticCards, ...aiFiltered]
-    // Seed-shuffle theo roomId để đồng bộ thứ tự
-    return seedShuffle(merged, roomId)
-  }, [selectedLevel, aiWords, roomId])
+    // Seed-shuffle theo shuffleSeedState để đồng bộ thứ tự
+    return seedShuffle(merged, shuffleSeedState)
+  }, [selectedLevel, aiWords, shuffleSeedState])
 
   const currentCard = allCards[cardIndex]
 
   // ── Socket sync ────────────────────────────────────────────────
   useEffect(() => {
     if (!socket) return
-    const handler = ({ level, index }: { level: number; index: number }) => {
+    const handler = ({ level, index, seed }: { level: number; index: number; seed?: string }) => {
       setSelectedLevel(level)
       setCardIndex(index)
       setShowAnswer(false)
       setAiExamples([])
+      if (seed) {
+        setShuffleSeedState(seed)
+      }
     }
     socket.on('topik-sync', handler)
     return () => { socket.off('topik-sync', handler) }
   }, [socket])
 
-  const syncToRoom = useCallback((level: number, index: number) => {
-    socket?.emit('topik-action', { roomId, level, index })
+  const syncToRoom = useCallback((level: number, index: number, seed?: string) => {
+    socket?.emit('topik-action', { roomId, level, index, seed })
   }, [socket, roomId])
 
   // ── Navigation ─────────────────────────────────────────────────
@@ -249,6 +256,16 @@ export default function TopikStudy({ roomId, socket }: Props) {
     setUnknown(new Set())
     setAiExamples([])
     syncToRoom(level, 0)
+  }
+
+  const handleShuffle = () => {
+    const rand = Math.floor(Math.random() * 1000000)
+    const newSeed = `${roomId}_${rand}`
+    setShuffleSeedState(newSeed)
+    setCardIndex(0)
+    setShowAnswer(false)
+    setAiExamples([])
+    syncToRoom(selectedLevel, 0, newSeed)
   }
 
   const handleSaveExamDate = (date: string) => {
@@ -382,6 +399,9 @@ export default function TopikStudy({ roomId, socket }: Props) {
             ))}
             <button onClick={reset} className="p-2 rounded-full hover:bg-brand-light transition cursor-pointer ml-2" title="Reset">
               <RotateCcw size={15} className="text-brand-brown-light" />
+            </button>
+            <button onClick={handleShuffle} className="p-2 rounded-full hover:bg-brand-light transition cursor-pointer" title="Trộn ngẫu nhiên từ vựng">
+              <Shuffle size={15} className="text-brand-brown-light" />
             </button>
             {/* AI Settings toggle */}
             <button
