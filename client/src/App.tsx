@@ -8,7 +8,7 @@ import {
   Clock, FileText, Video,
   Headphones, Music2, ChevronRight, Search, Sparkles,
   Minimize2, Palette, Settings, Crown,
-  Link2, Volume2, VolumeX, SkipForward, Plus, Share2, X, Trash2,
+  Link2, Volume2, VolumeX, SkipForward, Plus, X, Trash2,
   Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
@@ -36,7 +36,20 @@ import {
   type IdeaTask,
   type RoomTemplate
 } from './lib/communityTemplates';
-import type { StageMode } from './types';
+import ConfirmDialog from './components/modals/ConfirmDialog';
+import PasswordRoomModal from './components/modals/PasswordRoomModal';
+import GuestJoinModal from './components/modals/GuestJoinModal';
+import InviteModal from './components/modals/InviteModal';
+import ThemeModal from './components/modals/ThemeModal';
+import type {
+  StageMode,
+  Member,
+  PlaylistItem,
+  VideoState,
+  Message,
+  PomodoroState,
+  StudyTableState
+} from './types';
 import { deletePersistentRoom, findPersistentRoom, hashRoomPassword, savePersistentRoom, type PersistentRoom } from './lib/persistentRooms';
 import { getNextPlaylistItem } from './lib/playlist';
 import {
@@ -67,76 +80,6 @@ if (typeof window !== 'undefined') {
   socket = globalAny._socket;
 }
 
-
-interface Member {
-  id: string;
-  username: string;
-  isHost: boolean;
-  friendCode?: string;
-  avatarUrl?: string;
-  role?: 'host' | 'cohost' | 'moderator' | 'member';
-  mutedUntil?: string | number | null;
-}
-
-interface PlaylistItem {
-  id: string;
-  videoId: string;
-  title: string;
-  duration: string;
-  votes: number;
-  votedUsers: string[];
-  addedBy: string;
-  status?: 'queued' | 'playing' | 'played';
-  playedAt?: string;
-}
-
-interface VideoState {
-  id: string;
-  time: number;
-  playing: boolean;
-  playlistItemId?: string;
-}
-
-interface Message {
-  id: string;
-  sender: string;
-  senderId?: string;
-  isHost?: boolean;
-  role?: 'host' | 'cohost' | 'moderator' | 'member';
-  type?: 'user' | 'system';
-  text: string;
-  timestamp: string;
-  sentAt?: number;  // unix ms — dùng cho chat bubble
-}
-
-interface PomodoroState {
-  timeLeft: number;
-  duration: number;
-  isRunning: boolean;
-  isBreak: boolean;
-}
-
-interface StudyTableSeat {
-  memberId: string;
-  username: string;
-  isHost: boolean;
-  joinedAt: number;
-  active: boolean;
-  status: string;
-  personalPomodoro: PomodoroState;
-}
-
-interface StudyTableReaction {
-  id: string;
-  memberId: string;
-  label: string;
-  createdAt: number;
-}
-
-interface StudyTableState {
-  seats: Record<string, StudyTableSeat>;
-  reactions: StudyTableReaction[];
-}
 
 const trendingVideoSuggestions = [
   {
@@ -200,7 +143,6 @@ export default function App() {
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordModalRoomId, setPasswordModalRoomId] = useState('');
-  const [enteredRoomPassword, setEnteredRoomPassword] = useState('');
   const [passwordModalError, setPasswordModalError] = useState('');
 
   const [showGuestJoinModal, setShowGuestJoinModal] = useState(false);
@@ -1487,7 +1429,6 @@ export default function App() {
         enteredPassword = savedPassword;
       } else {
         setPasswordModalRoomId(formattedId);
-        setEnteredRoomPassword('');
         setPasswordModalError('');
         setShowPasswordModal(true);
         return;
@@ -1564,13 +1505,8 @@ export default function App() {
     navigateToRoom(formattedId);
   };
 
-  const handlePasswordModalSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!enteredRoomPassword.trim()) {
-      setPasswordModalError('Vui lòng nhập mật khẩu!');
-      return;
-    }
-    handleJoinRoom(passwordModalRoomId, enteredRoomPassword);
+  const handlePasswordModalSubmit = (password: string) => {
+    handleJoinRoom(passwordModalRoomId, password);
   };
 
   const handleJoinTemplateRoom = async (
@@ -1615,13 +1551,7 @@ export default function App() {
     navigateToRoom(fixedRoomId);
   };
 
-  const handleGuestJoinSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!guestNameInput.trim()) {
-      alert("Vui lòng nhập tên hiển thị của bạn!");
-      return;
-    }
-    const cleanName = guestNameInput.trim();
+  const handleGuestJoinSubmitWithName = (cleanName: string) => {
     setUsername(cleanName);
     localStorage.setItem('duhocmate_username', cleanName);
     setShowGuestJoinModal(false);
@@ -2605,53 +2535,17 @@ export default function App() {
       />
 
       {/* Guest Join Modal – nhập tên trước khi vào phòng (không cần đăng nhập) */}
-      {showGuestJoinModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl">
-            <h2 className="font-display text-xl font-black text-brand-brown-dark">Vào phòng học</h2>
-            <p className="mt-1.5 text-sm font-semibold text-brand-brown-light">
-              Nhập tên hiển thị của bạn để tham gia phòng
-            </p>
-            <form onSubmit={handleGuestJoinSubmit} className="mt-5 flex flex-col gap-3">
-              <input
-                autoFocus
-                type="text"
-                placeholder="Tên của bạn..."
-                value={guestNameInput}
-                onChange={e => setGuestNameInput(e.target.value)}
-                maxLength={30}
-                className="w-full rounded-2xl border border-black/[0.1] bg-brand-light px-4 py-3 text-sm font-bold text-brand-brown-dark outline-none focus:border-brand-terracotta focus:ring-2 focus:ring-brand-terracotta/20"
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowGuestJoinModal(false)}
-                  className="flex-1 rounded-2xl border border-black/[0.08] bg-white py-3 text-sm font-black text-brand-brown-light transition hover:bg-brand-light"
-                >
-                  Huỷ
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 rounded-2xl bg-brand-terracotta py-3 text-sm font-black text-white shadow-md shadow-brand-terracotta/20 transition hover:bg-brand-brown-dark"
-                >
-                  Vào phòng →
-                </button>
-              </div>
-            </form>
-            <p className="mt-4 text-center text-xs font-semibold text-brand-brown-light">
-              Hoặc{' '}
-              <button
-                type="button"
-                onClick={() => { setShowGuestJoinModal(false); setAuthMode('login'); setShowAuthModal(true); }}
-                className="font-black text-brand-terracotta underline underline-offset-2"
-              >
-                đăng nhập
-              </button>
-              {' '}để lưu lịch sử phòng
-            </p>
-          </div>
-        </div>
-      )}
+      <GuestJoinModal
+        open={showGuestJoinModal}
+        onClose={() => setShowGuestJoinModal(false)}
+        onSubmit={handleGuestJoinSubmitWithName}
+        defaultName={guestNameInput}
+        onOpenAuthModal={() => {
+          setShowGuestJoinModal(false);
+          setAuthMode('login');
+          setShowAuthModal(true);
+        }}
+      />
 
       {/* Custom Alert Toast */}
       {customAlert && customAlert.show && (
@@ -2695,148 +2589,33 @@ export default function App() {
       )}
 
       {/* Invite Modal */}
-      {showInviteModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-[28px] bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl font-black text-brand-brown-dark">Mời bạn bè</h2>
-              <button
-                type="button"
-                onClick={() => setShowInviteModal(false)}
-                className="rounded-full p-2 text-brand-brown-light transition hover:bg-brand-light"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="mt-6 rounded-3xl border border-brand-terracotta-light/25 bg-brand-light/35 p-5 text-center">
-              {qrCodeUrl ? (
-                <img
-                  src={qrCodeUrl}
-                  alt="QR mời vào phòng"
-                  className="mx-auto h-56 w-56 rounded-2xl bg-white p-3"
-                />
-              ) : (
-                <div className="mx-auto h-56 w-56 rounded-2xl bg-white p-3 flex items-center justify-center text-brand-brown-light text-xs font-bold animate-pulse">
-                  Đang tạo mã QR...
-                </div>
-              )}
-            </div>
-            <div className="mt-5 text-center">
-              <p className="text-xs font-bold text-brand-brown-light">Mã phòng</p>
-              <p className="mt-2 font-mono text-3xl font-black tracking-[0.28em] text-brand-brown-dark">{roomId}</p>
-            </div>
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  const inviteUrl = `${window.location.origin}${window.location.pathname}#room/${roomId}`;
-                  navigator.clipboard.writeText(inviteUrl);
-                  setCustomAlert({ message: 'Đã sao chép link mời vào phòng.', show: true });
-                }}
-                className="flex-1 rounded-2xl bg-brand-terracotta py-3 text-sm font-black text-white shadow-md shadow-brand-terracotta/20 transition hover:bg-brand-brown-dark"
-              >
-                Copy link
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const inviteUrl = `${window.location.origin}${window.location.pathname}#room/${roomId}`;
-                  navigator.share?.({ title: 'Duhoc Mate', text: `Vào phòng ${roomId}`, url: inviteUrl });
-                }}
-                className="rounded-2xl border border-brand-terracotta-light/25 bg-white px-4 text-brand-brown-dark transition hover:bg-brand-light"
-              >
-                <Share2 size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <InviteModal
+        open={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        roomId={roomId}
+        qrCodeUrl={qrCodeUrl}
+        onCopySuccess={() => setCustomAlert({ message: 'Đã sao chép link mời vào phòng.', show: true })}
+      />
 
       {/* Password Room Modal */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <h2 className="font-display text-xl font-black text-brand-brown-dark">Nhập mật khẩu phòng</h2>
-            <p className="mt-1.5 text-sm font-semibold text-brand-brown-light">
-              Phòng này đã được thiết lập riêng tư. Vui lòng nhập mật khẩu để tham gia.
-            </p>
-            <form onSubmit={handlePasswordModalSubmit} className="mt-5 flex flex-col gap-3">
-              <input
-                autoFocus
-                type="password"
-                placeholder="Mật khẩu..."
-                value={enteredRoomPassword}
-                onChange={e => {
-                  setEnteredRoomPassword(e.target.value);
-                  setPasswordModalError('');
-                }}
-                className="w-full rounded-2xl border border-black/[0.1] bg-brand-light px-4 py-3 text-sm font-bold text-brand-brown-dark outline-none focus:border-brand-terracotta focus:ring-2 focus:ring-brand-terracotta/20"
-              />
-              {passwordModalError && (
-                <p className="text-xs font-bold text-brand-terracotta">{passwordModalError}</p>
-              )}
-              <div className="flex gap-2 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordModal(false)}
-                  className="flex-1 rounded-2xl border border-black/[0.08] bg-white py-3 text-sm font-black text-brand-brown-light transition hover:bg-brand-light"
-                >
-                  Huỷ
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 rounded-2xl bg-brand-terracotta py-3 text-sm font-black text-white shadow-md shadow-brand-terracotta/20 transition hover:bg-brand-brown-dark"
-                >
-                  Tham gia
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <PasswordRoomModal
+        open={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onSubmit={handlePasswordModalSubmit}
+        error={passwordModalError}
+      />
 
       {/* Theme Selector Modal */}
-      {showThemeModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <h2 className="font-display text-xl font-black text-brand-brown-dark">Chọn giao diện phòng</h2>
-            <p className="mt-1.5 text-sm font-semibold text-brand-brown-light">
-              Lựa chọn tông màu sắc phù hợp với không gian học của bạn.
-            </p>
-            <div className="grid grid-cols-2 gap-3 mt-5">
-              {roomThemeOptions.map((theme) => {
-                const isSelected = roomTheme === theme.key;
-                return (
-                  <button
-                    key={theme.key}
-                    type="button"
-                    onClick={() => {
-                      setRoomTheme(theme.key);
-                      setShowThemeModal(false);
-                    }}
-                    className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition text-left cursor-pointer ${
-                      isSelected
-                        ? 'border-brand-terracotta bg-brand-light text-brand-brown-dark font-black'
-                        : 'border-black/[0.06] hover:border-brand-terracotta-light/40 text-brand-brown-light font-bold bg-white'
-                    }`}
-                  >
-                    <span className="w-8 h-8 rounded-full bg-brand-terracotta-light/30 flex items-center justify-center font-display font-extrabold text-xs text-brand-terracotta uppercase">
-                      {theme.icon}
-                    </span>
-                    <span className="text-sm">{theme.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              onClick={() => setShowThemeModal(false)}
-              className="w-full mt-6 rounded-2xl border border-black/[0.08] bg-white py-3 text-sm font-black text-brand-brown-light transition hover:bg-brand-light"
-            >
-              Huỷ
-            </button>
-          </div>
-        </div>
-      )}
+      <ThemeModal
+        open={showThemeModal}
+        onClose={() => setShowThemeModal(false)}
+        currentTheme={roomTheme}
+        themeOptions={roomThemeOptions}
+        onSelectTheme={(themeKey) => {
+          setRoomTheme(themeKey);
+          setShowThemeModal(false);
+        }}
+      />
 
       {/* Room Settings Modal */}
       {showRoomSettings && (
@@ -4866,29 +4645,15 @@ export default function App() {
       )}
 
       {/* Custom Confirm Dialog (shared across App.tsx) */}
-      {confirmDialog.open && (
-        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={closeConfirm} />
-          <div className="relative w-full max-w-sm rounded-2xl bg-white shadow-[0_24px_64px_rgba(76,55,49,0.18)] overflow-hidden animate-fade-in-up">
-            <div className="h-1 w-full bg-gradient-to-r from-brand-terracotta to-brand-brown-dark" />
-            <div className="px-6 pt-5 pb-6">
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-red-50">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                </svg>
-              </div>
-              <p className="text-[15px] font-bold text-brand-brown-dark leading-snug">{confirmDialog.message}</p>
-              {confirmDialog.description && (
-                <p className="mt-1.5 text-xs text-brand-brown-light leading-normal">{confirmDialog.description}</p>
-              )}
-              <div className="mt-5 flex gap-2.5">
-                <button onClick={closeConfirm} className="flex-1 h-10 rounded-xl border border-brand-terracotta-light/30 bg-brand-light text-sm font-black text-brand-brown-dark hover:bg-brand-terracotta-light/20 transition active:scale-95">{confirmDialog.cancelText || 'Huỷ'}</button>
-                <button onClick={() => { confirmDialog.onConfirm(); closeConfirm(); }} className="flex-1 h-10 rounded-xl bg-red-500 text-sm font-black text-white hover:bg-red-600 transition active:scale-95 shadow-md shadow-red-500/20">{confirmDialog.confirmText || 'Xác nhận'}</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmDialog.open}
+        message={confirmDialog.message}
+        description={confirmDialog.description}
+        confirmText={confirmDialog.confirmText}
+        cancelText={confirmDialog.cancelText}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }
