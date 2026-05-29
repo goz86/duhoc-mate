@@ -1,4 +1,4 @@
-import { Crown, LogOut, Share2, UserPlus, Users, Home, Minimize2 } from 'lucide-react'
+import { Crown, LogOut, Share2, UserPlus, Users, Home, Minimize2, Settings } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import duhocMateLogo from '../assets/duhoc-mate-logo-new.png'
@@ -20,6 +20,7 @@ type RoomHeaderProps = {
   onCopyRoomId: () => void
   onLeaveRoom: () => void
   onMinimizeRoom: () => void
+  onOpenMobileSettings?: () => void
   onAddFriend: (member: HeaderMember) => void
   onTransferHost: (memberId?: string) => void
 }
@@ -35,6 +36,7 @@ export default function RoomHeader({
   onCopyRoomId,
   onLeaveRoom,
   onMinimizeRoom,
+  onOpenMobileSettings,
   onAddFriend,
   onTransferHost,
 }: RoomHeaderProps) {
@@ -221,15 +223,25 @@ export default function RoomHeader({
         </div>
         <button
           onClick={onMinimizeRoom}
-          className="flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-brand-light px-4 py-2.5 text-sm font-bold text-brand-brown-dark transition hover:bg-brand-terracotta-light/40 cursor-pointer"
-          title="Thu nhỏ phòng học"
+          className="hidden items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-brand-light px-4 py-2.5 text-sm font-bold text-brand-brown-dark transition hover:bg-brand-terracotta-light/40 cursor-pointer sm:flex"
+          title="Ẩn phòng về màn hình chính"
         >
           <Minimize2 size={16} />
-          <span className="hidden md:inline">Thu nhỏ</span>
+          <span className="hidden md:inline">Ẩn phòng</span>
         </button>
+        {onOpenMobileSettings && (
+          <button
+            onClick={onOpenMobileSettings}
+            className="grid h-11 w-11 place-items-center rounded-full border border-brand-terracotta-light/20 bg-brand-light text-brand-brown-dark transition hover:bg-brand-terracotta-light/40 sm:hidden"
+            title="Cài đặt nhanh"
+            aria-label="Cài đặt nhanh"
+          >
+            <Settings size={17} />
+          </button>
+        )}
         <button
           onClick={onLeaveRoom}
-          className="flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-brand-light px-4 py-2.5 text-sm font-bold text-brand-brown-dark transition hover:bg-brand-terracotta-light/40"
+          className="flex h-11 items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-brand-light px-3.5 text-sm font-bold text-brand-brown-dark transition hover:bg-brand-terracotta-light/40 sm:h-auto sm:px-4 sm:py-2.5"
         >
           <LogOut size={16} />
           <span className="hidden md:inline">{t('room.leaveRoom')}</span>

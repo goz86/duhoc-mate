@@ -302,6 +302,7 @@ export default function App() {
   const songsPlayedRef = useRef<number>(0);
   const messagesSentRef = useRef<number>(0);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showMobileRoomMenu, setShowMobileRoomMenu] = useState(false);
   const [sessionStats, setSessionStats] = useState({ minutes: 0, songs: 0, messages: 0 });
 
   // Help board – persists tab across page reloads
@@ -2956,9 +2957,112 @@ export default function App() {
             onCopyRoomId={copyRoomId}
             onLeaveRoom={handleLeaveRoom}
             onMinimizeRoom={() => { setView('landing'); }}
+            onOpenMobileSettings={() => setShowMobileRoomMenu(true)}
             onAddFriend={addFriendFromMember}
             onTransferHost={transferHost}
           />
+
+          {showMobileRoomMenu && (
+            <div className="fixed inset-0 z-[260] bg-black/35 p-3 backdrop-blur-sm sm:hidden" onClick={() => setShowMobileRoomMenu(false)}>
+              <div
+                className="ml-auto mt-[74px] w-full max-w-[320px] overflow-hidden rounded-[28px] border border-brand-terracotta-light/20 bg-white shadow-2xl shadow-brand-brown-dark/20"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-b border-brand-terracotta-light/15 px-4 py-3">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-brand-terracotta">Phòng {roomId}</p>
+                    <h2 className="font-display text-base font-black text-brand-brown-dark">Cài đặt nhanh</h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileRoomMenu(false)}
+                    className="grid h-9 w-9 place-items-center rounded-full bg-brand-light text-brand-brown-dark"
+                    aria-label="Đóng cài đặt nhanh"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="grid gap-2 p-3">
+                  {[
+                    {
+                      label: 'Ẩn phòng',
+                      hint: 'Thu nhỏ phòng về màn hình chính, vẫn giữ phòng đang chạy',
+                      Icon: Minimize2,
+                      tone: 'neutral',
+                      action: () => setView('landing'),
+                    },
+                    ...(stageMode === 'youtube' ? [{
+                      label: roomCollapsed ? 'Mở player' : 'Thu gọn player',
+                      hint: roomCollapsed ? 'Mở lại khu vực YouTube đầy đủ' : 'Thu gọn khu vực YouTube trong phòng',
+                      Icon: Minimize2,
+                      tone: 'neutral',
+                      action: () => setRoomCollapsed(prev => !prev),
+                    }] : []),
+                    {
+                      label: 'Link mời',
+                      hint: 'Sao chép link mời bạn vào phòng',
+                      Icon: Link2,
+                      tone: 'primary',
+                      action: copyRoomInvite,
+                    },
+                    {
+                      label: 'Giao diện',
+                      hint: 'Đổi màu và không khí phòng học',
+                      Icon: Palette,
+                      tone: 'neutral',
+                      action: () => setShowThemeModal(true),
+                    },
+                    {
+                      label: 'Cài đặt phòng',
+                      hint: 'Đổi tên, riêng tư, ảnh phòng',
+                      Icon: Settings,
+                      tone: 'neutral',
+                      action: () => setShowRoomSettings(true),
+                    },
+                    ...(isHost ? [{
+                      label: 'Chuyển host',
+                      hint: 'Trao quyền chủ phòng cho bạn học khác',
+                      Icon: Crown,
+                      tone: 'neutral',
+                      action: () => transferHost(),
+                    }] : []),
+                  ].map((item) => {
+                    const Icon = item.Icon;
+                    return (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={() => {
+                          setShowMobileRoomMenu(false);
+                          item.action();
+                        }}
+                        className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition active:scale-[0.99] ${
+                          item.tone === 'primary'
+                            ? 'border-brand-terracotta/25 bg-brand-terracotta text-white shadow-md shadow-brand-terracotta/15'
+                            : 'border-brand-terracotta-light/18 bg-brand-light/45 text-brand-brown-dark hover:bg-brand-light'
+                        }`}
+                      >
+                        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${
+                          item.tone === 'primary' ? 'bg-white/18 text-white' : 'bg-white text-brand-terracotta'
+                        }`}>
+                          <Icon size={17} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-black">{item.label}</span>
+                          <span className={`mt-0.5 block text-[11px] font-bold leading-snug ${
+                            item.tone === 'primary' ? 'text-white/78' : 'text-brand-brown-light'
+                          }`}>
+                            {item.hint}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="hidden flex-wrap items-center gap-2 border-b border-brand-terracotta-light/15 bg-white/55 px-5 py-3 backdrop-blur sm:flex">
             {stageMode === 'youtube' && (
