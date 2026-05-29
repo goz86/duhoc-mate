@@ -4654,7 +4654,7 @@ export default function App() {
           </div>
           ); // end IIFE return
           })()} {/* end adaptive grid IIFE */}
-          <nav className="fixed inset-x-3 bottom-3 z-[120] rounded-[24px] border border-brand-terracotta-light/25 bg-white/92 p-1.5 shadow-[0_18px_55px_rgba(76,55,49,0.18)] backdrop-blur-xl sm:hidden">
+          <nav className="fixed inset-x-3 bottom-3 z-[120] overflow-visible rounded-[24px] border border-brand-terracotta-light/25 bg-white/92 p-1.5 shadow-[0_18px_55px_rgba(76,55,49,0.18)] backdrop-blur-xl sm:hidden">
             <div className="grid grid-cols-5 gap-1">
               {[
                 { key: 'youtube', label: 'YouTube', Icon: Play },
@@ -4673,7 +4673,7 @@ export default function App() {
                     key={item.key}
                     type="button"
                     onClick={() => openMobileCompactView(key)}
-                    className={`relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-[18px] px-1 py-2 text-[10px] font-black transition ${
+                    className={`relative flex min-w-0 flex-col items-center justify-center gap-1 overflow-visible rounded-[18px] px-1 py-2 text-[10px] font-black transition ${
                       active
                         ? 'bg-brand-terracotta text-white shadow-sm'
                         : 'text-brand-brown-light hover:bg-brand-light'
@@ -4682,7 +4682,7 @@ export default function App() {
                     <Icon size={17} />
                     <span className="max-w-full truncate">{item.label}</span>
                     {showBadge && (
-                      <span className={`absolute right-1.5 top-1 grid min-h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-black ${
+                      <span className={`pointer-events-none absolute -top-1 right-2 grid h-5 min-w-5 place-items-center rounded-full border-2 border-white px-1 text-[10px] font-black leading-none shadow-sm ${
                         active ? 'bg-white text-brand-terracotta' : 'bg-brand-terracotta text-white'
                       }`}>
                         {item.badge > 9 ? '9+' : item.badge}
