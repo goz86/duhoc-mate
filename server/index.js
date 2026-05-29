@@ -213,7 +213,8 @@ const socketOptions = {
   },
   transports: ['websocket', 'polling'],
   pingInterval: 25000,
-  pingTimeout: 60000
+  pingTimeout: 60000,
+  maxHttpBufferSize: 6_000_000
 };
 
 const httpServer = createServer(app);
@@ -1125,8 +1126,11 @@ io.on('connection', (socket) => {
   socket.on('whiteboard-image', ({ roomId, image }) => {
     const room = rooms.get(roomId);
     if (!room || !image?.id || !image?.src) return;
-    // chặn ảnh quá lớn (dataURL ~ < 3MB)
-    if (typeof image.src !== 'string' || image.src.length > 3_000_000) return;
+    // chặn ảnh quá lớn (dataURL đã được client nén trước khi gửi)
+    if (typeof image.src !== 'string' || image.src.length > 3_000_000) {
+      socket.emit('whiteboard-image-error', { message: 'Ảnh quá lớn để đồng bộ trong phòng.' });
+      return;
+    }
     const wb = ensureWhiteboard(room);
     const el = {
       id: image.id,
@@ -1140,7 +1144,7 @@ io.on('connection', (socket) => {
     };
     wb.elements.push(el);
     if (wb.elements.length > MAX_WB_ELEMENTS) wb.elements.splice(0, wb.elements.length - MAX_WB_ELEMENTS);
-    socket.to(roomId).emit('whiteboard-image', { image: el });
+    io.to(roomId).emit('whiteboard-image', { image: el });
   });
 
   // Xoá toàn bộ bảng (mọi người đều được phép)

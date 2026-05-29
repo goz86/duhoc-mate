@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
   AlertTriangle,
-  Coffee, MessageCircle, ListMusic,
+  BookOpen, Coffee, MessageCircle, ListMusic,
   Users, ThumbsUp, Play, Pause, RotateCcw, Send,
   CloudRain,
   Clock, FileText, Video,
   Headphones, Music2, ChevronRight, Search,
   Minimize2, Palette, Settings, Crown,
   Link2, Volume2, VolumeX, SkipForward, Plus, X, Trash2,
-  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, Sparkles
+  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, Sparkles, ClipboardList
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
 import { useTranslation } from 'react-i18next';
@@ -66,6 +66,8 @@ import {
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 const LOCAL_API_BASE_URL = 'http://localhost:3001';
 const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : LOCAL_API_BASE_URL);
+const INITIAL_VISIBLE_CHAT_MESSAGES = 35;
+const CHAT_MESSAGES_PAGE_SIZE = 25;
 
 const getApiBaseCandidates = () => {
   const bases = [API_BASE_URL, '', LOCAL_API_BASE_URL];
@@ -367,9 +369,11 @@ export default function App() {
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [visibleChatCount, setVisibleChatCount] = useState(INITIAL_VISIBLE_CHAT_MESSAGES);
   // StageMode controls the main room module: media, focus timer, TOPIK, or idea board.
   const [stageMode, setStageMode] = useState<StageMode>('youtube');
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'playlist' | 'members'>('playlist');
+  const [mobileCompactView, setMobileCompactView] = useState<'youtube' | 'video' | 'topik' | 'chat' | 'pdf'>('youtube');
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [ideaTasks, setIdeaTasks] = useState<IdeaTask[]>([]);
   const [roomCollapsed, setRoomCollapsed] = useState(false);
@@ -378,6 +382,22 @@ export default function App() {
       setRoomCollapsed(false);
     }
   }, [stageMode]);
+
+  const openMobileCompactView = (view: typeof mobileCompactView) => {
+    setMobileCompactView(view);
+    if (view === 'youtube' || view === 'video' || view === 'topik' || view === 'pdf') {
+      setStageMode(view);
+      if (view === 'video' && !jitsiActive) {
+        setJitsiActive(true);
+        if (roomIdRef.current) {
+          socket.emit('study-table-action', { roomId: roomIdRef.current, type: 'presence', payload: { active: true } });
+        }
+      }
+    } else {
+      setSidebarTab('chat');
+      setUnreadChatCount(0);
+    }
+  };
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const loadingNewVideoRef = useRef(false);
@@ -592,6 +612,16 @@ export default function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const visibleChatMessages = useMemo(
+    () => chatMessages.slice(Math.max(0, chatMessages.length - visibleChatCount)),
+    [chatMessages, visibleChatCount]
+  );
+  const hasOlderChatMessages = visibleChatCount < chatMessages.length;
+
+  const loadOlderChatMessages = () => {
+    setVisibleChatCount(count => Math.min(chatMessages.length, count + CHAT_MESSAGES_PAGE_SIZE));
+  };
+
   // Điều chỉnh âm lượng YouTube player (0-100) + lưu state để slider sync
   const setPlayerVolume = (vol: number) => {
     const clamped = Math.max(0, Math.min(100, Math.round(vol)));
@@ -703,6 +733,7 @@ export default function App() {
 
     socket.on('receive-message', (msg: Message) => {
       setChatMessages(prev => [...prev, msg]);
+      setVisibleChatCount(count => Math.max(INITIAL_VISIBLE_CHAT_MESSAGES, count));
       // Increment unread count if not viewing chat
       setUnreadChatCount(prev => {
         // Nếu user không đang xem chat, increment counter
@@ -1669,6 +1700,7 @@ export default function App() {
     setMembers([]);
     setPlaylist([]);
     setChatMessages([]);
+    setVisibleChatCount(INITIAL_VISIBLE_CHAT_MESSAGES);
     setCurrentVideo({ id: '', time: 0, playing: false });
     setIdeaTasks([]);
     setPomodoro({ timeLeft: 25 * 60, duration: 25 * 60, isRunning: false, isBreak: false });
@@ -2928,7 +2960,7 @@ export default function App() {
             onTransferHost={transferHost}
           />
 
-          <div className="flex flex-wrap items-center gap-2 border-b border-brand-terracotta-light/15 bg-white/55 px-5 py-3 backdrop-blur">
+          <div className="hidden flex-wrap items-center gap-2 border-b border-brand-terracotta-light/15 bg-white/55 px-5 py-3 backdrop-blur sm:flex">
             {stageMode === 'youtube' && (
               <button onClick={() => setRoomCollapsed(prev => !prev)} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
                 <Minimize2 size={14} /> {roomCollapsed ? 'Trở lại phòng' : 'Thu nhỏ'}
@@ -2955,14 +2987,20 @@ export default function App() {
           {(() => {
             const mainSpan = roomCollapsed ? 'lg:col-span-12' : 'lg:col-span-9';
             const sideSpan = roomCollapsed ? 'hidden' : 'lg:col-span-3';
+            const mobileSidebarPanel = mobileCompactView === 'chat';
+            const mainMobileVisibility = mobileSidebarPanel ? 'hidden sm:flex' : 'flex';
+            const sideMobileVisibility = mobileSidebarPanel ? 'flex' : 'hidden sm:flex';
             return (
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 lg:overflow-hidden lg:max-h-[calc(100vh-108px)] xl:max-h-[calc(100vh-96px)]">
+          <div className="flex-1 grid grid-cols-1 gap-0 pb-24 sm:pb-0 lg:grid-cols-12 lg:overflow-hidden lg:max-h-[calc(100vh-108px)] xl:max-h-[calc(100vh-96px)]">
 
             {/* LEFT / CENTER: Stage workspace */}
-            <main className={`${mainSpan} p-2 sm:p-4 xl:p-6 flex flex-col gap-4 lg:overflow-y-auto transition-all duration-300`}>
+            <main className={`${mainMobileVisibility} ${mainSpan} p-2 sm:p-4 xl:p-6 flex-col gap-3 sm:gap-4 lg:overflow-y-auto transition-all duration-300`}>
 
-              {!roomCollapsed && <StageSelector stageMode={stageMode} onChange={(mode) => {
+              {!roomCollapsed && <div className="hidden sm:block"><StageSelector stageMode={stageMode} onChange={(mode) => {
                 setStageMode(mode);
+                if (mode === 'youtube' || mode === 'video' || mode === 'topik' || mode === 'pdf') {
+                  setMobileCompactView(mode);
+                }
                 // Tự động ngồi vào bàn khi chuyển sang tab Bàn học
                 if (mode === 'video' && !jitsiActive) {
                   setJitsiActive(true);
@@ -2970,7 +3008,7 @@ export default function App() {
                     socket.emit('study-table-action', { roomId: roomIdRef.current, type: 'presence', payload: { active: true } });
                   }
                 }
-              }} />}
+              }} /></div>}
 
               {/* ── STAGE DISPLAY AREA – adapts per stageMode ── */}
               <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : `glass-panel rounded-3xl p-2.5 sm:p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col ${stageMode === 'topik' ? 'h-auto shrink-0' : 'flex-1'}`} relative ${stageMode === 'topik' ? 'overflow-visible' : 'overflow-hidden'}`}>
@@ -3719,7 +3757,7 @@ export default function App() {
             </main>
 
             {/* RIGHT SIDEBAR: Chat, Playlist, Members — width adapts with sideSpan */}
-            <aside className={`${sideSpan} min-w-0 border-l border-brand-terracotta-light/20 bg-white/30 backdrop-blur-lg flex flex-col lg:max-h-full transition-all duration-300`}>
+            <aside className={`${sideMobileVisibility} ${sideSpan} min-h-[calc(100dvh-148px)] min-w-0 border-l border-brand-terracotta-light/20 bg-white/30 backdrop-blur-lg flex-col transition-all duration-300 sm:min-h-0 lg:max-h-full`}>
               
               {/* Tab Navigation in Sidebar */}
               <div className="p-3 pb-0 xl:p-4 xl:pb-0 shrink-0">
@@ -4119,7 +4157,7 @@ export default function App() {
 
                 {/* 2. CHAT TAB */}
                 {sidebarTab === 'chat' && (
-                  <div className="flex h-full lg:h-full lg:min-h-0 min-h-0 max-h-[calc(100vh-320px)] sm:max-h-[calc(100vh-280px)] lg:max-h-[calc(100vh-240px)] flex-col gap-0 flex-1">
+                  <div className="flex h-[calc(100dvh-210px)] min-h-0 flex-1 flex-col gap-0 overflow-hidden sm:h-full sm:max-h-[calc(100vh-280px)] lg:min-h-0 lg:max-h-[calc(100vh-240px)]">
                     {/* Pinned Message Bar */}
                     {pinnedMessage && (
                       <div className="shrink-0 mx-3 my-2 px-3 py-2 bg-amber-50/90 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 rounded-xl flex items-center justify-between gap-2 shadow-sm animate-fadeIn">
@@ -4155,7 +4193,25 @@ export default function App() {
                     )}
 
                     {/* Messages Area */}
-                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain space-y-4 pr-1 mb-3 custom-scrollbar">
+                    <div
+                      className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain space-y-4 pr-1 pb-3 custom-scrollbar"
+                      onScroll={(event) => {
+                        if (event.currentTarget.scrollTop < 24 && hasOlderChatMessages) {
+                          loadOlderChatMessages();
+                        }
+                      }}
+                    >
+                      {hasOlderChatMessages && (
+                        <div className="flex justify-center">
+                          <button
+                            type="button"
+                            onClick={loadOlderChatMessages}
+                            className="rounded-full border border-brand-terracotta-light/20 bg-white/80 px-3 py-1.5 text-[11px] font-black text-brand-brown-light shadow-sm transition hover:border-brand-terracotta/40 hover:text-brand-terracotta"
+                          >
+                            Tải tin nhắn cũ
+                          </button>
+                        </div>
+                      )}
                       {chatMessages.length === 0 ? (
                         <div className="text-center py-12 text-brand-brown-light space-y-2">
                           <MessageCircle className="mx-auto text-brand-terracotta-light/40" size={36} />
@@ -4163,7 +4219,7 @@ export default function App() {
                           <p className="text-xs">Gửi lời chào đầu tiên tới các bạn học đi thôi!</p>
                         </div>
                       ) : (
-                        chatMessages.map((msg) => {
+                        visibleChatMessages.map((msg) => {
                           const isMyMessage = msg.senderId === socket?.id;
                           const isSystem = msg.type === 'system';
                           const isHostMsg = msg.isHost;
@@ -4262,17 +4318,28 @@ export default function App() {
                       <div ref={messagesEndRef} />
                     </div>
 
-                    <div className="mt-auto shrink-0 border-t border-brand-terracotta-light/10 pt-3">
-                    {/* Quick Emojis Bar */}
-                    <div className="flex gap-2 pb-3 overflow-x-auto select-none animate-fadeIn">
-                      {['☕', '📖', '🎵', '🔥', '👏', '🇻🇳', '🇰🇷', '💪'].map(emoji => (
+                    <div className="shrink-0 border-t border-brand-terracotta-light/10 bg-[#fbf7f2]/95 pt-3 backdrop-blur-xl sm:bg-transparent sm:backdrop-blur-0">
+                    {/* Quick reactions */}
+                    <div className="flex gap-2 overflow-x-auto pb-3 select-none animate-fadeIn">
+                      {[
+                        { value: '😄', label: 'Vui' },
+                        { value: '🙂', label: 'Ổn' },
+                        { value: '😉', label: 'Hiểu' },
+                        { value: '😍', label: 'Thích' },
+                        { value: '😛', label: 'Nghỉ' },
+                        { value: '😁', label: 'Tốt' },
+                        { value: '😂', label: 'Cười' },
+                        { value: '😅', label: 'Cố' },
+                      ].map(reaction => (
                         <button
-                          key={emoji}
+                          key={reaction.value}
                           type="button"
-                          onClick={() => { socket.emit('send-message', { roomId, message: emoji }); }}
-                          className="w-9 h-9 flex items-center justify-center bg-white hover:bg-brand-terracotta hover:text-white border border-brand-terracotta-light/15 rounded-full text-base transition cursor-pointer shadow-sm active:scale-90"
+                          onClick={() => { socket.emit('send-message', { roomId, message: reaction.value }); }}
+                          className="group relative grid h-11 w-11 shrink-0 place-items-center rounded-full border border-yellow-200/80 bg-gradient-to-br from-[#FFE978] via-[#FFD63D] to-[#F8B923] text-xl shadow-[inset_0_2px_3px_rgba(255,255,255,0.65),0_6px_14px_rgba(167,122,108,0.14)] transition hover:-translate-y-0.5 hover:scale-105 active:scale-95"
+                          title={reaction.label}
                         >
-                          {emoji}
+                          <span className="pointer-events-none absolute left-2 top-1.5 h-2 w-4 rotate-[-28deg] rounded-full bg-white/55 blur-[1px]" />
+                          <span className="relative z-10 leading-none">{reaction.value}</span>
                         </button>
                       ))}
                     </div>
@@ -4587,6 +4654,45 @@ export default function App() {
           </div>
           ); // end IIFE return
           })()} {/* end adaptive grid IIFE */}
+          <nav className="fixed inset-x-3 bottom-3 z-[120] rounded-[24px] border border-brand-terracotta-light/25 bg-white/92 p-1.5 shadow-[0_18px_55px_rgba(76,55,49,0.18)] backdrop-blur-xl sm:hidden">
+            <div className="grid grid-cols-5 gap-1">
+              {[
+                { key: 'youtube', label: 'YouTube', Icon: Play },
+                { key: 'video', label: 'Bàn học', Icon: Coffee },
+                { key: 'topik', label: 'TOPIK', Icon: BookOpen },
+                { key: 'chat', label: 'Chat', Icon: MessageCircle, badge: unreadChatCount },
+                { key: 'pdf', label: 'Vẽ', Icon: ClipboardList },
+              ].map(item => {
+                const Icon = item.Icon;
+                const key = item.key as typeof mobileCompactView;
+                const active = mobileCompactView === key;
+                const showBadge = typeof item.badge === 'number' && item.badge > 0;
+
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => openMobileCompactView(key)}
+                    className={`relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-[18px] px-1 py-2 text-[10px] font-black transition ${
+                      active
+                        ? 'bg-brand-terracotta text-white shadow-sm'
+                        : 'text-brand-brown-light hover:bg-brand-light'
+                    }`}
+                  >
+                    <Icon size={17} />
+                    <span className="max-w-full truncate">{item.label}</span>
+                    {showBadge && (
+                      <span className={`absolute right-1.5 top-1 grid min-h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-black ${
+                        active ? 'bg-white text-brand-terracotta' : 'bg-brand-terracotta text-white'
+                      }`}>
+                        {item.badge > 9 ? '9+' : item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
         </div>
       )}
 

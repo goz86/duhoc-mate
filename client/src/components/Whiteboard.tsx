@@ -33,6 +33,7 @@ interface Props {
 
 const PALETTE = ['#4A3E3D', '#A77A6C', '#E5A893', '#E11D48', '#2563EB', '#16A34A', '#F59E0B', '#111827']
 const SIZES = [3, 6, 12, 22]
+const MAX_SYNC_IMAGE_BYTES = 2_500_000
 
 const uid = () =>
   (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -271,9 +272,17 @@ export default function Whiteboard({ socket, roomId, initialElements }: Props) {
       const octx = off.getContext('2d')
       if (octx) {
         octx.drawImage(img, 0, 0, ow, oh)
-        const isPng = blob.type.includes('png')
-        const dataUrl = off.toDataURL(isPng ? 'image/png' : 'image/jpeg', 0.85)
-        if (dataUrl.length < 3_000_000) addImageFromSrc(dataUrl, ow, oh)
+        let dataUrl = off.toDataURL('image/jpeg', 0.82)
+        let quality = 0.72
+        while (dataUrl.length > MAX_SYNC_IMAGE_BYTES && quality >= 0.45) {
+          dataUrl = off.toDataURL('image/jpeg', quality)
+          quality -= 0.1
+        }
+        if (dataUrl.length <= MAX_SYNC_IMAGE_BYTES) {
+          addImageFromSrc(dataUrl, ow, oh)
+        } else {
+          window.alert('Ảnh này quá lớn để đồng bộ trong phòng. Hãy chọn ảnh nhỏ hơn hoặc chụp/crop lại.')
+        }
       }
       URL.revokeObjectURL(url)
     }
@@ -346,11 +355,15 @@ export default function Whiteboard({ socket, roomId, initialElements }: Props) {
       for (const el of elementsRef.current) if (el.type === 'image') loadImage(el)
       refreshEmpty(); markDirty()
     }
+    const onImageError = ({ message }: { message?: string }) => {
+      window.alert(message || 'Không thể đồng bộ ảnh này trong phòng.')
+    }
     socket.on('whiteboard-stroke-start', onStart)
     socket.on('whiteboard-stroke-point', onPoint)
     socket.on('whiteboard-image', onImage)
     socket.on('whiteboard-clear', onClear)
     socket.on('whiteboard-state', onState)
+    socket.on('whiteboard-image-error', onImageError)
     // yêu cầu trạng thái mới nhất ngay khi mở tab Vẽ
     socket.emit('whiteboard-request', { roomId })
     return () => {
@@ -359,6 +372,7 @@ export default function Whiteboard({ socket, roomId, initialElements }: Props) {
       socket.off('whiteboard-image', onImage)
       socket.off('whiteboard-clear', onClear)
       socket.off('whiteboard-state', onState)
+      socket.off('whiteboard-image-error', onImageError)
     }
   }, [socket, roomId, loadImage, markDirty, refreshEmpty])
 

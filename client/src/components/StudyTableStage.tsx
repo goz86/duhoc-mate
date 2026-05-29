@@ -214,9 +214,9 @@ export default function StudyTableStage({
     <div className="flex flex-1 flex-col gap-4">
       <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
         <div className="max-w-2xl">
-          <h2 className="font-display text-2xl font-black leading-tight text-brand-brown-dark">Bàn học sống</h2>
+          <h2 className="font-display text-2xl font-black leading-tight text-brand-brown-dark">Bàn học chung</h2>
           <p className="mt-1 text-sm leading-relaxed text-brand-brown-light">
-            Mỗi bạn là một nhân vật ngồi vào bàn riêng, có thời gian hiện diện, Pomodoro cá nhân và biểu cảm động viên từ cả phòng.
+            Cùng ngồi học, theo dõi thời gian hiện diện, Pomodoro cá nhân và gửi biểu cảm động viên cho nhau.
           </p>
         </div>
 

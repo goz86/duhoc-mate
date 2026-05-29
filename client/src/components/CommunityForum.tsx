@@ -25,6 +25,7 @@ import {
   Briefcase,
   Globe2,
   Flame,
+  ImagePlus,
   Loader2
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -75,6 +76,9 @@ const CATEGORIES = [
   { value: 'free', labelKey: 'forum.cat.free', Icon: Globe2, color: '#C17C63', bg: 'rgba(193,124,99,0.10)' }
 ]
 
+const MAX_POST_IMAGES = 3
+const MAX_POST_IMAGE_BYTES = 650_000
+
 function timeAgo(dateString: string): string {
   const date = new Date(dateString)
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
@@ -99,6 +103,27 @@ function fmtCountdownHMS(ms: number): string {
 
 function getCat(value: string) {
   return CATEGORIES.find(c => c.value === value) || CATEGORIES[0]
+}
+
+function getPostSubmitErrorMessage(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message
+  if (err && typeof err === 'object') {
+    const errorObject = err as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown }
+    const message = typeof errorObject.message === 'string' ? errorObject.message : ''
+    const details = typeof errorObject.details === 'string' ? errorObject.details : ''
+    const hint = typeof errorObject.hint === 'string' ? errorObject.hint : ''
+    const code = typeof errorObject.code === 'string' ? errorObject.code : ''
+    const combined = [message, details, hint, code].filter(Boolean).join(' ')
+
+    if (/image_urls/i.test(combined)) {
+      return 'Database chưa có cột image_urls cho bài viết. Hãy chạy migration SQL mới rồi đăng lại.'
+    }
+    if (/row-level security|rls|policy/i.test(combined)) {
+      return 'Bạn cần đăng nhập để đăng bài. Chế độ Ẩn danh chỉ ẩn tên hiển thị sau khi đăng nhập.'
+    }
+    if (combined) return combined
+  }
+  return 'Không đăng được bài. Hãy thử lại sau.'
 }
 
 export default function CommunityForum({
@@ -145,11 +170,15 @@ export default function CommunityForum({
   // Filters & Writing
   const [catFilter, setCatFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortMode, setSortMode] = useState<'newest' | 'hot' | 'unanswered'>('newest')
   const [showSearch, setShowSearch] = useState(false)
   const [isWriting, setIsWriting] = useState(false)
   const [writeTitle, setWriteTitle] = useState('')
   const [writeContent, setWriteContent] = useState('')
   const [writeCat, setWriteCat] = useState<'free' | 'topik' | 'life' | 'job'>('free')
+  const [writeImages, setWriteImages] = useState<string[]>([])
+  const [imageProcessing, setImageProcessing] = useState(false)
+  const [postSubmitError, setPostSubmitError] = useState('')
   const [isAnon, setIsAnon] = useState(true)
   const [submittingPost, setSubmittingPost] = useState(false)
 
@@ -304,6 +333,16 @@ export default function CommunityForum({
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!supabase || !writeTitle.trim() || !writeContent.trim() || submittingPost) return
+    setPostSubmitError('')
+    if (!currentUserId) {
+      setPostSubmitError('Bạn cần đăng nhập để đăng bài. Chế độ Ẩn danh chỉ ẩn tên hiển thị sau khi đăng nhập.')
+      window.alert('Bạn cần đăng nhập để đăng bài. Chế độ Ẩn danh chỉ ẩn tên hiển thị sau khi đăng nhập.')
+      return
+    }
+    if (imageProcessing) {
+      setPostSubmitError('Ảnh đang được nén, chờ một chút rồi bấm Đăng lại nhé.')
+      return
+    }
     setSubmittingPost(true)
     try {
       const newPostData = {
@@ -311,6 +350,7 @@ export default function CommunityForum({
         title: writeTitle.trim(),
         content: writeContent.trim(),
         category: writeCat,
+        image_urls: writeImages,
         is_anonymous: isAnon,
         display_name: isAnon ? 'Ẩn danh' : username
       }
@@ -325,12 +365,76 @@ export default function CommunityForum({
       setWriteTitle('')
       setWriteContent('')
       setWriteCat('free')
+      setWriteImages([])
       setIsAnon(true)
+      setPostSubmitError('')
       setIsWriting(false)
     } catch (err) {
-      console.error('Error creating post:', err)
+      const message = getPostSubmitErrorMessage(err)
+      console.error('Error creating post:', err, message)
+      setPostSubmitError(message)
+      window.alert(message)
     } finally {
       setSubmittingPost(false)
+    }
+  }
+
+  const compressPostImage = (file: File): Promise<string> => new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      reject(new Error('File không phải ảnh'))
+      return
+    }
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      try {
+        const MAX_SIDE = 1200
+        const scale = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight))
+        const width = Math.max(1, Math.round(img.naturalWidth * scale))
+        const height = Math.max(1, Math.round(img.naturalHeight * scale))
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) throw new Error('Không thể nén ảnh')
+        ctx.drawImage(img, 0, 0, width, height)
+
+        let quality = 0.78
+        let dataUrl = canvas.toDataURL('image/jpeg', quality)
+        while (dataUrl.length > MAX_POST_IMAGE_BYTES && quality > 0.38) {
+          quality -= 0.1
+          dataUrl = canvas.toDataURL('image/jpeg', quality)
+        }
+        URL.revokeObjectURL(url)
+        if (dataUrl.length > MAX_POST_IMAGE_BYTES) {
+          reject(new Error('Ảnh quá lớn, hãy chọn ảnh nhỏ hơn hoặc crop lại.'))
+          return
+        }
+        resolve(dataUrl)
+      } catch (error) {
+        URL.revokeObjectURL(url)
+        reject(error)
+      }
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Không đọc được ảnh này.'))
+    }
+    img.src = url
+  })
+
+  const handlePostImagesChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []).slice(0, MAX_POST_IMAGES - writeImages.length)
+    event.target.value = ''
+    if (files.length === 0) return
+    setImageProcessing(true)
+    try {
+      const compressed = await Promise.all(files.map(file => compressPostImage(file)))
+      setWriteImages(prev => [...prev, ...compressed].slice(0, MAX_POST_IMAGES))
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Không thể xử lý ảnh này.')
+    } finally {
+      setImageProcessing(false)
     }
   }
 
@@ -602,10 +706,20 @@ export default function CommunityForum({
 
   // Filter posts by search query
   const filteredPosts = useMemo(() => {
-    if (!searchQuery.trim()) return posts
+    let result = [...posts]
     const q = searchQuery.toLowerCase()
-    return posts.filter(p => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q))
-  }, [posts, searchQuery])
+    if (searchQuery.trim()) {
+      result = result.filter(p => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q))
+    }
+    if (sortMode === 'hot') {
+      result.sort((a, b) => ((b.likes_count * 2) + (b.comments_count * 3) + b.views_count) - ((a.likes_count * 2) + (a.comments_count * 3) + a.views_count))
+    } else if (sortMode === 'unanswered') {
+      result.sort((a, b) => (a.comments_count - b.comments_count) || (new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
+    } else {
+      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    }
+    return result
+  }, [posts, searchQuery, sortMode])
 
   // Trending post: most likes in last 7 days, or top liked overall
   const trendingPost = useMemo(() => {
@@ -726,6 +840,18 @@ export default function CommunityForum({
                 <div className="text-[15px] leading-relaxed text-brand-brown-dark/95 whitespace-pre-wrap mb-6">
                   {selectedPost.content}
                 </div>
+                {selectedPost.image_urls && selectedPost.image_urls.length > 0 && (
+                  <div className="mb-6 grid gap-2">
+                    {selectedPost.image_urls.map((src, index) => (
+                      <img
+                        key={`${src.slice(0, 24)}-${index}`}
+                        src={src}
+                        alt={`Ảnh bài viết ${index + 1}`}
+                        className="max-h-[420px] w-full rounded-2xl border border-brand-terracotta-light/15 object-cover"
+                      />
+                    ))}
+                  </div>
+                )}
               </>
             )}
 
@@ -913,10 +1039,10 @@ export default function CommunityForum({
           <button
             type="submit"
             form="forum-write-form"
-            disabled={!writeTitle.trim() || !writeContent.trim() || submittingPost}
+            disabled={!writeTitle.trim() || !writeContent.trim() || submittingPost || imageProcessing}
             className="px-4 h-9 rounded-full bg-brand-terracotta text-white text-xs font-black hover:bg-brand-brown-dark transition active:scale-95 disabled:opacity-40"
           >
-            {submittingPost ? '...' : 'Đăng'}
+            {submittingPost ? '...' : imageProcessing ? 'Nén...' : 'Đăng'}
           </button>
         </header>
 
@@ -967,8 +1093,57 @@ export default function CommunityForum({
             className="flex-1 mx-4 mt-3 mb-4 py-2 text-sm leading-relaxed text-brand-brown-dark bg-transparent outline-none placeholder:text-brand-brown-light/40 resize-none min-h-[300px]"
           />
 
+          {/* Image upload */}
+          <div className="mx-4 mb-4 rounded-2xl border border-brand-terracotta-light/20 bg-white/75 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black text-brand-brown-dark">Ảnh đính kèm</p>
+                <p className="mt-0.5 text-[11px] font-medium text-brand-brown-light">Tối đa {MAX_POST_IMAGES} ảnh, tự nén rồi lưu vào bài viết.</p>
+              </div>
+              <label className={`inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-xs font-black transition ${
+                writeImages.length >= MAX_POST_IMAGES || imageProcessing
+                  ? 'bg-brand-light text-brand-brown-light/50'
+                  : 'bg-brand-terracotta text-white hover:bg-brand-brown-dark'
+              }`}>
+                {imageProcessing ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
+                {imageProcessing ? 'Nén...' : 'Thêm ảnh'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={writeImages.length >= MAX_POST_IMAGES || imageProcessing}
+                  onChange={handlePostImagesChange}
+                  className="sr-only"
+                />
+              </label>
+            </div>
+            {writeImages.length > 0 && (
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {writeImages.map((src, index) => (
+                  <div key={`${src.slice(0, 24)}-${index}`} className="group relative aspect-square overflow-hidden rounded-xl bg-brand-light">
+                    <img src={src} alt={`Ảnh ${index + 1}`} className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setWriteImages(prev => prev.filter((_, i) => i !== index))}
+                      className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/45 text-white opacity-100 transition hover:bg-red-500 sm:opacity-0 sm:group-hover:opacity-100"
+                      title="Xoá ảnh"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Footer: anonymous toggle */}
-          <div className="sticky bottom-0 left-0 right-0 px-4 py-3 bg-white/95 backdrop-blur-md border-t border-brand-terracotta-light/15 flex items-center justify-between">
+          <div className="sticky bottom-0 left-0 right-0 px-4 py-3 bg-white/95 backdrop-blur-md border-t border-brand-terracotta-light/15">
+            {postSubmitError && (
+              <div className="mb-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-bold leading-snug text-red-700">
+                {postSubmitError}
+              </div>
+            )}
+            <div className="flex items-center justify-between">
             <div className="text-[11px] text-brand-brown-light/70 font-medium">
               {writeContent.length}/4000
             </div>
@@ -984,6 +1159,7 @@ export default function CommunityForum({
                 <><User size={12} /><span className="truncate max-w-[80px]">{username}</span></>
               )}
             </button>
+            </div>
           </div>
         </form>
       </div>
@@ -996,24 +1172,24 @@ export default function CommunityForum({
   return (
     <div className="forum-v2 flex-1 w-full max-w-[760px] mx-auto flex flex-col min-h-0 relative">
       {/* Sticky glassmorphism header */}
-      <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-brand-terracotta-light/15">
-        <div className="flex items-center gap-2 px-4 py-3">
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-brand-terracotta-light/15">
+        <div className="flex items-center gap-2 px-4 py-2.5 sm:py-3">
           <button
             onClick={onBackToLobby}
-            className="grid h-10 w-10 place-items-center rounded-full text-brand-brown-dark hover:bg-brand-light transition active:scale-95 lg:hidden"
+            className="grid h-9 w-9 place-items-center rounded-full text-brand-brown-dark hover:bg-brand-light transition active:scale-95 lg:hidden"
             aria-label="Lobby"
           >
             <ChevronLeft size={18} />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="font-display text-xl sm:text-2xl font-black tracking-tight text-brand-brown-dark">
+            <h1 className="font-display text-lg sm:text-2xl font-black tracking-tight text-brand-brown-dark">
               Bảng tin
             </h1>
-            <div className="h-[3px] w-12 mt-0.5 rounded-full bg-gradient-to-r from-brand-terracotta to-brand-brown-dark" />
+            <div className="h-[3px] w-10 sm:w-12 mt-0.5 rounded-full bg-gradient-to-r from-brand-terracotta to-brand-brown-dark" />
           </div>
           <button
             onClick={() => setShowSearch(v => !v)}
-            className={`grid h-10 w-10 place-items-center rounded-full transition active:scale-95 ${
+            className={`grid h-9 w-9 place-items-center rounded-full transition active:scale-95 ${
               showSearch ? 'bg-brand-terracotta text-white' : 'text-brand-brown-dark hover:bg-brand-light'
             }`}
             aria-label="Tìm kiếm"
@@ -1049,7 +1225,7 @@ export default function CommunityForum({
         )}
 
         {/* Category pill tabs */}
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-2.5 sm:pb-3">
           <div className="flex gap-2 overflow-x-auto forum-scrollbar-hide">
             {CATEGORIES.map(cat => {
               const CatIcon = cat.Icon
@@ -1058,7 +1234,7 @@ export default function CommunityForum({
                 <button
                   key={cat.value}
                   onClick={() => setCatFilter(cat.value)}
-                  className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black border transition active:scale-95 ${
+                  className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-black border transition active:scale-95 ${
                     active
                       ? 'bg-brand-brown-dark text-white border-brand-brown-dark'
                       : 'bg-white text-brand-brown-light border-brand-terracotta-light/25 hover:border-brand-terracotta/40'
@@ -1075,25 +1251,64 @@ export default function CommunityForum({
 
       {/* Scrollable feed */}
       <div className="flex-1 overflow-y-auto custom-scrollbar pb-24">
+        <div className="px-4 pb-2 pt-3">
+          <button
+            type="button"
+            onClick={() => setIsWriting(true)}
+            className="flex w-full items-center gap-3 rounded-2xl border border-brand-terracotta-light/20 bg-white/85 px-3 py-2.5 text-left shadow-sm transition hover:border-brand-terracotta/40 hover:bg-white"
+          >
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-terracotta/10 text-brand-terracotta">
+              <MessageSquare size={15} />
+            </span>
+            <span className="min-w-0 flex-1 text-sm font-bold text-brand-brown-light">
+              Bạn muốn hỏi gì hôm nay?
+            </span>
+            <Plus size={16} className="shrink-0 text-brand-terracotta" />
+          </button>
+        </div>
+
+        <div className="px-4 pb-2">
+          <div className="grid grid-cols-3 gap-1 rounded-2xl border border-brand-terracotta-light/15 bg-white/70 p-1">
+            {[
+              { key: 'newest', label: 'Mới nhất' },
+              { key: 'hot', label: 'Đang hot' },
+              { key: 'unanswered', label: 'Chưa trả lời' },
+            ].map(item => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setSortMode(item.key as typeof sortMode)}
+                className={`rounded-xl px-2 py-2 text-[11px] font-black transition ${
+                  sortMode === item.key
+                    ? 'bg-brand-terracotta text-white shadow-sm'
+                    : 'text-brand-brown-light hover:bg-brand-light'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Trending card */}
         {trendingPost && catFilter === 'all' && !searchQuery && (
           <button
             onClick={() => handlePostClick(trendingPost)}
-            className="forum-trending-card w-full text-left mx-auto mt-4 mb-3 block"
+            className="forum-trending-card w-full text-left mx-auto mb-2 block"
           >
-            <div className="mx-4 rounded-2xl border border-brand-terracotta-light/20 bg-gradient-to-br from-white via-white to-brand-light/40 p-4 shadow-[0_8px_24px_rgba(76,55,49,0.06)] hover:shadow-[0_12px_32px_rgba(76,55,49,0.10)] transition group">
-              <div className="flex items-center gap-1.5 text-[11px] font-black text-orange-600 mb-2">
+            <div className="mx-4 min-h-[118px] rounded-2xl border border-brand-terracotta-light/20 bg-gradient-to-br from-white via-white to-brand-light/40 p-3 shadow-[0_8px_24px_rgba(76,55,49,0.06)] hover:shadow-[0_12px_32px_rgba(76,55,49,0.10)] transition group">
+              <div className="flex items-center gap-1.5 text-[11px] font-black text-orange-600 mb-1.5">
                 <Flame size={13} className="fill-orange-500 text-orange-500" />
                 <span>Đang hot</span>
                 <span className="ml-auto text-brand-brown-light/60 font-bold">{timeAgo(trendingPost.created_at)}</span>
               </div>
-              <h3 className="font-display font-black text-base text-brand-brown-dark group-hover:text-brand-terracotta transition leading-snug line-clamp-2">
+              <h3 className="font-display font-black text-[15px] text-brand-brown-dark group-hover:text-brand-terracotta transition leading-snug line-clamp-2">
                 {trendingPost.title}
               </h3>
-              <p className="text-xs text-brand-brown-light line-clamp-1 mt-1.5">
+              <p className="text-xs text-brand-brown-light line-clamp-1 mt-1">
                 {trendingPost.content}
               </p>
-              <div className="flex items-center gap-3 mt-3 text-[11px] font-bold text-brand-brown-light/80">
+              <div className="flex items-center gap-3 mt-2 text-[11px] font-bold text-brand-brown-light/80">
                 <span className="inline-flex items-center gap-1"><ThumbsUp size={11} />{trendingPost.likes_count}</span>
                 <span className="inline-flex items-center gap-1"><MessageCircle size={11} />{trendingPost.comments_count}</span>
                 <span className="inline-flex items-center gap-1"><Eye size={11} />{trendingPost.views_count}</span>
@@ -1126,23 +1341,23 @@ export default function CommunityForum({
                 <article
                   key={post.id}
                   onClick={() => handlePostClick(post)}
-                  className="cursor-pointer border-b border-brand-terracotta-light/12 px-4 py-4 hover:bg-brand-light/30 transition active:bg-brand-light/50"
+                  className="cursor-pointer border-b border-brand-terracotta-light/12 px-4 py-3 hover:bg-brand-light/30 transition active:bg-brand-light/50"
                 >
                   <span
-                    className="inline-block rounded-md px-2 py-0.5 text-[10px] font-black mb-2"
+                    className="inline-block rounded-md px-2 py-0.5 text-[10px] font-black mb-1.5"
                     style={{ color: cat.color, background: cat.bg }}
                   >
                     {cat.labelOverride || t(cat.labelKey)}
                   </span>
                   <div className="flex gap-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-display font-black text-[15px] text-brand-brown-dark leading-snug line-clamp-2">
+                      <h3 className="font-display font-black text-[14px] sm:text-[15px] text-brand-brown-dark leading-snug line-clamp-2">
                         {post.title}
                       </h3>
-                      <p className="mt-1.5 text-[13px] text-brand-brown-light line-clamp-1 leading-snug">
+                      <p className="mt-1 text-[12px] sm:text-[13px] text-brand-brown-light line-clamp-1 leading-snug">
                         {post.content}
                       </p>
-                      <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-brand-brown-light/80">
+                      <div className="mt-2 flex items-center gap-1.5 text-[11px] text-brand-brown-light/80">
                         <span className="inline-flex items-center gap-1 font-bold text-brand-brown-dark/80">
                           {post.is_anonymous
                             ? <ShieldCheck size={11} className="text-emerald-500" />
@@ -1158,7 +1373,7 @@ export default function CommunityForum({
                       </div>
                     </div>
                     {post.image_urls && post.image_urls.length > 0 && (
-                      <div className="h-20 w-20 shrink-0 rounded-xl overflow-hidden bg-brand-light">
+                       <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-xl overflow-hidden bg-brand-light">
                         <img src={post.image_urls[0]} alt="" className="h-full w-full object-cover" />
                       </div>
                     )}
@@ -1173,7 +1388,7 @@ export default function CommunityForum({
       {/* FAB Viết bài */}
       <button
         onClick={() => setIsWriting(true)}
-        className="forum-fab absolute bottom-5 right-4 z-40 inline-flex items-center gap-2 h-12 px-5 rounded-full bg-brand-terracotta text-white font-black text-sm shadow-[0_8px_24px_rgba(193,124,99,0.4)] hover:bg-brand-brown-dark transition active:scale-95"
+        className="forum-fab absolute bottom-24 right-4 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-brand-terracotta px-4 text-sm font-black text-white shadow-[0_8px_24px_rgba(193,124,99,0.4)] transition hover:bg-brand-brown-dark active:scale-95 sm:bottom-5 sm:px-5"
       >
         <Plus size={18} />
         <span>Viết bài</span>
