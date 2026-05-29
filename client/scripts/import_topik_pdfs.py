@@ -3,6 +3,8 @@ import re
 import json
 import time
 import requests
+import io
+from PIL import Image
 from pypdf import PdfReader
 
 def safe_str(s):
@@ -148,6 +150,20 @@ def extract_largest_image(page):
     return largest_img
 
 def perform_ocr(image_data):
+    try:
+        img = Image.open(io.BytesIO(image_data))
+        if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+            background = Image.new("RGBA", img.size, (255, 255, 255, 255))
+            background.paste(img, (0, 0), img)
+            img = background.convert("RGB")
+        else:
+            img = img.convert("RGB")
+        out_buf = io.BytesIO()
+        img.save(out_buf, format="JPEG", quality=90)
+        image_data = out_buf.getvalue()
+    except Exception as e:
+        print("[WARN] Image flattening failed:", safe_str(e))
+
     payload = {
         'apikey': ocr_space_key,
         'language': 'kor',
@@ -155,7 +171,7 @@ def perform_ocr(image_data):
     }
     try:
         r = requests.post('https://api.ocr.space/parse/image',
-                          files={'image.png': image_data},
+                          files={'image.jpg': image_data},
                           data=payload,
                           timeout=15)
         if r.ok:
