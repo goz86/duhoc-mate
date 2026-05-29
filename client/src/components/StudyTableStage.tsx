@@ -145,6 +145,7 @@ export default function StudyTableStage({
 }: StudyTableStageProps) {
   const { t } = useTranslation()
   const [now, setNow] = useState(() => Date.now())
+  const [seatFilter, setSeatFilter] = useState<'all' | 'focus' | 'break'>('all')
 
   const myMember = members.find(m => m.id === currentSocketId)
   const myRole = myMember?.role || (myMember?.isHost ? 'host' : 'member')
@@ -184,7 +185,39 @@ export default function StudyTableStage({
     }).filter(member => member.study.active !== false)
   }, [currentSocketId, members, now, studyTable?.seats, username])
 
-  const isCrowded = seats.length > 6
+  const sortedSeats = useMemo(() => {
+    return [...seats].sort((a, b) => {
+      if (a.id === currentSocketId) return -1
+      if (b.id === currentSocketId) return 1
+      if (a.isHost !== b.isHost) return a.isHost ? -1 : 1
+      const aRunning = a.study.personalPomodoro?.isRunning ? 1 : 0
+      const bRunning = b.study.personalPomodoro?.isRunning ? 1 : 0
+      return bRunning - aRunning
+    })
+  }, [currentSocketId, seats])
+
+  const focusCount = seats.filter(member => member.study.personalPomodoro?.isRunning && !member.study.personalPomodoro?.isBreak).length
+  const breakCount = seats.filter(member => member.study.personalPomodoro?.isBreak).length
+  const filteredSeats = useMemo(() => {
+    if (seatFilter === 'focus') {
+      return sortedSeats.filter(member => member.study.personalPomodoro?.isRunning && !member.study.personalPomodoro?.isBreak)
+    }
+    if (seatFilter === 'break') {
+      return sortedSeats.filter(member => member.study.personalPomodoro?.isBreak)
+    }
+    return sortedSeats
+  }, [seatFilter, sortedSeats])
+
+  const layoutMode = seats.length >= 13 ? 'micro' : seats.length >= 7 ? 'dense' : seats.length >= 3 ? 'compact' : 'roomy'
+  const isCrowded = layoutMode === 'dense' || layoutMode === 'micro'
+  const isMicro = layoutMode === 'micro'
+  const gridClass = layoutMode === 'micro'
+    ? 'grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(150px,1fr))]'
+    : layoutMode === 'dense'
+      ? 'grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(180px,1fr))]'
+      : layoutMode === 'compact'
+        ? 'grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]'
+        : 'grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(min(100%,260px),320px))]'
 
   const visibleReactions = useMemo(() => {
     const cutoff = now - 3800
@@ -249,18 +282,48 @@ export default function StudyTableStage({
                 <Users size={13} />
                 {seats.length} ghế đang học
               </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-[11px] font-black text-sky-700">
+                <Timer size={13} />
+                {focusCount} đang Pomodoro
+              </span>
               {isCrowded && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-100 bg-amber-50 px-3 py-1.5 text-[11px] font-black text-amber-700">
                   <Users size={13} />
                   Chế độ phòng đông
                 </span>
               )}
+              <div className="ml-0 flex w-full gap-1 rounded-2xl border border-brand-terracotta-light/15 bg-white/70 p-1 sm:ml-auto sm:w-auto">
+                {[
+                  { key: 'all', label: 'Tất cả', count: seats.length },
+                  { key: 'focus', label: 'Focus', count: focusCount },
+                  { key: 'break', label: 'Nghỉ', count: breakCount },
+                ].map(item => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setSeatFilter(item.key as typeof seatFilter)}
+                    className={`flex-1 rounded-xl px-2.5 py-1.5 text-[10px] font-black transition sm:flex-none ${
+                      seatFilter === item.key
+                        ? 'bg-brand-terracotta text-white shadow-sm'
+                        : 'text-brand-brown-light hover:bg-brand-light'
+                    }`}
+                  >
+                    {item.label} <span className="opacity-75">{item.count}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="relative min-h-0 flex-1">
               {/* overflow-visible để chat bubble không bị cắt bởi card bên trên */}
-              <div className="relative grid max-h-[min(62vh,620px)] w-full grid-cols-[repeat(auto-fill,minmax(min(100%,260px),320px))] content-start justify-start gap-3 overflow-y-auto overflow-x-visible pr-1 xl:gap-4">
-                {seats.map((member, index) => {
+              <div className={`relative grid max-h-[min(62vh,620px)] w-full ${gridClass} content-start gap-2 overflow-y-auto overflow-x-visible pr-1 sm:gap-3 xl:gap-4`}>
+                {filteredSeats.length === 0 && (
+                  <div className="col-span-full rounded-3xl border border-dashed border-brand-terracotta-light/35 bg-white/65 px-5 py-8 text-center">
+                    <p className="font-display text-sm font-black text-brand-brown-dark">Chưa có ai trong nhóm này</p>
+                    <p className="mt-1 text-xs font-bold text-brand-brown-light">Đổi bộ lọc để xem các ghế khác trong phòng.</p>
+                  </div>
+                )}
+                {filteredSeats.map((member, index) => {
                   const palette = seatPalette[index % seatPalette.length]
                   // Elapsed time: trừ đi tổng thời gian nghỉ (rời bàn / tab ẩn)
                   const totalPausedMs = (member.study as any).totalPausedMs || 0
@@ -296,7 +359,7 @@ export default function StudyTableStage({
                   return (
                     <article
                       key={member.id}
-                      className={`group relative w-full rounded-[22px] border border-white/70 bg-white/86 shadow-[0_14px_32px_rgba(76,55,49,0.10)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(76,55,49,0.13)] ${isCrowded ? 'p-3' : 'p-3.5'}`}
+                      className={`group relative w-full rounded-[22px] border border-white/70 bg-white/86 shadow-[0_14px_32px_rgba(76,55,49,0.10)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(76,55,49,0.13)] ${isMicro ? 'p-2.5' : isCrowded ? 'p-3' : 'p-3.5'}`}
                     >
                       {/* Chat bubble – overlay bên trong card, không gây layout shift */}
                       {chatBubble && (
@@ -307,9 +370,13 @@ export default function StudyTableStage({
                         </div>
                       )}
 
-                      <div className={`absolute inset-x-3 top-3 h-20 rounded-[20px] bg-gradient-to-br ${palette.desk} desk-overlay`} />
-                      <div className="absolute right-4 top-4 h-6 w-12 rounded-full border border-white/70 bg-white/65" />
-                      <div className="absolute right-6 top-6 h-1.5 w-7 rounded-full bg-brand-terracotta-light/60" />
+                      <div className={`absolute inset-x-3 top-3 ${isMicro ? 'h-14' : isCrowded ? 'h-16' : 'h-20'} rounded-[20px] bg-gradient-to-br ${palette.desk} desk-overlay`} />
+                      {!isMicro && (
+                        <>
+                          <div className="absolute right-4 top-4 h-6 w-12 rounded-full border border-white/70 bg-white/65" />
+                          <div className="absolute right-6 top-6 h-1.5 w-7 rounded-full bg-brand-terracotta-light/60" />
+                        </>
+                      )}
 
                       <div className="relative">
 
@@ -348,7 +415,7 @@ export default function StudyTableStage({
                         <div className="flex items-start gap-3">
                           <div className="relative shrink-0">
                             <div
-                              className={`${isCrowded ? 'h-[62px] w-[62px]' : 'h-[68px] w-[68px]'} grid place-items-center rounded-[22px] bg-white p-1.5 shadow-[0_10px_22px_rgba(76,55,49,0.13)]`}
+                              className={`${isMicro ? 'h-11 w-11 rounded-[16px] p-1' : isCrowded ? 'h-14 w-14 rounded-[20px] p-1.5' : 'h-[68px] w-[68px] rounded-[22px] p-1.5'} grid place-items-center bg-white shadow-[0_10px_22px_rgba(76,55,49,0.13)]`}
                               style={{
                                 background: `conic-gradient(${palette.accent} ${personalProgress * 3.6}deg, rgba(228,193,181,0.32) 0deg)`,
                               }}
@@ -357,7 +424,7 @@ export default function StudyTableStage({
                                 <img
                                   src={member.avatarUrl}
                                   alt={member.username}
-                                  className="h-full w-full rounded-[18px] object-cover"
+                                  className={`${isMicro ? 'rounded-[13px]' : 'rounded-[18px]'} h-full w-full object-cover`}
                                   onError={e => {
                                     const img = e.target as HTMLImageElement
                                     img.style.display = 'none'
@@ -367,56 +434,56 @@ export default function StudyTableStage({
                                 />
                               ) : null}
                               <div
-                                className={`grid h-full w-full place-items-center rounded-[18px] bg-gradient-to-br ${palette.avatar} font-display text-2xl font-black text-white shadow-inner`}
+                                className={`grid h-full w-full place-items-center ${isMicro ? 'rounded-[13px] text-base' : 'rounded-[18px] text-2xl'} bg-gradient-to-br ${palette.avatar} font-display font-black text-white shadow-inner`}
                                 style={{ display: member.avatarUrl ? 'none' : 'grid' }}
                               >
                                 {initials(member.username)}
                               </div>
                             </div>
                             {member.isHost && (
-                              <span className="absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full border-2 border-white bg-amber-400 text-white shadow-md">
-                                <Crown size={12} />
+                              <span className={`${isMicro ? 'h-5 w-5' : 'h-6 w-6'} absolute -right-1 -top-1 grid place-items-center rounded-full border-2 border-white bg-amber-400 text-white shadow-md`}>
+                                <Crown size={isMicro ? 10 : 12} />
                               </span>
                             )}
                             <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.15)]" />
                           </div>
 
-                          <div className="min-w-0 flex-1 pt-2">
+                          <div className={`min-w-0 flex-1 ${isMicro ? 'pt-0.5' : 'pt-2'}`}>
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
-                                <h3 className="truncate font-display text-sm font-black text-brand-brown-dark">
+                                <h3 className={`truncate font-display font-black text-brand-brown-dark ${isMicro ? 'text-xs' : 'text-sm'}`}>
                                   {member.username}{isLocal ? ' (Bạn)' : ''}
                                 </h3>
-                                <p className="mt-0.5 text-[10px] font-bold text-brand-brown-light">
+                                <p className="mt-0.5 truncate text-[10px] font-bold text-brand-brown-light">
                                   {member.isHost ? 'Chủ bàn học' : member.role === 'cohost' ? 'Co-host' : member.role === 'moderator' ? 'Mod' : 'Bạn học'}
                                 </p>
                               </div>
-                              <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-black ${isPersonalBreak ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700'}`}>
+                              <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-black ${isMicro ? 'hidden lg:inline-flex' : ''} ${isPersonalBreak ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700'}`}>
                                 {isPersonalBreak ? 'Break' : 'Focus'}
                               </span>
                             </div>
 
-                            <div className={`mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-black ${status.tone}`}>
+                            <div className={`${isMicro ? 'mt-1 px-2 py-1' : 'mt-2 px-2.5 py-1.5'} inline-flex max-w-full items-center gap-1.5 rounded-full border text-[10px] font-black ${status.tone}`}>
                               <span>{personal.isRunning ? '🎯' : personal.isBreak ? '☕' : '📖'}</span>
                               <span className="truncate">{status.label}</span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="mt-4 grid grid-cols-2 gap-2">
+                        <div className={`${isMicro ? 'mt-3 gap-1.5' : 'mt-4 gap-2'} grid grid-cols-2`}>
                           {/* Ngồi bàn timer */}
-                          <div className="rounded-xl border border-brand-terracotta-light/20 bg-white/70 px-3 py-2">
-                            <p className="text-[9px] font-black uppercase text-brand-brown-light">Ngồi bàn</p>
-                            <p className="mt-0.5 font-display text-base font-black tabular-nums text-brand-brown-dark">
+                          <div className={`${isMicro ? 'px-2 py-1.5' : 'px-3 py-2'} rounded-xl border border-brand-terracotta-light/20 bg-white/70`}>
+                            <p className="truncate text-[9px] font-black uppercase text-brand-brown-light">Ngồi bàn</p>
+                            <p className={`${isMicro ? 'text-xs' : 'text-base'} mt-0.5 font-display font-black tabular-nums text-brand-brown-dark`}>
                               {isSeated ? formatDeskTime(elapsed) : <span className="text-slate-400">—</span>}
                             </p>
                           </div>
 
                           {/* Pomo riêng – controls bên trong box */}
-                          <div className="rounded-xl border border-brand-terracotta-light/20 bg-white/70 px-3 py-2">
+                          <div className={`${isMicro ? 'px-2 py-1.5' : 'px-3 py-2'} rounded-xl border border-brand-terracotta-light/20 bg-white/70`}>
                             <div className="flex items-center justify-between">
-                              <p className="text-[9px] font-black uppercase text-brand-brown-light">Pomo riêng</p>
-                              {isLocal && onPersonalPomodoro && (
+                              <p className="truncate text-[9px] font-black uppercase text-brand-brown-light">Pomo riêng</p>
+                              {isLocal && onPersonalPomodoro && !isMicro && (
                                 <div className="flex gap-0.5">
                                   <button
                                     type="button"
@@ -441,7 +508,7 @@ export default function StudyTableStage({
                                 </div>
                               )}
                             </div>
-                            <p className="mt-0.5 font-display text-base font-black tabular-nums text-brand-brown-dark">
+                            <p className={`${isMicro ? 'text-xs' : 'text-base'} mt-0.5 font-display font-black tabular-nums text-brand-brown-dark`}>
                               {formatMinuteTime(personalLeft)}
                             </p>
                           </div>
@@ -455,7 +522,7 @@ export default function StudyTableStage({
                         </div>
 
                         {/* Reactions — chỉ hiện trên card của NGƯỜI KHÁC */}
-                        {!isLocal && (
+                        {!isLocal && !isMicro && (
                           <div className={`mt-3 flex flex-wrap gap-1.5 ${isCrowded ? 'max-h-8 overflow-hidden' : ''}`}>
                             {reactionOptions.map(option => {
                               const OptionIcon = option.Icon
@@ -464,11 +531,11 @@ export default function StudyTableStage({
                                   key={option.label}
                                   type="button"
                                   onClick={() => handleReaction(option, member.id)}
-                                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-black transition hover:-translate-y-0.5 hover:shadow-sm active:scale-95 ${option.tone}`}
+                                  className={`inline-flex items-center gap-1 rounded-full border ${isCrowded ? 'px-1.5 py-1' : 'px-2 py-1'} text-[9px] font-black transition hover:-translate-y-0.5 hover:shadow-sm active:scale-95 ${option.tone}`}
                                   title={`Gửi ${option.label} cho ${member.username}`}
                                 >
                                   <OptionIcon size={10} />
-                                  <span>{option.label}</span>
+                                  <span className={isCrowded ? 'sr-only' : ''}>{option.label}</span>
                                 </button>
                               )
                             })}
