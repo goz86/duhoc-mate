@@ -8,7 +8,7 @@ import {
   Clock, FileText, Video,
   Headphones, Music2, ChevronRight, Search,
   Minimize2, Palette, Settings, Crown,
-  Link2, Volume2, VolumeX, SkipForward, Plus, X, Trash2,
+  Link2, Volume2, VolumeX, SkipForward, Plus, X, Trash2, Shuffle,
   Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, Sparkles, ClipboardList
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
@@ -133,7 +133,8 @@ const trendingVideoSuggestions = [
 
 export default function App() {
   const { t } = useTranslation();
-  const { user, profile, signOut, loading } = useAuth();
+  const { user, profile, signOut, updateProfile, loading } = useAuth();
+  const [relatedGenre, setRelatedGenre] = useState('');
 
   // Dragging logic for the global floating widget
   const [widgetPosition, setWidgetPosition] = useState({ x: 0, y: 0 });
@@ -928,11 +929,15 @@ export default function App() {
     };
   }, []);
 
-  // Sync username từ Supabase profile khi login
+  // Sync username từ Supabase profile khi login/logout
   useEffect(() => {
-    if (profile?.username && profile.username !== username) {
-      setUsername(profile.username);
-      localStorage.setItem('duhocmate_username', profile.username);
+    if (profile?.username) {
+      if (profile.username !== username) {
+        setUsername(profile.username);
+        localStorage.setItem('duhocmate_username', profile.username);
+      }
+    } else {
+      setUsername('');
     }
   }, [profile]);
 
@@ -943,6 +948,12 @@ export default function App() {
       socket?.emit('update-avatar', { roomId, avatarUrl: profile.avatar_url });
     }
   }, [profile?.avatar_url, view, roomId]);
+
+  useEffect(() => {
+    if (view === 'room' && roomId && profile?.username) {
+      socket?.emit('update-username', { roomId, username: profile.username });
+    }
+  }, [profile?.username, view, roomId]);
 
   useEffect(() => {
     if (view !== 'room' || !roomId) return;
@@ -1429,8 +1440,8 @@ export default function App() {
     
     const formattedId = targetRoomId.trim().toUpperCase();
 
-    // Nếu chưa đăng nhập, bắt buộc hiện popup nhập tên khách / đăng nhập Google
-    if (!user && !isGuestConfirmed) {
+    // Nếu chưa đăng nhập và chưa có profile khách, bắt buộc hiện popup nhập tên khách / đăng nhập Google
+    if (!user && !profile?.username && !isGuestConfirmed) {
       setGuestJoinRoomId(formattedId);
       setGuestJoinTemplate(null);
       setGuestNameInput(username || '');
@@ -1569,8 +1580,8 @@ export default function App() {
   ) => {
     const fixedRoomId = getTemplateRoomId(template);
 
-    // Nếu chưa đăng nhập, bắt buộc hiện popup nhập tên khách / đăng nhập Google
-    if (!user && !isGuestConfirmed) {
+    // Nếu chưa đăng nhập và chưa có profile khách, bắt buộc hiện popup nhập tên khách / đăng nhập Google
+    if (!user && !profile?.username && !isGuestConfirmed) {
       setGuestJoinRoomId(fixedRoomId);
       setGuestJoinTemplate(template);
       setGuestNameInput(username || '');
@@ -1604,10 +1615,22 @@ export default function App() {
     navigateToRoom(fixedRoomId);
   };
 
-  const handleGuestJoinSubmitWithName = (cleanName: string) => {
+  const handleGuestJoinSubmitWithName = async (cleanName: string) => {
+    let guestId = localStorage.getItem('forum_guest_id');
+    if (!guestId) {
+      guestId = `guest_${Math.random().toString(36).substring(2, 15)}`;
+      localStorage.setItem('forum_guest_id', guestId);
+    }
+
     setUsername(cleanName);
     localStorage.setItem('duhocmate_username', cleanName);
     setShowGuestJoinModal(false);
+
+    try {
+      await updateProfile({ username: cleanName });
+    } catch (err) {
+      console.warn('Failed to initialize guest profile in Supabase:', err);
+    }
 
     if (guestJoinTemplate) {
       handleJoinTemplateRoom(guestJoinTemplate, true, cleanName);
@@ -2050,30 +2073,69 @@ export default function App() {
 
   // Tạo từ khóa tìm kiếm "cùng thể loại" từ tiêu đề bài vừa kết thúc
   // Bỏ phần trong ngoặc, lấy phần chính (tên bài + nghệ sĩ), bỏ các từ nhiễu
-  const buildRelatedQuery = (title: string): string => {
-    if (!title) return '';
-    let q = title
+  const buildRelatedQuery = (title: string): { query: string; genreLabel: string } => {
+    if (!title) return { query: 'lofi study beats', genreLabel: 'Nhạc Học Tập' };
+    
+    const lower = title.toLowerCase();
+    
+    // 1. Lo-fi / Chill
+    if (lower.includes('lofi') || lower.includes('lo-fi') || lower.includes('chill') || lower.includes('relax') || lower.includes('beats') || lower.includes('coffee') || lower.includes('lo fi')) {
+      return { query: 'lofi study beats chill', genreLabel: 'Lo-fi & Chill' };
+    }
+    
+    // 2. Classical
+    if (lower.includes('classical') || lower.includes('mozart') || lower.includes('beethoven') || lower.includes('piano') || lower.includes('violin') || lower.includes('cổ điển') || lower.includes('bach') || lower.includes('chopin')) {
+      return { query: 'nhạc cổ điển tập trung học tập mozart piano', genreLabel: 'Nhạc Cổ Điển' };
+    }
+    
+    // 3. Korean / TOPIK
+    if (lower.includes('korean') || lower.includes('tiếng hàn') || lower.includes('topik') || lower.includes('eps')) {
+      return { query: 'luyện nghe tiếng hàn giao tiếp topik', genreLabel: 'Tiếng Hàn' };
+    }
+    
+    // 4. Jazz
+    if (lower.includes('jazz') || lower.includes('bossa') || lower.includes('cafe')) {
+      return { query: 'bossa nova jazz study cafe music', genreLabel: 'Jazz / Bossa Nova' };
+    }
+    
+    // 5. Remix / EDM
+    if (lower.includes('remix') || lower.includes('edm') || lower.includes('vinahouse') || lower.includes('house') || lower.includes('dance')) {
+      return { query: 'nhạc remix tik tok hot nhất hiện nay', genreLabel: 'Remix / EDM' };
+    }
+
+    // 6. Tách tên ca sĩ (artist) nếu có cấu trúc "Bài hát | Ca sĩ" hoặc "Ca sĩ - Bài hát"
+    const parts = title
       .replace(/\([^)]*\)/g, ' ')
-      .replace(/\[[^\]]*\]/g, ' ');
-    const parts = q.split('|').map(s => s.trim()).filter(Boolean);
-    q = parts.slice(0, 2).join(' ');
-    q = q
-      .replace(/official|music video|lyrics?|audio|video|m\/v|\bmv\b|hd|4k|live|performance|topic/gi, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    return q;
+      .replace(/\[[^\]]*\]/g, ' ')
+      .split(/[|\-–—]/)
+      .map(s => s.trim())
+      .filter(Boolean);
+      
+    if (parts.length >= 2) {
+      const cleanParts = parts.map(p => p.replace(/official|music video|lyrics?|audio|video|m\/v|\bmv\b|hd|4k|live|performance|topic/gi, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean);
+      if (cleanParts.length >= 2) {
+        const artist = cleanParts[1];
+        if (artist.length > 2 && artist.length < 30) {
+          return { query: `${artist} bài hát tuyển tập hay nhất`, genreLabel: `Nhạc ${artist}` };
+        }
+      }
+    }
+
+    // 7. Mặc định
+    return { query: 'nhạc trẻ hot nhất hiện nay vpop chill', genreLabel: 'Nhạc Trẻ V-Pop' };
   };
 
   // Khi hết danh sách phát → tìm bài cùng thể loại với bài cuối cùng
   const fetchRelatedSuggestions = async (title: string) => {
-    const q = buildRelatedQuery(title);
-    if (!q) return;
+    const { query, genreLabel } = buildRelatedQuery(title);
+    if (!query) return;
     setRelatedBasedOn(title);
+    setRelatedGenre(genreLabel);
     setRelatedLoading(true);
     setRelatedSuggestions([]);
     try {
       const SEARCH_URL = `${getApiBaseCandidates()[0]}/api/search-music`;
-      const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(query)}`);
       const data = await res.json();
       const existingIds = new Set(playlistRef.current.map(i => i.videoId));
       const results = (data.results || [])
@@ -2116,6 +2178,60 @@ export default function App() {
     setShowSearchResults(false);
     setMusicSearchResults([]);
     setSidebarTab('playlist');
+  };
+
+  const [showAiSuggestModal, setShowAiSuggestModal] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestTab, setAiSuggestTab] = useState<'vpop' | 'kpop' | 'vinahouse'>('vpop');
+  const trendingCacheVpopRef = useRef<any[]>([]);
+  const trendingCacheKpopRef = useRef<any[]>([]);
+  const trendingCacheVinahouseRef = useRef<any[]>([]);
+
+  const handleOpenAiSuggest = async (type: 'vpop' | 'kpop' | 'vinahouse' = 'vpop') => {
+    setShowAiSuggestModal(true);
+    setAiSuggestTab(type);
+
+    const cacheRef = type === 'kpop' ? trendingCacheKpopRef : type === 'vinahouse' ? trendingCacheVinahouseRef : trendingCacheVpopRef;
+
+    if (cacheRef.current.length > 0) {
+      shuffleAndSetAiSuggestions(cacheRef.current);
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      const TRENDING_URL = `${getApiBaseCandidates()[0]}/api/trending-music?type=${type}`;
+      const res = await fetch(TRENDING_URL);
+      const data = await res.json();
+      if (data.results && data.results.length > 0) {
+        cacheRef.current = data.results;
+        shuffleAndSetAiSuggestions(data.results);
+      } else {
+        cacheRef.current = trendingVideoSuggestions;
+        shuffleAndSetAiSuggestions(trendingVideoSuggestions);
+      }
+    } catch (err) {
+      console.error(`Failed to fetch AI trending suggestions for ${type}`, err);
+      cacheRef.current = trendingVideoSuggestions;
+      shuffleAndSetAiSuggestions(trendingVideoSuggestions);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const shuffleAndSetAiSuggestions = (list: any[]) => {
+    const shuffled = [...list].sort(() => 0.5 - Math.random());
+    setAiSuggestions(shuffled.slice(0, 3));
+  };
+
+  const handleRandomizeSuggestions = () => {
+    const cacheRef = aiSuggestTab === 'kpop' ? trendingCacheKpopRef : aiSuggestTab === 'vinahouse' ? trendingCacheVinahouseRef : trendingCacheVpopRef;
+    if (cacheRef.current.length > 0) {
+      shuffleAndSetAiSuggestions(cacheRef.current);
+    } else {
+      handleOpenAiSuggest(aiSuggestTab);
+    }
   };
 
 
@@ -3943,16 +4059,34 @@ export default function App() {
 
                       {/* Quick Tags */}
                       <div className="flex flex-wrap gap-2 items-center">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAiSuggest('vpop')}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-brand-terracotta to-brand-terracotta-dark text-white rounded-lg hover:shadow transition font-black text-xs cursor-pointer active:scale-95 shadow-sm border border-brand-terracotta/10"
+                        >
+                          <Sparkles size={13} className="text-amber-200" />
+                          <span>AI Gợi ý</span>
+                        </button>
                         {[
                           { icon: <Coffee size={13} />, label: 'Lofi Girl', q: 'lofi girl study' },
                           { icon: <CloudRain size={13} />, label: 'Tiếng Mưa Cozy', q: 'rain cozy study music' },
                           { icon: <Music2 size={13} />, label: 'Piano Nhẹ', q: 'piano soft study music' },
+                          { icon: <Music2 size={13} />, label: 'K-Pop', q: 'kpop study playlist' },
+                          { icon: <Headphones size={13} />, label: 'Vinahouse', q: 'vinahouse tik tok remix hot nhất' },
                         ].map(tag => (
                           <button
                             key={tag.label}
                             type="button"
-                            onClick={() => { setSongSearch(tag.q); }}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white/60 hover:bg-white rounded-lg border border-brand-terracotta-light/10 text-xs text-brand-brown-light transition font-medium"
+                            onClick={() => {
+                              if (tag.label === 'K-Pop') {
+                                handleOpenAiSuggest('kpop');
+                              } else if (tag.label === 'Vinahouse') {
+                                handleOpenAiSuggest('vinahouse');
+                              } else {
+                                setSongSearch(tag.q);
+                              }
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white/60 hover:bg-white rounded-lg border border-brand-terracotta-light/10 text-xs text-brand-brown-light transition font-medium cursor-pointer"
                           >
                             {tag.icon}
                             <span>{tag.label}</span>
@@ -4203,7 +4337,7 @@ export default function App() {
                             <div className="flex items-center gap-1.5 min-w-0">
                               <Sparkles size={13} className="text-brand-terracotta shrink-0" />
                               <span className="text-[11px] font-black uppercase tracking-wide text-brand-brown-dark truncate">
-                                Nghe tiếp · cùng thể loại
+                                Nghe tiếp · {relatedGenre || 'cùng thể loại'}
                               </span>
                             </div>
                             <button
@@ -4906,6 +5040,114 @@ export default function App() {
         onConfirm={confirmDialog.onConfirm}
         onCancel={closeConfirm}
       />
+
+      {showAiSuggestModal && (
+        <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-brand-terracotta-light/20 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+            {/* Background soft mesh decoration */}
+            <div className="absolute -right-20 -top-20 w-40 h-40 rounded-full bg-brand-terracotta/10 blur-3xl pointer-events-none" />
+            <div className="absolute -left-20 -bottom-20 w-40 h-40 rounded-full bg-brand-terracotta-light/10 blur-3xl pointer-events-none" />
+
+            <div className="flex items-center justify-between mb-4 relative z-10">
+              <div className="flex items-center gap-2">
+                <Sparkles className="text-brand-terracotta animate-pulse" size={18} />
+                <h3 className="text-sm font-black text-brand-brown-dark dark:text-white uppercase tracking-wider">
+                  AI Đề xuất nhạc xu hướng
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAiSuggestModal(false)}
+                className="p-1.5 rounded-xl hover:bg-brand-light dark:hover:bg-zinc-800 text-brand-brown-light transition cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <p className="text-xs text-brand-brown-light dark:text-zinc-400 mb-4 leading-relaxed">
+              AI đã lọc các bài hát đang có lượt nghe cao nhất trên YouTube để đề xuất cho bạn. Bấm "Thêm" để đưa vào danh sách phát.
+            </p>
+
+            {/* Category Tabs */}
+            <div className="flex gap-2 p-1 bg-brand-light dark:bg-zinc-800 rounded-2xl mb-4 relative z-10">
+              {[
+                { type: 'vpop', label: 'V-Pop (Việt)' },
+                { type: 'kpop', label: 'K-Pop (Hàn)' },
+                { type: 'vinahouse', label: 'Vinahouse' }
+              ].map(tab => (
+                <button
+                  key={tab.type}
+                  type="button"
+                  onClick={() => handleOpenAiSuggest(tab.type as any)}
+                  className={`flex-1 py-1.5 rounded-xl text-[10px] font-black transition-all cursor-pointer active:scale-95 ${
+                    aiSuggestTab === tab.type
+                      ? 'bg-brand-terracotta text-white shadow-sm'
+                      : 'text-brand-brown-light dark:text-zinc-400 hover:text-brand-brown-dark dark:hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {aiLoading ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-3">
+                <span className="h-6 w-6 rounded-full border-2 border-brand-terracotta/30 border-t-brand-terracotta animate-spin" />
+                <span className="text-xs text-brand-brown-light dark:text-zinc-500">Đang phân tích xu hướng...</span>
+              </div>
+            ) : (
+              <div className="space-y-3 relative z-10">
+                {aiSuggestions.map((song) => (
+                  <div
+                    key={song.videoId}
+                    className="flex items-center gap-3 p-2.5 rounded-2xl border border-brand-terracotta-light/10 bg-white/50 dark:bg-zinc-800/40 hover:border-brand-terracotta/30 transition group"
+                  >
+                    <div className="relative h-12 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-brand-light dark:bg-zinc-800">
+                      <img
+                        src={song.thumbnail || `https://i.ytimg.com/vi/${song.videoId}/hqdefault.jpg`}
+                        alt={song.title}
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition group-hover:opacity-100">
+                        <Play size={14} className="text-white" />
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="truncate text-xs font-black text-brand-brown-dark dark:text-white leading-tight">
+                        {song.title}
+                      </h4>
+                      <p className="mt-1 text-[10px] font-bold text-brand-brown-light dark:text-zinc-400 truncate">
+                        {song.author ? `${song.author} · ` : ''}{song.duration || '0:00'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        addSuggestedVideo(song);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-brand-terracotta hover:bg-brand-terracotta-dark text-white text-[10px] font-black transition shrink-0 active:scale-95 cursor-pointer shadow-sm hover:shadow"
+                    >
+                      Thêm
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-5 flex items-center justify-between gap-3 relative z-10">
+              <button
+                type="button"
+                onClick={handleRandomizeSuggestions}
+                disabled={aiLoading}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-brand-terracotta/30 bg-white dark:bg-zinc-800 text-brand-terracotta hover:bg-brand-light dark:hover:bg-zinc-800/80 text-xs font-black transition active:scale-[0.97] cursor-pointer disabled:opacity-50"
+              >
+                <Shuffle size={14} />
+                <span>Random bài khác</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

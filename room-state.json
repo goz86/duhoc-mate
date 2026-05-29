@@ -1,0 +1,531 @@
+{
+  "W4D99U": {
+    "roomId": "W4D99U",
+    "playlist": [
+      {
+        "id": "1780066182593-0.06337736499036528",
+        "videoId": "cIyAqMRVecc",
+        "title": "장범준 - 노래방에서 가사",
+        "duration": "3:59",
+        "votes": 1,
+        "votedUsers": [
+          "mrAoYmkKjk8U8OLFAAAB"
+        ],
+        "addedBy": "Bạn học",
+        "status": "playing"
+      },
+      {
+        "id": "1780066075711-0.6365218088104412",
+        "videoId": "a2grcJdfXmY",
+        "title": "LE SSERAFIM (르세라핌) 'CELEBRATION' OFFICIAL MV",
+        "duration": "3:09",
+        "votes": 1,
+        "votedUsers": [
+          "mrAoYmkKjk8U8OLFAAAB"
+        ],
+        "addedBy": "Bạn học",
+        "status": "played",
+        "playedAt": "2026-05-29T14:49:16.445Z"
+      },
+      {
+        "id": "1780066153934-0.3837226756875708",
+        "videoId": "ZuXCLVCztE4",
+        "title": "장범준 - 노래방에서 [가사/Lyrics]",
+        "duration": "4:00",
+        "votes": 1,
+        "votedUsers": [
+          "mrAoYmkKjk8U8OLFAAAB"
+        ],
+        "addedBy": "Bạn học",
+        "status": "played",
+        "playedAt": "2026-05-29T14:49:45.451Z"
+      }
+    ],
+    "videoState": {
+      "id": "cIyAqMRVecc",
+      "time": 79.49193380735778,
+      "playing": true,
+      "pausedByHost": false,
+      "lastUpdated": 1780066265472,
+      "playlistItemId": "1780066182593-0.06337736499036528"
+    },
+    "pomodoro": {
+      "timeLeft": 1500,
+      "duration": 1500,
+      "isRunning": false,
+      "isBreak": false
+    },
+    "chatMessages": [
+      {
+        "id": "1780064765812-0.16448848735320587",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học Bạn học đã tham gia phòng.",
+        "type": "system",
+        "timestamp": "23:26"
+      },
+      {
+        "id": "1780066040411-0.6049530649472041",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học Bạn học đã tham gia phòng.",
+        "type": "system",
+        "timestamp": "23:47"
+      },
+      {
+        "id": "1780066075716-0.8581454464474423",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học Bạn học đã thêm bài: \"LE SSERAFIM (르세라핌) 'CELEBRATION' OFFICIAL MV\".",
+        "type": "system",
+        "timestamp": "23:47"
+      },
+      {
+        "id": "1780066153936-0.6757032971044431",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học Bạn học đã thêm bài: \"장범준 - 노래방에서 [가사/Lyrics]\".",
+        "type": "system",
+        "timestamp": "23:49"
+      },
+      {
+        "id": "1780066182595-0.21080357265052552",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học Bạn học đã thêm bài: \"장범준 - 노래방에서 가사\".",
+        "type": "system",
+        "timestamp": "23:49"
+      },
+      {
+        "id": "1780066226233-0.16663766624435783",
+        "sender": "Bạn học",
+        "senderId": "mrAoYmkKjk8U8OLFAAAB",
+        "isHost": true,
+        "text": "😍",
+        "type": "user",
+        "timestamp": "23:50",
+        "sentAt": 1780066226233
+      }
+    ],
+    "ideaTasks": [
+      {
+        "id": "1779794591370-1shxj9",
+        "title": "yu",
+        "note": "",
+        "status": "todo",
+        "owner": "Hỗ Trợ Michintashop",
+        "due": ""
+      },
+      {
+        "id": "1779794575155-hefueu",
+        "title": "hi",
+        "note": "",
+        "status": "done",
+        "owner": "Hỗ Trợ Michintashop",
+        "due": ""
+      }
+    ],
+    "roomTitle": "Phòng của Bạn học",
+    "isPrivate": false,
+    "password": "",
+    "hostAvatarUrl": "",
+    "tiktokVideoId": "",
+    "hostFriendCode": "R7G9H2ET",
+    "hostUsername": "Bạn học",
+    "hostReconnectUntil": null,
+    "studyTable": {
+      "seats": {
+        "mrAoYmkKjk8U8OLFAAAB": {
+          "memberId": "mrAoYmkKjk8U8OLFAAAB",
+          "username": "Bạn học",
+          "isHost": true,
+          "joinedAt": 1780066040400,
+          "active": true,
+          "status": "focus",
+          "personalPomodoro": {
+            "timeLeft": 1500,
+            "duration": 1500,
+            "isRunning": false,
+            "isBreak": false,
+            "lastUpdated": 1780066040400
+          },
+          "pausedSince": null,
+          "totalPausedMs": 0
+        }
+      },
+      "reactions": []
+    },
+    "pinnedMessage": null,
+    "roomAvatarUrl": "",
+    "roomBackgroundUrl": ""
+  },
+  "TOPIK30": {
+    "roomId": "TOPIK30",
+    "playlist": [
+      {
+        "id": "1779711885615-0.14152474707437568",
+        "title": "Xuân Thì (OST Hẹn Em Ngày Nhật Thực) | Phan Mạnh Quỳnh | Music Video",
+        "votes": 1,
+        "status": "playing",
+        "addedBy": "hung",
+        "videoId": "UbhxtQybTFo",
+        "duration": "0:00",
+        "votedUsers": [
+          "YdcfX6MjNrwZ8-I8AAAF"
+        ]
+      },
+      {
+        "id": "1779711905998-0.73213581046893",
+        "title": "MIN - CÀ PHÊ | OFFICIAL MUSIC VIDEO",
+        "votes": 1,
+        "status": "played",
+        "addedBy": "hung",
+        "videoId": "7m8ek8D9me0",
+        "duration": "0:00",
+        "playedAt": "2026-05-26T06:16:45.262Z",
+        "votedUsers": [
+          "YdcfX6MjNrwZ8-I8AAAF"
+        ]
+      }
+    ],
+    "videoState": {
+      "id": "UbhxtQybTFo",
+      "time": 312.161,
+      "playing": true,
+      "lastUpdated": 1780065893320,
+      "pausedByHost": false
+    },
+    "pomodoro": {
+      "isBreak": false,
+      "duration": 1500,
+      "timeLeft": 1500,
+      "isRunning": false
+    },
+    "chatMessages": [
+      {
+        "id": "1779711801647-0.8023463157250517",
+        "text": "Bạn học hung đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "12:23"
+      },
+      {
+        "id": "1779711859174-0.2870644698955491",
+        "text": "Bạn học q đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "12:24"
+      },
+      {
+        "id": "1779711885616-0.8058952852314305",
+        "text": "Bạn học hung đã thêm bài: \"Xuân Thì (OST Hẹn Em Ngày Nhật Thực) | Phan Mạnh Quỳnh | Music Video\".",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "12:24"
+      },
+      {
+        "id": "1779711905999-0.4047612039070392",
+        "text": "Bạn học hung đã thêm bài: \"MIN - CÀ PHÊ | OFFICIAL MUSIC VIDEO\".",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "12:25"
+      },
+      {
+        "id": "1779712129652-0.7702046753245413",
+        "text": "Bạn học hung đã rời phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "12:28"
+      },
+      {
+        "id": "1779712129653-0.2329763886924232",
+        "text": "Bạn học q đã trở thành chủ phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "12:28"
+      },
+      {
+        "id": "1779712134120-0.5462414572801935",
+        "text": "Bạn học hung đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "12:28"
+      },
+      {
+        "id": "1779712153289-0.883330383489958",
+        "text": "Bạn học hung đã rời phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "12:29"
+      },
+      {
+        "id": "1779712246258-0.4941833311211641",
+        "text": "Bạn học linh đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "12:30"
+      },
+      {
+        "id": "1779712269407-0.7219268780319155",
+        "text": "Bạn học q đã rời phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "12:31"
+      },
+      {
+        "id": "1779712269410-0.44500586005139",
+        "text": "Bạn học linh đã trở thành chủ phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "12:31"
+      },
+      {
+        "id": "1779773694763-0.7131509247736434",
+        "text": "Bạn học Y đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "05:34"
+      },
+      {
+        "id": "1779775307673-0.5994941267184413",
+        "text": "Bạn học Y đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "06:01"
+      },
+      {
+        "id": "1779775313379-0.9567383355563879",
+        "text": "Bạn học Y đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "06:01"
+      },
+      {
+        "id": "1779776151521-0.11657851203312797",
+        "text": "Bạn học Y đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "06:15"
+      },
+      {
+        "id": "1779812812057-0.0645168609120621",
+        "text": "Bạn học Tester đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "01:26"
+      },
+      {
+        "id": "1779813344684-0.212437388435484",
+        "text": "Bạn học Tester đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "01:35"
+      },
+      {
+        "id": "1779813344764-0.4075574049272416",
+        "text": "Bạn học Tester đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "01:35"
+      },
+      {
+        "id": "1779838663536-0.4176379351966494",
+        "text": "Bạn học test đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "08:37"
+      },
+      {
+        "id": "1779838808507-0.3561340050598871",
+        "text": "Bạn học test đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "08:40"
+      },
+      {
+        "id": "1779838808584-0.5473674930477633",
+        "text": "Bạn học test đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "08:40"
+      },
+      {
+        "id": "1779839221286-0.17554148726839358",
+        "text": "Bạn học test đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "08:47"
+      },
+      {
+        "id": "1779859058128-0.03505739284281395",
+        "text": "Bạn học 시운이 đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "05:17"
+      },
+      {
+        "id": "1779859892626-0.5470291267017635",
+        "text": "Bạn học 시운이 đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "05:31"
+      },
+      {
+        "id": "1779860209739-0.9183184429515743",
+        "text": "Bạn học 시운이 đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "05:36"
+      },
+      {
+        "id": "1779862848279-0.5808845700959846",
+        "text": "Bạn học 시운이 đã tham gia phòng.",
+        "type": "system",
+        "isHost": false,
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "timestamp": "06:20"
+      },
+      {
+        "id": "1780065808081-0.16470081404995363",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học Bạn học đã tham gia phòng.",
+        "type": "system",
+        "timestamp": "23:43"
+      },
+      {
+        "id": "1780065887893-0.14265234443354413",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học Bạn học đã tham gia phòng.",
+        "type": "system",
+        "timestamp": "23:44"
+      }
+    ],
+    "ideaTasks": [
+      {
+        "id": "1779617914777-6l2ye3",
+        "title": "làm câu 20",
+        "note": "",
+        "status": "done",
+        "owner": "hhi",
+        "due": ""
+      },
+      {
+        "id": "1779350555487-p3p981",
+        "title": "Chọn level TOPIK mục tiêu",
+        "note": "Ghi rõ TOPIK I/II và điểm mong muốn.",
+        "status": "doing",
+        "owner": "",
+        "due": ""
+      },
+      {
+        "id": "1779350555487-ieql21",
+        "title": "Học 30 từ mới mỗi ngày",
+        "note": "Đánh dấu từ chưa nhớ vào cột Doing.",
+        "status": "doing",
+        "owner": "",
+        "due": ""
+      },
+      {
+        "id": "1779350555487-9bqnui",
+        "title": "Luyện nghe 20 phút",
+        "note": "",
+        "status": "doing",
+        "owner": "",
+        "due": ""
+      }
+    ],
+    "roomTitle": "Phòng ôn TOPIK 30 ngày",
+    "isPrivate": false,
+    "password": "",
+    "hostAvatarUrl": "",
+    "tiktokVideoId": "",
+    "hostFriendCode": "R7G9H2ET",
+    "hostUsername": "Bạn học",
+    "hostReconnectUntil": null,
+    "studyTable": {
+      "seats": {
+        "eWbagMuxcCwhvajFAAAF": {
+          "memberId": "eWbagMuxcCwhvajFAAAF",
+          "username": "Bạn học",
+          "isHost": true,
+          "joinedAt": 1780065887887,
+          "active": true,
+          "status": "focus",
+          "personalPomodoro": {
+            "timeLeft": 1500,
+            "duration": 1500,
+            "isRunning": false,
+            "isBreak": false,
+            "lastUpdated": 1780065887887
+          },
+          "pausedSince": null,
+          "totalPausedMs": 0
+        }
+      },
+      "reactions": []
+    },
+    "pinnedMessage": null,
+    "roomAvatarUrl": "",
+    "roomBackgroundUrl": ""
+  }
+}

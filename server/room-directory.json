@@ -97,52 +97,55 @@
   },
   "ANVSGO": {
     "id": "ANVSGO",
-    "hostName": "goz",
-    "memberCount": 0,
+    "hostName": "Hỗ Trợ Michintashop",
+    "memberCount": 1,
     "currentSong": "Dang nghe nhac Lofi",
     "roomTitle": "Phòng của 1",
     "isPrivate": false,
     "password": "",
     "hostAvatarUrl": "",
+    "roomAvatarUrl": "",
     "createdAt": "2026-05-25T01:33:37.830Z",
-    "lastActiveAt": "2026-05-27T02:52:17.432Z"
+    "lastActiveAt": "2026-05-29T13:23:13.713Z"
   },
   "3PZMTW": {
     "id": "3PZMTW",
-    "hostName": "ưe",
+    "hostName": "Hỗ Trợ Michintashop",
     "memberCount": 0,
-    "currentSong": "Xuân Thì | CineLove (The Album) | Phan Mạnh Quỳnh",
+    "currentSong": "Calm Piano Music for Studying, Reading, Relaxation",
     "roomTitle": "Phòng của test",
     "isPrivate": false,
     "password": "",
-    "hostAvatarUrl": "",
+    "hostAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocLgfXrkWZNiPdchvJkqEXHhm2QDlt4HM0_Hy4ajJmxFzEcz-kI=s96-c",
+    "roomAvatarUrl": "",
     "createdAt": "2026-05-25T01:38:17.122Z",
-    "lastActiveAt": "2026-05-26T15:25:54.445Z"
+    "lastActiveAt": "2026-05-29T14:17:14.808Z"
   },
   "U3Q433": {
     "id": "U3Q433",
     "hostName": "Hỗ Trợ Michintashop",
     "memberCount": 0,
-    "currentSong": "1 A.M Study Session 📚 [lofi hip hop]",
+    "currentSong": "Xuân Thì | CineLove (The Album) | Phan Mạnh Quỳnh",
     "roomTitle": "Phòng của 11",
     "isPrivate": false,
     "password": "",
-    "hostAvatarUrl": "",
+    "hostAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocLgfXrkWZNiPdchvJkqEXHhm2QDlt4HM0_Hy4ajJmxFzEcz-kI=s96-c",
+    "roomAvatarUrl": "",
     "createdAt": "2026-05-25T01:49:11.397Z",
-    "lastActiveAt": "2026-05-26T13:52:34.705Z"
+    "lastActiveAt": "2026-05-29T13:49:13.984Z"
   },
   "W4D99U": {
     "id": "W4D99U",
-    "hostName": "goz",
-    "memberCount": 1,
+    "hostName": "Hỗ Trợ Michintashop",
+    "memberCount": 0,
     "currentSong": "Xuân Thì | CineLove (The Album) | Phan Mạnh Quỳnh",
     "roomTitle": "Phòng của 12",
     "isPrivate": false,
     "password": "",
-    "hostAvatarUrl": "",
+    "hostAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocLgfXrkWZNiPdchvJkqEXHhm2QDlt4HM0_Hy4ajJmxFzEcz-kI=s96-c",
     "roomAvatarUrl": "",
     "createdAt": "2026-05-25T15:20:43.310Z",
-    "lastActiveAt": "2026-05-29T02:57:28.381Z"
+    "lastActiveAt": "2026-05-29T14:21:27.111Z"
   },
   "TOPIK30": {
     "id": "TOPIK30",

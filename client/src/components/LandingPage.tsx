@@ -67,7 +67,7 @@ type LandingPageProps = {
   setRoomId: (value: string) => void
   onlineUsersCount: number
   user: any
-  profile: { username?: string; city?: string; avatar_url?: string; is_admin?: boolean } | null
+  profile: { id?: string; username?: string; city?: string; avatar_url?: string; is_admin?: boolean } | null
   signOut: () => void
   getAvatarColor: (name: string) => string
   handleCreateRoom: (
@@ -240,8 +240,9 @@ export default function LandingPage({
       setProfileError('Vui lòng nhập biệt danh.')
       return
     }
-    if (!authUser || !supabase) {
-      setProfileError('Bạn cần đăng nhập để lưu hồ sơ.')
+    const profileId = authUser?.id || profile?.id
+    if (!profileId || !supabase) {
+      setProfileError('Bạn cần đăng nhập hoặc có ID khách để lưu hồ sơ.')
       return
     }
 
@@ -251,7 +252,8 @@ export default function LandingPage({
       let avatarUrl = profile?.avatar_url || ''
       if (profileAvatarFile) {
         const extension = profileAvatarFile.name.split('.').pop()?.toLowerCase() || 'jpg'
-        const path = `${authUser.id}/${Date.now()}.${extension}`
+        const folder = authUser ? authUser.id : `guests/${profileId}`
+        const path = `${folder}/${Date.now()}.${extension}`
         const { error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(path, profileAvatarFile, { cacheControl: '3600', upsert: true })
@@ -429,7 +431,7 @@ export default function LandingPage({
             >
               {isDarkMode ? <Sun size={17} /> : <Moon size={17} />}
             </button>
-            {user ? (
+            {profile ? (
               <div ref={profileMenuRef} className="relative">
                 <button
                   type="button"

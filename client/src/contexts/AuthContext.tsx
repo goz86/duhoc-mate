@@ -26,33 +26,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const supabaseReady = supabase !== null
 
-  useEffect(() => {
-    if (!supabase) {
-      setLoading(false)
+  const loadGuestProfile = async () => {
+    let guestId = localStorage.getItem('forum_guest_id')
+    if (!guestId) {
+      setProfile(null)
       return
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id, session.user.email, session.user.user_metadata)
-      }
-      setLoading(false)
-    })
+    if (!supabase) {
+      const localUsername = localStorage.getItem('duhocmate_username') || 'Bạn học'
+      setProfile({
+        id: guestId,
+        username: localUsername,
+        avatar_url: '',
+        language: 'vi',
+        created_at: new Date().toISOString()
+      })
+      return
+    }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id, session.user.email, session.user.user_metadata)
+    try {
+      const { data, error } = await supabase
+        .from('guest_profiles')
+        .select('*')
+        .eq('id', guestId)
+        .maybeSingle()
+
+      if (!error && data) {
+        setProfile({
+          id: guestId,
+          username: data.username,
+          avatar_url: data.avatar_url || '',
+          language: 'vi',
+          created_at: data.created_at
+        })
+        localStorage.setItem('duhocmate_username', data.username)
       } else {
-        setProfile(null)
+        const localUsername = localStorage.getItem('duhocmate_username') || 'Bạn học'
+        const newGuestProfile = {
+          id: guestId,
+          username: localUsername,
+          avatar_url: '',
+          language: 'vi' as const,
+          created_at: new Date().toISOString()
+        }
+        void supabase.from('guest_profiles').insert(newGuestProfile)
+        setProfile(newGuestProfile)
       }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
+    } catch (e) {
+      console.warn('Failed to load guest profile:', e)
+    }
+  }
 
   const fetchProfile = async (userId: string, userEmail?: string, metadata?: any) => {
     if (!supabase) return
@@ -61,19 +85,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select('*')
       .eq('id', userId)
       .single()
-    // Google OAuth lưu avatar ở user_metadata.avatar_url HOẶC .picture
     const googleAvatar = metadata?.avatar_url || metadata?.picture || ''
     if (data) {
       const existing = data as Profile
-      // Backfill avatar từ tài khoản Google nếu profile cũ chưa có ảnh
       if (!existing.avatar_url && googleAvatar) {
         existing.avatar_url = googleAvatar
-        // cập nhật DB (best-effort, không chặn UI)
         void supabase.from('profiles').update({ avatar_url: googleAvatar }).eq('id', userId)
       }
       setProfile(existing)
     } else {
-      // Tạo profile cho user Google OAuth nếu chưa tồn tại
       const fallbackUsername = metadata?.full_name || metadata?.name || userEmail?.split('@')[0] || `user_${userId.substring(0, 5)}`;
       const newProfile = {
         id: userId,
@@ -133,11 +153,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     if (!supabase) return
-    await supabase.auth.signOut()
+    if (user) {
+      await supabase.auth.signOut()
+    } else {
+      localStorage.removeItem('forum_guest_id')
+      localStorage.removeItem('duhocmate_username')
+      setProfile(null)
+    }
   }
 
+  useEffect(() => {
+    if (!supabase) {
+      loadGuestProfile()
+      setLoading(false)
+      return
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        fetchProfile(session.user.id, session.user.email, session.user.user_metadata)
+      } else {
+        loadGuestProfile()
+      }
+      setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        fetchProfile(session.user.id, session.user.email, session.user.user_metadata)
+      } else {
+        loadGuestProfile()
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+
+
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user || !supabase) return
+    if (!supabase) return
+    if (!user) {
+      const guestId = localStorage.getItem('forum_guest_id') || profile?.id
+      if (!guestId) return
+
+      const payload = {
+        id: guestId,
+        username: updates.username || profile?.username || 'Bạn học',
+        avatar_url: updates.avatar_url ?? profile?.avatar_url ?? '',
+        updated_at: new Date().toISOString()
+      }
+
+      const { data, error } = await supabase
+        .from('guest_profiles')
+        .upsert(payload, { onConflict: 'id' })
+        .select()
+        .single()
+
+      if (error) throw error
+      if (data) {
+        setProfile({
+          id: guestId,
+          username: data.username,
+          avatar_url: data.avatar_url || '',
+          language: 'vi',
+          created_at: data.created_at
+        })
+        localStorage.setItem('duhocmate_username', data.username)
+      }
+      return
+    }
+
     const payload = {
       id: user.id,
       username: updates.username || profile?.username || user.email?.split('@')[0] || `user_${user.id.substring(0, 5)}`,

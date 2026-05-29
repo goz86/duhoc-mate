@@ -1,0 +1,28 @@
+{
+  "W4D99U": {
+    "id": "W4D99U",
+    "hostName": "Bạn học",
+    "memberCount": 1,
+    "currentSong": "Dang nghe nhac Lofi",
+    "roomTitle": "Phòng của Bạn học",
+    "isPrivate": false,
+    "password": "",
+    "hostAvatarUrl": "",
+    "roomAvatarUrl": "",
+    "createdAt": "2026-05-29T14:26:05.781Z",
+    "lastActiveAt": "2026-05-29T14:47:20.400Z"
+  },
+  "TOPIK30": {
+    "id": "TOPIK30",
+    "hostName": "Bạn học",
+    "memberCount": 0,
+    "currentSong": "Xuân Thì (OST Hẹn Em Ngày Nhật Thực) | Phan Mạnh Quỳnh | Music Video",
+    "roomTitle": "Phòng ôn TOPIK 30 ngày",
+    "isPrivate": false,
+    "password": "",
+    "hostAvatarUrl": "",
+    "roomAvatarUrl": "",
+    "createdAt": "2026-05-29T14:43:28.074Z",
+    "lastActiveAt": "2026-05-29T14:44:56.122Z"
+  }
+}

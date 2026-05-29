@@ -204,6 +204,310 @@ app.get('/api/search-music', async (req, res) => {
   }
 });
 
+const junkKeywords = [
+  'game', 'gaming', 'minecraft', 'roblox', 'liên quân', 'pubg', 'fifa', 
+  'streamer', 'livestream', 'live stream', 'vlog', 'phim', 'hài', 'comedy', 
+  'hoạt hình', 'anime', 'tập ', 'preview', 'trailer', 'tin tức', 'news', 
+  'hướng dẫn', 'tutorial', 'reaction', 'đập hộp', 'review', 'troll', 'thách đấu'
+];
+
+const filterMusicVideo = (video, type) => {
+  const title = (video.title || '').toLowerCase();
+  const author = (typeof video.author === 'string' ? video.author : (video.author?.name || String(video.author || ''))).toLowerCase();
+  
+  // Check title/author against junk keywords
+  const isJunk = junkKeywords.some(keyword => title.includes(keyword) || author.includes(keyword));
+  if (isJunk) return false;
+  
+  // Check duration (in seconds)
+  let durationSecs = 0;
+  if (typeof video.seconds === 'number') {
+    durationSecs = video.seconds;
+  } else if (typeof video.lengthSeconds === 'number') {
+    durationSecs = video.lengthSeconds;
+  } else if (video.duration && typeof video.duration.seconds === 'number') {
+    durationSecs = video.duration.seconds;
+  } else if (typeof video.duration === 'number') {
+    durationSecs = video.duration;
+  } else if (typeof video.duration === 'string') {
+    const parts = video.duration.split(':').map(Number);
+    if (parts.length === 2) {
+      durationSecs = parts[0] * 60 + parts[1];
+    } else if (parts.length === 3) {
+      durationSecs = parts[0] * 3600 + parts[1] * 60 + parts[2];
+    } else if (parts.length === 1 && !isNaN(parts[0])) {
+      durationSecs = parts[0];
+    }
+  }
+  
+  if (type === 'vinahouse') {
+    // Vinahouse can be individual tracks or long mix sets
+    return durationSecs >= 180 && durationSecs <= 7200; // 3 mins to 2 hours
+  } else {
+    // Vpop and Kpop should be individual songs/MVs
+    return durationSecs >= 90 && durationSecs <= 600; // 1.5 mins to 10 mins
+  }
+};
+
+const typeQueries = {
+  vpop: [
+    'nhạc trẻ hot nhất hiện nay vpop',
+    'vpop mới nhất hot nhất',
+    'nhạc trẻ mới nhất hiện nay',
+    'nhạc hot tiktok vpop'
+  ],
+  kpop: [
+    'kpop trending music video',
+    'kpop new music video hits',
+    'kpop top hits hot 100',
+    'nhạc kpop mới nhất hot nhất'
+  ],
+  vinahouse: [
+    'vinahouse tik tok remix hot nhất',
+    'nhạc vinahouse remix bass cực căng',
+    'vinahouse bay phòng remix hot nhất'
+  ]
+};
+
+const getTrendingMusicWithOfficialApi = async (type = 'vpop') => {
+  if (!YOUTUBE_API_KEY) throw new Error('No YOUTUBE_API_KEY configured');
+  let regionCode = 'VN';
+  if (type === 'kpop') {
+    regionCode = 'KR';
+  }
+  
+  if (type === 'vinahouse') {
+    return searchWithOfficialApi('vinahouse tik tok remix hot nhất');
+  }
+
+  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&chart=mostPopular&regionCode=${regionCode}&videoCategoryId=10&maxResults=25&key=${YOUTUBE_API_KEY}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`YouTube API error (${response.status}): ${errorText}`);
+  }
+  const data = await response.json();
+  return (data.items || []).map(v => ({
+    videoId: v.id,
+    title: v.snippet?.title || '',
+    author: v.snippet?.channelTitle || '',
+    duration: parseISO8601Duration(v.contentDetails?.duration),
+    thumbnail: v.snippet?.thumbnails?.medium?.url || v.snippet?.thumbnails?.default?.url || `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`,
+    views: parseInt(v.statistics?.viewCount || '0', 10) || 0,
+  }));
+};
+
+const getTrendingMusicWithInvidious = async (type = 'vpop') => {
+  if (type === 'vinahouse') {
+    return searchWithInvidious('vinahouse tik tok remix hot nhất');
+  }
+  const region = type === 'kpop' ? 'KR' : 'VN';
+  try {
+    const listRes = await fetch("https://api.invidious.io/instances.json?sort_by=type,health", { signal: AbortSignal.timeout(3000) });
+    if (!listRes.ok) throw new Error("Failed to fetch Invidious list");
+    const list = await listRes.json();
+    
+    const healthyInstances = list
+      .map(item => item[1])
+      .filter(details => {
+        return details.type === 'https' && 
+               details.api === true &&
+               details.monitor &&
+               details.monitor.down === false;
+      })
+      .map(details => details.uri)
+      .filter(Boolean);
+
+    const fallbacks = [
+      'https://inv.thepixora.com',
+      'https://yewtu.be',
+      'https://invidious.projectsegfau.lt',
+      'https://invidious.privacydev.net'
+    ];
+    const targetInstances = [...new Set([...healthyInstances, ...fallbacks])];
+
+    for (const uri of targetInstances.slice(0, 5)) {
+      try {
+        const url = `${uri}/api/v1/trending?type=music&region=${region}`;
+        const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+        if (res.ok) {
+          const items = await res.json();
+          if (Array.isArray(items) && items.length > 0) {
+            return items.map(v => ({
+              videoId: v.videoId,
+              title: v.title,
+              author: v.author || '',
+              duration: typeof v.lengthSeconds === 'number' 
+                ? `${Math.floor(v.lengthSeconds / 60)}:${String(v.lengthSeconds % 60).padStart(2, '0')}`
+                : '0:00',
+              thumbnail: v.videoThumbnails?.[0]?.url || `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`,
+              views: v.viewCount || 0,
+              lengthSeconds: v.lengthSeconds
+            }));
+          }
+        }
+      } catch (e) {
+        console.warn(`Invidious instance ${uri} trending failed:`, e.message);
+      }
+    }
+  } catch (err) {
+    console.warn("Invidious fetching failed:", err.message);
+  }
+  throw new Error("All Invidious searches failed or no instances available");
+};
+
+const getTrendingMusicWithYtSearch = async (type = 'vpop') => {
+  console.log(`Fetching trending music via yt-search fallback for ${type}...`);
+  const queries = typeQueries[type] || ['vpop'];
+  
+  // Pick 2 random queries from the list to get a rich combined pool
+  const shuffledQueries = [...queries].sort(() => 0.5 - Math.random());
+  const selectedQueries = shuffledQueries.slice(0, 2);
+  
+  const searchPromises = selectedQueries.map(q => yts(q));
+  const searchResults = await Promise.all(searchPromises);
+  
+  let allVideos = [];
+  for (const res of searchResults) {
+    if (res && res.videos) {
+      allVideos = allVideos.concat(res.videos);
+    }
+  }
+  
+  const uniqueVideos = [];
+  const seenIds = new Set();
+  for (const v of allVideos) {
+    if (v && v.videoId && !seenIds.has(v.videoId)) {
+      seenIds.add(v.videoId);
+      if (filterMusicVideo(v, type)) {
+        uniqueVideos.push(v);
+      }
+    }
+  }
+  
+  return uniqueVideos.slice(0, 40).map(v => ({
+    videoId: v.videoId,
+    title: v.title,
+    author: v.author?.name || String(v.author) || '',
+    duration: v.duration?.timestamp || v.timestamp || '0:00',
+    thumbnail: v.image || v.thumbnail || `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`,
+    views: v.views || 0,
+  }));
+};
+
+let cachedVpopChart = null;
+let cachedVpopTime = 0;
+
+const getZingVpopChart = async () => {
+  const now = Date.now();
+  // Cache for 2 hours (7,200,000 ms)
+  if (cachedVpopChart && (now - cachedVpopTime < 7200000)) {
+    console.log('Returning cached V-Pop chart from Zing MP3...');
+    return cachedVpopChart;
+  }
+  
+  console.log('Fetching fresh V-Pop chart from Zing MP3...');
+  try {
+    const res = await fetch('https://mp3.zing.vn/xhr/chart-realtime');
+    if (!res.ok) throw new Error('Failed to fetch Zing MP3 chart');
+    const json = await res.json();
+    const songs = json?.data?.song || [];
+    
+    // Take the top 15 songs
+    const topSongs = songs.slice(0, 15);
+    if (topSongs.length === 0) throw new Error('No songs in Zing MP3 chart response');
+    
+    // Resolve each song to a YouTube video in parallel
+    const searchPromises = topSongs.map(async (song) => {
+      try {
+        const query = `${song.name} ${song.artists_names} official mv`;
+        const searchResult = await yts(query);
+        const video = searchResult?.videos?.[0];
+        if (video) {
+          return {
+            videoId: video.videoId,
+            title: video.title,
+            author: video.author?.name || String(video.author) || '',
+            duration: video.duration?.timestamp || video.timestamp || '0:00',
+            thumbnail: video.image || video.thumbnail || `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`,
+            views: video.views || 0,
+          };
+        }
+      } catch (err) {
+        console.warn(`Failed to resolve YouTube video for Zing song: ${song.name}`, err.message);
+      }
+      return null;
+    });
+
+    const resolved = await Promise.all(searchPromises);
+    const results = resolved.filter(Boolean);
+    
+    if (results.length > 0) {
+      cachedVpopChart = results;
+      cachedVpopTime = now;
+      return results;
+    }
+  } catch (err) {
+    console.warn('Failed to fetch Zing V-Pop chart, falling back:', err.message);
+  }
+  return null;
+};
+
+app.get('/api/trending-music', async (req, res) => {
+  const type = req.query.type || 'vpop';
+  
+  if (type === 'vpop') {
+    try {
+      const zingResults = await getZingVpopChart();
+      if (zingResults && zingResults.length > 0) {
+        return res.json({ results: zingResults });
+      }
+    } catch (err) {
+      console.warn('Zing V-Pop chart failed:', err.message);
+    }
+  }
+  
+  if (YOUTUBE_API_KEY) {
+    try {
+      const results = await getTrendingMusicWithOfficialApi(type);
+      if (results && results.length > 0) {
+        const filtered = results.filter(v => filterMusicVideo(v, type));
+        if (filtered.length > 0) {
+          return res.json({ results: filtered });
+        }
+      }
+    } catch (err) {
+      console.warn('Official YouTube API trending failed:', err.message);
+    }
+  }
+
+  // Use yt-search as the primary non-API-key source
+  try {
+    const results = await getTrendingMusicWithYtSearch(type);
+    if (results && results.length > 0) {
+      return res.json({ results });
+    }
+  } catch (err) {
+    console.warn('yt-search trending music failed:', err.message);
+  }
+
+  // Invidious as a fallback if yt-search fails
+  try {
+    const results = await getTrendingMusicWithInvidious(type);
+    if (results && results.length > 0) {
+      const filtered = results.filter(v => filterMusicVideo(v, type));
+      if (filtered.length > 0) {
+        return res.json({ results: filtered });
+      }
+    }
+  } catch (err) {
+    console.warn('Invidious trending music failed:', err.message);
+  }
+
+  return res.status(500).json({ error: 'Failed to fetch trending music' });
+});
+
+
 const socketOptions = {
   cors: {
     origin: '*', // Hỗ trợ mọi nguồn kết nối cục bộ và deploy
@@ -1453,6 +1757,23 @@ io.on('connection', (socket) => {
     rememberRoomState(room);
     io.to(roomId).emit('room-users', room.members);
     emitStudyTable(roomId);
+  });
+
+  // Cập nhật username của member → broadcast cả phòng
+  socket.on('update-username', ({ roomId, username }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const member = room.members.find(m => m.id === socket.id);
+    if (!member) return;
+    const name = typeof username === 'string' ? username.trim() : '';
+    if (!name || member.username === name) return;
+    const oldName = member.username;
+    member.username = name;
+    if (member.isHost) room.hostUsername = name;
+    rememberRoomState(room);
+    io.to(roomId).emit('room-users', room.members);
+    emitStudyTable(roomId);
+    sendSystemMessage(roomId, `Bạn học ${oldName} đã đổi tên thành ${name}.`);
   });
 
   // 7. Đồng bộ TOPIK Study giữa thành viên phòng
