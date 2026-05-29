@@ -388,6 +388,10 @@ export default function App() {
     setMobileCompactView(view);
     if (view === 'youtube' || view === 'video' || view === 'topik' || view === 'pdf') {
       setStageMode(view);
+      // Auto-show playlist panel when switching to youtube tab on mobile
+      if (view === 'youtube') {
+        setSidebarTab('playlist');
+      }
       if (view === 'video' && !jitsiActive) {
         setJitsiActive(true);
         if (roomIdRef.current) {
@@ -3092,8 +3096,9 @@ export default function App() {
             const mainSpan = roomCollapsed ? 'lg:col-span-12' : 'lg:col-span-9';
             const sideSpan = roomCollapsed ? 'hidden' : 'lg:col-span-3';
             const mobileSidebarPanel = mobileCompactView === 'chat';
+            const mobileYoutubeWithPlaylist = mobileCompactView === 'youtube';
             const mainMobileVisibility = mobileSidebarPanel ? 'hidden sm:flex' : 'flex';
-            const sideMobileVisibility = mobileSidebarPanel ? 'flex' : 'hidden sm:flex';
+            const sideMobileVisibility = (mobileSidebarPanel || mobileYoutubeWithPlaylist) ? 'flex' : 'hidden sm:flex';
             return (
           <div className="flex-1 grid grid-cols-1 gap-0 pb-24 sm:pb-0 lg:grid-cols-12 lg:overflow-hidden lg:max-h-[calc(100vh-108px)] xl:max-h-[calc(100vh-96px)]">
 
@@ -3519,7 +3524,7 @@ export default function App() {
                                 setLocalPaused(true);
                               }
                             }}
-                            className="flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/30 bg-white px-3 py-1.5 text-[11px] font-bold text-brand-brown-dark shadow-sm transition hover:bg-brand-light"
+                            className="flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/30 bg-white px-3 py-1.5 text-[11px] font-bold text-brand-brown-dark shadow-sm transition hover:bg-brand-light whitespace-nowrap"
                           >
                             {localPaused
                               ? <><Play size={12} className="text-brand-terracotta" /><span>Phát lại</span></>
@@ -3861,7 +3866,7 @@ export default function App() {
             </main>
 
             {/* RIGHT SIDEBAR: Chat, Playlist, Members — width adapts with sideSpan */}
-            <aside className={`${sideMobileVisibility} ${sideSpan} min-h-[calc(100dvh-148px)] min-w-0 border-l border-brand-terracotta-light/20 bg-white/30 backdrop-blur-lg flex-col transition-all duration-300 sm:min-h-0 lg:max-h-full`}>
+            <aside className={`${sideMobileVisibility} ${sideSpan} ${mobileSidebarPanel ? 'min-h-[calc(100dvh-148px)]' : ''} min-w-0 border-l border-brand-terracotta-light/20 bg-white/30 backdrop-blur-lg flex-col transition-all duration-300 sm:min-h-0 lg:max-h-full`}>
               
               {/* Tab Navigation in Sidebar */}
               <div className="p-3 pb-0 xl:p-4 xl:pb-0 shrink-0">
