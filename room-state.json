@@ -3,10 +3,10 @@
     "roomId": "W4D99U",
     "playlist": [
       {
-        "id": "1780066182593-0.06337736499036528",
-        "videoId": "cIyAqMRVecc",
-        "title": "장범준 - 노래방에서 가사",
-        "duration": "3:59",
+        "id": "1780066424810-0.41177635929101275",
+        "videoId": "r0uH9lOqPZI",
+        "title": "BÊN ẤY EM CÓ AI RỒI || CHÂU KHẢI PHONG x LÊ GIA QUÂN || OFFICIAL MUSIC VIDEO",
+        "duration": "5:12",
         "votes": 1,
         "votedUsers": [
           "mrAoYmkKjk8U8OLFAAAB"
@@ -39,15 +39,28 @@
         "addedBy": "Bạn học",
         "status": "played",
         "playedAt": "2026-05-29T14:49:45.451Z"
+      },
+      {
+        "id": "1780066182593-0.06337736499036528",
+        "videoId": "cIyAqMRVecc",
+        "title": "장범준 - 노래방에서 가사",
+        "duration": "3:59",
+        "votes": 1,
+        "votedUsers": [
+          "mrAoYmkKjk8U8OLFAAAB"
+        ],
+        "addedBy": "Bạn học",
+        "status": "played",
+        "playedAt": "2026-05-29T14:53:45.017Z"
       }
     ],
     "videoState": {
-      "id": "cIyAqMRVecc",
-      "time": 79.49193380735778,
+      "id": "r0uH9lOqPZI",
+      "time": 311.521,
       "playing": true,
       "pausedByHost": false,
-      "lastUpdated": 1780066265472,
-      "playlistItemId": "1780066182593-0.06337736499036528"
+      "lastUpdated": 1780069593470,
+      "playlistItemId": "1780066424810-0.41177635929101275"
     },
     "pomodoro": {
       "timeLeft": 1500,
@@ -110,6 +123,80 @@
         "type": "user",
         "timestamp": "23:50",
         "sentAt": 1780066226233
+      },
+      {
+        "id": "1780066424812-0.20931249407165275",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học Bạn học đã thêm bài: \"BÊN ẤY EM CÓ AI RỒI || CHÂU KHẢI PHONG x LÊ GIA QUÂN || OFFICIAL MUSIC VIDEO\".",
+        "type": "system",
+        "timestamp": "23:53"
+      },
+      {
+        "id": "1780066562490-0.9667697751460419",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học hi đã tham gia phòng.",
+        "type": "system",
+        "timestamp": "23:56"
+      },
+      {
+        "id": "1780066657653-0.24115860431499703",
+        "sender": "Bạn học",
+        "senderId": "mrAoYmkKjk8U8OLFAAAB",
+        "isHost": true,
+        "text": "😍",
+        "type": "user",
+        "timestamp": "23:57",
+        "sentAt": 1780066657653
+      },
+      {
+        "id": "1780066662739-0.8372666968895287",
+        "sender": "Bạn học",
+        "senderId": "mrAoYmkKjk8U8OLFAAAB",
+        "isHost": true,
+        "text": "hehehe",
+        "type": "user",
+        "timestamp": "23:57",
+        "sentAt": 1780066662739
+      },
+      {
+        "id": "1780066691382-0.6867372114902149",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học Bạn học đã rời phòng.",
+        "type": "system",
+        "timestamp": "23:58"
+      },
+      {
+        "id": "1780066699737-0.0110948659971557",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học Bạn học đã tham gia phòng.",
+        "type": "system",
+        "timestamp": "23:58"
+      },
+      {
+        "id": "1780066699823-0.3292477099764355",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học Bạn học đã tham gia phòng.",
+        "type": "system",
+        "timestamp": "23:58"
+      },
+      {
+        "id": "1780066714025-0.34873796247166133",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học hi đã rời phòng.",
+        "type": "system",
+        "timestamp": "23:58"
       }
     ],
     "ideaTasks": [
@@ -140,11 +227,11 @@
     "hostReconnectUntil": null,
     "studyTable": {
       "seats": {
-        "mrAoYmkKjk8U8OLFAAAB": {
-          "memberId": "mrAoYmkKjk8U8OLFAAAB",
+        "ujyUcoYeFUg3-3P7AAAF": {
+          "memberId": "ujyUcoYeFUg3-3P7AAAF",
           "username": "Bạn học",
           "isHost": true,
-          "joinedAt": 1780066040400,
+          "joinedAt": 1780066699730,
           "active": true,
           "status": "focus",
           "personalPomodoro": {
@@ -152,13 +239,182 @@
             "duration": 1500,
             "isRunning": false,
             "isBreak": false,
-            "lastUpdated": 1780066040400
+            "lastUpdated": 1780066699730
           },
           "pausedSince": null,
           "totalPausedMs": 0
         }
       },
-      "reactions": []
+      "reactions": [
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066625276",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066625276
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066626718",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066626718
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066627715",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066627715
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066628558",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066628558
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066629716",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066629716
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066632158",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066632158
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066634662",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066634662
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066636170",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066636170
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066637110",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066637110
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066637690",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066637690
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066637845",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066637845
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066638043",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066638043
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066638268",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066638268
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066638409",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Thích",
+          "createdAt": 1780066638409
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066641938",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Nghỉ chút",
+          "createdAt": 1780066641938
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066643657",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Nghỉ chút",
+          "createdAt": 1780066643657
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066645135",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Nghỉ chút",
+          "createdAt": 1780066645135
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066645970",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Nghỉ chút",
+          "createdAt": 1780066645970
+        },
+        {
+          "id": "mrAoYmkKjk8U8OLFAAAB-1780066646751",
+          "memberId": "O8BMxGuH6QCraHCCAAAD",
+          "senderId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderName": "Bạn học",
+          "label": "Nghỉ chút",
+          "createdAt": 1780066646751
+        },
+        {
+          "id": "O8BMxGuH6QCraHCCAAAD-1780066649044",
+          "memberId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderId": "O8BMxGuH6QCraHCCAAAD",
+          "senderName": "hi",
+          "label": "Haha",
+          "createdAt": 1780066649044
+        },
+        {
+          "id": "O8BMxGuH6QCraHCCAAAD-1780066649213",
+          "memberId": "mrAoYmkKjk8U8OLFAAAB",
+          "senderId": "O8BMxGuH6QCraHCCAAAD",
+          "senderName": "hi",
+          "label": "Haha",
+          "createdAt": 1780066649213
+        }
+      ]
     },
     "pinnedMessage": null,
     "roomAvatarUrl": "",
@@ -522,6 +778,50 @@
           "totalPausedMs": 0
         }
       },
+      "reactions": []
+    },
+    "pinnedMessage": null,
+    "roomAvatarUrl": "",
+    "roomBackgroundUrl": ""
+  },
+  "R1MHID": {
+    "roomId": "R1MHID",
+    "playlist": [],
+    "videoState": {
+      "id": "",
+      "time": 0,
+      "playing": false,
+      "pausedByHost": false,
+      "lastUpdated": 1780066734052
+    },
+    "pomodoro": {
+      "timeLeft": 1500,
+      "duration": 1500,
+      "isRunning": false,
+      "isBreak": false
+    },
+    "chatMessages": [
+      {
+        "id": "1780066734057-0.8021722735508731",
+        "sender": "Hệ thống",
+        "senderId": "system",
+        "isHost": false,
+        "text": "Bạn học hi đã tham gia phòng.",
+        "type": "system",
+        "timestamp": "23:58"
+      }
+    ],
+    "ideaTasks": [],
+    "roomTitle": "Phòng của hi",
+    "isPrivate": false,
+    "password": "",
+    "hostAvatarUrl": "",
+    "tiktokVideoId": "",
+    "hostFriendCode": "656XYAN3",
+    "hostUsername": "hi",
+    "hostReconnectUntil": null,
+    "studyTable": {
+      "seats": {},
       "reactions": []
     },
     "pinnedMessage": null,

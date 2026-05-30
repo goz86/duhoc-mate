@@ -2,15 +2,15 @@
   "W4D99U": {
     "id": "W4D99U",
     "hostName": "Bạn học",
-    "memberCount": 1,
-    "currentSong": "Dang nghe nhac Lofi",
+    "memberCount": 0,
+    "currentSong": "BÊN ẤY EM CÓ AI RỒI || CHÂU KHẢI PHONG x LÊ GIA QUÂN || OFFICIAL MUSIC VIDEO",
     "roomTitle": "Phòng của Bạn học",
     "isPrivate": false,
     "password": "",
     "hostAvatarUrl": "",
     "roomAvatarUrl": "",
     "createdAt": "2026-05-29T14:26:05.781Z",
-    "lastActiveAt": "2026-05-29T14:47:20.400Z"
+    "lastActiveAt": "2026-05-29T16:17:14.237Z"
   },
   "TOPIK30": {
     "id": "TOPIK30",
@@ -24,5 +24,18 @@
     "roomAvatarUrl": "",
     "createdAt": "2026-05-29T14:43:28.074Z",
     "lastActiveAt": "2026-05-29T14:44:56.122Z"
+  },
+  "R1MHID": {
+    "id": "R1MHID",
+    "hostName": "hi",
+    "memberCount": 0,
+    "currentSong": "Dang nghe nhac Lofi",
+    "roomTitle": "Phòng của hi",
+    "isPrivate": false,
+    "password": "",
+    "hostAvatarUrl": "",
+    "roomAvatarUrl": "",
+    "createdAt": "2026-05-29T14:58:54.053Z",
+    "lastActiveAt": "2026-05-29T14:58:57.220Z"
   }
 }
