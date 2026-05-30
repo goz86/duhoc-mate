@@ -223,6 +223,9 @@ export default function App() {
   const [view, setView] = useState<'landing' | 'room' | 'admin'>(_initialNav.view);
   const [roomId, setRoomId] = useState(_initialNav.roomId);
   const [roomInputId, setRoomInputId] = useState('');
+  // Xử lý link mời: roomId lấy từ URL hash lúc mới mở app, và cờ đã xử lý (chỉ 1 lần)
+  const initialHashRoomRef = useRef(_initialNav.view === 'room' ? _initialNav.roomId : '');
+  const inviteJoinHandledRef = useRef(false);
   const [currentRoomTitle, setCurrentRoomTitle] = useState('');
   const [username, setUsername] = useState(() => {
     // Dùng profile.username nếu đã đăng nhập, không thì dùng localStorage
@@ -883,7 +886,8 @@ export default function App() {
       navigateToLanding();
     });
 
-    // Auto-rejoin room nếu URL hash có room ID (sau reload)
+    // Auto-rejoin nhanh khi reload trong phòng và đã có tên sẵn (tránh nháy màn).
+    // Trường hợp người được MỜI chưa có tên được xử lý ở effect riêng (gated theo auth loading) bên dưới.
     const initHash = window.location.hash;
     const initMatch = initHash.match(/^#room\/([A-Z0-9]+)$/i);
     if (initMatch) {
@@ -891,6 +895,7 @@ export default function App() {
       const savedUsername = localStorage.getItem('duhocmate_username') || '';
       const savedFriendCode = localStorage.getItem('duhocmate_friend_code') || '';
       if (savedUsername) {
+        inviteJoinHandledRef.current = true;
         socket.emit('join-room', {
           roomId: initRoomId,
           username: savedUsername,
@@ -941,6 +946,36 @@ export default function App() {
       setUsername('');
     }
   }, [profile]);
+
+  // LINK MỜI: khi mở app trực tiếp vào #room/XXX. Chờ auth tải xong rồi:
+  //  - Có tên (đã đăng nhập hoặc đã từng đặt tên) → join thẳng vào phòng đang có.
+  //  - Chưa có tên (khách mới) → hiện popup nhập tên, nhập xong sẽ join (trước đây
+  //    không emit join-room nên ra phòng rỗng / về landing).
+  useEffect(() => {
+    if (loading) return;
+    if (inviteJoinHandledRef.current) return;
+    const target = initialHashRoomRef.current;
+    if (!target) return; // chỉ xử lý khi mở app trực tiếp vào #room/XXX (link mời)
+
+    const name = (profile?.username || localStorage.getItem('duhocmate_username') || '').trim();
+    if (name) {
+      inviteJoinHandledRef.current = true;
+      setRoomId(target);
+      setView('room');
+      socket?.emit('join-room', {
+        roomId: target,
+        username: name,
+        friendCode: localStorage.getItem('duhocmate_friend_code') || friendCode || '',
+        avatarUrl: profile?.avatar_url || '',
+      });
+    } else if (!user) {
+      inviteJoinHandledRef.current = true;
+      setGuestJoinRoomId(target);
+      setGuestJoinTemplate(null);
+      setGuestNameInput('');
+      setShowGuestJoinModal(true);
+    }
+  }, [loading, profile?.username, user]);
 
   // Khi avatar từ tài khoản load xong (sau khi đã vào phòng) → cập nhật cho cả phòng
   // Khắc phục trường hợp join-room chạy trước khi profile tải xong → avatar bị rỗng
@@ -1465,9 +1500,12 @@ export default function App() {
       // Fallback
     }
 
-    // Kiểm tra phòng có tồn tại hay không
+    // Kiểm tra phòng có tồn tại hay không.
+    // Phòng từ LINK MỜI (mở app trực tiếp vào #room/XXX) luôn được tin tưởng —
+    // bỏ qua kiểm tra này để tránh báo "không tồn tại" khi danh sách phòng chưa kịp đồng bộ.
+    const isInviteRoom = formattedId === initialHashRoomRef.current;
     const isTemplateRoom = seedRoomIds.has(formattedId) || templates.some(t => getTemplateRoomId(t) === formattedId);
-    if (!matchedActive && !storedRoomRecord && !isTemplateRoom) {
+    if (!matchedActive && !storedRoomRecord && !isTemplateRoom && !isInviteRoom) {
       alert("Phòng không tồn tại hoặc mã phòng không chính xác!");
       return;
     }
