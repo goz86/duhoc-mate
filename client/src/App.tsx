@@ -71,7 +71,7 @@ const INITIAL_VISIBLE_CHAT_MESSAGES = 35;
 const CHAT_MESSAGES_PAGE_SIZE = 25;
 // Bù thời gian YouTube buffer khi seek (giây) để guest theo kịp host khi đồng bộ video.
 // Tăng nếu guest vẫn trễ, giảm nếu guest vượt trước host.
-const VIDEO_SYNC_BUFFER = 0.7;
+const VIDEO_SYNC_BUFFER = 0.2;
 
 const getApiBaseCandidates = () => {
   const bases = [API_BASE_URL, '', LOCAL_API_BASE_URL];
