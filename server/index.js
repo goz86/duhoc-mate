@@ -1314,6 +1314,12 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('receive-message', chatMsg);
   });
 
+  // Đồng bộ đồng hồ client ↔ server (NTP đơn giản) để bù trễ video chính xác,
+  // không phụ thuộc đồng hồ máy người dùng có lệch hay không.
+  socket.on('ping-time', (clientT0) => {
+    socket.emit('pong-time', { clientT0, serverTime: Date.now() });
+  });
+
   // 3. Đồng bộ Video YouTube
   socket.on('video-action', ({ roomId, action, time, videoId, playlistItemId, userInitiated }) => {
     const room = rooms.get(roomId);

@@ -69,6 +69,9 @@ const LOCAL_API_BASE_URL = 'http://localhost:3001';
 const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : LOCAL_API_BASE_URL);
 const INITIAL_VISIBLE_CHAT_MESSAGES = 35;
 const CHAT_MESSAGES_PAGE_SIZE = 25;
+// Bù thời gian YouTube buffer khi seek (giây) để guest theo kịp host khi đồng bộ video.
+// Tăng nếu guest vẫn trễ, giảm nếu guest vượt trước host.
+const VIDEO_SYNC_BUFFER = 0.7;
 
 const getApiBaseCandidates = () => {
   const bases = [API_BASE_URL, '', LOCAL_API_BASE_URL];
@@ -493,6 +496,8 @@ export default function App() {
   // Mục đích: chặn YouTube tự fire state=1 sau buffer/seek/ad khi host đã pause
   // false = host đã pause, không cho phép emit play từ onStateChange spurious
   const hostWantsToPlayRef = useRef<boolean>(false);
+  // Lệch đồng hồ client→server (ms): serverNow ≈ Date.now() + clockOffsetRef. Dùng để bù trễ video.
+  const clockOffsetRef = useRef<number>(0);
   // Trigger để force re-init YouTube player (không còn dùng setPlayerReinitTrigger sau fix NUCLEAR OPTION)
   const [playerReinitTrigger] = useState(0);
   const [playerVideoTitle, setPlayerVideoTitle] = useState('');
@@ -666,6 +671,20 @@ export default function App() {
       socket.connect();
     }
 
+    // Đồng bộ đồng hồ với server (NTP đơn giản): đo RTT, tính offset chính xác
+    socket.on('pong-time', ({ clientT0, serverTime }: { clientT0: number; serverTime: number }) => {
+      const t1 = Date.now();
+      const rtt = t1 - clientT0;
+      if (rtt >= 0 && rtt < 5000) {
+        // serverNow tại t1 ≈ serverTime + rtt/2  →  offset = serverNow - t1
+        clockOffsetRef.current = serverTime + rtt / 2 - t1;
+      }
+    });
+    const sendPing = () => { if (socket?.connected) socket.emit('ping-time', Date.now()); };
+    sendPing();
+    socket.on('connect', sendPing);
+    const clockPingInterval = window.setInterval(sendPing, 20000);
+
     socket.on('room-users', (users: Member[]) => {
       setMembers(prev => {
         const oldHost = prev.find(m => m.isHost);
@@ -825,16 +844,19 @@ export default function App() {
       }
 
       if (action === 'play') {
-        // Bù trễ mạng: từ lúc server đóng dấu thời gian (videoState.lastUpdated) đến giờ,
-        // host đã phát thêm 1 đoạn → cộng phần đó vào để guest tới đúng vị trí host ĐANG xem,
-        // thay vì vị trí host phát lúc gửi (vốn trễ ~1s).
+        // Bù trễ để guest tới đúng vị trí host ĐANG xem:
+        //  target = time + (thời gian trôi từ lúc server đóng dấu, theo đồng hồ ĐÃ ĐỒNG BỘ)
+        //                 + VIDEO_SYNC_BUFFER (bù thời gian YouTube buffer khi seek).
         let target = time;
-        if (typeof time === 'number' && typeof videoState?.lastUpdated === 'number') {
-          const elapsed = (Date.now() - videoState.lastUpdated) / 1000;
-          if (elapsed > 0 && elapsed < 2.5) target = time + elapsed;
+        if (typeof time === 'number') {
+          const serverNow = Date.now() + clockOffsetRef.current;
+          const elapsed = typeof videoState?.lastUpdated === 'number'
+            ? (serverNow - videoState.lastUpdated) / 1000
+            : 0;
+          target = time + Math.min(Math.max(elapsed, 0), 3) + VIDEO_SYNC_BUFFER;
         }
-        // Seek nếu lệch > 0.75s (siết lại để bắt được độ trễ ~1s)
-        if (typeof target === 'number' && Math.abs(playerRef.current.getCurrentTime() - target) > 0.75) {
+        // Seek nếu lệch > 0.6s (siết để bắt được độ trễ ~1s)
+        if (typeof target === 'number' && Math.abs(playerRef.current.getCurrentTime() - target) > 0.6) {
           playerRef.current.seekTo(target, true);
         }
         if (playerVolume > 0) {
@@ -919,7 +941,10 @@ export default function App() {
     socket.emit('request-active-rooms');
 
     return () => {
+      window.clearInterval(clockPingInterval);
       if (socket) {
+        socket.off('pong-time');
+        socket.off('connect', sendPing);
         socket.off('room-users');
         socket.off('init-room-state');
         socket.off('assigned-host');
@@ -1106,11 +1131,12 @@ export default function App() {
             if (currentVideoRef.current.playing) {
               event.target.playVideo();
             }
-            // Vào đúng vị trí host đang xem: time lúc host gửi + thời gian đã trôi (nếu đang phát)
+            // Vào đúng vị trí host đang xem: time lúc host gửi + thời gian đã trôi (đồng hồ đã đồng bộ) + bù buffer
             let startAt = currentVideoRef.current.time || 0;
             if (currentVideoRef.current.playing && typeof currentVideoRef.current.lastUpdated === 'number') {
-              const elapsed = (Date.now() - currentVideoRef.current.lastUpdated) / 1000;
-              if (elapsed > 0 && elapsed < 30) startAt += elapsed;
+              const serverNow = Date.now() + clockOffsetRef.current;
+              const elapsed = (serverNow - currentVideoRef.current.lastUpdated) / 1000;
+              if (elapsed > 0 && elapsed < 30) startAt += elapsed + VIDEO_SYNC_BUFFER;
             }
             if (startAt > 0) {
               event.target.seekTo(startAt, true);
