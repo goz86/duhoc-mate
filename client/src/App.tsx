@@ -1009,19 +1009,20 @@ export default function App() {
     }
   }, [loading, profile?.username, user]);
 
-  // Khi avatar từ tài khoản load xong (sau khi đã vào phòng) → cập nhật cho cả phòng
-  // Khắc phục trường hợp join-room chạy trước khi profile tải xong → avatar bị rỗng
+  // Khi avatar đổi (đăng nhập, đổi ảnh đại diện…) → cập nhật realtime cho cả phòng.
+  // Dùng `roomId` thay vì `view === 'room'` vì modal đổi ảnh nằm ở trang landing
+  // (lúc thu nhỏ phòng view='landing') → nếu chờ view==='room' thì phải reload mới thấy.
   useEffect(() => {
-    if (view === 'room' && roomId && profile?.avatar_url) {
+    if (roomId && profile?.avatar_url) {
       socket?.emit('update-avatar', { roomId, avatarUrl: profile.avatar_url });
     }
-  }, [profile?.avatar_url, view, roomId]);
+  }, [profile?.avatar_url, roomId]);
 
   useEffect(() => {
-    if (view === 'room' && roomId && profile?.username) {
+    if (roomId && profile?.username) {
       socket?.emit('update-username', { roomId, username: profile.username });
     }
-  }, [profile?.username, view, roomId]);
+  }, [profile?.username, roomId]);
 
   useEffect(() => {
     if (view !== 'room' || !roomId) return;
@@ -4971,7 +4972,7 @@ export default function App() {
                         className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl border border-dashed border-green-300 bg-green-50/50 py-2.5 text-xs font-bold text-green-700 transition hover:bg-green-50"
                       >
                         <Mic size={13} />
-                        Bật mic để hát karaoke cùng nhau
+                        Bật mic để nói chuyện
                       </button>
                     )}
                   </div>
