@@ -27,24 +27,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabaseReady = supabase !== null
 
   const loadGuestProfile = async () => {
-    let guestId = localStorage.getItem('forum_guest_id')
+    const guestId = localStorage.getItem('forum_guest_id')
     if (!guestId) {
       setProfile(null)
       return
     }
 
-    if (!supabase) {
-      const localUsername = localStorage.getItem('duhocmate_username') || 'Bạn học'
-      setProfile({
-        id: guestId,
-        username: localUsername,
-        avatar_url: '',
-        language: 'vi',
-        created_at: new Date().toISOString()
-      })
-      return
-    }
+    const localUsername = localStorage.getItem('duhocmate_username') || 'Bạn học'
+    const localAvatar = localStorage.getItem('duhocmate_guest_avatar') || ''
 
+    // Luôn hiện profile từ localStorage trước (không phụ thuộc Supabase)
+    setProfile({
+      id: guestId,
+      username: localUsername,
+      avatar_url: localAvatar,
+      language: 'vi',
+      created_at: new Date().toISOString()
+    })
+
+    if (!supabase) return
+
+    // Best-effort: đồng bộ với DB (ưu tiên avatar DB nếu có, không thì giữ local)
     try {
       const { data, error } = await supabase
         .from('guest_profiles')
@@ -53,28 +56,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle()
 
       if (!error && data) {
+        const avatar = data.avatar_url || localAvatar || ''
         setProfile({
           id: guestId,
-          username: data.username,
-          avatar_url: data.avatar_url || '',
+          username: data.username || localUsername,
+          avatar_url: avatar,
           language: 'vi',
           created_at: data.created_at
         })
-        localStorage.setItem('duhocmate_username', data.username)
+        localStorage.setItem('duhocmate_username', data.username || localUsername)
+        if (avatar) localStorage.setItem('duhocmate_guest_avatar', avatar)
       } else {
-        const localUsername = localStorage.getItem('duhocmate_username') || 'Bạn học'
-        const newGuestProfile = {
+        void supabase.from('guest_profiles').insert({
           id: guestId,
           username: localUsername,
-          avatar_url: '',
-          language: 'vi' as const,
+          avatar_url: localAvatar,
           created_at: new Date().toISOString()
-        }
-        void supabase.from('guest_profiles').insert(newGuestProfile)
-        setProfile(newGuestProfile)
+        })
       }
     } catch (e) {
-      console.warn('Failed to load guest profile:', e)
+      console.warn('Failed to load guest profile (vẫn dùng local):', e)
     }
   }
 
@@ -196,37 +197,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!supabase) return
     if (!user) {
-      const guestId = localStorage.getItem('forum_guest_id') || profile?.id
-      if (!guestId) return
-
-      const payload = {
-        id: guestId,
-        username: updates.username || profile?.username || 'Bạn học',
-        avatar_url: updates.avatar_url ?? profile?.avatar_url ?? '',
-        updated_at: new Date().toISOString()
+      // KHÁCH: cập nhật lạc quan ngay tại local để profile luôn hiện ở góc phải,
+      // rồi đồng bộ DB best-effort (không ném lỗi để UI không vỡ khi RLS chặn).
+      let guestId = localStorage.getItem('forum_guest_id') || profile?.id
+      if (!guestId) {
+        guestId = `guest_${Math.random().toString(36).substring(2, 15)}`
+        localStorage.setItem('forum_guest_id', guestId)
       }
 
-      const { data, error } = await supabase
-        .from('guest_profiles')
-        .upsert(payload, { onConflict: 'id' })
-        .select()
-        .single()
+      const nextUsername = updates.username || profile?.username || 'Bạn học'
+      const nextAvatar = updates.avatar_url ?? profile?.avatar_url ?? ''
 
-      if (error) throw error
-      if (data) {
-        setProfile({
-          id: guestId,
-          username: data.username,
-          avatar_url: data.avatar_url || '',
-          language: 'vi',
-          created_at: data.created_at
-        })
-        localStorage.setItem('duhocmate_username', data.username)
+      setProfile({
+        id: guestId,
+        username: nextUsername,
+        avatar_url: nextAvatar,
+        language: 'vi',
+        created_at: profile?.created_at || new Date().toISOString()
+      })
+      localStorage.setItem('duhocmate_username', nextUsername)
+      if (nextAvatar) localStorage.setItem('duhocmate_guest_avatar', nextAvatar)
+
+      if (!supabase) return
+      try {
+        await supabase
+          .from('guest_profiles')
+          .upsert(
+            { id: guestId, username: nextUsername, avatar_url: nextAvatar, updated_at: new Date().toISOString() },
+            { onConflict: 'id' }
+          )
+      } catch (e) {
+        console.warn('Lưu hồ sơ khách lên DB thất bại (vẫn dùng local):', e)
       }
       return
     }
+
+    if (!supabase) return
 
     const payload = {
       id: user.id,

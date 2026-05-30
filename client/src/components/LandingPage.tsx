@@ -36,6 +36,7 @@ import CommunityForum from './CommunityForum'
 import TemplateMarketplace from './TemplateMarketplace'
 import type { RoomTemplate } from '../lib/communityTemplates'
 import { supabase } from '../lib/supabase'
+import { downscaleImageToDataUrl } from '../lib/image'
 import { useAuth } from '../contexts/AuthContext'
 
 
@@ -240,9 +241,9 @@ export default function LandingPage({
       setProfileError('Vui lòng nhập biệt danh.')
       return
     }
-    const profileId = authUser?.id || profile?.id
-    if (!profileId || !supabase) {
-      setProfileError('Bạn cần đăng nhập hoặc có ID khách để lưu hồ sơ.')
+    const profileId = authUser?.id || profile?.id || localStorage.getItem('forum_guest_id')
+    if (!profileId) {
+      setProfileError('Không xác định được hồ sơ. Vui lòng nhập tên trước.')
       return
     }
 
@@ -251,15 +252,28 @@ export default function LandingPage({
     try {
       let avatarUrl = profile?.avatar_url || ''
       if (profileAvatarFile) {
-        const extension = profileAvatarFile.name.split('.').pop()?.toLowerCase() || 'jpg'
-        const folder = authUser ? authUser.id : `guests/${profileId}`
-        const path = `${folder}/${Date.now()}.${extension}`
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(path, profileAvatarFile, { cacheControl: '3600', upsert: true })
-        if (uploadError) throw uploadError
-        const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-        avatarUrl = data.publicUrl
+        // Thử upload lên Supabase Storage trước (URL gọn nhẹ),
+        // nếu lỗi (vd RLS chưa cấu hình) thì rớt về base64 đã thu nhỏ để vẫn hiện được ảnh.
+        let uploaded = false
+        if (supabase) {
+          try {
+            const extension = profileAvatarFile.name.split('.').pop()?.toLowerCase() || 'jpg'
+            const folder = authUser ? authUser.id : `guests/${profileId}`
+            const path = `${folder}/${Date.now()}.${extension}`
+            const { error: uploadError } = await supabase.storage
+              .from('avatars')
+              .upload(path, profileAvatarFile, { cacheControl: '3600', upsert: true })
+            if (uploadError) throw uploadError
+            const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+            avatarUrl = data.publicUrl
+            uploaded = true
+          } catch (storageErr) {
+            console.warn('Upload avatar lên Storage thất bại, dùng base64:', storageErr)
+          }
+        }
+        if (!uploaded) {
+          avatarUrl = await downscaleImageToDataUrl(profileAvatarFile, 256, 0.85)
+        }
       }
 
       await updateProfile({ username: nextName, avatar_url: avatarUrl })

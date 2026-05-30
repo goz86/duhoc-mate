@@ -53,6 +53,7 @@ import type {
 } from './types';
 import { deletePersistentRoom, findPersistentRoom, hashRoomPassword, savePersistentRoom, type PersistentRoom } from './lib/persistentRooms';
 import { getNextPlaylistItem } from './lib/playlist';
+import { downscaleImageToDataUrl } from './lib/image';
 import {
   createEstimatedLyrics,
   findBestLyricsTrack,
@@ -1856,48 +1857,41 @@ export default function App() {
     setCurrentRoomTitle(nextName);
     setRoomAvatarUploading(true);
     let finalAvatarUrl = roomAvatarUrl || currentRoomAvatarUrl;
-    // RLS bucket 'avatars' yêu cầu folder đầu = auth.uid() → path PHẢI bắt đầu bằng user.id
-    if ((roomAvatarFile || roomBgFile) && supabase && !user?.id) {
-      setRoomAvatarUploading(false);
-      setCustomAlert({ message: 'Bạn cần đăng nhập để tải ảnh phòng lên.', show: true });
-      return;
-    }
-    // Upload ảnh đại diện phòng lên Supabase Storage nếu có file mới
-    if (roomAvatarFile && supabase && user?.id) {
-      try {
-        const ext = roomAvatarFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-        const path = `${user.id}/rooms/${roomId}/${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(path, roomAvatarFile, { cacheControl: '3600', upsert: true });
-        if (uploadError) throw uploadError;
-        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-        finalAvatarUrl = data.publicUrl;
-      } catch (e) {
-        console.error('Upload room avatar error:', e);
-        setRoomAvatarUploading(false);
-        setCustomAlert({ message: 'Không tải được ảnh đại diện phòng. Hãy thử lại.', show: true });
-        return;
+    // Folder hợp lệ với RLS: user đăng nhập → "{uid}/...", khách → "guests/{guestId}/..."
+    const guestId = localStorage.getItem('forum_guest_id') || profile?.id || '';
+    const storageFolder = user?.id ? user.id : (guestId ? `guests/${guestId}` : '');
+
+    // Upload 1 file: thử Storage trước, lỗi (vd RLS) thì rớt về base64 thu nhỏ.
+    const uploadRoomImage = async (file: File, prefix: string, maxSize: number): Promise<string | null> => {
+      if (supabase && storageFolder) {
+        try {
+          const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+          const path = `${storageFolder}/rooms/${roomId}/${prefix}${Date.now()}.${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(path, file, { cacheControl: '3600', upsert: true });
+          if (uploadError) throw uploadError;
+          return supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+        } catch (e) {
+          console.warn(`Upload ${prefix || 'avatar'} phòng lên Storage thất bại, dùng base64:`, e);
+        }
       }
+      try {
+        return await downscaleImageToDataUrl(file, maxSize, 0.85);
+      } catch (e) {
+        console.error('Thu nhỏ ảnh thất bại:', e);
+        return null;
+      }
+    };
+
+    if (roomAvatarFile) {
+      const url = await uploadRoomImage(roomAvatarFile, '', 256);
+      if (url) finalAvatarUrl = url;
     }
-    // Upload ảnh nền phòng nếu có file mới
     let finalBgUrl = roomBackgroundUrl;
-    if (roomBgFile && supabase && user?.id) {
-      try {
-        const ext = roomBgFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-        const path = `${user.id}/rooms/${roomId}/bg_${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(path, roomBgFile, { cacheControl: '3600', upsert: true });
-        if (uploadError) throw uploadError;
-        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-        finalBgUrl = data.publicUrl;
-      } catch (e) {
-        console.error('Upload room background error:', e);
-        setRoomAvatarUploading(false);
-        setCustomAlert({ message: 'Không tải được ảnh nền phòng. Hãy thử lại.', show: true });
-        return;
-      }
+    if (roomBgFile) {
+      const url = await uploadRoomImage(roomBgFile, 'bg_', 1280);
+      if (url) finalBgUrl = url;
     }
     setRoomAvatarUploading(false);
     if (finalAvatarUrl) setCurrentRoomAvatarUrl(finalAvatarUrl);
@@ -2486,14 +2480,22 @@ export default function App() {
 
     const enableCaptions = () => {
       player.loadModule?.('captions');
+      // Ưu tiên theo THỨ TỰ: tiếng Hàn trước (app học tiếng Hàn → muốn lời gốc),
+      // rồi tới ngôn ngữ trình duyệt, cuối cùng vi/en. Chọn ngôn ngữ ưu tiên CAO NHẤT
+      // mà video thực sự có phụ đề (trước đây dùng .find khớp bất kỳ → hay ra tiếng Anh).
       const preferredLanguages = [
+        'ko',
         ...navigator.languages.map((lang) => lang.split('-')[0]),
         'vi',
         'en',
-        'ko',
       ];
       const trackList = player.getOption?.('captions', 'tracklist') || [];
-      const track = trackList.find((item: any) => preferredLanguages.includes(item.languageCode)) || trackList[0];
+      let track: any = null;
+      for (const lang of preferredLanguages) {
+        track = trackList.find((item: any) => item.languageCode === lang);
+        if (track) break;
+      }
+      if (!track) track = trackList[0];
       player.setOption?.('captions', 'fontSize', 1);
       player.setOption?.('captions', 'track', track || { languageCode: 'vi' });
     };

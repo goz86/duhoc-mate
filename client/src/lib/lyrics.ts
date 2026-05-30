@@ -134,11 +134,31 @@ const scoreTrackMatch = (track: LyricsSearchTrack, title: string) => {
   return score;
 };
 
+// Ký tự Hangul (âm tiết + jamo) để nhận biết lời bài hát tiếng Hàn.
+const HANGUL_PATTERN = /[가-힣ᄀ-ᇿ㄰-㆏]/g;
+
+const countHangul = (value = '') => (value.match(HANGUL_PATTERN) || []).length;
+
+const trackHangulCount = (track: LyricsSearchTrack) =>
+  countHangul(track.syncedLyrics || track.plainLyrics || '');
+
 export const findBestLyricsTrack = <T extends LyricsSearchTrack>(tracks: T[], title: string): T | null => {
   const ranked = tracks
     .map((track) => ({ track, score: scoreTrackMatch(track, title) }))
     .sort((a, b) => b.score - a.score);
 
   const best = ranked[0];
-  return best && best.score >= 5 ? best.track : null;
+  if (!best || best.score < 5) return null;
+
+  // Nếu bản khớp tốt nhất KHÔNG phải lời tiếng Hàn (vd bản romanized/dịch),
+  // ưu tiên bản tiếng Hàn (Hangul) của cùng bài — điểm khớp gần tương đương.
+  // An toàn với bài không phải tiếng Hàn vì các bản đó có 0 ký tự Hangul.
+  if (trackHangulCount(best.track) < 8) {
+    const hangulAlt = ranked.find(
+      (item) => item.score >= best.score - 2 && trackHangulCount(item.track) >= 8,
+    );
+    if (hangulAlt) return hangulAlt.track;
+  }
+
+  return best.track;
 };
