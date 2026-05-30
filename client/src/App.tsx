@@ -825,10 +825,17 @@ export default function App() {
       }
 
       if (action === 'play') {
-        // Seek trước để đảm bảo guest sync đúng vị trí với host
-        // Ngưỡng > 1s (thay vì > 2s cũ) để catch drift nhỏ hơn
-        if (time !== undefined && Math.abs(playerRef.current.getCurrentTime() - time) > 1) {
-          playerRef.current.seekTo(time, true);
+        // Bù trễ mạng: từ lúc server đóng dấu thời gian (videoState.lastUpdated) đến giờ,
+        // host đã phát thêm 1 đoạn → cộng phần đó vào để guest tới đúng vị trí host ĐANG xem,
+        // thay vì vị trí host phát lúc gửi (vốn trễ ~1s).
+        let target = time;
+        if (typeof time === 'number' && typeof videoState?.lastUpdated === 'number') {
+          const elapsed = (Date.now() - videoState.lastUpdated) / 1000;
+          if (elapsed > 0 && elapsed < 2.5) target = time + elapsed;
+        }
+        // Seek nếu lệch > 0.75s (siết lại để bắt được độ trễ ~1s)
+        if (typeof target === 'number' && Math.abs(playerRef.current.getCurrentTime() - target) > 0.75) {
+          playerRef.current.seekTo(target, true);
         }
         if (playerVolume > 0) {
           playerRef.current.unMute?.();
@@ -1099,8 +1106,14 @@ export default function App() {
             if (currentVideoRef.current.playing) {
               event.target.playVideo();
             }
-            if (currentVideoRef.current.time) {
-              event.target.seekTo(currentVideoRef.current.time, true);
+            // Vào đúng vị trí host đang xem: time lúc host gửi + thời gian đã trôi (nếu đang phát)
+            let startAt = currentVideoRef.current.time || 0;
+            if (currentVideoRef.current.playing && typeof currentVideoRef.current.lastUpdated === 'number') {
+              const elapsed = (Date.now() - currentVideoRef.current.lastUpdated) / 1000;
+              if (elapsed > 0 && elapsed < 30) startAt += elapsed;
+            }
+            if (startAt > 0) {
+              event.target.seekTo(startAt, true);
             }
           },
           onError: (event: any) => {
@@ -4042,16 +4055,21 @@ export default function App() {
                       setSidebarTab('chat');
                       setUnreadChatCount(0); // Reset counter when viewing chat
                     }}
-                    className={`h-10 min-w-0 rounded-[14px] px-1.5 font-bold text-xs xl:h-11 xl:px-2 xl:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    className={`relative h-10 min-w-0 rounded-[14px] px-1.5 font-bold text-xs xl:h-11 xl:px-2 xl:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
                       sidebarTab === 'chat'
                         ? 'bg-brand-terracotta text-white shadow-sm'
-                        : 'hover:bg-brand-light text-brand-brown-light'
+                        : unreadChatCount > 0
+                          ? 'bg-rose-50 text-rose-600 ring-2 ring-rose-300 chat-attention dark:bg-rose-950/30'
+                          : 'hover:bg-brand-light text-brand-brown-light'
                     }`}
                   >
                     <MessageCircle size={16} className="shrink-0" />
-                    <span className="truncate">
-                      Chat ({unreadChatCount})
-                    </span>
+                    <span className="truncate">Chat</span>
+                    {unreadChatCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-black text-white shadow-md ring-2 ring-white animate-bounce dark:ring-brand-brown-dark">
+                        {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={() => setSidebarTab('members')}

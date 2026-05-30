@@ -424,6 +424,15 @@ input, select, textarea {
   white-space: nowrap;
 }
 
+/* Tab Chat nhấp nháy khi có tin nhắn mới chưa đọc — thu hút sự chú ý */
+@keyframes chatAttention {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.0); }
+  50% { box-shadow: 0 0 0 5px rgba(244, 63, 94, 0.18); }
+}
+.chat-attention {
+  animation: chatAttention 1.3s ease-in-out infinite;
+}
+
 /* ── Activity Ticker ── */
 .activity-ticker {
   height: 24px;

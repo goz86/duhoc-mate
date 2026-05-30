@@ -28,6 +28,7 @@ export interface VideoState {
   playing: boolean;
   playlistItemId?: string;
   pausedByHost?: boolean;
+  lastUpdated?: number; // server timestamp (Date.now) — dùng để bù trễ mạng khi đồng bộ
 }
 
 export interface Message {
