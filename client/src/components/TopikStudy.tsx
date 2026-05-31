@@ -12,6 +12,7 @@ import {
 import {
   saveWords, getWordsByLevel, getAllSavedKoWords, seedShuffle,
   saveExamDate as saveExamDateToDb, loadExamDate,
+  getWordExamples, saveWordExamples,
   type TopikWord,
 } from '../lib/topikStorage'
 import TopikExamComponent from './TopikExam'
@@ -132,6 +133,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiGenLoading, setAiGenLoading] = useState(false)
   const [aiExamples, setAiExamples] = useState<AiGeneratedExample[]>([])
+  const [savedExamplesPool, setSavedExamplesPool] = useState<AiGeneratedExample[]>([])
   const [aiError, setAiError] = useState('')
   const [shuffleSeedState, setShuffleSeedState] = useState<string>(() => {
     const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
@@ -178,6 +180,19 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
 
   const currentCard = allCards[cardIndex]
 
+  // ── Load saved AI examples on answer reveal ───────────────────
+  useEffect(() => {
+    if (showAnswer && currentCard) {
+      getWordExamples(currentCard.ko, selectedLevel).then(saved => {
+        setSavedExamplesPool(saved || [])
+        if (saved && saved.length > 0 && aiExamples.length === 0) {
+          const shuffled = [...saved].sort(() => 0.5 - Math.random())
+          setAiExamples(shuffled.slice(0, 2))
+        }
+      })
+    }
+  }, [showAnswer, currentCard, selectedLevel])
+
   // ── Socket sync ────────────────────────────────────────────────
   useEffect(() => {
     if (!socket) return
@@ -186,6 +201,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
       setCardIndex(index)
       setShowAnswer(false)
       setAiExamples([])
+      setSavedExamplesPool([])
       if (seed) {
         setShuffleSeedState(seed)
       }
@@ -204,6 +220,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
     setCardIndex(next)
     setShowAnswer(false)
     setAiExamples([])
+    setSavedExamplesPool([])
     syncToRoom(selectedLevel, next)
   }, [cardIndex, allCards.length, selectedLevel, syncToRoom])
 
@@ -212,6 +229,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
     setCardIndex(prev)
     setShowAnswer(false)
     setAiExamples([])
+    setSavedExamplesPool([])
     syncToRoom(selectedLevel, prev)
   }, [cardIndex, allCards.length, selectedLevel, syncToRoom])
 
@@ -247,6 +265,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
     setKnown(new Set())
     setUnknown(new Set())
     setAiExamples([])
+    setSavedExamplesPool([])
     syncToRoom(selectedLevel, 0)
   }
 
@@ -257,6 +276,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
     setKnown(new Set())
     setUnknown(new Set())
     setAiExamples([])
+    setSavedExamplesPool([])
     syncToRoom(level, 0)
   }
 
@@ -267,6 +287,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
     setCardIndex(0)
     setShowAnswer(false)
     setAiExamples([])
+    setSavedExamplesPool([])
     syncToRoom(selectedLevel, 0, newSeed)
   }
 
@@ -301,13 +322,48 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
     setAiLoading(true)
     setAiError('')
     try {
-      const examples = await generateExample(currentCard.ko)
-      setAiExamples(examples)
+      const newExamples = await generateExample(currentCard.ko)
+      
+      const updatedPool = [...savedExamplesPool]
+      for (const ex of newExamples) {
+        if (!updatedPool.some(p => p.sentence === ex.sentence)) {
+          updatedPool.push(ex)
+        }
+      }
+
+      await saveWordExamples(
+        {
+          ko: currentCard.ko,
+          level: selectedLevel,
+          vi: currentCard.vi,
+          en: currentCard.en,
+          example: currentCard.example,
+        },
+        updatedPool
+      )
+
+      setSavedExamplesPool(updatedPool)
+      setAiExamples(newExamples)
     } catch (err: any) {
       setAiError(err.message || 'Lỗi tạo ví dụ')
     } finally {
       setAiLoading(false)
     }
+  }
+
+  // ── Lấy ngẫu nhiên ví dụ đã lưu ───────────────────────────────
+  const handleGetRandomSavedExamples = () => {
+    if (savedExamplesPool.length === 0) return
+    const currentSentences = new Set(aiExamples.map(e => e.sentence))
+    const unused = savedExamplesPool.filter(e => !currentSentences.has(e.sentence))
+    
+    let chosen: AiGeneratedExample[] = []
+    if (unused.length >= 2) {
+      chosen = [...unused].sort(() => 0.5 - Math.random()).slice(0, 2)
+    } else {
+      chosen = [...savedExamplesPool].sort(() => 0.5 - Math.random()).slice(0, 2)
+    }
+    setAiExamples(chosen)
   }
 
   // ── AI: Generate New Words ────────────────────────────────────
@@ -584,19 +640,37 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
                       </div>
                     )}
 
-                    {/* AI Generate Example button */}
+                    {/* AI Generate/Refresh Example Actions */}
                     {showAnswer && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleGenerateExample(); }}
-                        disabled={aiLoading}
-                        className="ai-glow-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-brand-terracotta/10 hover:bg-brand-terracotta/20 text-brand-terracotta text-xs font-bold transition cursor-pointer mt-1 disabled:opacity-50"
-                      >
+                      <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
                         {aiLoading ? (
-                          <><Loader2 size={12} className="animate-spin" /> Đang tạo...</>
+                          <div className="inline-flex items-center gap-1.5 text-brand-terracotta text-xs font-bold mt-1">
+                            <Loader2 size={12} className="animate-spin" /> Đang xử lý...
+                          </div>
                         ) : (
-                          <>Tạo ví dụ AI</>
+                          <>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleGenerateExample(); }}
+                              className="ai-glow-btn inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-brand-terracotta/10 hover:bg-brand-terracotta/20 text-brand-terracotta text-xs font-bold transition cursor-pointer mt-1"
+                              title="Tạo ví dụ mới bằng AI và lưu lại"
+                            >
+                              <Zap size={10} />
+                              {aiExamples.length > 0 ? 'Tạo ví dụ mới bằng AI' : 'Tạo ví dụ AI'}
+                            </button>
+
+                            {savedExamplesPool.length > 2 && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleGetRandomSavedExamples(); }}
+                                className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-brand-brown-light/10 hover:bg-brand-brown-light/20 text-brand-brown-dark text-xs font-bold transition cursor-pointer mt-1"
+                                title="Lấy ngẫu nhiên các ví dụ đã lưu trước đó"
+                              >
+                                <Shuffle size={10} />
+                                Đổi ví dụ khác (Đã lưu)
+                              </button>
+                            )}
+                          </>
                         )}
-                      </button>
+                      </div>
                     )}
                   </div>
                 </div>

@@ -12,6 +12,7 @@ export interface TopikWord {
   en: string
   level: number
   example?: string
+  ai_examples?: { sentence: string; meaning: string }[]
   created_at?: string
 }
 
@@ -139,6 +140,81 @@ export async function getAllSavedKoWords(): Promise<string[]> {
   }
 
   return [...new Set(local)]
+}
+
+/**
+ * Lấy danh sách ví dụ AI đã lưu của một từ
+ */
+export async function getWordExamples(ko: string, level: number): Promise<{ sentence: string; meaning: string }[]> {
+  // Thử Supabase trước
+  if (supabaseEnabled && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('topik_words')
+        .select('ai_examples')
+        .eq('ko', ko)
+        .eq('level', level)
+        .maybeSingle()
+
+      if (!error && data && data.ai_examples) {
+        return data.ai_examples as { sentence: string; meaning: string }[]
+      }
+    } catch (err) {
+      console.warn('[TopikStorage] Supabase getWordExamples fallback:', err)
+    }
+  }
+
+  // Fallback localStorage
+  const local = getLocalWords()
+  const match = local.find(w => w.ko === ko && w.level === level)
+  return match?.ai_examples || []
+}
+
+/**
+ * Lưu danh sách ví dụ AI cho một từ
+ */
+export async function saveWordExamples(
+  card: { ko: string; level: number; vi: string; en: string; example?: string },
+  examples: { sentence: string; meaning: string }[]
+): Promise<void> {
+  // 1. Lưu localStorage
+  const local = getLocalWords()
+  const existingIdx = local.findIndex(w => w.ko === card.ko && w.level === card.level)
+  if (existingIdx > -1) {
+    local[existingIdx].ai_examples = examples
+  } else {
+    local.push({
+      ko: card.ko,
+      level: card.level,
+      vi: card.vi,
+      en: card.en,
+      example: card.example,
+      ai_examples: examples,
+    })
+  }
+  saveLocalWords(local)
+
+  // 2. Lưu Supabase
+  if (supabaseEnabled && supabase) {
+    try {
+      const row = {
+        ko: card.ko,
+        level: card.level,
+        vi: card.vi,
+        en: card.en,
+        example: card.example || null,
+        ai_examples: examples,
+      }
+      const { error } = await supabase.from('topik_words').upsert([row], {
+        onConflict: 'ko,level',
+      })
+      if (error) {
+        console.warn('[TopikStorage] Supabase saveWordExamples upsert warning:', error.message)
+      }
+    } catch (err) {
+      console.warn('[TopikStorage] Supabase saveWordExamples fallback to localStorage:', err)
+    }
+  }
 }
 
 

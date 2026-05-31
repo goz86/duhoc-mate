@@ -48,3 +48,7 @@ CREATE POLICY "Allow public insert/update for words"
   ON public.topik_words FOR ALL
   USING (true)
   WITH CHECK (true);
+
+-- 3. Mở rộng bảng topik_words để lưu câu ví dụ tạo bởi AI (ai_examples)
+ALTER TABLE public.topik_words ADD COLUMN IF NOT EXISTS ai_examples JSONB DEFAULT '[]'::jsonb;
+
