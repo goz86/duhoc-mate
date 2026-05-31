@@ -4072,6 +4072,7 @@ export default function App() {
                     onControlPomodoro={controlPomodoro}
                     onStudyReaction={sendStudyReaction}
                     onPersonalPomodoro={controlPersonalPomodoro}
+                    clockOffset={clockOffsetRef.current}
                   />
                 )}
 

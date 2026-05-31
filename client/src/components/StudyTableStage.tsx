@@ -82,6 +82,7 @@ type StudyTableStageProps = {
   onControlPomodoro: (action: 'start' | 'pause' | 'reset', isBreak?: boolean) => void
   onStudyReaction?: (label: string, targetMemberId?: string) => void
   onPersonalPomodoro?: (action: 'start' | 'pause' | 'reset', isBreak?: boolean) => void
+  clockOffset?: number
 }
 
 const seatPalette = [
@@ -142,6 +143,7 @@ export default function StudyTableStage({
   onControlPomodoro,
   onStudyReaction,
   onPersonalPomodoro,
+  clockOffset = 0,
 }: StudyTableStageProps) {
   const { t } = useTranslation()
   const [now, setNow] = useState(() => Date.now())
@@ -220,14 +222,16 @@ export default function StudyTableStage({
         : 'grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(min(100%,260px),320px))]'
 
   const visibleReactions = useMemo(() => {
-    const cutoff = now - 3800
+    const serverNow = now + clockOffset
+    const cutoff = serverNow - 3800
     return (studyTable?.reactions || []).filter(reaction => reaction.createdAt >= cutoff)
-  }, [now, studyTable?.reactions])
+  }, [now, studyTable?.reactions, clockOffset])
 
   // Chat bubbles: show last message per sender for 3s (dùng sentAt ms, fallback id prefix)
   const chatBubbles = useMemo(() => {
     const bubbles: Record<string, string> = {}
-    const cutoff = now - 3000
+    const serverNow = now + clockOffset
+    const cutoff = serverNow - 3000
     chatMessages.forEach(msg => {
       if (!msg.senderId) return
       // sentAt là unix ms từ server; nếu không có thì parse từ id "timestamp-random"
@@ -237,7 +241,7 @@ export default function StudyTableStage({
       }
     })
     return bubbles
-  }, [chatMessages, now])
+  }, [chatMessages, now, clockOffset])
 
   const handleReaction = (option: typeof reactionOptions[number], targetMemberId: string) => {
     onStudyReaction?.(option.label, targetMemberId)
@@ -329,9 +333,10 @@ export default function StudyTableStage({
                   const totalPausedMs = (member.study as any).totalPausedMs || 0
                   const pausedSince = (member.study as any).pausedSince
                   const isSeated = member.study.active !== false
+                  const serverNow = now + clockOffset
                   const rawMs = isSeated
-                    ? now - (member.study.joinedAt || now) - totalPausedMs
-                    : (pausedSince || now) - (member.study.joinedAt || now) - totalPausedMs
+                    ? serverNow - (member.study.joinedAt || serverNow) - totalPausedMs
+                    : (pausedSince || serverNow) - (member.study.joinedAt || serverNow) - totalPausedMs
                   const elapsed = Math.max(0, Math.floor(rawMs / 1000))
 
                   // Chat bubble for this member
