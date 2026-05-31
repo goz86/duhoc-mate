@@ -365,15 +365,18 @@ export default function App() {
   const [templates, setTemplates] = useState<RoomTemplate[]>([]);
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
 
+  const [socketId, setSocketId] = useState(socket?.id || '');
+  const [clockOffset, setClockOffset] = useState(0);
+
   // Room states
   const [members, setMembers] = useState<Member[]>([]);
-  const myMember = members.find(m => m.id === socket?.id);
+  const myMember = members.find(m => m.id === socketId);
   const myRole = isHost ? 'host' : (myMember?.role || 'member');
   const canControlMusic = myRole === 'host' || myRole === 'cohost';
   const canControlPomodoro = myRole === 'host' || myRole === 'cohost';
   const canModerateChat = myRole === 'host' || myRole === 'cohost' || myRole === 'moderator';
   const isHostConnected = members.some(m => m.isHost);
-  const isPrimaryMusicController = isHost || (!isHostConnected && myRole === 'cohost' && members.filter(m => m.role === 'cohost')[0]?.id === socket?.id);
+  const isPrimaryMusicController = isHost || (!isHostConnected && myRole === 'cohost' && members.filter(m => m.role === 'cohost')[0]?.id === socketId);
 
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
@@ -682,25 +685,45 @@ export default function App() {
       const rtt = t1 - clientT0;
       if (rtt >= 0 && rtt < 5000) {
         // serverNow tại t1 ≈ serverTime + rtt/2  →  offset = serverNow - t1
-        clockOffsetRef.current = serverTime + rtt / 2 - t1;
+        const offset = serverTime + rtt / 2 - t1;
+        clockOffsetRef.current = offset;
+        setClockOffset(offset);
       }
     });
     const sendPing = () => { if (socket?.connected) socket.emit('ping-time', Date.now()); };
-    sendPing();
-    socket.on('connect', sendPing);
+    const handleConnect = () => {
+      setSocketId(socket.id || '');
+      sendPing();
+      if (roomIdRef.current) {
+        const savedUsername = localStorage.getItem('duhocmate_username') || '';
+        const savedFriendCode = localStorage.getItem('duhocmate_friend_code') || '';
+        if (savedUsername) {
+          socket.emit('join-room', {
+            roomId: roomIdRef.current,
+            username: savedUsername,
+            friendCode: savedFriendCode,
+            avatarUrl: profile?.avatar_url || ''
+          });
+        }
+      }
+    };
+    if (socket?.connected) {
+      handleConnect();
+    }
+    socket.on('connect', handleConnect);
     const clockPingInterval = window.setInterval(sendPing, 20000);
 
     socket.on('room-users', (users: Member[]) => {
       setMembers(prev => {
         const oldHost = prev.find(m => m.isHost);
         const newHost = users.find(m => m.isHost);
-        if (oldHost && newHost && oldHost.id !== newHost.id && newHost.id !== socket?.id) {
+        if (oldHost && newHost && oldHost.id !== newHost.id && newHost.id !== socketId) {
           setCustomAlert({ message: `${newHost.username} đã trở thành chủ phòng học!`, show: true });
         }
         return users;
       });
       // Tìm xem mình có phải host mới không (trong trường hợp host cũ rời phòng)
-      const me = users.find(u => u.id === socket.id);
+      const me = users.find(u => u.id === socketId);
       if (me) setIsHost(me.isHost);
     });
 
@@ -854,7 +877,7 @@ export default function App() {
         //                 + VIDEO_SYNC_BUFFER (bù thời gian YouTube buffer khi seek).
         let target = time;
         if (typeof time === 'number') {
-          const serverNow = Date.now() + clockOffsetRef.current;
+          const serverNow = Date.now() + clockOffset;
           const elapsed = typeof videoState?.lastUpdated === 'number'
             ? (serverNow - videoState.lastUpdated) / 1000
             : 0;
@@ -949,7 +972,7 @@ export default function App() {
       window.clearInterval(clockPingInterval);
       if (socket) {
         socket.off('pong-time');
-        socket.off('connect', sendPing);
+        socket.off('connect', handleConnect);
         socket.off('room-users');
         socket.off('init-room-state');
         socket.off('assigned-host');
@@ -1140,7 +1163,7 @@ export default function App() {
             // Vào đúng vị trí host đang xem: time lúc host gửi + thời gian đã trôi (đồng hồ đã đồng bộ) + bù buffer
             let startAt = currentVideoRef.current.time || 0;
             if (currentVideoRef.current.playing && typeof currentVideoRef.current.lastUpdated === 'number') {
-              const serverNow = Date.now() + clockOffsetRef.current;
+              const serverNow = Date.now() + clockOffset;
               const elapsed = (serverNow - currentVideoRef.current.lastUpdated) / 1000;
               if (elapsed > 0 && elapsed < 30) startAt += elapsed + VIDEO_SYNC_BUFFER;
             }
@@ -1927,7 +1950,7 @@ export default function App() {
     }
     const target = memberId
       ? members.find(member => member.id === memberId)
-      : members.find(member => member.id !== socket?.id);
+      : members.find(member => member.id !== socketId);
     if (!target) {
       setCustomAlert({ message: 'Chưa có bạn học khác để chuyển host.', show: true });
       return;
@@ -3178,7 +3201,7 @@ export default function App() {
             roomId={roomId}
             copied={copied}
             members={members}
-            currentSocketId={socket?.id}
+            currentSocketId={socketId}
             isHost={isHost}
             onCopyRoomId={copyRoomId}
             onLeaveRoom={handleLeaveRoom}
@@ -4063,7 +4086,7 @@ export default function App() {
                   <StudyTableStage
                     members={members}
                     username={username}
-                    currentSocketId={socket?.id || ''}
+                    currentSocketId={socketId}
                     studyTable={studyTable}
                     jitsiActive={jitsiActive}
                     pomodoro={pomodoro}
@@ -4072,7 +4095,7 @@ export default function App() {
                     onControlPomodoro={controlPomodoro}
                     onStudyReaction={sendStudyReaction}
                     onPersonalPomodoro={controlPersonalPomodoro}
-                    clockOffset={clockOffsetRef.current}
+                    clockOffset={clockOffset}
                   />
                 )}
 
@@ -4409,7 +4432,7 @@ export default function App() {
                               <button
                                 onClick={() => voteSong(item.id)}
                                 className={`flex items-center gap-1 py-2 px-3 rounded-lg text-xs font-bold transition border cursor-pointer ${
-                                  item.votedUsers.includes(socket?.id || '')
+                                  item.votedUsers.includes(socketId)
                                     ? 'bg-brand-terracotta text-white border-brand-terracotta shadow-sm'
                                     : 'bg-white border-brand-terracotta-light/20 hover:bg-brand-light text-brand-brown-light'
                                 }`}
@@ -4575,7 +4598,7 @@ export default function App() {
                         </div>
                       ) : (
                         visibleChatMessages.map((msg) => {
-                          const isMyMessage = msg.senderId === socket?.id;
+                          const isMyMessage = msg.senderId === socketId;
                           const isSystem = msg.type === 'system';
                           const isHostMsg = msg.isHost;
 
@@ -4770,7 +4793,7 @@ export default function App() {
                         const isInVoice = !!vUser;
                         const isSpeakingNow = vUser?.speaking ?? false;
                         const isMutedNow = vUser?.muted ?? false;
-                        const isMe = m.id === socket?.id;
+                        const isMe = m.id === socketId;
 
                         return (
                           <div

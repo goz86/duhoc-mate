@@ -1123,16 +1123,28 @@ io.on('connection', (socket) => {
     });
 
     if (existingMembers.length) {
-      const existingIds = new Set(existingMembers.map(m => m.id));
-      existingMembers.forEach((existingMember) => {
-        const oldSocket = io.sockets.sockets.get(existingMember.id);
-        oldSocket?.leave(roomId);
-        if (room.voiceUsers?.[existingMember.id]) {
-          delete room.voiceUsers[existingMember.id];
-          io.to(roomId).emit('voice-user-left', { userId: existingMember.id });
-        }
-      });
-      room.members = room.members.filter(member => !existingIds.has(member.id));
+      // 1. Kick/cleanup actual old connections (different socket.id)
+      const disconnectMembers = existingMembers.filter(m => m.id !== socket.id);
+      if (disconnectMembers.length) {
+        const disconnectIds = new Set(disconnectMembers.map(m => m.id));
+        disconnectMembers.forEach((existingMember) => {
+          const oldSocket = io.sockets.sockets.get(existingMember.id);
+          oldSocket?.leave(roomId);
+          if (room.voiceUsers?.[existingMember.id]) {
+            delete room.voiceUsers[existingMember.id];
+            io.to(roomId).emit('voice-user-left', { userId: existingMember.id });
+          }
+        });
+        room.members = room.members.filter(member => !disconnectIds.has(member.id));
+      }
+
+      // 2. For same socket.id (re-emission of join-room), just remove from room.members array
+      // so it will be replaced by the updated newMember object, without leaving the socket.io room.
+      const sameSocketMembers = existingMembers.filter(m => m.id === socket.id);
+      if (sameSocketMembers.length) {
+        const sameSocketIds = new Set(sameSocketMembers.map(m => m.id));
+        room.members = room.members.filter(member => !sameSocketIds.has(member.id));
+      }
     }
 
     const reconnectDeadline = room.hostReconnectUntil ? new Date(room.hostReconnectUntil).getTime() : 0;
