@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS public.topik_words (
   en TEXT NOT NULL,
   level INTEGER NOT NULL,
   example TEXT,
+  pronunciation TEXT,
   ai_examples JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT now(),
   CONSTRAINT topik_words_ko_level_key UNIQUE (ko, level)
@@ -50,6 +51,8 @@ CREATE POLICY "Allow public insert/update for words"
   USING (true)
   WITH CHECK (true);
 
--- 3. Mở rộng bảng topik_words để lưu câu ví dụ tạo bởi AI (ai_examples)
+-- 3. Mở rộng bảng topik_words để lưu câu ví dụ tạo bởi AI (ai_examples) & cách phát âm (pronunciation)
 ALTER TABLE public.topik_words ADD COLUMN IF NOT EXISTS ai_examples JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.topik_words ADD COLUMN IF NOT EXISTS pronunciation TEXT;
+
 

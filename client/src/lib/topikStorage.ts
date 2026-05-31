@@ -12,6 +12,7 @@ export interface TopikWord {
   en: string
   level: number
   example?: string
+  pronunciation?: string
   ai_examples?: { sentence: string; meaning: string }[]
   created_at?: string
 }
@@ -68,6 +69,7 @@ export async function saveWords(words: TopikWord[]): Promise<void> {
         en: w.en,
         level: w.level,
         example: w.example || null,
+        pronunciation: w.pronunciation || null,
       }))
       // upsert-style: chỉ insert những từ chưa tồn tại
       const { error } = await supabase.from('topik_words').upsert(rows, {
@@ -174,7 +176,7 @@ export async function getWordExamples(ko: string, level: number): Promise<{ sent
  * Lưu danh sách ví dụ AI cho một từ
  */
 export async function saveWordExamples(
-  card: { ko: string; level: number; vi: string; en: string; example?: string },
+  card: { ko: string; level: number; vi: string; en: string; example?: string; pronunciation?: string },
   examples: { sentence: string; meaning: string }[]
 ): Promise<void> {
   // 1. Lưu localStorage
@@ -182,6 +184,9 @@ export async function saveWordExamples(
   const existingIdx = local.findIndex(w => w.ko === card.ko && w.level === card.level)
   if (existingIdx > -1) {
     local[existingIdx].ai_examples = examples
+    if (card.pronunciation) {
+      local[existingIdx].pronunciation = card.pronunciation
+    }
   } else {
     local.push({
       ko: card.ko,
@@ -189,6 +194,7 @@ export async function saveWordExamples(
       vi: card.vi,
       en: card.en,
       example: card.example,
+      pronunciation: card.pronunciation,
       ai_examples: examples,
     })
   }
@@ -203,6 +209,7 @@ export async function saveWordExamples(
         vi: card.vi,
         en: card.en,
         example: card.example || null,
+        pronunciation: card.pronunciation || null,
         ai_examples: examples,
       }
       const { error } = await supabase.from('topik_words').upsert([row], {

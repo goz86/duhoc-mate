@@ -30,6 +30,7 @@ export interface AiGeneratedExample {
 
 export interface AiGeneratedWord {
   ko: string
+  pronunciation: string
   vi: string
   en: string
   level: number
@@ -149,7 +150,7 @@ export async function generateNewWords(
 KHÔNG được trùng với các từ sau: [${existingList}]
 
 Trả lời bằng JSON array theo format sau (KHÔNG markdown, KHÔNG giải thích thêm):
-[{"ko": "từ tiếng Hàn", "vi": "nghĩa tiếng Việt", "en": "English meaning", "level": ${level}, "example": "câu ví dụ tiếng Hàn"}]`
+[{"ko": "từ tiếng Hàn", "pronunciation": "phát âm thực tế bằng tiếng Hàn nếu có biến âm 받침 (ví dụ: 학화 -> 하콰, 입니다 -> 임니다, 꽃이 -> 꼬치), nếu giống với ko thì ghi giống ko", "vi": "nghĩa tiếng Việt", "en": "English meaning", "level": ${level}, "example": "câu ví dụ tiếng Hàn"}]`
 
   const raw = await callDeepSeek(prompt)
   const json = extractJson(raw)
@@ -159,6 +160,7 @@ Trả lời bằng JSON array theo format sau (KHÔNG markdown, KHÔNG giải th
 
   return parsed.map((w: any) => ({
     ko: w.ko || '',
+    pronunciation: w.pronunciation || w.ko || '',
     vi: w.vi || '',
     en: w.en || '',
     level: w.level || level,

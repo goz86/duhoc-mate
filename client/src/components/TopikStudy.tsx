@@ -20,6 +20,7 @@ import TopikExamComponent from './TopikExam'
 interface TopikCard {
   id: number
   ko: string
+  pronunciation?: string
   vi: string
   en: string
   level: number
@@ -31,8 +32,8 @@ interface TopikCard {
 const VOCAB_BANK: TopikCard[] = [
   // Level 1
   { id: 1, ko: '안녕하세요', vi: 'Xin chào (lịch sự)', en: 'Hello (formal)', level: 1, example: '안녕하세요! 반갑습니다.' },
-  { id: 2, ko: '감사합니다', vi: 'Cảm ơn', en: 'Thank you', level: 1, example: '도와주셔서 감사합니다.' },
-  { id: 3, ko: '죄송합니다', vi: 'Xin lỗi', en: 'I\'m sorry', level: 1, example: '늦어서 죄송합니다.' },
+  { id: 2, ko: '감사합니다', pronunciation: '감사함니다', vi: 'Cảm ơn', en: 'Thank you', level: 1, example: '도와주셔서 감사합니다.' },
+  { id: 3, ko: '죄송합니다', pronunciation: '죄송함니다', vi: 'Xin lỗi', en: 'I\'m sorry', level: 1, example: '늦어서 죄송합니다.' },
   { id: 4, ko: '이름', vi: 'Tên', en: 'Name', level: 1, example: '이름이 뭐예요?' },
   { id: 5, ko: '학교', vi: 'Trường học', en: 'School', level: 1, example: '저는 학교에 가요.' },
   { id: 6, ko: '선생님', vi: 'Giáo viên/Thầy cô', en: 'Teacher', level: 1, example: '우리 선생님은 아주 친절해요.' },
@@ -69,37 +70,37 @@ const VOCAB_BANK: TopikCard[] = [
   { id: 35, ko: '상황', vi: 'Tình huống/Hoàn cảnh', en: 'Situation', level: 3, example: '급한 상황에서는 먼저 전화를 하세요.' },
   { id: 36, ko: '노력', vi: 'Nỗ lực/Cố gắng', en: 'Effort', level: 3, example: '꿈을 이루기 위해 끊임없이 노력한다.' },
   { id: 37, ko: '태도', vi: 'Thái độ', en: 'Attitude', level: 3, example: '긍정적인 태도가 성공을 이끈다.' },
-  { id: 38, ko: '역할', vi: 'Vai trò', en: 'Role', level: 3, example: '부모의 역할은 자녀 교육에 매우 중요하다.' },
+  { id: 38, ko: '역할', pronunciation: '여칼', vi: 'Vai trò', en: 'Role', level: 3, example: '부모의 역할은 자녀 교육에 매우 중요하다.' },
   // Level 4
   { id: 39, ko: '복지', vi: 'Phúc lợi', en: 'Welfare', level: 4, example: '노인 복지 제도를 개선해야 합니다.' },
   { id: 40, ko: '소통', vi: 'Giao tiếp/Thông tin', en: 'Communication', level: 4, example: '세대 간의 소통이 필요한 시점이다.' },
   { id: 41, ko: '혁신', vi: 'Đổi mới/Cách mạng', en: 'Innovation', level: 4, example: '기업들은 기술 혁신을 추구하고 있다.' },
-  { id: 42, ko: '갈등', vi: 'Mâu thuẫn/Xung đột', en: 'Conflict', level: 4, example: '의견 차이로 인한 갈등을 해결해야 한다.' },
+  { id: 42, ko: '갈등', pronunciation: '갈뜽', vi: 'Mâu thuẫn/Xung đột', en: 'Conflict', level: 4, example: '의견 차이로 인한 갈등을 해결해야 한다.' },
   { id: 43, ko: '부작용', vi: 'Tác dụng phụ', en: 'Side Effect', level: 4, example: '이 약은 약간의 부작용이 있을 수 있다.' },
   { id: 44, ko: '유행', vi: 'Trào lưu/Thịnh hành', en: 'Trend/Fashion', level: 4, example: '요즘 젊은이들 사이에서 유행하는 패션이다.' },
   { id: 45, ko: '가치관', vi: 'Quan niệm giá trị', en: 'Values', level: 4, example: '사람마다 삶의 가치관이 다릅니다.' },
-  { id: 46, ko: '집중력', vi: 'Khả năng tập trung', en: 'Concentration', level: 4, example: '소음이 많으면 집중력이 떨어진다.' },
-  { id: 47, ko: '효율적', vi: 'Hiệu quả/Tính hiệu suất', en: 'Efficient', level: 4, example: '시간을 효율적으로 활용해야 합니다.' },
-  { id: 48, ko: '다양성', vi: 'Tính đa dạng', en: 'Diversity', level: 4, example: '문화의 다양성을 존중해야 한다.' },
+  { id: 46, ko: '집중력', pronunciation: '집중녁', vi: 'Khả năng tập trung', en: 'Concentration', level: 4, example: '소음이 많으면 집중력이 떨어진다.' },
+  { id: 47, ko: '효율적', pronunciation: '효율쩍', vi: 'Hiệu quả/Tính hiệu suất', en: 'Efficient', level: 4, example: '시간을 효율적으로 활용해야 합니다.' },
+  { id: 48, ko: '다양성', pronunciation: '다양썽', vi: 'Tính đa dạng', en: 'Diversity', level: 4, example: '문화의 다양성을 존중해야 한다.' },
   { id: 49, ko: '대중매체', vi: 'Phương tiện truyền thông đại chúng', en: 'Mass Media', level: 4, example: '대중매체는 여론 형성에 큰 영향을 준다.' },
   // Level 5
-  { id: 50, ko: '논리적', vi: 'Có logic/Hợp lý', en: 'Logical', level: 5, example: '자신의 생각을 논리적으로 설명해야 한다.' },
+  { id: 50, ko: '논리적', pronunciation: '놀리적', vi: 'Có logic/Hợp lý', en: 'Logical', level: 5, example: '자신의 생각을 논리적으로 설명해야 한다.' },
   { id: 51, ko: '상호작용', vi: 'Tương tác qua lại', en: 'Interaction', level: 5, example: '인간과 환경은 끊임없이 상호작용한다.' },
   { id: 52, ko: '공동체', vi: 'Cộng đồng', en: 'Community', level: 5, example: '공동체 의식을 함양하는 것이 시급하다.' },
-  { id: 53, ko: '정체성', vi: 'Bản sắc/Danh tính', en: 'Identity', level: 5, example: '자아 정체성을 확립하는 시기이다.' },
+  { id: 53, ko: '정체성', pronunciation: '정체썽', vi: 'Bản sắc/Danh tính', en: 'Identity', level: 5, example: '자아 정체성을 확립하는 시기이다.' },
   { id: 54, ko: '타협', vi: 'Thỏa hiệp', en: 'Compromise', level: 5, example: '갈등 해결을 위해 상호 타협이 필요하다.' },
-  { id: 55, ko: '기득권', vi: 'Quyền lợi sẵn có/Đặc quyền', en: 'Vested Interest', level: 5, example: '기득권을 내려놓고 대화에 임해야 한다.' },
+  { id: 55, ko: '기득권', pronunciation: '기득꿘', vi: 'Quyền lợi sẵn có/Đặc quyền', en: 'Vested Interest', level: 5, example: '기득권을 내려놓고 대화에 임해야 한다.' },
   { id: 56, ko: '민주주의', vi: 'Chủ nghĩa dân chủ', en: 'Democracy', level: 5, example: '민주주의의 핵심은 국민의 주권이다.' },
   { id: 57, ko: '세계화', vi: 'Toàn cầu hóa', en: 'Globalization', level: 5, example: '세계화 흐름 속에서 경쟁력을 갖추어야 한다.' },
   { id: 58, ko: '지속가능', vi: 'Bền vững/Có thể duy trì', en: 'Sustainable', level: 5, example: '지속가능한 개발을 목표로 삼아야 한다.' },
-  { id: 59, ko: '창의성', vi: 'Tính sáng tạo', en: 'Creativity', level: 5, example: '미래 사회는 인재의 창의성을 요구한다.' },
+  { id: 59, ko: '창의성', pronunciation: '창의썽', vi: 'Tính sáng tạo', en: 'Creativity', level: 5, example: '미래 사회는 인재의 창의성을 요구한다.' },
   // Level 6
   { id: 60, ko: '패러다임', vi: 'Mô thức/Paradigm', en: 'Paradigm', level: 6, example: '기술 혁신이 새로운 패러다임을 열었다.' },
   { id: 61, ko: '내재화', vi: 'Nội tâm hóa', en: 'Internalization', level: 6, example: '도덕적 가치관의 내재화가 필요하다.' },
   { id: 62, ko: '초월', vi: 'Siêu việt/Vượt trội', en: 'Transcendence', level: 6, example: '시공간을 초월한 예술적 명작이다.' },
   { id: 63, ko: '헤게모니', vi: 'Bá quyền/Hegemony', en: 'Hegemony', level: 6, example: '그 나라는 문화적 헤게모니를 쥐고 있다.' },
   { id: 64, ko: '구조주의', vi: 'Chủ nghĩa cấu trúc', en: 'Structuralism', level: 6, example: '구조주의 철학은 현대 사상에 깊은 영향을 주었다.' },
-  { id: 65, ko: '인문학적', vi: 'Thuộc về nhân văn', en: 'Humanistic', level: 6, example: '인문학적 소양을 기르는 교육이 강조된다.' },
+  { id: 65, ko: '인문학적', pronunciation: '인문학쩍', vi: 'Thuộc về nhân văn', en: 'Humanistic', level: 6, example: '인문학적 소양을 기르는 교육이 강조된다.' },
   { id: 66, ko: '통섭', vi: 'Liên ngành/Consilience', en: 'Consilience', level: 6, example: '과학과 예술의 학문적 통섭이 시도되고 있다.' },
   { id: 67, ko: '인과관계', vi: 'Quan hệ nhân quả', en: 'Causal Relationship', level: 6, example: '두 사건 사이의 인과관계를 밝혀내야 한다.' },
   { id: 68, ko: '형이상학', vi: 'Hình nhi thượng học/Metaphysics', en: 'Metaphysics', level: 6, example: '그 이론은 형이상학적 영역에 가깝다.' },
@@ -155,6 +156,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
       const mapped: TopikCard[] = stored.map((w, i) => ({
         id: 1000 + i + (selectedLevel * 100),
         ko: w.ko,
+        pronunciation: w.pronunciation,
         vi: w.vi,
         en: w.en,
         level: w.level,
@@ -338,6 +340,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
           vi: currentCard.vi,
           en: currentCard.en,
           example: currentCard.example,
+          pronunciation: currentCard.pronunciation,
         },
         updatedPool
       )
@@ -392,6 +395,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
         en: w.en,
         level: w.level,
         example: w.example,
+        pronunciation: w.pronunciation,
       }))
       await saveWords(toSave)
 
@@ -399,6 +403,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
       const newCards: TopikCard[] = newWords.map((w, i) => ({
         id: 2000 + Date.now() + i,
         ko: w.ko,
+        pronunciation: w.pronunciation,
         vi: w.vi,
         en: w.en,
         level: w.level,
@@ -555,15 +560,22 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3 justify-center">
-                    <div className="text-4xl font-black text-brand-brown-dark text-center leading-normal">{currentCard.ko}</div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); playAudio(currentCard.ko); }}
-                      className="p-2.5 rounded-full bg-brand-light/80 text-brand-terracotta hover:bg-brand-terracotta hover:text-white transition cursor-pointer active:scale-90 flex items-center justify-center shrink-0 border border-brand-terracotta-light/10 shadow-sm"
-                      title="Phát âm"
-                    >
-                      <Volume2 size={18} />
-                    </button>
+                  <div className="flex flex-col items-center justify-center gap-1">
+                    <div className="flex items-center gap-3 justify-center">
+                      <div className="text-4xl font-black text-brand-brown-dark text-center leading-normal">{currentCard.ko}</div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); playAudio(currentCard.ko); }}
+                        className="p-2.5 rounded-full bg-brand-light/80 text-brand-terracotta hover:bg-brand-terracotta hover:text-white transition cursor-pointer active:scale-90 flex items-center justify-center shrink-0 border border-brand-terracotta-light/10 shadow-sm"
+                        title="Phát âm"
+                      >
+                        <Volume2 size={18} />
+                      </button>
+                    </div>
+                    {currentCard.pronunciation && currentCard.pronunciation !== currentCard.ko && (
+                      <div className="text-sm font-bold text-brand-terracotta/80 select-none">
+                        [{currentCard.pronunciation}]
+                      </div>
+                    )}
                   </div>
 
                   {!showAnswer && (
@@ -575,15 +587,22 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
                 <div className={`flashcard-meaning-panel ${showAnswer ? 'flashcard-meaning-panel-visible' : ''}`}>
                   <div className="text-center space-y-3 w-full my-auto flex flex-col items-center py-4">
                     {/* Từ tiếng Hàn ban đầu để đối chiếu */}
-                    <div className="flex items-center gap-2 mb-1 justify-center">
-                      <span className="text-xl font-black text-brand-brown-dark">{currentCard.ko}</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); playAudio(currentCard.ko); }}
-                        className="p-1.5 rounded-full bg-brand-light text-brand-terracotta hover:bg-brand-terracotta hover:text-white transition cursor-pointer"
-                        title="Phát âm"
-                      >
-                        <Volume2 size={12} />
-                      </button>
+                    <div className="flex flex-col items-center justify-center gap-0.5 mb-1">
+                      <div className="flex items-center gap-2 justify-center">
+                        <span className="text-xl font-black text-brand-brown-dark">{currentCard.ko}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); playAudio(currentCard.ko); }}
+                          className="p-1.5 rounded-full bg-brand-light text-brand-terracotta hover:bg-brand-terracotta hover:text-white transition cursor-pointer"
+                          title="Phát âm"
+                        >
+                          <Volume2 size={12} />
+                        </button>
+                      </div>
+                      {currentCard.pronunciation && currentCard.pronunciation !== currentCard.ko && (
+                        <span className="text-xs font-bold text-brand-terracotta/80 select-none">
+                          [{currentCard.pronunciation}]
+                        </span>
+                      )}
                     </div>
 
                     {lang === 'en' ? (
