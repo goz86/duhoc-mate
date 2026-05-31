@@ -486,7 +486,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
           {currentCard ? (
             <div className="flex flex-col items-center gap-4">
               <div
-                className="flashcard-pro w-full max-w-sm shadow-xl border-2 border-brand-terracotta-light/20"
+                className="flashcard-pro w-full max-w-sm sm:max-w-md md:max-w-lg shadow-xl border-2 border-brand-terracotta-light/20"
                 onClick={() => setShowAnswer(!showAnswer)}
               >
                 <div className="flashcard-surface">
@@ -546,7 +546,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
                       </>
                     )}
                     {currentCard.example && (
-                      <div className="ai-example-bubble flex items-center gap-2 justify-center w-full max-w-[280px]">
+                      <div className="ai-example-bubble flex items-center gap-2 justify-center w-full max-w-[280px] sm:max-w-[340px] md:max-w-[400px]">
                         <span className="text-xs text-brand-brown-light italic leading-relaxed text-center">
                           "{currentCard.example}"
                         </span>
@@ -562,7 +562,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
 
                     {/* AI Examples */}
                     {aiExamples && aiExamples.length > 0 && (
-                      <div className="space-y-2 mt-2 w-full max-w-[280px]">
+                      <div className="space-y-2 mt-2 w-full max-w-[280px] sm:max-w-[340px] md:max-w-[400px]">
                         <div className="text-xs font-bold text-brand-terracotta text-center select-none">
                           AI Ví dụ
                         </div>

@@ -994,6 +994,21 @@ button.ticker-inner {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(167, 122, 108, 0.12);
+  transition: min-height 0.25s ease, padding 0.25s ease;
+}
+
+@media (min-width: 640px) {
+  .flashcard-surface {
+    min-height: 270px;
+    padding: 2.25rem 1.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .flashcard-surface {
+    min-height: 330px;
+    padding: 2.5rem 2rem;
+  }
 }
 
 .dark .flashcard-surface {
@@ -1026,7 +1041,8 @@ button.ticker-inner {
   transform: translateY(100%);
   opacity: 0;
   transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1),
-              opacity 0.3s ease;
+              opacity 0.3s ease,
+              padding 0.25s ease;
   pointer-events: none;
   overflow-y: auto;
   display: flex;
@@ -1035,6 +1051,18 @@ button.ticker-inner {
   align-items: center;
   /* Ẩn scrollbar */
   scrollbar-width: none;
+}
+
+@media (min-width: 640px) {
+  .flashcard-meaning-panel {
+    padding: 1.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .flashcard-meaning-panel {
+    padding: 2rem;
+  }
 }
 
 .flashcard-meaning-panel::-webkit-scrollbar {
