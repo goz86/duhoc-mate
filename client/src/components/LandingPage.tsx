@@ -538,7 +538,7 @@ export default function LandingPage({
               )}
             </button>
             <a
-              href="https://www.duhocmate.com/"
+              href="https://app.duhocmate.com/"
               target="_blank"
               rel="noopener noreferrer"
               className="shrink-0 whitespace-nowrap pb-2 text-sm font-black text-brand-brown-light hover:text-brand-brown-dark transition-all inline-flex items-center gap-1.5 relative group"
