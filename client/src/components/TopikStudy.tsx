@@ -284,11 +284,6 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
     ? Math.round(((known.size + unknown.size) / allCards.length) * 100)
     : 0
 
-  const getTranslation = (card: TopikCard) => {
-    if (lang === 'ko') return card.en
-    if (lang === 'en') return card.en
-    return card.vi
-  }
 
   // ── AI: Save API Key ──────────────────────────────────────────
   const handleSaveApiKey = () => {
@@ -535,7 +530,21 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
                       </button>
                     </div>
 
-                    <div className="text-2xl font-black text-brand-terracotta">{getTranslation(currentCard)}</div>
+                    {lang === 'en' ? (
+                      <>
+                        <div className="text-2xl font-black text-brand-terracotta">{currentCard.en}</div>
+                        {currentCard.vi && (
+                          <div className="text-sm font-bold text-brand-brown-light/80 mt-1">({currentCard.vi})</div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-2xl font-black text-brand-terracotta">{currentCard.vi}</div>
+                        {currentCard.en && (
+                          <div className="text-sm font-bold text-brand-brown-light/80 mt-1">({currentCard.en})</div>
+                        )}
+                      </>
+                    )}
                     {currentCard.example && (
                       <div className="ai-example-bubble flex items-center gap-2 justify-center w-full max-w-[280px]">
                         <span className="text-xs text-brand-brown-light italic leading-relaxed text-center">

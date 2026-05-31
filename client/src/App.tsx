@@ -368,7 +368,7 @@ export default function App() {
   // Room states
   const [members, setMembers] = useState<Member[]>([]);
   const myMember = members.find(m => m.id === socket?.id);
-  const myRole = myMember?.role || (isHost ? 'host' : 'member');
+  const myRole = isHost ? 'host' : (myMember?.role || 'member');
   const canControlMusic = myRole === 'host' || myRole === 'cohost';
   const canControlPomodoro = myRole === 'host' || myRole === 'cohost';
   const canModerateChat = myRole === 'host' || myRole === 'cohost' || myRole === 'moderator';
@@ -478,7 +478,12 @@ export default function App() {
   const advancingPlaylistRef = useRef(false);
   const playlistScrollRef = useRef<HTMLDivElement>(null);
   const roomIdRef = useRef(roomId);
-  useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
+  useEffect(() => {
+    roomIdRef.current = roomId;
+    if (roomId) {
+      preloadTrendingMusic();
+    }
+  }, [roomId]);
   const isHostRef = useRef(isHost);
   useEffect(() => { isHostRef.current = isHost; }, [isHost]);
   const canControlMusicRef = useRef(canControlMusic);
@@ -2259,6 +2264,27 @@ export default function App() {
   const trendingCacheVpopRef = useRef<any[]>([]);
   const trendingCacheKpopRef = useRef<any[]>([]);
   const trendingCacheVinahouseRef = useRef<any[]>([]);
+
+  const preloadTrendingMusic = async () => {
+    const types: ('vpop' | 'kpop' | 'vinahouse')[] = ['vpop', 'kpop', 'vinahouse'];
+    const apiBase = getApiBaseCandidates()[0];
+    
+    types.forEach(async (type) => {
+      const cacheRef = type === 'kpop' ? trendingCacheKpopRef : type === 'vinahouse' ? trendingCacheVinahouseRef : trendingCacheVpopRef;
+      if (cacheRef.current.length > 0) return;
+      try {
+        const TRENDING_URL = `${apiBase}/api/trending-music?type=${type}`;
+        const res = await fetch(TRENDING_URL);
+        const data = await res.json();
+        if (data.results && data.results.length > 0) {
+          cacheRef.current = data.results;
+          console.log(`[PRELOAD] Loaded trending music for: ${type}`);
+        }
+      } catch (err) {
+        console.warn(`[PRELOAD] Failed to pre-fetch trending music for: ${type}`, err);
+      }
+    });
+  };
 
   const handleOpenAiSuggest = async (type: 'vpop' | 'kpop' | 'vinahouse' = 'vpop') => {
     setShowAiSuggestModal(true);

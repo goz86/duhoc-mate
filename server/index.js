@@ -2009,13 +2009,11 @@ io.on('connection', (socket) => {
     const target = room.members.find(m => m.id === targetId);
     if (!sender?.isHost || !target) return;
 
+    setRoomHost(room, targetId);
+
     room.members.forEach(member => {
-      member.isHost = member.id === targetId;
       io.to(member.id).emit('assigned-host', member.id === targetId);
     });
-    room.hostFriendCode = target.friendCode || '';
-    room.hostUsername = target.username || '';
-    room.hostReconnectUntil = null;
     clearHostTransferTimer(roomId);
     io.to(roomId).emit('room-users', room.members);
     sendSystemMessage(roomId, `${target.username} đã trở thành host của phòng.`);
