@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS public.topik_words (
   en TEXT NOT NULL,
   level INTEGER NOT NULL,
   example TEXT,
+  ai_examples JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT now(),
   CONSTRAINT topik_words_ko_level_key UNIQUE (ko, level)
 );
