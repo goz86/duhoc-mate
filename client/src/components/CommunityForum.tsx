@@ -842,14 +842,14 @@ export default function CommunityForum({
                   {selectedPost.content}
                 </div>
                 {selectedPost.image_urls && selectedPost.image_urls.length > 0 && (
-                  <div className="mb-6 flex flex-col gap-3 items-center">
+                  <div className="mb-6 flex flex-col gap-4 items-center">
                     {selectedPost.image_urls.map((src, index) => (
                       <img
                         key={`${src.slice(0, 24)}-${index}`}
                         src={src}
                         alt={`Ảnh bài viết ${index + 1}`}
                         onClick={() => setActiveLightboxImage(src)}
-                        className="max-h-[550px] w-auto max-w-full rounded-2xl border border-brand-terracotta-light/15 object-contain bg-brand-light/10 cursor-zoom-in hover:brightness-95 transition"
+                        className="max-h-[380px] w-auto max-w-[88%] sm:max-w-[480px] rounded-2xl border border-brand-terracotta-light/15 object-contain bg-[#fbf6ef] p-1.5 cursor-zoom-in hover:shadow-md hover:scale-[1.01] transition-all duration-300 mx-auto"
                       />
                     ))}
                   </div>
@@ -1015,6 +1015,39 @@ export default function CommunityForum({
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeLightboxImage && (
+          <div
+            onClick={() => setActiveLightboxImage(null)}
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 backdrop-blur-sm cursor-zoom-out transition-all duration-300"
+            style={{ animation: 'lightboxFadeIn 0.22s ease-out' }}
+          >
+            <style dangerouslySetInnerHTML={{ __html: `
+              @keyframes lightboxFadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+              }
+              @keyframes lightboxZoomIn {
+                from { transform: scale(0.95); opacity: 0; }
+                to { transform: scale(1); opacity: 1; }
+              }
+            `}} />
+            <button
+              onClick={() => setActiveLightboxImage(null)}
+              className="absolute top-4 right-4 text-white hover:text-red-400 transition p-2.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95"
+              aria-label="Đóng"
+            >
+              <X size={24} />
+            </button>
+            <img
+              src={activeLightboxImage}
+              alt="Phóng to"
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-[95vw] max-h-[92vh] rounded-xl object-contain shadow-2xl select-none cursor-default"
+              style={{ animation: 'lightboxZoomIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+            />
           </div>
         )}
       </div>
