@@ -1,6 +1,6 @@
 import type React from 'react'
 import { useMemo, useState } from 'react'
-import { BookOpen, Clock, Compass, Copy, Globe2, Headphones, LockKeyhole, Search } from 'lucide-react'
+import { BookOpen, Clock, Compass, Copy, Globe2, Headphones, LockKeyhole, Search, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { RoomTemplate } from '../lib/communityTemplates'
 import { getTemplateRoomId, seedRoomIds } from '../lib/templateRooms'
@@ -114,7 +114,16 @@ export default function TemplateMarketplace({
   }, [activeRooms, query])
 
   const roomRole = (hostName: string) => hostName === username ? 'Chủ phòng' : 'Khách'
-  const roomMeta = (hostName: string, memberCount?: number) => `${hostName} | ${memberCount ?? 0} | ${roomRole(hostName)}`
+  const roomMeta = (hostName: string, memberCount?: number) => (
+    <span className="inline-flex items-center gap-1">
+      <span className="truncate">{hostName}</span>
+      <span className="mx-0.5 text-black/10">|</span>
+      <Users size={12} className="shrink-0" />
+      <span>{memberCount ?? 0}</span>
+      <span className="mx-0.5 text-black/10">|</span>
+      <span className="shrink-0">{roomRole(hostName)}</span>
+    </span>
+  )
   const roomAvatarUrl = (hostName: string, avatarUrl?: string) =>
     avatarUrl || (hostName === username ? currentUserAvatarUrl || '' : '')
 
@@ -295,7 +304,14 @@ export default function TemplateMarketplace({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-black text-brand-brown-dark">{friend.username}</p>
                     <p className="truncate text-xs font-bold text-brand-brown-light">
-                      {`${friend.username} | ${friend.currentRoomId ? 1 : 0} | Khách`}
+                      <span className="inline-flex items-center gap-1">
+                        <span className="truncate">{friend.username}</span>
+                        <span className="mx-0.5 text-black/10">|</span>
+                        <Users size={12} className="shrink-0" />
+                        <span>{friend.currentRoomId ? 1 : 0}</span>
+                        <span className="mx-0.5 text-black/10">|</span>
+                        <span className="shrink-0">Khách</span>
+                      </span>
                     </p>
                   </div>
                   <span className={`h-2.5 w-2.5 rounded-full ${friend.online ? 'bg-emerald-400' : 'bg-slate-300'}`} />
