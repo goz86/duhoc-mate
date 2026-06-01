@@ -53,7 +53,7 @@ import type {
 } from './types';
 import { deletePersistentRoom, findPersistentRoom, hashRoomPassword, savePersistentRoom, type PersistentRoom } from './lib/persistentRooms';
 import { getNextPlaylistItem } from './lib/playlist';
-import { downscaleImageToDataUrl } from './lib/image';
+import { downscaleImageToDataUrl, dataURLtoFile } from './lib/image';
 import {
   createEstimatedLyrics,
   findBestLyricsTrack,
@@ -386,6 +386,30 @@ export default function App() {
   const [stageMode, setStageMode] = useState<StageMode>('youtube');
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'playlist' | 'members'>('playlist');
   const [mobileCompactView, setMobileCompactView] = useState<'youtube' | 'video' | 'topik' | 'chat' | 'pdf'>('youtube');
+  interface RoomActivity {
+    id: string;
+    type: 'chat' | 'reaction';
+    senderName: string;
+    content: string;
+    createdAt: number;
+  }
+  const [latestActivity, setLatestActivity] = useState<RoomActivity | null>(null);
+  const [activeActivity, setActiveActivity] = useState<RoomActivity | null>(null);
+  const [showDesktopTicker, setShowDesktopTicker] = useState(false);
+  const [showMobileTicker, setShowMobileTicker] = useState(false);
+
+  useEffect(() => {
+    if (!latestActivity) return;
+    setActiveActivity(latestActivity);
+    setShowDesktopTicker(true);
+    setShowMobileTicker(true);
+    const timer = setTimeout(() => {
+      setShowDesktopTicker(false);
+      setShowMobileTicker(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [latestActivity]);
+
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [ideaTasks, setIdeaTasks] = useState<IdeaTask[]>([]);
   const [roomCollapsed, setRoomCollapsed] = useState(false);
@@ -797,6 +821,13 @@ export default function App() {
         // Nếu đang xem, không increment
         return sidebarTab !== 'chat' ? prev + 1 : 0;
       });
+      setLatestActivity({
+        id: msg.id || String(Date.now()),
+        type: 'chat',
+        senderName: msg.sender || 'Bạn học',
+        content: msg.text || '',
+        createdAt: Date.now()
+      });
       setTimeout(scrollToBottom, 50);
     });
 
@@ -903,9 +934,29 @@ export default function App() {
     });
 
     socket.on('study-table-sync', (state: StudyTableState) => {
-      setStudyTable({
-        seats: state?.seats || {},
-        reactions: state?.reactions || []
+      setStudyTable(prevTable => {
+        const nextReactions = state?.reactions || [];
+        const prevReactions = prevTable?.reactions || [];
+        
+        if (nextReactions.length > 0) {
+          const lastReaction = nextReactions[nextReactions.length - 1];
+          const hasAlreadySeen = prevReactions.some(r => r.id === lastReaction.id);
+          
+          if (!hasAlreadySeen) {
+            setLatestActivity({
+              id: lastReaction.id,
+              type: 'reaction',
+              senderName: lastReaction.senderName || 'Bạn học',
+              content: lastReaction.label,
+              createdAt: Date.now()
+            });
+          }
+        }
+        
+        return {
+          seats: state?.seats || {},
+          reactions: nextReactions
+        };
       });
     });
 
@@ -2988,9 +3039,19 @@ export default function App() {
                           onChange={e => {
                             const file = e.target.files?.[0];
                             if (!file) return;
-                            if (file.size > 3 * 1024 * 1024) { setCustomAlert({ message: 'Ảnh tối đa 3MB.', show: true }); return; }
-                            setRoomAvatarFile(file);
+                            const extension = file.name.split('.').pop()?.toLowerCase();
+                            if (extension === 'heic' || extension === 'heif' || file.type === 'image/heic' || file.type === 'image/heif') {
+                              setCustomAlert({ message: 'Định dạng ảnh không hỗ trợ (ví dụ ảnh HEIC từ iPhone). Vui lòng chuyển sang JPG, PNG hoặc WEBP.', show: true });
+                              return;
+                            }
                             setRoomAvatarPreview(URL.createObjectURL(file));
+                            downscaleImageToDataUrl(file, 256, 0.85).then(dataUrl => {
+                              const compressedFile = dataURLtoFile(dataUrl, file.name);
+                              setRoomAvatarFile(compressedFile);
+                            }).catch(err => {
+                              console.error('Lỗi nén ảnh:', err);
+                              setCustomAlert({ message: 'Định dạng ảnh không hỗ trợ (ví dụ ảnh HEIC từ iPhone). Vui lòng chuyển sang JPG, PNG hoặc WEBP.', show: true });
+                            });
                           }}
                         />
                       </label>
@@ -3009,9 +3070,19 @@ export default function App() {
                           onChange={e => {
                             const file = e.target.files?.[0];
                             if (!file) return;
-                            if (file.size > 3 * 1024 * 1024) { setCustomAlert({ message: 'Ảnh tối đa 3MB.', show: true }); return; }
-                            setRoomAvatarFile(file);
+                            const extension = file.name.split('.').pop()?.toLowerCase();
+                            if (extension === 'heic' || extension === 'heif' || file.type === 'image/heic' || file.type === 'image/heif') {
+                              setCustomAlert({ message: 'Định dạng ảnh không hỗ trợ (ví dụ ảnh HEIC từ iPhone). Vui lòng chuyển sang JPG, PNG hoặc WEBP.', show: true });
+                              return;
+                            }
                             setRoomAvatarPreview(URL.createObjectURL(file));
+                            downscaleImageToDataUrl(file, 256, 0.85).then(dataUrl => {
+                              const compressedFile = dataURLtoFile(dataUrl, file.name);
+                              setRoomAvatarFile(compressedFile);
+                            }).catch(err => {
+                              console.error('Lỗi nén ảnh:', err);
+                              setCustomAlert({ message: 'Định dạng ảnh không hỗ trợ (ví dụ ảnh HEIC từ iPhone). Vui lòng chuyển sang JPG, PNG hoặc WEBP.', show: true });
+                            });
                           }}
                         />
                       </label>
@@ -3047,9 +3118,19 @@ export default function App() {
                         onChange={e => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          if (file.size > 5 * 1024 * 1024) { setCustomAlert({ message: 'Ảnh nền tối đa 5MB.', show: true }); return; }
-                          setRoomBgFile(file);
+                          const extension = file.name.split('.').pop()?.toLowerCase();
+                          if (extension === 'heic' || extension === 'heif' || file.type === 'image/heic' || file.type === 'image/heif') {
+                            setCustomAlert({ message: 'Định dạng ảnh không hỗ trợ (ví dụ ảnh HEIC từ iPhone). Vui lòng chuyển sang JPG, PNG hoặc WEBP.', show: true });
+                            return;
+                          }
                           setRoomBgPreview(URL.createObjectURL(file));
+                          downscaleImageToDataUrl(file, 1280, 0.85).then(dataUrl => {
+                            const compressedFile = dataURLtoFile(dataUrl, file.name);
+                            setRoomBgFile(compressedFile);
+                          }).catch(err => {
+                            console.error('Lỗi nén ảnh nền:', err);
+                            setCustomAlert({ message: 'Định dạng ảnh không hỗ trợ (ví dụ ảnh HEIC từ iPhone). Vui lòng chuyển sang JPG, PNG hoặc WEBP.', show: true });
+                          });
                         }}
                       />
                     </label>
@@ -3350,19 +3431,39 @@ export default function App() {
             {/* LEFT / CENTER: Stage workspace */}
             <main className={`${mainMobileVisibility} ${mainSpan} p-2 sm:p-4 xl:p-6 flex-col gap-3 sm:gap-4 lg:overflow-y-auto transition-all duration-300`}>
 
-              {!roomCollapsed && <div className="hidden sm:block"><StageSelector stageMode={stageMode} onChange={(mode) => {
-                setStageMode(mode);
-                if (mode === 'youtube' || mode === 'video' || mode === 'topik' || mode === 'pdf') {
-                  setMobileCompactView(mode);
-                }
-                // Tự động ngồi vào bàn khi chuyển sang tab Bàn học
-                if (mode === 'video' && !jitsiActive) {
-                  setJitsiActive(true);
-                  if (roomIdRef.current) {
-                    socket.emit('study-table-action', { roomId: roomIdRef.current, type: 'presence', payload: { active: true } });
-                  }
-                }
-              }} /></div>}
+              {!roomCollapsed && (
+                <div className="hidden sm:flex items-center justify-between gap-4 w-full">
+                  <StageSelector stageMode={stageMode} onChange={(mode) => {
+                    setStageMode(mode);
+                    if (mode === 'youtube' || mode === 'video' || mode === 'topik' || mode === 'pdf') {
+                      setMobileCompactView(mode);
+                    }
+                    // Tự động ngồi vào bàn khi chuyển sang tab Bàn học
+                    if (mode === 'video' && !jitsiActive) {
+                      setJitsiActive(true);
+                      if (roomIdRef.current) {
+                        socket.emit('study-table-action', { roomId: roomIdRef.current, type: 'presence', payload: { active: true } });
+                      }
+                    }
+                  }} />
+                  
+                  {/* Desktop Activity Ticker */}
+                  <div className={`transition-all duration-500 transform ${showDesktopTicker && activeActivity ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-8 scale-95 pointer-events-none'} flex items-center gap-2 max-w-sm bg-white/92 dark:bg-slate-900/90 backdrop-blur-md border border-brand-terracotta/20 rounded-full px-4 py-2 shadow-md shrink-0`}>
+                    <span className="flex items-center justify-center h-5 w-5 rounded-full bg-brand-terracotta text-white text-[10px] font-bold">
+                      {activeActivity?.type === 'reaction' ? '⚡' : '💬'}
+                    </span>
+                    <span className="text-xs font-black text-brand-brown-dark truncate max-w-[100px]" title={activeActivity?.senderName}>
+                      {activeActivity?.senderName}
+                    </span>
+                    <span className="text-[11px] text-brand-brown-light/80 whitespace-nowrap">
+                      {activeActivity?.type === 'reaction' ? 'đã reaction:' : 'nói:'}
+                    </span>
+                    <span className="text-xs font-bold text-brand-terracotta truncate max-w-[150px]" title={activeActivity?.content}>
+                      {activeActivity?.content}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* ── STAGE DISPLAY AREA – adapts per stageMode ── */}
               <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : `glass-panel rounded-3xl p-2.5 sm:p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col ${stageMode === 'topik' ? 'h-auto shrink-0' : 'flex-1'}`} relative ${stageMode === 'topik' ? 'overflow-visible' : 'overflow-hidden'}`}>
@@ -4114,6 +4215,26 @@ export default function App() {
             {/* RIGHT SIDEBAR: Chat, Playlist, Members — width adapts with sideSpan */}
             <aside className={`${sideMobileVisibility} ${sideSpan} ${mobileSidebarPanel ? 'min-h-[calc(100dvh-148px)]' : ''} min-w-0 border-l border-brand-terracotta-light/20 bg-white/30 backdrop-blur-lg flex-col transition-all duration-300 sm:min-h-0 lg:max-h-full`}>
               
+              {/* Mobile Real-time Activity Ticker */}
+              <div className={`block sm:hidden transition-all duration-500 overflow-hidden shrink-0 ${showMobileTicker && activeActivity ? 'max-h-16 opacity-100 p-3 pb-0' : 'max-h-0 opacity-0'}`}>
+                {activeActivity && (
+                  <div className="flex items-center gap-2 bg-brand-terracotta/90 backdrop-blur-md text-white text-[11px] font-bold px-3 py-2 rounded-xl shadow-md transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+                    <span className="shrink-0 text-yellow-300">
+                      {activeActivity.type === 'reaction' ? '⚡' : '💬'}
+                    </span>
+                    <span className="font-black truncate max-w-[80px]">
+                      {activeActivity.senderName}
+                    </span>
+                    <span className="opacity-80 font-medium">
+                      {activeActivity.type === 'reaction' ? 'đã reaction' : 'nói:'}
+                    </span>
+                    <span className="truncate flex-1 font-semibold text-white/95">
+                      {activeActivity.content}
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {/* Tab Navigation in Sidebar */}
               <div className="p-3 pb-0 xl:p-4 xl:pb-0 shrink-0">
                 <div className="rounded-[18px] border border-brand-terracotta-light/15 bg-white/40 dark:bg-black/35 p-1 grid grid-cols-3 gap-1.5 xl:gap-2">

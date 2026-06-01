@@ -63,6 +63,8 @@ export interface StudyTableSeat {
 export interface StudyTableReaction {
   id: string;
   memberId: string;
+  senderId?: string;
+  senderName?: string;
   label: string;
   createdAt: number;
 }
