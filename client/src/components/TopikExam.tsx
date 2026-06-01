@@ -902,6 +902,25 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
               </div>
 
               {/* Phím xác nhận */}
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-3">
+                <div className="flex items-start gap-2">
+                  <CheckCircle size={15} className="mt-0.5 shrink-0 text-emerald-600" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-emerald-800">Preset chuẩn TOPIK thật</p>
+                    <p className="mt-1 text-[11px] font-bold leading-relaxed text-emerald-700">
+                      AI sẽ sinh theo ma trận dạng câu, độ khó tăng dần, 4 lựa chọn có nhiễu hợp lý, chỉ 1 đáp án đúng và JSON schema cố định.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {['NIIED style', 'Self-check', 'Local validation', createCategory === 'reading' ? '15 câu đọc' : '10 câu nghe'].map(item => (
+                    <span key={item} className="rounded-full border border-emerald-200 bg-white/80 px-2 py-1 text-[10px] font-black text-emerald-700">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex gap-2 border-t border-brand-terracotta-light/15 pt-3 mt-1.5">
                 <button
                   type="button"
