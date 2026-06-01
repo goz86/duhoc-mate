@@ -3452,12 +3452,15 @@ export default function App() {
                     <span className="flex items-center justify-center h-5 w-5 rounded-full bg-brand-terracotta text-white text-[10px] font-bold">
                       {activeActivity?.type === 'reaction' ? '⚡' : '💬'}
                     </span>
-                    <span className="text-xs font-black text-brand-brown-dark truncate max-w-[100px]" title={activeActivity?.senderName}>
+                    <span className="text-xs font-black text-brand-brown-dark truncate max-w-[120px]" title={activeActivity?.senderName}>
                       {activeActivity?.senderName}
+                      {activeActivity?.type === 'chat' && ':'}
                     </span>
-                    <span className="text-[11px] text-brand-brown-light/80 whitespace-nowrap">
-                      {activeActivity?.type === 'reaction' ? 'đã reaction:' : 'nói:'}
-                    </span>
+                    {activeActivity?.type === 'reaction' && (
+                      <span className="text-[11px] text-brand-brown-light/80 whitespace-nowrap">
+                        đã reaction:
+                      </span>
+                    )}
                     <span className="text-xs font-bold text-brand-terracotta truncate max-w-[150px]" title={activeActivity?.content}>
                       {activeActivity?.content}
                     </span>
@@ -4222,12 +4225,15 @@ export default function App() {
                     <span className="shrink-0 text-yellow-300">
                       {activeActivity.type === 'reaction' ? '⚡' : '💬'}
                     </span>
-                    <span className="font-black truncate max-w-[80px]">
+                    <span className="font-black truncate max-w-[90px]">
                       {activeActivity.senderName}
+                      {activeActivity.type === 'chat' && ':'}
                     </span>
-                    <span className="opacity-80 font-medium">
-                      {activeActivity.type === 'reaction' ? 'đã reaction' : 'nói:'}
-                    </span>
+                    {activeActivity.type === 'reaction' && (
+                      <span className="opacity-80 font-medium">
+                        đã reaction:
+                      </span>
+                    )}
                     <span className="truncate flex-1 font-semibold text-white/95">
                       {activeActivity.content}
                     </span>
