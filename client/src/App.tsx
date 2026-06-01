@@ -41,7 +41,7 @@ import ConfirmDialog from './components/modals/ConfirmDialog';
 import PasswordRoomModal from './components/modals/PasswordRoomModal';
 import GuestJoinModal from './components/modals/GuestJoinModal';
 import InviteModal from './components/modals/InviteModal';
-import ThemeModal from './components/modals/ThemeModal';
+import ThemeModal, { type RoomThemeKey } from './components/modals/ThemeModal';
 import type {
   StageMode,
   Member,
@@ -464,7 +464,7 @@ export default function App() {
 
   const [showRoomSettings, setShowRoomSettings] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
-  const [roomTheme, setRoomTheme] = useState<'cream' | 'midnight' | 'sakura' | 'ocean' | 'forest' | 'sunset' | 'neon' | 'arctic'>('cream');
+  const [roomTheme, setRoomTheme] = useState<RoomThemeKey>('cream');
   const [roomSettingsName, setRoomSettingsName] = useState('');
   const [roomSettingsPublic, setRoomSettingsPublic] = useState(true);
   const [roomSettingsPassword, setRoomSettingsPassword] = useState('');
@@ -831,6 +831,11 @@ export default function App() {
       setTimeout(scrollToBottom, 50);
     });
 
+    socket.on('chat-error', ({ code, message }: { code?: string; message?: string }) => {
+      const key = code === 'rateLimit' ? 'chat.errorRateLimit' : code === 'invalid' ? 'chat.errorInvalid' : 'chat.error';
+      setCustomAlert({ message: message || t(key), show: true });
+    });
+
     socket.on('update-playlist', (updatedList: PlaylistItem[]) => {
       setPlaylist(updatedList);
       // Tự động phát bài đầu tiên nếu playlist có bài và hiện tại đang phát bài mặc định hoặc bài hát đã hết
@@ -1030,6 +1035,7 @@ export default function App() {
         socket.off('room-settings-updated');
         socket.off('room-closed');
         socket.off('receive-message');
+        socket.off('chat-error');
         socket.off('update-playlist');
         socket.off('video-sync');
         socket.off('pomodoro-sync');
@@ -2102,8 +2108,9 @@ export default function App() {
   // 3. Chức năng Chat
   const sendChatMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
-    socket.emit('send-message', { roomId, message: chatInput });
+    const message = chatInput.replace(/\r\n?/g, '\n').trim().slice(0, 800);
+    if (!message) return;
+    socket.emit('send-message', { roomId, message });
     messagesSentRef.current += 1;
     setChatInput('');
   };
@@ -2546,14 +2553,30 @@ export default function App() {
   };
 
   const roomThemeOptions = [
-    { key: 'cream', label: 'Cream', icon: 'C' },
-    { key: 'midnight', label: 'Midnight', icon: 'M' },
-    { key: 'sakura', label: 'Sakura', icon: 'S' },
-    { key: 'ocean', label: 'Ocean', icon: 'O' },
-    { key: 'forest', label: 'Forest', icon: 'F' },
-    { key: 'sunset', label: 'Sunset', icon: 'SUN' },
-    { key: 'neon', label: 'Neon', icon: 'N' },
-    { key: 'arctic', label: 'Arctic', icon: 'A' },
+    {
+      key: 'cream',
+      label: t('theme.cream.label'),
+      description: t('theme.cream.desc'),
+      swatches: ['#faf6ef', '#d9a68d', '#4c3731'],
+    },
+    {
+      key: 'midnight',
+      label: t('theme.midnight.label'),
+      description: t('theme.midnight.desc'),
+      swatches: ['#101820', '#315b70', '#d6c7a1'],
+    },
+    {
+      key: 'garden',
+      label: t('theme.garden.label'),
+      description: t('theme.garden.desc'),
+      swatches: ['#f4f1e8', '#78936a', '#3f5641'],
+    },
+    {
+      key: 'ocean',
+      label: t('theme.ocean.label'),
+      description: t('theme.ocean.desc'),
+      swatches: ['#edf7f8', '#5aa6b2', '#1d4f62'],
+    },
   ] as const;
 
   const activeVideoTitle = playlist.find(item => item.videoId === currentVideo.id)?.title || playerVideoTitle || (currentVideo.id ? `Video YouTube (${currentVideo.id})` : 'Lo-Fi Girl Study Beat');
@@ -2943,8 +2966,8 @@ export default function App() {
               <Pause size={15} />
             </div>
             <div className="flex-grow">
-              <p className="text-xs font-bold text-white">⏸ Host đã tạm dừng video</p>
-              <p className="text-[10px] text-white/60 mt-0.5">Chờ host phát lại để tiếp tục đồng bộ</p>
+              <p className="text-xs font-bold text-white">⏸ {t('room.hostPaused.title')}</p>
+              <p className="text-[10px] text-white/60 mt-0.5">{t('room.hostPaused.desc')}</p>
             </div>
             <button
               onClick={() => setShowHostPausedToast(false)}
@@ -2962,7 +2985,7 @@ export default function App() {
         onClose={() => setShowInviteModal(false)}
         roomId={roomId}
         qrCodeUrl={qrCodeUrl}
-        onCopySuccess={() => setCustomAlert({ message: 'Đã sao chép link mời vào phòng.', show: true })}
+        onCopySuccess={() => setCustomAlert({ message: t('room.inviteCopied'), show: true })}
       />
 
       {/* Password Room Modal */}
@@ -2989,21 +3012,21 @@ export default function App() {
       {showRoomSettings && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <h2 className="font-display text-xl font-black text-brand-brown-dark">Cài đặt phòng học</h2>
+            <h2 className="font-display text-xl font-black text-brand-brown-dark">{t('room.settings.title')}</h2>
             <p className="mt-1.5 text-sm font-semibold text-brand-brown-light">
-              Điều chỉnh thông tin phòng học của bạn.
+              {t('room.settings.subtitle')}
             </p>
             <form onSubmit={(e) => { e.preventDefault(); saveRoomSettings(); }} className="mt-5 flex flex-col gap-4">
               {!isHost && (
                 <div className="p-3 bg-amber-50 text-amber-700 text-xs font-bold rounded-2xl mb-2 border border-amber-200">
-                  Chỉ có chủ phòng mới có quyền thay đổi các cài đặt này.
+                  {t('room.settings.hostOnly')}
                 </div>
               )}
               <div>
-                <label className="text-xs font-bold text-brand-brown-light uppercase block mb-1">Tên phòng</label>
+                <label className="text-xs font-bold text-brand-brown-light uppercase block mb-1">{t('room.settings.roomName')}</label>
                 <input
                   type="text"
-                  placeholder="Tên phòng..."
+                  placeholder={t('room.settings.roomNamePlaceholder')}
                   disabled={!isHost}
                   value={roomSettingsName}
                   onChange={e => setRoomSettingsName(e.target.value)}
@@ -3013,7 +3036,7 @@ export default function App() {
 
               {/* Ảnh đại diện phòng — upload từ thiết bị */}
               <div>
-                <p className="text-xs font-bold text-brand-brown-light uppercase block mb-2">Ảnh đại diện phòng</p>
+                <p className="text-xs font-bold text-brand-brown-light uppercase block mb-2">{t('room.settings.avatar')}</p>
                 <div className="flex items-center gap-4">
                   {/* Preview avatar */}
                   <div className="relative shrink-0">
@@ -3062,7 +3085,7 @@ export default function App() {
                     {isHost ? (
                       <label className="flex h-12 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-brand-terracotta-light bg-brand-light text-sm font-black text-brand-terracotta transition hover:bg-white hover:border-brand-terracotta">
                         <Plus size={16} />
-                        {roomAvatarPreview ? 'Đổi ảnh khác' : 'Tải ảnh lên'}
+                        {roomAvatarPreview ? t('room.settings.changeImage') : t('room.settings.uploadImage')}
                         <input
                           type="file"
                           accept="image/*"
@@ -3087,7 +3110,7 @@ export default function App() {
                         />
                       </label>
                     ) : (
-                      <p className="text-xs text-brand-brown-light font-medium">Chỉ host mới có thể thay ảnh đại diện phòng.</p>
+                       <p className="text-xs text-brand-brown-light font-medium">{t('room.settings.hostOnlyAvatar')}</p>
                     )}
                     <p className="mt-1.5 text-[10px] text-brand-brown-light/70 font-medium">PNG, JPG, WEBP · Tối đa 3MB</p>
                   </div>
@@ -3096,7 +3119,7 @@ export default function App() {
 
               {/* Hình nền phòng — upload từ thiết bị */}
               <div>
-                <p className="text-xs font-bold text-brand-brown-light uppercase block mb-2">Hình nền phòng</p>
+                <p className="text-xs font-bold text-brand-brown-light uppercase block mb-2">{t('room.settings.background')}</p>
                 <div className="relative overflow-hidden rounded-2xl border border-dashed border-brand-terracotta-light bg-brand-light" style={{ height: '100px' }}>
                   {(roomBgPreview || roomBackgroundUrl) && (
                     <img
@@ -3109,7 +3132,7 @@ export default function App() {
                   {isHost ? (
                     <label className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-1 text-brand-terracotta transition hover:bg-white/30">
                       <Plus size={20} />
-                      <span className="text-xs font-black">{roomBgPreview || roomBackgroundUrl ? 'Đổi ảnh nền' : 'Tải ảnh nền lên'}</span>
+                      <span className="text-xs font-black">{roomBgPreview || roomBackgroundUrl ? t('room.settings.changeBackground') : t('room.settings.uploadBackground')}</span>
                       <span className="text-[10px] font-medium text-brand-brown-light/70">PNG, JPG, WEBP · Tối đa 5MB</span>
                       <input
                         type="file"
@@ -3136,7 +3159,7 @@ export default function App() {
                     </label>
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-brand-brown-light">
-                      {roomBackgroundUrl ? 'Đã có ảnh nền' : 'Chưa có ảnh nền'}
+                      {roomBackgroundUrl ? t('room.settings.hasBackground') : t('room.settings.noBackground')}
                     </div>
                   )}
                 </div>
@@ -3144,8 +3167,8 @@ export default function App() {
 
               <div className="flex items-center justify-between p-3 rounded-2xl bg-brand-light/60 border border-brand-terracotta-light/10">
                 <div>
-                  <p className="text-sm font-bold text-brand-brown-dark">Phòng công khai</p>
-                  <p className="text-xs text-brand-brown-light font-medium">Bất kỳ ai cũng có thể thấy và vào phòng</p>
+                  <p className="text-sm font-bold text-brand-brown-dark">{t('room.settings.publicRoom')}</p>
+                  <p className="text-xs text-brand-brown-light font-medium">{t('room.settings.publicRoomDesc')}</p>
                 </div>
                 <input
                   type="checkbox"
@@ -3158,10 +3181,10 @@ export default function App() {
 
               {!roomSettingsPublic && (
                 <div>
-                  <label className="text-xs font-bold text-brand-brown-light uppercase block mb-1">Mật khẩu phòng</label>
+                  <label className="text-xs font-bold text-brand-brown-light uppercase block mb-1">{t('room.settings.password')}</label>
                   <input
                     type="password"
-                    placeholder="Mật khẩu..."
+                    placeholder={t('room.settings.passwordPlaceholder')}
                     disabled={!isHost}
                     value={roomSettingsPassword}
                     onChange={e => setRoomSettingsPassword(e.target.value)}
@@ -3177,7 +3200,7 @@ export default function App() {
                     onClick={() => setShowRoomSettings(false)}
                     className="flex-1 rounded-2xl border border-black/[0.08] bg-white py-3 text-sm font-black text-brand-brown-light transition hover:bg-brand-light"
                   >
-                    Đóng
+                    {t('room.settings.close')}
                   </button>
                   {isHost && (
                     <button
@@ -3185,7 +3208,7 @@ export default function App() {
                       disabled={roomAvatarUploading}
                       className="flex-1 rounded-2xl bg-brand-terracotta py-3 text-sm font-black text-white shadow-md shadow-brand-terracotta/20 transition hover:bg-brand-brown-dark disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      {roomAvatarUploading ? 'Đang tải ảnh...' : 'Lưu cấu hình'}
+                      {roomAvatarUploading ? t('room.settings.uploading') : t('room.settings.save')}
                     </button>
                   )}
                 </div>
@@ -3199,7 +3222,7 @@ export default function App() {
                     }}
                     className="w-full rounded-2xl border-2 border-red-200 hover:bg-red-50 py-3 text-sm font-black text-red-600 transition"
                   >
-                    Đóng phòng vĩnh viễn
+                    {t('room.settings.closeRoom')}
                   </button>
                 )}
               </div>
@@ -3221,32 +3244,32 @@ export default function App() {
               </div>
               <div className="relative">
                 <div className="text-5xl mb-3">🎧</div>
-                <h2 className="font-display font-black text-white text-xl">Tổng kết phiên học</h2>
-                <p className="text-white/70 text-sm mt-1">{username || 'Bạn học'}</p>
+                <h2 className="font-display font-black text-white text-xl">{t('room.session.title')}</h2>
+                <p className="text-white/70 text-sm mt-1">{username || t('members.member')}</p>
               </div>
             </div>
             {/* Stats */}
             <div className="grid grid-cols-3 divide-x divide-brand-terracotta-light/20 -mt-5 mx-6 bg-white rounded-2xl shadow-lg shadow-brand-brown-dark/10 border border-brand-terracotta-light/20">
               <div className="flex flex-col items-center py-4 px-2">
                 <span className="font-display font-black text-2xl text-brand-terracotta">{sessionStats.minutes}</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-brown-light mt-0.5">Phút</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-brown-light mt-0.5">{t('room.session.minutes')}</span>
               </div>
               <div className="flex flex-col items-center py-4 px-2">
                 <span className="font-display font-black text-2xl text-brand-terracotta">{sessionStats.songs}</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-brown-light mt-0.5">Bài</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-brown-light mt-0.5">{t('room.session.songs')}</span>
               </div>
               <div className="flex flex-col items-center py-4 px-2">
                 <span className="font-display font-black text-2xl text-brand-terracotta">{sessionStats.messages}</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-brown-light mt-0.5">Tin nhắn</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-brown-light mt-0.5">{t('room.session.messages')}</span>
               </div>
             </div>
             {/* Motivational message */}
             <p className="text-center text-brand-brown-light text-sm px-6 mt-5">
               {sessionStats.minutes >= 60
-                ? '🔥 Tuyệt vời! Một phiên học siêu tập trung!'
+                ? t('room.session.msgLong')
                 : sessionStats.minutes >= 25
-                ? '⭐ Giỏi lắm! Tiếp tục duy trì nhé!'
-                : '💪 Khởi đầu tốt! Cố lên nhé!'}
+                ? t('room.session.msgMedium')
+                : t('room.session.msgShort')}
             </p>
             {/* Buttons */}
             <div className="flex gap-3 p-6 pt-4">
@@ -3254,13 +3277,13 @@ export default function App() {
                 onClick={() => setShowLeaveConfirm(false)}
                 className="flex-1 px-4 py-3 rounded-2xl border-2 border-brand-terracotta-light/30 font-bold text-brand-brown-dark hover:bg-brand-light transition text-sm"
               >
-                Ở lại
+                {t('room.session.stay')}
               </button>
               <button
                 onClick={confirmLeaveRoom}
                 className="flex-1 px-4 py-3 rounded-2xl bg-brand-terracotta hover:bg-brand-brown-dark text-white font-bold text-sm transition"
               >
-                Rời phòng
+                {t('room.leaveRoom')}
               </button>
             </div>
           </div>
@@ -3270,12 +3293,8 @@ export default function App() {
       {roomId !== '' && (
         <div className={`w-full flex-1 flex flex-col lg:h-full lg:max-h-full lg:overflow-hidden ${view !== 'room' ? 'pointer-events-none absolute -left-[9999px] -top-[9999px] h-1 w-1 overflow-hidden opacity-0' : ''} ${
           roomTheme === 'midnight' ? 'bg-slate-950 text-white' :
-          roomTheme === 'sakura' ? 'bg-pink-50' :
-          roomTheme === 'ocean' ? 'bg-cyan-50' :
-          roomTheme === 'forest' ? 'bg-emerald-50' :
-          roomTheme === 'sunset' ? 'bg-orange-50' :
-          roomTheme === 'neon' ? 'bg-violet-950 text-white' :
-          roomTheme === 'arctic' ? 'bg-sky-50' :
+          roomTheme === 'garden' ? 'bg-[#f4f1e8]' :
+          roomTheme === 'ocean' ? 'bg-[#edf7f8]' :
           ''
         }`} style={roomBackgroundUrl ? { backgroundImage: `linear-gradient(rgba(250,246,240,0.82), rgba(250,246,240,0.82)), url(${roomBackgroundUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
           <RoomHeader
@@ -3300,14 +3319,14 @@ export default function App() {
               >
                 <div className="flex items-center justify-between border-b border-brand-terracotta-light/15 px-4 py-3">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-wider text-brand-terracotta">Phòng {roomId}</p>
-                    <h2 className="font-display text-base font-black text-brand-brown-dark">Cài đặt nhanh</h2>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-brand-terracotta">{t('room.roomCode')} {roomId}</p>
+                    <h2 className="font-display text-base font-black text-brand-brown-dark">{t('room.quickSettings')}</h2>
                   </div>
                   <button
                     type="button"
                     onClick={() => setShowMobileRoomMenu(false)}
                     className="grid h-9 w-9 place-items-center rounded-full bg-brand-light text-brand-brown-dark"
-                    aria-label="Đóng cài đặt nhanh"
+                    aria-label={t('room.quickSettingsClose')}
                   >
                     <X size={16} />
                   </button>
@@ -3316,43 +3335,43 @@ export default function App() {
                 <div className="grid gap-2 p-3">
                   {[
                     {
-                      label: 'Ẩn phòng',
-                      hint: 'Thu nhỏ phòng về màn hình chính, vẫn giữ phòng đang chạy',
+                      label: t('room.menu.hideRoom'),
+                      hint: t('room.menu.hideRoomHint'),
                       Icon: Minimize2,
                       tone: 'neutral',
                       action: () => setView('landing'),
                     },
                     ...(stageMode === 'youtube' ? [{
-                      label: roomCollapsed ? 'Mở player' : 'Thu gọn player',
-                      hint: roomCollapsed ? 'Mở lại khu vực YouTube đầy đủ' : 'Thu gọn khu vực YouTube trong phòng',
+                      label: roomCollapsed ? t('room.menu.openPlayer') : t('room.menu.collapsePlayer'),
+                      hint: roomCollapsed ? t('room.menu.openPlayerHint') : t('room.menu.collapsePlayerHint'),
                       Icon: Minimize2,
                       tone: 'neutral',
                       action: () => setRoomCollapsed(prev => !prev),
                     }] : []),
                     {
-                      label: 'Link mời',
-                      hint: 'Sao chép link mời bạn vào phòng',
+                      label: t('room.menu.inviteLink'),
+                      hint: t('room.menu.inviteLinkHint'),
                       Icon: Link2,
                       tone: 'primary',
                       action: copyRoomInvite,
                     },
                     {
-                      label: 'Giao diện',
-                      hint: 'Đổi màu và không khí phòng học',
+                      label: t('room.menu.theme'),
+                      hint: t('room.menu.themeHint'),
                       Icon: Palette,
                       tone: 'neutral',
                       action: () => setShowThemeModal(true),
                     },
                     {
-                      label: 'Cài đặt phòng',
-                      hint: 'Đổi tên, riêng tư, ảnh phòng',
+                      label: t('room.menu.settings'),
+                      hint: t('room.menu.settingsHint'),
                       Icon: Settings,
                       tone: 'neutral',
                       action: () => setShowRoomSettings(true),
                     },
                     ...(isHost ? [{
-                      label: 'Chuyển host',
-                      hint: 'Trao quyền chủ phòng cho bạn học khác',
+                      label: t('room.menu.transferHost'),
+                      hint: t('room.menu.transferHostHint'),
                       Icon: Crown,
                       tone: 'neutral',
                       action: () => transferHost(),
@@ -3397,21 +3416,21 @@ export default function App() {
           <div className="hidden flex-wrap items-center gap-2 border-b border-brand-terracotta-light/15 bg-white/55 px-5 py-3 backdrop-blur sm:flex">
             {stageMode === 'youtube' && (
               <button onClick={() => setRoomCollapsed(prev => !prev)} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
-                <Minimize2 size={14} /> {roomCollapsed ? 'Trở lại phòng' : 'Thu nhỏ'}
+                <Minimize2 size={14} /> {roomCollapsed ? t('room.menu.backToRoom') : t('room.menu.minimize')}
               </button>
             )}
             <button onClick={copyRoomInvite} className="inline-flex items-center gap-2 rounded-full border border-brand-terracotta/20 bg-brand-terracotta px-4 py-2 text-xs font-black text-white shadow-md shadow-brand-terracotta/15 transition hover:bg-brand-brown-dark">
-              <Link2 size={14} /> Link mời
+              <Link2 size={14} /> {t('room.menu.inviteLink')}
             </button>
             <button onClick={() => setShowThemeModal(true)} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
-              <Palette size={14} /> Giao diện
+              <Palette size={14} /> {t('room.menu.theme')}
             </button>
             <button onClick={() => setShowRoomSettings(true)} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
-              <Settings size={14} /> Cài đặt phòng
+              <Settings size={14} /> {t('room.menu.settings')}
             </button>
             {isHost && (
               <button onClick={() => transferHost()} className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light">
-                <Crown size={14} /> Chuyển host
+                <Crown size={14} /> {t('room.menu.transferHost')}
               </button>
             )}
 
@@ -3601,7 +3620,7 @@ export default function App() {
                       <div className="w-full h-full" ref={iframeContainerRef}>
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center pointer-events-none z-0">
                           <Clock className="text-white/20 animate-spin" size={32} />
-                          <p className="text-xs text-white/40">Đang tải YouTube Player...</p>
+                          <p className="text-xs text-white/40">{t('room.youtube.loadingPlayer')}</p>
                         </div>
                       </div>
                       {/* Man hinh cho khi chua co video — cũng hiện khi lỗi + playlist rỗng */}
@@ -3614,10 +3633,10 @@ export default function App() {
                               <Music2 className="h-5 w-5 sm:h-6 sm:w-6" />
                             </div>
                             <div className="max-w-2xl">
-                              <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-brand-terracotta">YouTube setup</p>
-                              <h3 className="mt-0.5 sm:mt-1 font-display text-base sm:text-2xl font-black leading-tight text-brand-brown-dark">Chưa có video nào trong phòng</h3>
+                              <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-brand-terracotta">{t('room.youtube.setup')}</p>
+                              <h3 className="mt-0.5 sm:mt-1 font-display text-base sm:text-2xl font-black leading-tight text-brand-brown-dark">{t('room.youtube.emptyTitle')}</h3>
                               <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm leading-relaxed text-brand-brown-light max-w-md mx-auto">
-                                Chọn một bài để tạo playlist chung. Khi thêm video, player sẽ tự liên kết với YouTube và đồng bộ cho cả phòng.
+                                {t('room.youtube.emptyDesc')}
                               </p>
                             </div>
                           </div>
@@ -3626,11 +3645,11 @@ export default function App() {
                               <div className="absolute left-[10%] right-[10%] top-4 sm:top-[22px] h-1 rounded-full bg-brand-terracotta-light/35" />
                               <div className="absolute left-[10%] top-4 sm:top-[22px] h-1 w-[20%] rounded-full bg-brand-terracotta" />
                               {[
-                                { label: 'Tìm nhạc', Icon: Search, done: true },
-                                { label: 'Chọn video', Icon: Play, done: false },
-                                { label: 'Thêm playlist', Icon: Plus, done: false },
-                                { label: 'Sẵn sàng', Icon: ListMusic, done: false },
-                                { label: 'Phát cùng nhau', Icon: Headphones, done: false },
+                                { label: t('room.youtube.stepSearch'), Icon: Search, done: true },
+                                { label: t('room.youtube.stepPick'), Icon: Play, done: false },
+                                { label: t('room.youtube.stepAdd'), Icon: Plus, done: false },
+                                { label: t('room.youtube.stepReady'), Icon: ListMusic, done: false },
+                                { label: t('room.youtube.stepTogether'), Icon: Headphones, done: false },
                               ].map((step, stepIndex) => {
                                 const StepIcon = step.Icon;
                                 const isActive = stepIndex === 1;
@@ -3846,7 +3865,7 @@ export default function App() {
                     <div className={`mx-auto flex w-full max-w-[1180px] flex-col gap-2 rounded-2xl border border-brand-terracotta-light/20 bg-brand-light/40 px-4 py-3 transition-all duration-300 sm:flex-row sm:items-center sm:justify-between ${!currentVideo.id ? 'opacity-0 pointer-events-none h-0 py-0 overflow-hidden' : ''}`}>
                       <div className="min-w-0 flex-1 space-y-0.5">
                         <span className="block truncate whitespace-nowrap text-[10px] font-bold uppercase text-brand-terracotta">
-                          {isHost ? '★ Host · Đang đồng bộ' : isHostPaused ? '⏸ Host đã tạm dừng' : localPaused ? '⏸ Tạm dừng riêng' : '· Đang đồng bộ'}
+                          {isHost ? t('room.youtube.statusHostSync') : isHostPaused ? t('room.youtube.statusHostPaused') : localPaused ? t('room.youtube.statusLocalPaused') : t('room.youtube.statusSyncing')}
                         </span>
                         <h4 className="font-display font-extrabold text-sm truncate text-brand-brown-dark">
                           {activeVideoTitle}
@@ -3876,8 +3895,8 @@ export default function App() {
                             className="flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/30 bg-white px-3 py-1.5 text-[11px] font-bold text-brand-brown-dark shadow-sm transition hover:bg-brand-light whitespace-nowrap"
                           >
                             {localPaused
-                              ? <><Play size={12} className="text-brand-terracotta" /><span>Phát lại</span></>
-                              : <><Pause size={12} className="text-brand-brown-light" /><span>Tạm dừng</span></>
+                              ? <><Play size={12} className="text-brand-terracotta" /><span>{t('room.youtube.resume')}</span></>
+                              : <><Pause size={12} className="text-brand-brown-light" /><span>{t('room.youtube.pauseLocal')}</span></>
                             }
                           </button>
                         )}
@@ -3885,7 +3904,7 @@ export default function App() {
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <button
                             type="button"
-                            title={playerVolume === 0 ? 'Bật âm lượng' : 'Tắt tiếng'}
+                            title={playerVolume === 0 ? t('room.youtube.unmute') : t('room.youtube.mute')}
                             onClick={() => setPlayerVolume(playerVolume === 0 ? 80 : 0)}
                             className="rounded-full p-1 text-brand-brown-light transition hover:text-brand-terracotta"
                           >
@@ -3897,7 +3916,7 @@ export default function App() {
                             value={playerVolume}
                             onChange={e => setPlayerVolume(parseInt(e.target.value))}
                             className="hidden sm:block w-20 h-1 accent-brand-terracotta cursor-pointer"
-                            title={`Âm lượng: ${playerVolume}%`}
+                            title={t('room.youtube.volume', { volume: playerVolume })}
                           />
                         </div>
 
@@ -3907,8 +3926,8 @@ export default function App() {
                           <button
                             type="button"
                             title={voiceChat.isInVoice
-                              ? (voiceChat.isMuted ? 'Bỏ tắt mic' : 'Tắt mic')
-                              : 'Bật mic để chat voice'}
+                              ? (voiceChat.isMuted ? t('room.voice.unmuteMic') : t('room.voice.muteMic'))
+                              : t('room.voice.join')}
                             onClick={() => voiceChat.isInVoice ? voiceChat.toggleMute() : voiceChat.joinVoice()}
                             className={`relative flex-shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold shadow-sm transition border ${
                               voiceChat.isInVoice
@@ -3941,7 +3960,7 @@ export default function App() {
                             >
                               <Headphones size={12} />
                               <span className="hidden sm:inline">
-                                {voiceChat.isDeafened ? 'Deafened' : 'Nghe'}
+                                {voiceChat.isDeafened ? t('room.voice.deafened') : t('room.voice.listen')}
                               </span>
                             </button>
                           )}
@@ -3950,7 +3969,7 @@ export default function App() {
                           {voiceChat.isInVoice && (
                             <button
                               type="button"
-                              title="Rời voice chat"
+                              title={t('room.voice.leave')}
                               onClick={voiceChat.leaveVoice}
                               className="flex-shrink-0 rounded-full p-1.5 bg-red-100 text-red-500 hover:bg-red-500 hover:text-white border border-red-200 transition"
                             >
@@ -3966,8 +3985,8 @@ export default function App() {
                             className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1.5 text-[11px] font-bold shadow-sm transition sm:px-3 ${showLyrics ? 'border-brand-terracotta bg-brand-terracotta text-white' : 'border-brand-terracotta-light/30 bg-white text-brand-brown-dark hover:bg-brand-light'}`}
                           >
                             <Music2 size={12} />
-                            <span className="sm:hidden">Lời</span>
-                            <span className="hidden sm:inline">Lời bài hát</span>
+                            <span className="sm:hidden">{t('room.lyrics.short')}</span>
+                            <span className="hidden sm:inline">{t('room.lyrics.full')}</span>
                           </button>
                         )}
                         <button
@@ -3976,8 +3995,8 @@ export default function App() {
                           className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1.5 text-[11px] font-bold shadow-sm transition sm:px-3 ${showYoutubeCaptions ? 'border-brand-terracotta bg-brand-terracotta text-white' : 'border-brand-terracotta-light/30 bg-white text-brand-brown-dark hover:bg-brand-light'}`}
                         >
                           <FileText size={12} />
-                          <span className="sm:hidden">Phụ đề</span>
-                          <span className="hidden sm:inline">Phụ đề YouTube</span>
+                          <span className="sm:hidden">{t('room.captions.short')}</span>
+                          <span className="hidden sm:inline">{t('room.captions.full')}</span>
                         </button>
                         <span className="h-2 w-2 rounded-full bg-green-500 animate-ping"></span>
                         <span className="text-[10px] font-bold text-brand-brown-light uppercase hidden sm:block">Live Sync</span>
@@ -4195,7 +4214,17 @@ export default function App() {
                     jitsiActive={jitsiActive}
                     pomodoro={pomodoro}
                     chatMessages={chatMessages}
+                    voiceUsers={voiceChat.voiceUsers}
+                    localVideoStream={voiceChat.localVideoStream}
+                    remoteVideoStreams={voiceChat.remoteVideoStreams}
+                    isInVoice={voiceChat.isInVoice}
+                    isMuted={voiceChat.isMuted}
+                    isCameraOn={voiceChat.isCameraOn}
                     onToggleJitsi={toggleJitsi}
+                    onJoinVoice={voiceChat.joinVoice}
+                    onLeaveVoice={voiceChat.leaveVoice}
+                    onToggleMic={voiceChat.isInVoice ? voiceChat.toggleMute : voiceChat.joinVoice}
+                    onToggleCamera={voiceChat.toggleCamera}
                     onControlPomodoro={controlPomodoro}
                     onStudyReaction={sendStudyReaction}
                     onPersonalPomodoro={controlPersonalPomodoro}
@@ -4283,7 +4312,7 @@ export default function App() {
                         : 'hover:bg-brand-light text-brand-brown-light'
                     }`}
                   >
-                    <Users size={16} /> <span className="truncate">Bạn học ({members.length})</span>
+                    <Users size={16} /> <span className="truncate">{t('members.title')} ({members.length})</span>
                   </button>
                 </div>
               </div>
@@ -4300,7 +4329,7 @@ export default function App() {
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          placeholder="Tên bài hát, nghệ sĩ hoặc link YouTube..."
+                          placeholder={t('playlist.search')}
                           value={songSearch}
                           onChange={(e) => setSongSearch(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), songSearch.length < 20 || songSearch.startsWith('http') ? handleAddSongDirect(e as any) : handleSearchMusic())}
@@ -4315,7 +4344,7 @@ export default function App() {
                           {musicSearchLoading ? (
                             <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
                           ) : <Search size={14} />}
-                          Tìm
+                          {t('playlist.search.btn')}
                         </button>
                       </div>
 
@@ -4327,12 +4356,12 @@ export default function App() {
                           className="inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-brand-terracotta to-brand-terracotta-dark text-white rounded-lg hover:shadow transition font-black text-xs cursor-pointer active:scale-95 shadow-sm border border-brand-terracotta/10"
                         >
                           <Sparkles size={13} className="text-amber-200" />
-                          <span>AI Gợi ý</span>
+                          <span>{t('playlist.aiSuggest')}</span>
                         </button>
                         {[
                           { icon: <Coffee size={13} />, label: 'Lofi Girl', q: 'lofi girl study' },
-                          { icon: <CloudRain size={13} />, label: 'Tiếng Mưa Cozy', q: 'rain cozy study music' },
-                          { icon: <Music2 size={13} />, label: 'Piano Nhẹ', q: 'piano soft study music' },
+                          { icon: <CloudRain size={13} />, label: t('playlist.tagRain'), q: 'rain cozy study music' },
+                          { icon: <Music2 size={13} />, label: t('playlist.tagPiano'), q: 'piano soft study music' },
                           { icon: <Music2 size={13} />, label: 'K-Pop', q: 'kpop study playlist' },
                           { icon: <Headphones size={13} />, label: 'Vinahouse', q: 'vinahouse tik tok remix hot nhất' },
                         ].map(tag => (
@@ -4362,7 +4391,7 @@ export default function App() {
                           {musicSearchLoading && (
                             <div className="flex items-center justify-center py-6 gap-2 text-brand-brown-light">
                               <span className="w-4 h-4 border-2 border-brand-terracotta border-t-transparent rounded-full animate-spin" />
-                              <span className="text-xs">Đang tìm kiếm...</span>
+                              <span className="text-xs">{t('playlist.searching')}</span>
                             </div>
                           )}
 
@@ -4375,7 +4404,7 @@ export default function App() {
 
                           {!musicSearchLoading && !musicSearchError && musicSearchResults.length === 0 && (
                             <div className="text-center py-6 text-brand-brown-light text-xs">
-                              Không tìm thấy kết quả. Thử từ khóa khác?
+                              {t('playlist.noResults')}
                             </div>
                           )}
 
@@ -4412,7 +4441,7 @@ export default function App() {
                                 onClick={(e) => { e.stopPropagation(); addSongFromResult(result); }}
                                 className="flex-shrink-0 px-2 py-1 rounded-lg bg-brand-terracotta text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 transition"
                               >
-                                + Thêm
+                                + {t('playlist.add')}
                               </button>
                             </div>
                           ))}
@@ -4423,7 +4452,7 @@ export default function App() {
                     {/* Playlist Header + Reset Button */}
                     <div className="flex items-center justify-between px-1 py-1.5 shrink-0">
                       <span className="text-[11px] font-black uppercase tracking-wide text-brand-brown-light/60">
-                        Danh sách phát · {playlist.length} bài
+                        {t('playlist.title')} · {playlist.length} {t('playlist.songCount')}
                       </span>
                       {isHost && playlist.some(item => item.status === 'played') && (
                         <button
@@ -4444,12 +4473,12 @@ export default function App() {
                         <div className="py-4 text-brand-brown-light space-y-3">
                           <div className="rounded-2xl border border-dashed border-brand-terracotta-light/40 bg-white/60 p-4 text-center">
                             <ListMusic className="mx-auto text-brand-terracotta-light/60" size={34} />
-                            <p className="mt-2 text-sm font-black text-brand-brown-dark">Danh sách phát đang trống</p>
-                            <p className="mt-1 text-xs leading-relaxed">Chọn nhanh một video đang phổ biến cho phòng học, hoặc dán link YouTube ở trên.</p>
+                            <p className="mt-2 text-sm font-black text-brand-brown-dark">{t('playlist.emptyTitle')}</p>
+                            <p className="mt-1 text-xs leading-relaxed">{t('playlist.emptyRoomDesc')}</p>
                           </div>
 
                           <div className="space-y-2">
-                            <p className="text-xs font-black text-brand-brown-dark">Gợi ý hôm nay</p>
+                            <p className="text-xs font-black text-brand-brown-dark">{t('playlist.todaySuggestions')}</p>
                             {trendingVideoSuggestions.map((suggestion) => (
                               <button
                                 key={suggestion.videoId}
@@ -4472,7 +4501,7 @@ export default function App() {
                                   <p className="truncate text-xs font-black text-brand-brown-dark">{suggestion.title}</p>
                                   <p className="mt-1 text-[10px] font-bold text-brand-brown-light">{suggestion.category} · {suggestion.duration}</p>
                                 </div>
-                                <span className="rounded-lg bg-brand-terracotta px-2 py-1 text-[10px] font-black text-white">Thêm</span>
+                                <span className="rounded-lg bg-brand-terracotta px-2 py-1 text-[10px] font-black text-white">{t('playlist.add')}</span>
                               </button>
                             ))}
                           </div>
@@ -4720,8 +4749,8 @@ export default function App() {
                       {chatMessages.length === 0 ? (
                         <div className="text-center py-12 text-brand-brown-light space-y-2">
                           <MessageCircle className="mx-auto text-brand-terracotta-light/40" size={36} />
-                          <p className="text-sm font-semibold">Chưa có cuộc trò chuyện nào</p>
-                          <p className="text-xs">Gửi lời chào đầu tiên tới các bạn học đi thôi!</p>
+                          <p className="text-sm font-semibold">{t('chat.empty')}</p>
+                          <p className="text-xs">{t('chat.emptyDesc')}</p>
                         </div>
                       ) : (
                         visibleChatMessages.map((msg) => {
@@ -5163,10 +5192,10 @@ export default function App() {
             <div className="grid grid-cols-5 gap-1">
               {[
                 { key: 'youtube', label: 'YouTube', Icon: Play },
-                { key: 'video', label: 'Bàn học', Icon: Coffee },
+                { key: 'video', label: t('room.stage.studyTable'), Icon: Coffee },
                 { key: 'topik', label: 'TOPIK', Icon: BookOpen },
                 { key: 'chat', label: 'Chat', Icon: MessageCircle, badge: unreadChatCount },
-                { key: 'pdf', label: 'Vẽ', Icon: ClipboardList },
+                { key: 'pdf', label: t('room.stage.whiteboard'), Icon: ClipboardList },
               ].map(item => {
                 const Icon = item.Icon;
                 const key = item.key as typeof mobileCompactView;

@@ -4,6 +4,7 @@ client-localhost.log
 client-localhost.err.log
 server-localhost.log
 server-localhost.err.log
+server/dasu.response
 server/room-state.json
 node_modules/
 client/node_modules/

@@ -17,6 +17,7 @@ import { VOICE_RTC_CONFIG } from './voiceIceServers';
 export interface VoiceUserState {
   muted: boolean;
   speaking: boolean;
+  cameraOn: boolean;
   volume: number; // 0-1, per-user local volume
 }
 
@@ -33,11 +34,15 @@ interface UseVoiceChatReturn {
   isMuted: boolean;
   isSpeaking: boolean;
   isDeafened: boolean;     // Tắt hết tiếng người khác (tai nghe bị tắt)
+  isCameraOn: boolean;
   voiceUsers: Map<string, VoiceUserState>;
+  localVideoStream: MediaStream | null;
+  remoteVideoStreams: Map<string, MediaStream>;
   masterVolume: number;
   joinVoice: () => Promise<void>;
   leaveVoice: () => void;
   toggleMute: () => void;
+  toggleCamera: () => Promise<void>;
   toggleDeafen: () => void;   // Bật/tắt deafen (tắt hết tai nghe)
   setMasterVolume: (v: number) => void;
   setUserVolume: (userId: string, v: number) => void;
@@ -61,7 +66,10 @@ export function useVoiceChat(
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);  // Tắt hết tai nghe (deafen)
+  const [isCameraOn, setIsCameraOn] = useState(false);
   const [voiceUsers, setVoiceUsers] = useState<Map<string, VoiceUserState>>(new Map());
+  const [localVideoStream, setLocalVideoStream] = useState<MediaStream | null>(null);
+  const [remoteVideoStreams, setRemoteVideoStreams] = useState<Map<string, MediaStream>>(new Map());
   const [masterVolume, setMasterVolumeState] = useState(1);
 
   // ── Refs ───────────────────────────────────────────────────────────────────
@@ -75,6 +83,8 @@ export function useVoiceChat(
   const isMutedRef = useRef(false);
   const isInVoiceRef = useRef(false);
   const isDeafenedRef = useRef(false);
+  const isCameraOnRef = useRef(false);
+  const localVideoStreamRef = useRef<MediaStream | null>(null);
   const roomIdRef = useRef(roomId);
   const isSpeakingRef = useRef(false);
   const masterVolumeBeforeDeafenRef = useRef(1); // Lưu volume trước khi deafen
@@ -92,6 +102,7 @@ export function useVoiceChat(
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
   useEffect(() => { isInVoiceRef.current = isInVoice; }, [isInVoice]);
   useEffect(() => { isDeafenedRef.current = isDeafened; }, [isDeafened]);
+  useEffect(() => { isCameraOnRef.current = isCameraOn; }, [isCameraOn]);
 
   // ── Helper: tạo AudioContext nếu chưa có ──────────────────────────────────
   const getAudioContext = useCallback((): AudioContext => {
@@ -118,6 +129,30 @@ export function useVoiceChat(
     }
   }, []);
 
+  const renegotiatePeer = useCallback(async (targetId: string, pc: RTCPeerConnection) => {
+    if (!socket || pc.signalingState === 'closed') return;
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('voice-offer', { targetId, offer });
+    } catch (err) {
+      console.warn('[VoiceChat] Renegotiation failed:', targetId, err);
+    }
+  }, [socket]);
+
+  const updateRemoteVideoStream = useCallback((targetId: string, stream: MediaStream) => {
+    const hasLiveVideo = stream.getVideoTracks().some(track => track.readyState === 'live');
+    setRemoteVideoStreams(prev => {
+      const next = new Map(prev);
+      if (hasLiveVideo) {
+        next.set(targetId, stream);
+      } else {
+        next.delete(targetId);
+      }
+      return next;
+    });
+  }, []);
+
   // ── Helper: tạo RTCPeerConnection ─────────────────────────────────────────
   const createPeerConnection = useCallback((targetId: string): RTCPeerConnection => {
     const pc = new RTCPeerConnection(VOICE_RTC_CONFIG);
@@ -129,13 +164,31 @@ export function useVoiceChat(
       }
     };
 
-    // Nhận audio track từ remote peer
+    // Nhận audio/video track từ remote peer
     pc.ontrack = (event) => {
+      const remoteStream = event.streams[0] ?? new MediaStream([event.track]);
+
+      if (event.track.kind === 'video') {
+        updateRemoteVideoStream(targetId, remoteStream);
+        event.track.onended = () => {
+          setRemoteVideoStreams(prev => {
+            const next = new Map(prev);
+            next.delete(targetId);
+            return next;
+          });
+        };
+        remoteStream.onremovetrack = () => updateRemoteVideoStream(targetId, remoteStream);
+
+        const existingPeer = peersRef.current.get(targetId);
+        if (existingPeer) existingPeer.remoteStream = remoteStream;
+        return;
+      }
+
       const ctx = getAudioContext();
       if (ctx.state === 'suspended') {
         ctx.resume().catch(err => console.warn('[VoiceChat] Failed to resume AudioContext in ontrack:', err));
       }
-      const remoteStream = event.streams[0] ?? new MediaStream([event.track]);
+
       const source = ctx.createMediaStreamSource(remoteStream);
       const gainNode = ctx.createGain();
       const userVolume = voiceUsers.get(targetId)?.volume ?? 1;
@@ -183,7 +236,7 @@ export function useVoiceChat(
     };
 
     return pc;
-  }, [socket, getAudioContext, voiceUsers]);
+  }, [socket, getAudioContext, updateRemoteVideoStream, voiceUsers]);
 
   // ── Helper: thêm local tracks vào peer connection ─────────────────────────
   const addLocalTracks = useCallback((pc: RTCPeerConnection) => {
@@ -225,6 +278,31 @@ export function useVoiceChat(
       }
     }, VAD_INTERVAL_MS);
   }, [socket]);
+
+  const stopCamera = useCallback(async (renegotiate = true) => {
+    const videoStream = localVideoStreamRef.current;
+    const tracks = videoStream?.getVideoTracks() ?? [];
+    if (tracks.length === 0 && !isCameraOnRef.current) return;
+
+    peersRef.current.forEach(({ pc }, userId) => {
+      tracks.forEach(track => {
+        const sender = pc.getSenders().find(item => item.track === track);
+        if (sender) pc.removeTrack(sender);
+      });
+      if (renegotiate) void renegotiatePeer(userId, pc);
+    });
+
+    tracks.forEach(track => {
+      localStreamRef.current?.removeTrack(track);
+      track.stop();
+    });
+
+    localVideoStreamRef.current = null;
+    setLocalVideoStream(null);
+    setIsCameraOn(false);
+    isCameraOnRef.current = false;
+    socket?.emit('voice-camera-changed', { roomId: roomIdRef.current, cameraOn: false });
+  }, [renegotiatePeer, socket]);
 
   // ── joinVoice ─────────────────────────────────────────────────────────────
   const joinVoice = useCallback(async () => {
@@ -269,9 +347,62 @@ export function useVoiceChat(
     }
   }, [socket, getAudioContext, startVAD]);
 
+  const startCamera = useCallback(async () => {
+    if (!socket) return;
+    if (!isInVoiceRef.current) await joinVoice();
+    if (!isInVoiceRef.current) return;
+    if (isCameraOnRef.current) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          width: { ideal: 960 },
+          height: { ideal: 540 },
+          facingMode: 'user',
+        },
+      });
+      const videoTrack = stream.getVideoTracks()[0];
+      if (!videoTrack) throw new Error('No video track returned');
+
+      if (!localStreamRef.current) localStreamRef.current = new MediaStream();
+      localStreamRef.current.addTrack(videoTrack);
+      localVideoStreamRef.current = stream;
+      setLocalVideoStream(stream);
+      setIsCameraOn(true);
+      isCameraOnRef.current = true;
+
+      videoTrack.onended = () => {
+        void stopCamera();
+      };
+
+      peersRef.current.forEach(({ pc }, userId) => {
+        if (!pc.getSenders().some(sender => sender.track === videoTrack)) {
+          pc.addTrack(videoTrack, localStreamRef.current!);
+        }
+        void renegotiatePeer(userId, pc);
+      });
+
+      socket.emit('voice-camera-changed', { roomId: roomIdRef.current, cameraOn: true });
+    } catch (err) {
+      console.error('[VoiceChat] camera getUserMedia failed:', err);
+      alert('Không thể truy cập camera. Vui lòng kiểm tra quyền trình duyệt.');
+    }
+  }, [joinVoice, renegotiatePeer, socket, stopCamera]);
+
+  const toggleCamera = useCallback(async () => {
+    if (isCameraOnRef.current) {
+      await stopCamera();
+    } else {
+      await startCamera();
+    }
+  }, [startCamera, stopCamera]);
+
   // ── leaveVoice ────────────────────────────────────────────────────────────
   const leaveVoice = useCallback(() => {
     if (!socket) return;
+
+    void stopCamera(false);
 
     // Dừng VAD
     if (vadTimerRef.current) {
@@ -304,11 +435,15 @@ export function useVoiceChat(
     isInVoiceRef.current = false;
     setIsMuted(false);
     setIsSpeaking(false);
+    setIsCameraOn(false);
+    setLocalVideoStream(null);
+    setRemoteVideoStreams(new Map());
     isSpeakingRef.current = false;
+    isCameraOnRef.current = false;
 
     // Thông báo server
     socket.emit('voice-leave', { roomId: roomIdRef.current });
-  }, [socket]);
+  }, [socket, stopCamera]);
 
   // ── toggleMute ────────────────────────────────────────────────────────────
   const toggleMute = useCallback(() => {
@@ -418,7 +553,12 @@ export function useVoiceChat(
     const onVoiceUsers = ({ users }: { users: Record<string, VoiceUserState> }) => {
       const map = new Map<string, VoiceUserState>();
       Object.entries(users).forEach(([id, state]) => {
-        map.set(id, { ...state, volume: 1 });
+        map.set(id, {
+          muted: !!state.muted,
+          speaking: !!state.speaking,
+          cameraOn: !!state.cameraOn,
+          volume: 1,
+        });
       });
       setVoiceUsers(map);
     };
@@ -427,7 +567,7 @@ export function useVoiceChat(
     const onVoiceUserJoined = async ({ userId }: { userId: string; username: string }) => {
       setVoiceUsers(prev => {
         const next = new Map(prev);
-        next.set(userId, { muted: false, speaking: false, volume: 1 });
+        next.set(userId, { muted: false, speaking: false, cameraOn: false, volume: 1 });
         return next;
       });
 
@@ -450,11 +590,18 @@ export function useVoiceChat(
       if (!isInVoiceRef.current) return;
 
       const existingPeer = peersRef.current.get(fromId);
-      if (existingPeer) existingPeer.pc.close();
-
-      const pc = createPeerConnection(fromId);
+      let pc = existingPeer?.pc;
+      if (!pc || pc.signalingState === 'closed') {
+        pc = createPeerConnection(fromId);
+        registerPeer(fromId, pc);
+      } else if (pc.signalingState !== 'stable') {
+        try {
+          await pc.setLocalDescription({ type: 'rollback' });
+        } catch (err) {
+          console.warn('[VoiceChat] Failed to rollback before remote offer:', fromId, err);
+        }
+      }
       addLocalTracks(pc);
-      registerPeer(fromId, pc);
 
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       await flushPendingIceCandidates(fromId, pc);
@@ -498,6 +645,11 @@ export function useVoiceChat(
         peersRef.current.delete(userId);
       }
       pendingIceCandidatesRef.current.delete(userId);
+      setRemoteVideoStreams(prev => {
+        const next = new Map(prev);
+        next.delete(userId);
+        return next;
+      });
       setVoiceUsers(prev => {
         const next = new Map(prev);
         next.delete(userId);
@@ -533,6 +685,22 @@ export function useVoiceChat(
       });
     };
 
+    const onVoiceCameraChanged = ({ userId, cameraOn }: { userId: string; cameraOn: boolean }) => {
+      setVoiceUsers(prev => {
+        const next = new Map(prev);
+        const user = next.get(userId);
+        if (user) next.set(userId, { ...user, cameraOn });
+        return next;
+      });
+      if (!cameraOn) {
+        setRemoteVideoStreams(prev => {
+          const next = new Map(prev);
+          next.delete(userId);
+          return next;
+        });
+      }
+    };
+
     socket.on('voice-users', onVoiceUsers);
     socket.on('voice-user-joined', onVoiceUserJoined);
     socket.on('voice-offer', onVoiceOffer);
@@ -542,6 +710,7 @@ export function useVoiceChat(
     socket.on('voice-mute-changed', onVoiceMuteChanged);
     socket.on('voice-host-muted', onVoiceHostMuted);
     socket.on('voice-speaking', onVoiceSpeaking);
+    socket.on('voice-camera-changed', onVoiceCameraChanged);
 
     return () => {
       socket.off('voice-users', onVoiceUsers);
@@ -553,6 +722,7 @@ export function useVoiceChat(
       socket.off('voice-mute-changed', onVoiceMuteChanged);
       socket.off('voice-host-muted', onVoiceHostMuted);
       socket.off('voice-speaking', onVoiceSpeaking);
+      socket.off('voice-camera-changed', onVoiceCameraChanged);
     };
   }, [socket, createPeerConnection, addLocalTracks, flushPendingIceCandidates, registerPeer]);
 
@@ -568,11 +738,15 @@ export function useVoiceChat(
     isMuted,
     isSpeaking,
     isDeafened,
+    isCameraOn,
     voiceUsers,
+    localVideoStream,
+    remoteVideoStreams,
     masterVolume,
     joinVoice,
     leaveVoice,
     toggleMute,
+    toggleCamera,
     toggleDeafen,
     setMasterVolume,
     setUserVolume,

@@ -19,6 +19,60 @@ const supabaseHeaders = () => ({
   'Content-Type': 'application/json',
 });
 
+const MAX_CHAT_MESSAGE_LENGTH = 800;
+const CHAT_RATE_LIMIT_WINDOW_MS = 10_000;
+const CHAT_RATE_LIMIT_MAX_MESSAGES = 12;
+const MAX_WHITEBOARD_IMAGE_DATA_URL_LENGTH = 3_000_000;
+const MAX_WB_POINTS_PER_EVENT = 80;
+const MAX_WB_POINTS_PER_STROKE = 2_000;
+const SAFE_DATA_IMAGE_RE = /^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i;
+
+const chatRateBuckets = new Map();
+
+const sanitizeChatMessage = (message) => {
+  if (typeof message !== 'string') return '';
+  return message
+    .replace(/\r\n?/g, '\n')
+    .replace(/\u0000/g, '')
+    .trim()
+    .slice(0, MAX_CHAT_MESSAGE_LENGTH);
+};
+
+const isChatRateLimited = (socketId) => {
+  const now = Date.now();
+  const bucket = chatRateBuckets.get(socketId) || { windowStart: now, count: 0 };
+  if (now - bucket.windowStart > CHAT_RATE_LIMIT_WINDOW_MS) {
+    bucket.windowStart = now;
+    bucket.count = 0;
+  }
+  bucket.count += 1;
+  chatRateBuckets.set(socketId, bucket);
+  return bucket.count > CHAT_RATE_LIMIT_MAX_MESSAGES;
+};
+
+const sanitizeWhiteboardPoint = (point) => {
+  if (!point || typeof point.x !== 'number' || typeof point.y !== 'number') return null;
+  if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
+  return {
+    x: Math.max(0, Math.min(1, point.x)),
+    y: Math.max(0, Math.min(1, point.y)),
+  };
+};
+
+const sanitizeWhiteboardPoints = (points, limit = MAX_WB_POINTS_PER_EVENT) => {
+  if (!Array.isArray(points)) return [];
+  return points
+    .slice(0, limit)
+    .map(sanitizeWhiteboardPoint)
+    .filter(Boolean);
+};
+
+const isSafeWhiteboardImageSrc = (src) => {
+  return typeof src === 'string'
+    && src.length <= MAX_WHITEBOARD_IMAGE_DATA_URL_LENGTH
+    && SAFE_DATA_IMAGE_RE.test(src);
+};
+
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
@@ -1087,7 +1141,7 @@ io.on('connection', (socket) => {
         roomAvatarUrl: restoredState.roomAvatarUrl || rememberedRoom?.roomAvatarUrl || '',
         roomBackgroundUrl: restoredState.roomBackgroundUrl || '',
         whiteboard: { elements: [] },  // bảng vẽ chung: [{id,type:'stroke'|'image',...}]
-        voiceUsers: {}  // { [socketId]: { muted, speaking } }
+        voiceUsers: {}  // { [socketId]: { muted, speaking, cameraOn } }
       });
     }
 
@@ -1292,6 +1346,17 @@ io.on('connection', (socket) => {
     const sender = room.members.find(m => m.id === socket.id);
     if (!sender) return;
 
+    if (isChatRateLimited(socket.id)) {
+      socket.emit('chat-error', { code: 'rateLimit' });
+      return;
+    }
+
+    const safeMessage = sanitizeChatMessage(message);
+    if (!safeMessage) {
+      socket.emit('chat-error', { code: 'invalid' });
+      return;
+    }
+
     if (sender.mutedUntil && new Date(sender.mutedUntil).getTime() > Date.now()) {
       socket.emit('receive-message', {
         id: `system-mute-${Date.now()}`,
@@ -1310,7 +1375,7 @@ io.on('connection', (socket) => {
       sender: sender.username,
       senderId: socket.id,
       isHost: sender.isHost,
-      text: message,
+      text: safeMessage,
       type: 'user',
       timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       sentAt: now,   // unix ms — dùng cho chat bubble
@@ -1415,7 +1480,8 @@ io.on('connection', (socket) => {
   // Bắt đầu 1 nét vẽ mới
   socket.on('whiteboard-stroke-start', ({ roomId, stroke }) => {
     const room = rooms.get(roomId);
-    if (!room || !stroke?.id) return;
+    if (!room || typeof stroke?.id !== 'string' || stroke.id.length > 80) return;
+    const initialPoints = sanitizeWhiteboardPoints(stroke.points, 4);
     const wb = ensureWhiteboard(room);
     wb.elements.push({
       id: stroke.id,
@@ -1423,7 +1489,7 @@ io.on('connection', (socket) => {
       tool: stroke.tool === 'eraser' ? 'eraser' : 'pen',
       color: String(stroke.color || '#4c3731').slice(0, 32),
       size: Math.max(0.0005, Math.min(0.2, Number(stroke.size) || 0.006)),
-      points: Array.isArray(stroke.points) ? stroke.points.slice(0, 4) : [],
+      points: initialPoints,
       by: socket.id,
     });
     if (wb.elements.length > MAX_WB_ELEMENTS) wb.elements.splice(0, wb.elements.length - MAX_WB_ELEMENTS);
@@ -1433,35 +1499,41 @@ io.on('connection', (socket) => {
   // Thêm điểm vào nét đang vẽ (relay + lưu)
   socket.on('whiteboard-stroke-point', ({ roomId, strokeId, points }) => {
     const room = rooms.get(roomId);
-    if (!room || !strokeId || !Array.isArray(points)) return;
+    if (!room || typeof strokeId !== 'string' || !Array.isArray(points)) return;
     const wb = ensureWhiteboard(room);
     const el = wb.elements.find(e => e.id === strokeId);
+    const safePoints = sanitizeWhiteboardPoints(points);
+    if (safePoints.length === 0) return;
     if (el && el.type === 'stroke') {
-      for (const p of points) {
-        if (p && typeof p.x === 'number' && typeof p.y === 'number') el.points.push({ x: p.x, y: p.y });
+      el.points.push(...safePoints);
+      if (el.points.length > MAX_WB_POINTS_PER_STROKE) {
+        el.points.splice(0, el.points.length - MAX_WB_POINTS_PER_STROKE);
       }
     }
-    socket.to(roomId).emit('whiteboard-stroke-point', { strokeId, points });
+    socket.to(roomId).emit('whiteboard-stroke-point', { strokeId, points: safePoints });
   });
 
   // Dán/upload ảnh lên bảng
   socket.on('whiteboard-image', ({ roomId, image }) => {
     const room = rooms.get(roomId);
-    if (!room || !image?.id || !image?.src) return;
-    // chặn ảnh quá lớn (dataURL đã được client nén trước khi gửi)
-    if (typeof image.src !== 'string' || image.src.length > 3_000_000) {
-      socket.emit('whiteboard-image-error', { message: 'Ảnh quá lớn để đồng bộ trong phòng.' });
+    if (!room || typeof image?.id !== 'string' || image.id.length > 80) return;
+    if (!isSafeWhiteboardImageSrc(image.src)) {
+      socket.emit('whiteboard-image-error', { code: 'invalidImage' });
       return;
     }
     const wb = ensureWhiteboard(room);
+    const x = Number(image.x);
+    const y = Number(image.y);
+    const w = Number(image.w);
+    const h = Number(image.h);
     const el = {
       id: image.id,
       type: 'image',
       src: image.src,
-      x: Number(image.x) || 0.5,
-      y: Number(image.y) || 0.5,
-      w: Math.min(1, Number(image.w) || 0.4),
-      h: Math.min(1, Number(image.h) || 0.3),
+      x: Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : 0.5,
+      y: Number.isFinite(y) ? Math.max(0, Math.min(1, y)) : 0.5,
+      w: Number.isFinite(w) ? Math.max(0.05, Math.min(1, w)) : 0.4,
+      h: Number.isFinite(h) ? Math.max(0.05, Math.min(1, h)) : 0.3,
       by: socket.id,
     };
     wb.elements.push(el);
@@ -2063,7 +2135,7 @@ io.on('connection', (socket) => {
     const member = room.members.find(m => m.id === socket.id);
     if (!member) return;
 
-    room.voiceUsers[socket.id] = { muted: false, speaking: false };
+    room.voiceUsers[socket.id] = { muted: false, speaking: false, cameraOn: false };
 
     // Gửi danh sách voice users hiện tại cho người vừa join (để biết ai đang ở đây)
     socket.emit('voice-users', { users: room.voiceUsers });
@@ -2103,6 +2175,13 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('voice-mute-changed', { userId: socket.id, muted });
   });
 
+  socket.on('voice-camera-changed', ({ roomId, cameraOn }) => {
+    const room = rooms.get(roomId);
+    if (!room || !room.voiceUsers) return;
+    if (room.voiceUsers[socket.id]) room.voiceUsers[socket.id].cameraOn = !!cameraOn;
+    socket.to(roomId).emit('voice-camera-changed', { userId: socket.id, cameraOn: !!cameraOn });
+  });
+
   // Host mute/unmute một user khác
   socket.on('voice-host-mute', ({ roomId, targetId, muted }) => {
     const room = rooms.get(roomId);
@@ -2128,6 +2207,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
+    chatRateBuckets.delete(socket.id);
     onlineUsers.delete(socket.id);
     broadcastFriendsStatus();
 

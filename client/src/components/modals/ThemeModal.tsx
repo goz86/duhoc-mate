@@ -1,16 +1,22 @@
 
+import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
+export type RoomThemeKey = 'cream' | 'midnight' | 'garden' | 'ocean';
+
 interface RoomThemeOption {
-  key: 'cream' | 'midnight' | 'sakura' | 'ocean' | 'forest' | 'sunset' | 'neon' | 'arctic';
+  key: RoomThemeKey;
   label: string;
-  icon: string;
+  description: string;
+  swatches: readonly string[];
 }
 
 interface ThemeModalProps {
   open: boolean;
   onClose: () => void;
-  currentTheme: string;
+  currentTheme: RoomThemeKey;
   themeOptions: readonly RoomThemeOption[];
-  onSelectTheme: (themeKey: 'cream' | 'midnight' | 'sakura' | 'ocean' | 'forest' | 'sunset' | 'neon' | 'arctic') => void;
+  onSelectTheme: (themeKey: RoomThemeKey) => void;
 }
 
 export default function ThemeModal({
@@ -20,16 +26,31 @@ export default function ThemeModal({
   themeOptions,
   onSelectTheme,
 }: ThemeModalProps) {
+  const { t } = useTranslation();
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200 border border-brand-terracotta-light/10">
-        <h2 className="font-display text-xl font-black text-brand-brown-dark">Chọn giao diện phòng</h2>
-        <p className="mt-1.5 text-sm font-semibold text-brand-brown-light leading-relaxed">
-          Lựa chọn tông màu sắc phù hợp với không gian học của bạn.
-        </p>
-        <div className="grid grid-cols-2 gap-3 mt-5">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-950/45 p-4 backdrop-blur-md">
+      <div className="w-full max-w-[460px] rounded-[28px] border border-white/70 bg-white p-6 shadow-[0_28px_80px_rgba(52,39,33,0.26)] animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-display text-xl font-black text-brand-brown-dark">{t('theme.title')}</h2>
+            <p className="mt-1.5 text-sm font-semibold leading-relaxed text-brand-brown-light">
+              {t('theme.subtitle')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-black/[0.06] bg-brand-light text-sm font-black text-brand-brown-light transition hover:bg-white"
+            aria-label={t('theme.cancel')}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {themeOptions.map((theme) => {
             const isSelected = currentTheme === theme.key;
             return (
@@ -39,25 +60,37 @@ export default function ThemeModal({
                 onClick={() => {
                   onSelectTheme(theme.key);
                 }}
-                className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition text-left cursor-pointer active:scale-98 ${
+                className={`group relative min-h-[104px] overflow-hidden rounded-2xl border p-4 text-left transition cursor-pointer active:scale-[0.99] ${
                   isSelected
-                    ? 'border-brand-terracotta bg-brand-light text-brand-brown-dark font-black'
-                    : 'border-black/[0.06] hover:border-brand-terracotta-light/40 text-brand-brown-light font-bold bg-white'
+                    ? 'border-brand-terracotta bg-brand-light shadow-[0_16px_36px_rgba(166,111,92,0.18)]'
+                    : 'border-black/[0.07] bg-white hover:border-brand-terracotta-light/60 hover:bg-brand-light/35'
                 }`}
               >
-                <span className="w-8 h-8 rounded-full bg-brand-terracotta-light/30 flex items-center justify-center font-display font-extrabold text-xs text-brand-terracotta uppercase shrink-0">
-                  {theme.icon}
+                <span className="mb-4 flex items-center gap-1.5">
+                  {theme.swatches.map((color) => (
+                    <span
+                      key={color}
+                      className="h-6 w-6 rounded-full border border-white shadow-sm ring-1 ring-black/[0.04]"
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
                 </span>
-                <span className="text-sm truncate">{theme.label}</span>
+                <span className="block text-sm font-black text-brand-brown-dark">{theme.label}</span>
+                <span className="mt-1 block text-xs font-bold leading-snug text-brand-brown-light">{theme.description}</span>
+                {isSelected && (
+                  <span className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-brand-terracotta text-white shadow-sm">
+                    <Check size={15} />
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
         <button
           onClick={onClose}
-          className="w-full mt-6 rounded-2xl border border-black/[0.08] bg-white py-3 text-sm font-black text-brand-brown-light transition hover:bg-brand-light cursor-pointer"
+          className="mt-5 w-full rounded-2xl border border-black/[0.08] bg-white py-3 text-sm font-black text-brand-brown-light transition hover:bg-brand-light cursor-pointer"
         >
-          Huỷ
+          {t('theme.cancel')}
         </button>
       </div>
     </div>

@@ -67,21 +67,21 @@ export default function RoomHeader({
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
               <Home size={24} className="text-brand-terracotta" />
             </div>
-            <p className="text-base font-black text-brand-brown-dark">Về trang chủ?</p>
-            <p className="mt-1 text-xs font-bold text-brand-brown-light">Bạn sẽ rời khỏi phòng học này.</p>
+            <p className="text-base font-black text-brand-brown-dark">{t('room.header.homeConfirmTitle')}</p>
+            <p className="mt-1 text-xs font-bold text-brand-brown-light">{t('room.header.homeConfirmDesc')}</p>
           </div>
           <div className="flex gap-2 p-4">
             <button
               onClick={() => setShowLogoConfirm(false)}
               className="flex-1 rounded-2xl border border-brand-terracotta-light/20 bg-brand-light px-4 py-2.5 text-sm font-bold text-brand-brown-dark transition hover:bg-brand-terracotta-light/20"
             >
-              Ở lại
+              {t('room.session.stay')}
             </button>
             <button
               onClick={() => { setShowLogoConfirm(false); onLeaveRoom(); }}
               className="flex-1 rounded-2xl bg-brand-terracotta px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-brown-dark"
             >
-              Về trang chủ
+              {t('room.header.home')}
             </button>
           </div>
         </div>
@@ -93,7 +93,7 @@ export default function RoomHeader({
           type="button"
           onClick={() => setShowLogoConfirm(true)}
           className="flex items-center gap-2 rounded-xl transition hover:opacity-75"
-          aria-label="Về trang chủ"
+          aria-label={t('room.header.home')}
         >
           <img
             src={duhocMateLogo}
@@ -112,7 +112,7 @@ export default function RoomHeader({
             className="flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white px-3 py-2 text-xs font-black text-brand-brown-dark shadow-sm transition hover:bg-brand-light whitespace-nowrap"
           >
             <Users size={15} className="text-brand-terracotta shrink-0" />
-            <span className="hidden sm:inline">Bạn học</span>
+            <span className="hidden sm:inline">{t('members.title')}</span>
             <span className="rounded-full bg-brand-terracotta/10 px-1.5 py-0.5 text-[10px] text-brand-terracotta">
               {members.length}
             </span>
@@ -140,9 +140,9 @@ export default function RoomHeader({
           {showMembers && (
             <div className="absolute left-0 top-12 z-50 w-80 rounded-3xl border border-brand-terracotta-light/20 bg-white p-3 shadow-2xl shadow-brand-brown-dark/10">
               <div className="mb-2 flex items-center justify-between px-1">
-                <p className="text-xs font-black uppercase tracking-wider text-brand-brown-light">Danh sách bạn học</p>
+                <p className="text-xs font-black uppercase tracking-wider text-brand-brown-light">{t('members.title')}</p>
                 <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
-                  {members.length} online
+                  {members.length} {t('members.online')}
                 </span>
               </div>
               <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
@@ -168,8 +168,8 @@ export default function RoomHeader({
                         </div>
                         <p className="text-[11px] font-bold text-brand-brown-light">
                           {member.id === currentSocketId
-                            ? (member.isHost ? 'Bạn (Host)' : 'Bạn')
-                            : member.isHost ? 'Host' : 'Bạn học'}
+                            ? (member.isHost ? `${t('members.you')} (Host)` : t('members.you'))
+                            : member.isHost ? 'Host' : t('members.member')}
                         </p>
                       </div>
                     </div>
@@ -179,7 +179,7 @@ export default function RoomHeader({
                           type="button"
                           onClick={() => onAddFriend(member)}
                           className="grid h-8 w-8 place-items-center rounded-xl border border-brand-terracotta-light/20 bg-white text-brand-terracotta transition hover:bg-brand-terracotta hover:text-white"
-                          title="Thêm bạn"
+                          title={t('landing.addFriend')}
                         >
                           <UserPlus size={14} />
                         </button>
@@ -189,7 +189,7 @@ export default function RoomHeader({
                           type="button"
                           onClick={() => onTransferHost(member.id)}
                           className="grid h-8 w-8 place-items-center rounded-xl border border-amber-200 bg-amber-50 text-amber-700 transition hover:bg-amber-100"
-                          title="Chuyển host"
+                          title={t('room.menu.transferHost')}
                         >
                           <Crown size={14} />
                         </button>
@@ -203,13 +203,13 @@ export default function RoomHeader({
         </div>
 
         <div className="flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-brand-light px-3 py-2 text-xs font-black text-brand-brown-dark whitespace-nowrap">
-          <span className="hidden text-brand-brown-light sm:inline">Mã phòng:</span>
+          <span className="hidden text-brand-brown-light sm:inline">{t('room.roomCode')}:</span>
           <span className="font-mono text-brand-terracotta">{roomId}</span>
           <button
             type="button"
             onClick={onCopyRoomId}
             className="rounded-full p-1 text-brand-brown-light transition hover:bg-white hover:text-brand-brown-dark"
-            aria-label="Sao chép mã phòng"
+            aria-label={t('room.copyCode')}
           >
             <Share2 size={15} />
           </button>
@@ -224,17 +224,17 @@ export default function RoomHeader({
         <button
           onClick={onMinimizeRoom}
           className="hidden items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-brand-light px-4 py-2.5 text-sm font-bold text-brand-brown-dark transition hover:bg-brand-terracotta-light/40 cursor-pointer sm:flex"
-          title="Ẩn phòng về màn hình chính"
+          title={t('room.menu.hideRoomHint')}
         >
           <Minimize2 size={16} />
-          <span className="hidden md:inline">Ẩn phòng</span>
+          <span className="hidden md:inline">{t('room.menu.hideRoom')}</span>
         </button>
         {onOpenMobileSettings && (
           <button
             onClick={onOpenMobileSettings}
             className="grid h-11 w-11 place-items-center rounded-full border border-brand-terracotta-light/20 bg-brand-light text-brand-brown-dark transition hover:bg-brand-terracotta-light/40 sm:hidden"
-            title="Cài đặt nhanh"
-            aria-label="Cài đặt nhanh"
+            title={t('room.quickSettings')}
+            aria-label={t('room.quickSettings')}
           >
             <Settings size={17} />
           </button>

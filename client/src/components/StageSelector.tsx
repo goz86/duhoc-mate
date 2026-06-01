@@ -20,9 +20,9 @@ export default function StageSelector({ stageMode, onChange }: StageSelectorProp
 
   const stages: StageOption[] = [
     { key: 'youtube', icon: Play, label: t('room.stage.youtube'), aspect: '16:9' },
-    { key: 'pdf', icon: Pencil, label: 'Vẽ' },
+    { key: 'pdf', icon: Pencil, label: t('room.stage.whiteboard') },
     { key: 'topik', icon: BookOpen, label: t('room.stage.topik') },
-    { key: 'video', icon: Coffee, label: 'Bàn học' },
+    { key: 'video', icon: Coffee, label: t('room.stage.studyTable') },
     { key: 'ideas', icon: ClipboardList, label: 'Idea Board' },
   ]
 

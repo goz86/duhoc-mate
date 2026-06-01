@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { Socket } from 'socket.io-client'
 import { Pencil, Eraser, Trash2, ImagePlus, Brush } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 // ── Kiểu dữ liệu (toạ độ chuẩn hoá 0..1 để đồng bộ mọi kích thước màn) ──
 type Point = { x: number; y: number }
@@ -41,6 +42,7 @@ const uid = () =>
     : `wb-${Date.now()}-${Math.random().toString(36).slice(2)}`
 
 export default function Whiteboard({ socket, roomId, initialElements }: Props) {
+  const { t } = useTranslation()
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const wrapRef = useRef<HTMLDivElement | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -281,13 +283,13 @@ export default function Whiteboard({ socket, roomId, initialElements }: Props) {
         if (dataUrl.length <= MAX_SYNC_IMAGE_BYTES) {
           addImageFromSrc(dataUrl, ow, oh)
         } else {
-          window.alert('Ảnh này quá lớn để đồng bộ trong phòng. Hãy chọn ảnh nhỏ hơn hoặc chụp/crop lại.')
+          window.alert(t('whiteboard.errorTooLarge'))
         }
       }
       URL.revokeObjectURL(url)
     }
     img.src = url
-  }, [addImageFromSrc])
+  }, [addImageFromSrc, t])
 
   const onUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -355,8 +357,8 @@ export default function Whiteboard({ socket, roomId, initialElements }: Props) {
       for (const el of elementsRef.current) if (el.type === 'image') loadImage(el)
       refreshEmpty(); markDirty()
     }
-    const onImageError = ({ message }: { message?: string }) => {
-      window.alert(message || 'Không thể đồng bộ ảnh này trong phòng.')
+    const onImageError = ({ code, message }: { code?: string; message?: string }) => {
+      window.alert(message || (code === 'invalidImage' ? t('whiteboard.errorInvalidImage') : t('whiteboard.errorSync')))
     }
     socket.on('whiteboard-stroke-start', onStart)
     socket.on('whiteboard-stroke-point', onPoint)
@@ -374,7 +376,7 @@ export default function Whiteboard({ socket, roomId, initialElements }: Props) {
       socket.off('whiteboard-state', onState)
       socket.off('whiteboard-image-error', onImageError)
     }
-  }, [socket, roomId, loadImage, markDirty, refreshEmpty])
+  }, [socket, roomId, loadImage, markDirty, refreshEmpty, t])
 
   // ── UI ─────────────────────────────────────────────────────────
   return (
@@ -385,17 +387,17 @@ export default function Whiteboard({ socket, roomId, initialElements }: Props) {
         <div className="flex items-center gap-1 rounded-xl bg-brand-light/70 p-1">
           <button
             onClick={() => setTool('pen')}
-            title="Bút"
+            title={t('whiteboard.pen')}
             className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${tool === 'pen' ? 'bg-brand-terracotta text-white shadow' : 'text-brand-brown-light hover:bg-white'}`}
           >
-            <Pencil size={15} /> <span className="hidden sm:inline">Bút</span>
+            <Pencil size={15} /> <span className="hidden sm:inline">{t('whiteboard.pen')}</span>
           </button>
           <button
             onClick={() => setTool('eraser')}
-            title="Tẩy"
+            title={t('whiteboard.eraser')}
             className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${tool === 'eraser' ? 'bg-brand-terracotta text-white shadow' : 'text-brand-brown-light hover:bg-white'}`}
           >
-            <Eraser size={15} /> <span className="hidden sm:inline">Tẩy</span>
+            <Eraser size={15} /> <span className="hidden sm:inline">{t('whiteboard.eraser')}</span>
           </button>
         </div>
 
@@ -419,7 +421,7 @@ export default function Whiteboard({ socket, roomId, initialElements }: Props) {
             <button
               key={s}
               onClick={() => setSizePx(s)}
-              title={`Cỡ ${s}`}
+              title={t('whiteboard.size', { size: s })}
               className={`flex h-6 w-6 items-center justify-center rounded-full transition ${sizePx === s ? 'bg-brand-terracotta' : 'hover:bg-white'}`}
             >
               <span className="rounded-full" style={{ width: Math.min(18, s), height: Math.min(18, s), backgroundColor: sizePx === s ? '#fff' : '#9a8a84' }} />
@@ -431,19 +433,19 @@ export default function Whiteboard({ socket, roomId, initialElements }: Props) {
           {/* Thêm ảnh */}
           <button
             onClick={() => fileRef.current?.click()}
-            title="Thêm ảnh (hoặc Ctrl+V để dán)"
+            title={t('whiteboard.addImageTitle')}
             className="flex items-center gap-1.5 rounded-xl border border-brand-terracotta-light/30 bg-white px-2.5 py-1.5 text-xs font-bold text-brand-brown-dark transition hover:bg-brand-light"
           >
-            <ImagePlus size={15} /> <span className="hidden sm:inline">Ảnh</span>
+            <ImagePlus size={15} /> <span className="hidden sm:inline">{t('whiteboard.image')}</span>
           </button>
           <input ref={fileRef} type="file" accept="image/*" onChange={onUploadFile} className="hidden" />
           {/* Xoá tất cả */}
           <button
             onClick={clearAll}
-            title="Xoá toàn bộ bảng"
+            title={t('whiteboard.clearTitle')}
             className="flex items-center gap-1.5 rounded-xl bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-500 transition hover:bg-red-500 hover:text-white"
           >
-            <Trash2 size={15} /> <span className="hidden sm:inline">Xoá hết</span>
+            <Trash2 size={15} /> <span className="hidden sm:inline">{t('whiteboard.clear')}</span>
           </button>
         </div>
       </div>
@@ -469,9 +471,9 @@ export default function Whiteboard({ socket, roomId, initialElements }: Props) {
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-terracotta/10 border-2 border-brand-terracotta/20">
               <Pencil size={24} className="text-brand-terracotta/60" />
             </div>
-            <p className="text-sm font-extrabold text-brand-brown-dark">Bảng vẽ chung của phòng</p>
+            <p className="text-sm font-extrabold text-brand-brown-dark">{t('whiteboard.emptyTitle')}</p>
             <p className="max-w-xs text-xs text-brand-brown-light">
-              Vẽ bằng bút, tẩy, dán ảnh (Ctrl+V) — mọi người trong phòng đều thấy real-time.
+              {t('whiteboard.emptyDesc')}
             </p>
           </div>
         )}

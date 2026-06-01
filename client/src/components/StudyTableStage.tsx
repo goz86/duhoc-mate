@@ -6,6 +6,7 @@ import {
   Heart,
   Keyboard,
   Laugh,
+  Mic,
   MicOff,
   Moon,
   Pause,
@@ -15,10 +16,12 @@ import {
   RotateCcw,
   Timer,
   Users,
+  Video,
+  VideoOff,
   VolumeX,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 type StudyMember = {
@@ -70,6 +73,13 @@ type ChatMessage = {
   sentAt?: number  // unix ms
 }
 
+type VoiceUserState = {
+  muted: boolean
+  speaking: boolean
+  cameraOn: boolean
+  volume: number
+}
+
 type StudyTableStageProps = {
   members: StudyMember[]
   username: string
@@ -78,7 +88,17 @@ type StudyTableStageProps = {
   jitsiActive: boolean
   pomodoro: PomodoroState
   chatMessages?: ChatMessage[]
+  voiceUsers?: Map<string, VoiceUserState>
+  localVideoStream?: MediaStream | null
+  remoteVideoStreams?: Map<string, MediaStream>
+  isInVoice?: boolean
+  isMuted?: boolean
+  isCameraOn?: boolean
   onToggleJitsi: () => void
+  onJoinVoice?: () => Promise<void> | void
+  onLeaveVoice?: () => void
+  onToggleMic?: () => void
+  onToggleCamera?: () => Promise<void> | void
   onControlPomodoro: (action: 'start' | 'pause' | 'reset', isBreak?: boolean) => void
   onStudyReaction?: (label: string, targetMemberId?: string) => void
   onPersonalPomodoro?: (action: 'start' | 'pause' | 'reset', isBreak?: boolean) => void
@@ -108,6 +128,33 @@ const reactionOptions: Array<{ label: string; Icon: LucideIcon; tone: string }> 
 ]
 
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase() || 'DM'
+
+function VideoPreview({
+  stream,
+  muted = false,
+  className = '',
+}: {
+  stream: MediaStream
+  muted?: boolean
+  className?: string
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+
+  useEffect(() => {
+    if (!videoRef.current) return
+    videoRef.current.srcObject = stream
+  }, [stream])
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      muted={muted}
+      className={className}
+    />
+  )
+}
 
 // hash ổn định từ id → seed cho hướng bay reaction (không đổi mỗi render)
 const hashSeed = (str: string) => {
@@ -139,7 +186,17 @@ export default function StudyTableStage({
   jitsiActive,
   pomodoro,
   chatMessages = [],
+  voiceUsers = new Map(),
+  localVideoStream = null,
+  remoteVideoStreams = new Map(),
+  isInVoice = false,
+  isMuted = false,
+  isCameraOn = false,
   onToggleJitsi,
+  onJoinVoice,
+  onLeaveVoice,
+  onToggleMic,
+  onToggleCamera,
   onControlPomodoro,
   onStudyReaction,
   onPersonalPomodoro,
@@ -260,8 +317,48 @@ export default function StudyTableStage({
         <div className="flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">
             <MicOff size={14} />
-            Mặc định tắt mic
+            {isInVoice ? (isMuted ? 'Mic tắt' : 'Mic bật') : 'Mặc định tắt mic'}
           </span>
+          <button
+            type="button"
+            onClick={() => {
+              if (isInVoice) {
+                onToggleMic?.()
+              } else {
+                void onJoinVoice?.()
+              }
+            }}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black transition ${
+              isInVoice && !isMuted
+                ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                : 'border border-brand-terracotta-light/25 bg-white text-brand-brown-dark hover:bg-brand-light'
+            }`}
+          >
+            {isInVoice && !isMuted ? <MicOff size={14} /> : <Mic size={14} />}
+            {isInVoice ? (isMuted ? 'Bật mic' : 'Tắt mic') : 'Bật mic'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void onToggleCamera?.()}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black transition ${
+              isCameraOn
+                ? 'bg-sky-500 text-white hover:bg-sky-600'
+                : 'border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100'
+            }`}
+          >
+            {isCameraOn ? <VideoOff size={14} /> : <Video size={14} />}
+            {isCameraOn ? 'Tắt camera' : 'Bật camera'}
+          </button>
+          {isInVoice && (
+            <button
+              type="button"
+              onClick={onLeaveVoice}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-red-500 px-4 py-2 text-xs font-black text-white transition hover:bg-red-600"
+            >
+              <PhoneOff size={14} />
+              Rời call
+            </button>
+          )}
           <button
             type="button"
             onClick={onToggleJitsi}
@@ -359,6 +456,12 @@ export default function StudyTableStage({
                       ? { label: 'Giải lao', Icon: statusCycle[3].Icon, tone: 'text-amber-700 bg-amber-50 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' }
                       : { label: 'Sẵn sàng', Icon: statusCycle[0].Icon, tone: 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' }
                   const isLocal = member.id === currentSocketId || member.username === username
+                  const voiceState = voiceUsers.get(member.id)
+                  const inCall = isLocal ? isInVoice : !!voiceState
+                  const mutedInCall = isLocal ? isMuted : !!voiceState?.muted
+                  const cameraEnabled = isLocal ? isCameraOn : !!voiceState?.cameraOn
+                  const videoStream = isLocal ? localVideoStream : remoteVideoStreams.get(member.id)
+                  const showVideo = cameraEnabled && !!videoStream
                   const activeReactions = visibleReactions.filter(item => item.memberId === member.id)
 
                   return (
@@ -367,6 +470,24 @@ export default function StudyTableStage({
                       className={`group relative w-full rounded-[22px] border border-white/70 bg-white/86 shadow-[0_14px_32px_rgba(76,55,49,0.10)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(76,55,49,0.13)] ${isMicro ? 'p-2.5' : isCrowded ? 'p-3' : 'p-3.5'}`}
                     >
                       {/* Chat bubble – overlay bên trong card, không gây layout shift */}
+                      {showVideo && !isMicro && videoStream && (
+                        <div className="relative mb-3 overflow-hidden rounded-[20px] border border-white/80 bg-slate-950 shadow-inner">
+                          <VideoPreview
+                            stream={videoStream}
+                            muted={isLocal}
+                            className="aspect-video w-full bg-slate-950 object-cover"
+                          />
+                          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/50 px-2 py-1 text-[10px] font-black text-white backdrop-blur">
+                            <Video size={11} />
+                            Live cam
+                          </span>
+                          {mutedInCall && (
+                            <span className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-red-500 text-white shadow">
+                              <MicOff size={13} />
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {chatBubble && (
                         <div className="absolute inset-x-3 top-3 z-40 flex animate-fade-in items-center justify-center">
                           <div className="max-w-full truncate rounded-2xl border border-white/80 bg-white/95 px-3 py-1.5 text-[11px] font-bold text-brand-brown-dark shadow-lg backdrop-blur-sm">
@@ -472,6 +593,12 @@ export default function StudyTableStage({
                               <span>{personal.isRunning ? '🎯' : personal.isBreak ? '☕' : '📖'}</span>
                               <span className="truncate">{status.label}</span>
                             </div>
+                            {inCall && (
+                              <div className="ml-1 mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-sky-100 bg-sky-50 px-2.5 py-1 text-[10px] font-black text-sky-700">
+                                {cameraEnabled ? <Video size={11} /> : <Phone size={11} />}
+                                <span className="truncate">{cameraEnabled ? 'Camera' : 'Voice'}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
