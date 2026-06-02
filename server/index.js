@@ -1275,9 +1275,6 @@ io.on('connection', (socket) => {
 
     broadcastRoomDirectory();
     
-    // Thông báo hệ thống khi có thành viên mới
-    sendSystemMessage(roomId, `Bạn học ${newMember.username} đã tham gia phòng.`);
-
     console.log(`${newMember.username} joined room: ${roomId} (Host: ${isHost})`);
   });
 
@@ -1314,7 +1311,6 @@ io.on('connection', (socket) => {
       rooms.delete(roomId);
       console.log(`Deleted empty room after leave-room: ${roomId}`);
     } else {
-      sendSystemMessage(roomId, `Bạn học ${removedMember.username} đã rời phòng.`);
       if (removedMember.isHost) {
         let candidate = room.members.find(m => m.role === 'cohost');
         if (!candidate) {
@@ -2241,8 +2237,6 @@ io.on('connection', (socket) => {
           scheduleEmptyRoomCleanup(roomId);
           console.log(`Room ${roomId} is empty; keeping state for quick reconnect.`);
         } else {
-          sendSystemMessage(roomId, `Bạn học ${removedMember.username} đã rời phòng.`);
-          
           // Nếu người rời đi là host, chuyển quyền host cho người kế tiếp
           if (removedMember.isHost) {
             room.hostFriendCode = removedMember.friendCode || room.hostFriendCode || '';

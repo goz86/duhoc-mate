@@ -74,7 +74,7 @@ const LazyPanelFallback = () => (
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 const LOCAL_API_BASE_URL = 'http://localhost:3001';
 const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : LOCAL_API_BASE_URL);
-const INITIAL_VISIBLE_CHAT_MESSAGES = 35;
+const INITIAL_VISIBLE_CHAT_MESSAGES = 25;
 const CHAT_MESSAGES_PAGE_SIZE = 25;
 // Bù thời gian YouTube buffer khi seek (giây) để guest theo kịp host khi đồng bộ video.
 // Tăng nếu guest vẫn trễ, giảm nếu guest vượt trước host.
@@ -837,6 +837,7 @@ export default function App() {
       messagesSentRef.current = 0;
       setPomodoro(pomodoro);
       setChatMessages(chatMessages || []);
+      setVisibleChatCount(INITIAL_VISIBLE_CHAT_MESSAGES);
       setPinnedMessage(initPinnedMessage || null);
       setIdeaTasks(ideaTasks || []);
       setStudyTable(studyTable || { seats: {}, reactions: [] });
@@ -4894,7 +4895,7 @@ export default function App() {
                             onClick={loadOlderChatMessages}
                             className="rounded-full border border-brand-terracotta-light/20 bg-white/80 px-3 py-1.5 text-[11px] font-black text-brand-brown-light shadow-sm transition hover:border-brand-terracotta/40 hover:text-brand-terracotta"
                           >
-                            Tải tin nhắn cũ
+                            Tải thêm tin nhắn cũ · đang xem {visibleChatMessages.length}/{chatMessages.length}
                           </button>
                         </div>
                       )}
@@ -5054,7 +5055,7 @@ export default function App() {
                 {sidebarTab === 'members' && (
                   <div className="flex-1 space-y-3 flex flex-col min-h-0">
                     <div className="flex justify-between items-center pb-3 border-b border-brand-terracotta-light/10 mb-2">
-                      <span className="text-xs font-bold uppercase text-brand-brown-light">Danh sách bạn học</span>
+                      <span className="text-xs font-bold uppercase text-brand-brown-light">{t('members.title')}</span>
                       <span className="px-3 py-1 rounded-md text-xs font-bold bg-brand-terracotta-light/30 text-brand-terracotta">{members.length} đang online</span>
                     </div>
 

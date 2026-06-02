@@ -256,7 +256,7 @@ const vi = {
   'whiteboard.errorInvalidImage': 'Ảnh không hợp lệ. Chỉ hỗ trợ PNG, JPG hoặc WEBP dưới 3MB.',
   'whiteboard.errorSync': 'Không thể đồng bộ ảnh này trong phòng.',
 
-  'members.title': 'Danh sách bạn học',
+  'members.title': 'Bạn bè',
   'members.online': 'đang online',
   'members.you': 'Bạn',
   'members.member': 'Bạn học',
