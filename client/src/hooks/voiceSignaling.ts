@@ -27,3 +27,17 @@ export function canApplyRemoteAnswer(signalingState: RTCSignalingState): boolean
 export function shouldOpenPeerForJoinedVoiceUser({ isInVoice }: { isInVoice: boolean }): boolean {
   return !isInVoice;
 }
+
+export function shouldOpenPeerForRemoteCameraChange({ isInVoice }: { isInVoice: boolean }): boolean {
+  return !isInVoice;
+}
+
+export function shouldQueueRenegotiation({
+  makingOffer,
+  signalingState,
+}: {
+  makingOffer: boolean;
+  signalingState: RTCSignalingState;
+}): boolean {
+  return makingOffer || signalingState !== 'stable';
+}
