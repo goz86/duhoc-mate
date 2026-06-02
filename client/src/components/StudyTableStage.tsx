@@ -578,15 +578,17 @@ export default function StudyTableStage({
                         </div>
                       )}
 
-                      <div className={`absolute inset-x-3 top-3 ${isMicro ? 'h-14' : isCrowded ? 'h-16' : 'h-20'} rounded-[20px] bg-gradient-to-br ${palette.desk} desk-overlay`} />
-                      {!isMicro && (
+                      {!showVideo && (
+                        <div className={`pointer-events-none absolute inset-x-3 top-3 z-0 ${isMicro ? 'h-14' : isCrowded ? 'h-16' : 'h-20'} rounded-[20px] bg-gradient-to-br ${palette.desk} desk-overlay`} />
+                      )}
+                      {!isMicro && !showVideo && (
                         <>
-                          <div className="absolute right-4 top-4 h-6 w-12 rounded-full border border-white/70 bg-white/65" />
-                          <div className="absolute right-6 top-6 h-1.5 w-7 rounded-full bg-brand-terracotta-light/60" />
+                          <div className="pointer-events-none absolute right-4 top-4 z-0 h-6 w-12 rounded-full border border-white/70 bg-white/65" />
+                          <div className="pointer-events-none absolute right-6 top-6 z-0 h-1.5 w-7 rounded-full bg-brand-terracotta-light/60" />
                         </>
                       )}
 
-                      <div className="relative">
+                      <div className="relative z-10">
 
                         {/* Reaction bubbles – bắn tung toé nhẹ nhàng, neo giữa card để không bị box trên che */}
                         <div className="pointer-events-none absolute left-1/2 top-1/2 z-[45] h-0 w-0 -translate-y-1/2">
@@ -683,7 +685,7 @@ export default function StudyTableStage({
                             )}
                           </div>
                           {showVideo && !isMicro && videoStream && (
-                            <div className={`relative shrink-0 overflow-hidden rounded-2xl border border-white/80 bg-slate-950 shadow-inner ${isCrowded ? 'h-14 w-20' : 'h-[72px] w-28'}`}>
+                            <div className={`relative z-20 shrink-0 overflow-hidden rounded-2xl border border-white/80 bg-slate-950 shadow-inner ${isCrowded ? 'h-14 w-20' : 'h-[72px] w-28'}`}>
                               <VideoPreview
                                 stream={videoStream}
                                 muted={isLocal}
