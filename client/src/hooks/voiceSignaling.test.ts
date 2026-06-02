@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canApplyRemoteAnswer, getOfferCollisionAction, isPolitePeer } from './voiceSignaling';
+import { canApplyRemoteAnswer, getOfferCollisionAction, isPolitePeer, shouldOpenPeerForJoinedVoiceUser } from './voiceSignaling';
 
 describe('voice WebRTC negotiation helpers', () => {
   it('assigns one polite peer deterministically for a socket pair', () => {
@@ -26,5 +26,10 @@ describe('voice WebRTC negotiation helpers', () => {
   it('ignores stale answers after a local offer has already been rolled back', () => {
     expect(canApplyRemoteAnswer('have-local-offer')).toBe(true);
     expect(canApplyRemoteAnswer('stable')).toBe(false);
+  });
+
+  it('lets receive-only subscribers open to new voice users but avoids voice-user glare', () => {
+    expect(shouldOpenPeerForJoinedVoiceUser({ isInVoice: false })).toBe(true);
+    expect(shouldOpenPeerForJoinedVoiceUser({ isInVoice: true })).toBe(false);
   });
 });

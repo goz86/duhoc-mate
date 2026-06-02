@@ -23,3 +23,7 @@ export function getOfferCollisionAction({
 export function canApplyRemoteAnswer(signalingState: RTCSignalingState): boolean {
   return signalingState === 'have-local-offer';
 }
+
+export function shouldOpenPeerForJoinedVoiceUser({ isInVoice }: { isInVoice: boolean }): boolean {
+  return !isInVoice;
+}

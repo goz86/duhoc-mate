@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import { getRemoteAudioVolume } from './voiceAudioPlayback';
 import { VOICE_RTC_CONFIG } from './voiceIceServers';
-import { canApplyRemoteAnswer, getOfferCollisionAction } from './voiceSignaling';
+import { canApplyRemoteAnswer, getOfferCollisionAction, shouldOpenPeerForJoinedVoiceUser } from './voiceSignaling';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -619,7 +619,9 @@ export function useVoiceChat(
         return next;
       });
 
-      void openPeerToUser(userId);
+      if (shouldOpenPeerForJoinedVoiceUser({ isInVoice: isInVoiceRef.current })) {
+        void openPeerToUser(userId);
+      }
     };
 
     // Nhận offer từ user đã có mặt
@@ -675,6 +677,7 @@ export function useVoiceChat(
         return;
       }
       try {
+        peer.ignoreOffer = false;
         await peer.pc.setRemoteDescription(new RTCSessionDescription(answer));
         await flushPendingIceCandidates(fromId, peer.pc);
       } catch (err) {
