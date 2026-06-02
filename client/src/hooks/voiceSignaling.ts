@@ -41,3 +41,13 @@ export function shouldQueueRenegotiation({
 }): boolean {
   return makingOffer || signalingState !== 'stable';
 }
+
+export function shouldFlushQueuedRenegotiation({
+  needsNegotiation,
+  signalingState,
+}: {
+  needsNegotiation: boolean;
+  signalingState: RTCSignalingState;
+}): boolean {
+  return needsNegotiation && signalingState === 'stable';
+}

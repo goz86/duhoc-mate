@@ -5,6 +5,7 @@ import {
   isPolitePeer,
   shouldOpenPeerForJoinedVoiceUser,
   shouldOpenPeerForRemoteCameraChange,
+  shouldFlushQueuedRenegotiation,
   shouldQueueRenegotiation,
 } from './voiceSignaling';
 
@@ -49,5 +50,11 @@ describe('voice WebRTC negotiation helpers', () => {
     expect(shouldQueueRenegotiation({ makingOffer: false, signalingState: 'stable' })).toBe(false);
     expect(shouldQueueRenegotiation({ makingOffer: true, signalingState: 'stable' })).toBe(true);
     expect(shouldQueueRenegotiation({ makingOffer: false, signalingState: 'have-local-offer' })).toBe(true);
+  });
+
+  it('flushes queued renegotiation once the answerer is stable', () => {
+    expect(shouldFlushQueuedRenegotiation({ needsNegotiation: true, signalingState: 'stable' })).toBe(true);
+    expect(shouldFlushQueuedRenegotiation({ needsNegotiation: true, signalingState: 'have-remote-offer' })).toBe(false);
+    expect(shouldFlushQueuedRenegotiation({ needsNegotiation: false, signalingState: 'stable' })).toBe(false);
   });
 });

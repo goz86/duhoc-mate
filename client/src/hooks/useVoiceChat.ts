@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import { getRemoteAudioVolume } from './voiceAudioPlayback';
 import { VOICE_RTC_CONFIG } from './voiceIceServers';
-import { canApplyRemoteAnswer, getOfferCollisionAction, shouldOpenPeerForJoinedVoiceUser, shouldOpenPeerForRemoteCameraChange, shouldQueueRenegotiation } from './voiceSignaling';
+import { canApplyRemoteAnswer, getOfferCollisionAction, shouldFlushQueuedRenegotiation, shouldOpenPeerForJoinedVoiceUser, shouldOpenPeerForRemoteCameraChange, shouldQueueRenegotiation } from './voiceSignaling';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -673,6 +673,10 @@ export function useVoiceChat(
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       socket.emit('voice-answer', { targetId: fromId, answer });
+      if (shouldFlushQueuedRenegotiation({ needsNegotiation: peer.needsNegotiation, signalingState: pc.signalingState })) {
+        peer.needsNegotiation = false;
+        void renegotiatePeer(fromId, pc);
+      }
     };
 
     // Nhận answer
@@ -687,7 +691,7 @@ export function useVoiceChat(
         peer.ignoreOffer = false;
         await peer.pc.setRemoteDescription(new RTCSessionDescription(answer));
         await flushPendingIceCandidates(fromId, peer.pc);
-        if (peer.needsNegotiation) {
+        if (shouldFlushQueuedRenegotiation({ needsNegotiation: peer.needsNegotiation, signalingState: peer.pc.signalingState })) {
           peer.needsNegotiation = false;
           void renegotiatePeer(fromId, peer.pc);
         }
