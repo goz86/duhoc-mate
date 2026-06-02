@@ -1037,7 +1037,7 @@ i18n
     cleanCode: true,
     defaultNS: 'translation',
     detection: {
-      order: ['localStorage', 'navigator'],
+      order: ['localStorage'],
       caches: ['localStorage'],
       lookupLocalStorage: 'duhocmate_lang',
     },

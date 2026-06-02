@@ -14,7 +14,6 @@ import {
   Megaphone,
   Music2,
   Plus,
-  RefreshCw,
   Settings,
   Search,
   Timer,
@@ -324,10 +323,11 @@ export default function LandingPage({
   }
 
   useEffect(() => {
-    if (showHelpBoard) {
-      handleRefreshRates()
-    }
-  }, [showHelpBoard])
+    handleRefreshRates()
+    const refreshTimer = window.setInterval(handleRefreshRates, 30 * 60 * 1000)
+
+    return () => window.clearInterval(refreshTimer)
+  }, [])
 
   useEffect(() => {
     const fetchTickerPosts = async () => {
@@ -396,27 +396,16 @@ export default function LandingPage({
           </div>
 
           <div className="flex items-center gap-2">
-            {showHelpBoard && (
-              <>
-                <div className="hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-brand-brown-dark shadow-sm lg:flex border border-black/[0.04]">
-                  <Wallet size={13} className="text-amber-600" />
-                  <span>{exchangeRate}</span>
-                </div>
-                {weather && (
-                  <div className="hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-brand-brown-dark shadow-sm lg:flex border border-black/[0.04]">
-                    <CloudSun size={13} className="text-brand-terracotta" />
-                    <span>Seoul: {weather.temp}</span>
-                    <span className="text-brand-brown-light/70">· {weather.desc}</span>
-                  </div>
-                )}
-                <button
-                  onClick={handleRefreshRates}
-                  className="hidden p-2 rounded-full bg-white hover:bg-brand-light text-brand-brown-light hover:text-brand-brown-dark transition shadow-sm lg:block border border-black/[0.04] cursor-pointer"
-                  title="Cập nhật tỷ giá & thời tiết"
-                >
-                  <RefreshCw size={13} />
-                </button>
-              </>
+            <div className="hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-brand-brown-dark shadow-sm lg:flex border border-black/[0.04]">
+              <Wallet size={13} className="text-amber-600" />
+              <span>{exchangeRate}</span>
+            </div>
+            {weather && (
+              <div className="hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-brand-brown-dark shadow-sm lg:flex border border-black/[0.04]">
+                <CloudSun size={13} className="text-brand-terracotta" />
+                <span>Seoul: {weather.temp}</span>
+                <span className="text-brand-brown-light/70">· {weather.desc}</span>
+              </div>
             )}
             <span className="hidden items-center gap-1 rounded-full bg-white px-3 py-2 text-xs font-bold text-brand-brown-light shadow-sm md:flex">
               <Clock size={13} />
