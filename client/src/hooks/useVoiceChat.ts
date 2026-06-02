@@ -249,6 +249,14 @@ export function useVoiceChat(
     });
   }, []);
 
+  const addReceiveOnlyTransceivers = useCallback((pc: RTCPeerConnection) => {
+    const hasReceiver = (kind: 'audio' | 'video') => (
+      pc.getTransceivers().some(transceiver => transceiver.receiver.track.kind === kind)
+    );
+    if (!hasReceiver('audio')) pc.addTransceiver('audio', { direction: 'recvonly' });
+    if (!hasReceiver('video')) pc.addTransceiver('video', { direction: 'recvonly' });
+  }, []);
+
   // ── VAD: Voice Activity Detection ─────────────────────────────────────────
   const startVAD = useCallback(() => {
     if (vadTimerRef.current) clearInterval(vadTimerRef.current);
@@ -550,6 +558,24 @@ export function useVoiceChat(
     if (!socket) return;
 
     // Nhận danh sách voice users hiện tại khi vừa join
+    const openPeerToUser = async (userId: string) => {
+      if (userId === socket.id) return;
+      const existingPeer = peersRef.current.get(userId);
+      if (existingPeer && existingPeer.pc.signalingState !== 'closed') return;
+
+      const pc = createPeerConnection(userId);
+      if (isInVoiceRef.current) {
+        addLocalTracks(pc);
+      } else {
+        addReceiveOnlyTransceivers(pc);
+      }
+      registerPeer(userId, pc);
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('voice-offer', { targetId: userId, offer });
+    };
+
     const onVoiceUsers = ({ users }: { users: Record<string, VoiceUserState> }) => {
       const map = new Map<string, VoiceUserState>();
       Object.entries(users).forEach(([id, state]) => {
@@ -561,9 +587,12 @@ export function useVoiceChat(
         });
       });
       setVoiceUsers(map);
+      Object.keys(users).forEach(userId => {
+        void openPeerToUser(userId);
+      });
     };
 
-    // User mới vào voice → ta là người đã có mặt → initiate offer
+    // User joins voice/call: create a peer even when this client only receives video.
     const onVoiceUserJoined = async ({ userId }: { userId: string; username: string }) => {
       setVoiceUsers(prev => {
         const next = new Map(prev);
@@ -571,24 +600,11 @@ export function useVoiceChat(
         return next;
       });
 
-      if (!isInVoiceRef.current) return; // Ta chưa vào voice, không cần kết nối
-
-      const existingPeer = peersRef.current.get(userId);
-      if (existingPeer && existingPeer.pc.signalingState !== 'closed') return;
-
-      const pc = createPeerConnection(userId);
-      addLocalTracks(pc);
-      registerPeer(userId, pc);
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit('voice-offer', { targetId: userId, offer });
+      void openPeerToUser(userId);
     };
 
     // Nhận offer từ user đã có mặt
     const onVoiceOffer = async ({ fromId, offer }: { fromId: string; offer: RTCSessionDescriptionInit }) => {
-      if (!isInVoiceRef.current) return;
-
       const existingPeer = peersRef.current.get(fromId);
       let pc = existingPeer?.pc;
       if (!pc || pc.signalingState === 'closed') {
@@ -601,7 +617,9 @@ export function useVoiceChat(
           console.warn('[VoiceChat] Failed to rollback before remote offer:', fromId, err);
         }
       }
-      addLocalTracks(pc);
+      if (isInVoiceRef.current) {
+        addLocalTracks(pc);
+      }
 
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       await flushPendingIceCandidates(fromId, pc);
@@ -689,9 +707,16 @@ export function useVoiceChat(
       setVoiceUsers(prev => {
         const next = new Map(prev);
         const user = next.get(userId);
-        if (user) next.set(userId, { ...user, cameraOn });
+        if (user) {
+          next.set(userId, { ...user, cameraOn });
+        } else if (cameraOn) {
+          next.set(userId, { muted: false, speaking: false, cameraOn, volume: 1 });
+        }
         return next;
       });
+      if (cameraOn) {
+        void openPeerToUser(userId);
+      }
       if (!cameraOn) {
         setRemoteVideoStreams(prev => {
           const next = new Map(prev);
@@ -711,6 +736,7 @@ export function useVoiceChat(
     socket.on('voice-host-muted', onVoiceHostMuted);
     socket.on('voice-speaking', onVoiceSpeaking);
     socket.on('voice-camera-changed', onVoiceCameraChanged);
+    socket.emit('voice-subscribe', { roomId: roomIdRef.current });
 
     return () => {
       socket.off('voice-users', onVoiceUsers);
@@ -724,12 +750,23 @@ export function useVoiceChat(
       socket.off('voice-speaking', onVoiceSpeaking);
       socket.off('voice-camera-changed', onVoiceCameraChanged);
     };
-  }, [socket, createPeerConnection, addLocalTracks, flushPendingIceCandidates, registerPeer]);
+  }, [socket, createPeerConnection, addLocalTracks, addReceiveOnlyTransceivers, flushPendingIceCandidates, registerPeer]);
 
   // ── Cleanup khi unmount ───────────────────────────────────────────────────
   useEffect(() => {
     return () => {
-      if (isInVoiceRef.current) leaveVoice();
+      if (isInVoiceRef.current) {
+        leaveVoice();
+        return;
+      }
+      peersRef.current.forEach(({ pc, sourceNode, gainNode, audioElement }) => {
+        sourceNode?.disconnect();
+        gainNode?.disconnect();
+        audioElement?.remove();
+        pc.close();
+      });
+      peersRef.current.clear();
+      pendingIceCandidatesRef.current.clear();
     };
   }, [leaveVoice]);
 

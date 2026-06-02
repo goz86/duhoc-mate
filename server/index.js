@@ -2153,6 +2153,12 @@ io.on('connection', (socket) => {
   });
 
   // Relay WebRTC SDP Offer (initiator → target)
+  socket.on('voice-subscribe', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    socket.emit('voice-users', { users: room.voiceUsers || {} });
+  });
+
   socket.on('voice-offer', ({ targetId, offer }) => {
     io.to(targetId).emit('voice-offer', { fromId: socket.id, offer });
   });
