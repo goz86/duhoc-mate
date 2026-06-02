@@ -170,16 +170,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id, session.user.email, session.user.user_metadata)
-      } else {
-        loadGuestProfile()
-      }
-      setLoading(false)
-    })
+    let cancelled = false
+
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        if (cancelled) return
+        setSession(session)
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          await fetchProfile(session.user.id, session.user.email, session.user.user_metadata)
+        } else {
+          await loadGuestProfile()
+        }
+      })
+      .catch(error => {
+        console.warn('Failed to initialize auth session:', error)
+        if (!cancelled) {
+          setSession(null)
+          setUser(null)
+          void loadGuestProfile()
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
@@ -191,7 +205,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   }, [])
 
 

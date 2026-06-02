@@ -2861,30 +2861,34 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#fbf6ef] p-6 animate-custom-fade-in select-none">
-        <div className="flex flex-col items-center max-w-xs text-center space-y-6">
-          {/* Animated pulsing cozy logo */}
+      <div
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#fbf6ef] p-6 text-brand-brown-dark animate-custom-fade-in select-none"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="flex w-full max-w-xs flex-col items-center rounded-[28px] border border-white/70 bg-white/70 px-6 py-8 text-center shadow-[0_24px_70px_rgba(76,55,49,0.10)] backdrop-blur">
           <div className="relative">
-            <div className="absolute inset-0 bg-brand-terracotta/20 rounded-[24px] blur-xl animate-pulse" />
+            <div className="absolute inset-0 rounded-[24px] bg-brand-terracotta/20 blur-xl animate-pulse" />
             <img
               src={duhocMateLogo}
               alt="Duhoc Mate"
-              className="relative h-24 w-24 rounded-[24px] object-cover shadow-md shadow-brand-terracotta/10 border-2 border-white animate-[bounce_2s_infinite]"
+              className="relative h-24 w-24 rounded-[24px] border-2 border-white object-cover shadow-md shadow-brand-terracotta/10"
             />
           </div>
 
-          {/* Styled Typography brand name and description */}
-          <div className="space-y-1">
+          <div className="mt-6 space-y-1">
             <h1 className="font-display text-3xl font-black text-brand-brown-dark tracking-wide drop-shadow-sm">
               Duhoc Mate
             </h1>
-            <p className="text-xs font-black uppercase tracking-widest text-brand-terracotta">
+            <p className="text-xs font-black uppercase text-brand-terracotta" style={{ letterSpacing: '0.08em' }}>
               Cùng nhau học · vững tương lai
+            </p>
+            <p className="pt-2 text-sm font-bold text-brand-brown-light">
+              Đang chuẩn bị không gian học...
             </p>
           </div>
 
-          {/* Cozy Bouncing Dots Loader */}
-          <div className="flex items-center gap-1.5 pt-2">
+          <div className="mt-6 flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full bg-brand-terracotta animate-bounce [animation-delay:-0.3s]" />
             <span className="h-2.5 w-2.5 rounded-full bg-brand-terracotta/85 animate-bounce [animation-delay:-0.15s]" />
             <span className="h-2.5 w-2.5 rounded-full bg-brand-terracotta/60 animate-bounce" />
