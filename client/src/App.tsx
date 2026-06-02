@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useRef, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
   AlertTriangle,
@@ -18,16 +18,9 @@ import { useAuth } from './contexts/AuthContext';
 import { supabase } from './lib/supabase';
 import duhocMateLogo from './assets/duhoc-mate-logo-new.png';
 import AuthModal from './components/AuthModal';
-import TopikStudy from './components/TopikStudy';
-import IdeaBoard from './components/IdeaBoard';
-import CreateTemplateModal from './components/CreateTemplateModal';
-import LandingPage from './components/LandingPage';
-import AdminDashboard from './components/AdminDashboard';
 import { getTemplateRoomId, seedRoomIds } from './lib/templateRooms';
 import RoomHeader from './components/RoomHeader';
 import StageSelector from './components/StageSelector';
-import StudyTableStage from './components/StudyTableStage';
-import Whiteboard from './components/Whiteboard';
 import {
   cloneTasks,
   loadRoomTasks,
@@ -62,6 +55,20 @@ import {
   parseSyncedLyrics,
   type LyricLine
 } from './lib/lyrics';
+
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const CreateTemplateModal = lazy(() => import('./components/CreateTemplateModal'));
+const IdeaBoard = lazy(() => import('./components/IdeaBoard'));
+const LandingPage = lazy(() => import('./components/LandingPage'));
+const StudyTableStage = lazy(() => import('./components/StudyTableStage'));
+const TopikStudy = lazy(() => import('./components/TopikStudy'));
+const Whiteboard = lazy(() => import('./components/Whiteboard'));
+
+const LazyPanelFallback = () => (
+  <div className="flex min-h-[280px] flex-1 items-center justify-center rounded-3xl border border-brand-terracotta-light/15 bg-white/55">
+    <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-terracotta-light/30 border-t-brand-terracotta" />
+  </div>
+);
 
 // Kết nối Socket Server — đọc từ env var khi deploy, fallback localhost khi dev
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
@@ -2871,43 +2878,47 @@ export default function App() {
 
       {/* LANDING PAGE — LOBBY-FIRST DESIGN */}
       {view === 'landing' && (
-        <LandingPage
-          username={username}
-          setUsername={setUsername}
-          roomId={roomInputId}
-          setRoomId={setRoomInputId}
-          onlineUsersCount={onlineUsers.length}
-          user={user}
-          profile={profile}
-          signOut={signOut}
-          getAvatarColor={getAvatarColor}
-          handleCreateRoom={handleCreateRoom}
-          handleJoinRoom={handleJoinRoom}
-          handleJoinTemplateRoom={handleJoinTemplateRoom}
-          templates={templates}
-          activeRooms={activeRooms}
-          requestActiveRooms={() => socket.emit('request-active-rooms')}
-          recentRooms={recentRooms}
-          friendCode={friendCode}
-          friendCodeCopied={friendCodeCopied}
-          copyFriendCode={copyFriendCode}
-          friendInputCode={friendInputCode}
-          setFriendInputCode={setFriendInputCode}
-          handleAddFriend={handleAddFriend}
-          friendsWithStatus={friendsWithStatus}
-          showHelpBoard={showHelpBoard}
-          setShowHelpBoard={handleSetShowHelpBoard}
-          isDarkMode={isDarkMode}
-          toggleDarkMode={toggleDarkMode}
-          onEnterAdmin={() => setView('admin')}
-        />
+        <Suspense fallback={<LazyPanelFallback />}>
+          <LandingPage
+            username={username}
+            setUsername={setUsername}
+            roomId={roomInputId}
+            setRoomId={setRoomInputId}
+            onlineUsersCount={onlineUsers.length}
+            user={user}
+            profile={profile}
+            signOut={signOut}
+            getAvatarColor={getAvatarColor}
+            handleCreateRoom={handleCreateRoom}
+            handleJoinRoom={handleJoinRoom}
+            handleJoinTemplateRoom={handleJoinTemplateRoom}
+            templates={templates}
+            activeRooms={activeRooms}
+            requestActiveRooms={() => socket.emit('request-active-rooms')}
+            recentRooms={recentRooms}
+            friendCode={friendCode}
+            friendCodeCopied={friendCodeCopied}
+            copyFriendCode={copyFriendCode}
+            friendInputCode={friendInputCode}
+            setFriendInputCode={setFriendInputCode}
+            handleAddFriend={handleAddFriend}
+            friendsWithStatus={friendsWithStatus}
+            showHelpBoard={showHelpBoard}
+            setShowHelpBoard={handleSetShowHelpBoard}
+            isDarkMode={isDarkMode}
+            toggleDarkMode={toggleDarkMode}
+            onEnterAdmin={() => setView('admin')}
+          />
+        </Suspense>
       )}
 
       {view === 'admin' && (
-        <AdminDashboard
-          currentUserId={user?.id || ''}
-          onClose={() => setView('landing')}
-        />
+        <Suspense fallback={<LazyPanelFallback />}>
+          <AdminDashboard
+            currentUserId={user?.id || ''}
+            onClose={() => setView('landing')}
+          />
+        </Suspense>
       )}
 
       {/* Auth Modal */}
@@ -2917,13 +2928,17 @@ export default function App() {
         defaultMode={authMode}
       />
 
-      <CreateTemplateModal
-        open={showCreateTemplate}
-        tasks={ideaTasks}
-        creatorName={profile?.username || username || 'Duhoc Mate'}
-        onClose={() => setShowCreateTemplate(false)}
-        onSave={handleSaveTemplate}
-      />
+      {showCreateTemplate && (
+        <Suspense fallback={null}>
+          <CreateTemplateModal
+            open={showCreateTemplate}
+            tasks={ideaTasks}
+            creatorName={profile?.username || username || 'Duhoc Mate'}
+            onClose={() => setShowCreateTemplate(false)}
+            onSave={handleSaveTemplate}
+          />
+        </Suspense>
+      )}
 
       {/* Guest Join Modal – nhập tên trước khi vào phòng (không cần đăng nhập) */}
       <GuestJoinModal
@@ -4159,7 +4174,9 @@ export default function App() {
 
                 {/* ── 4. WHITEBOARD STAGE (Bảng vẽ chung real-time) ── */}
                 {stageMode === 'pdf' && (
-                  <Whiteboard socket={socket} roomId={roomId} />
+                  <Suspense fallback={<LazyPanelFallback />}>
+                    <Whiteboard socket={socket} roomId={roomId} />
+                  </Suspense>
                 )}
 
                 {/* ── 5. POMODORO STAGE ── */}
@@ -4202,43 +4219,49 @@ export default function App() {
 
                 {/* ── 6. TOPIK STAGE ── */}
                 {stageMode === 'topik' && (
-                  <TopikStudy roomId={roomId} socket={socket} isAdmin={!!profile?.is_admin} />
+                  <Suspense fallback={<LazyPanelFallback />}>
+                    <TopikStudy roomId={roomId} socket={socket} isAdmin={!!profile?.is_admin} />
+                  </Suspense>
                 )}
 
                 {stageMode === 'video' && (
-                  <StudyTableStage
-                    members={members}
-                    username={username}
-                    currentSocketId={socketId}
-                    studyTable={studyTable}
-                    jitsiActive={jitsiActive}
-                    pomodoro={pomodoro}
-                    chatMessages={chatMessages}
-                    voiceUsers={voiceChat.voiceUsers}
-                    localVideoStream={voiceChat.localVideoStream}
-                    remoteVideoStreams={voiceChat.remoteVideoStreams}
-                    isInVoice={voiceChat.isInVoice}
-                    isMuted={voiceChat.isMuted}
-                    isCameraOn={voiceChat.isCameraOn}
-                    onToggleJitsi={toggleJitsi}
-                    onJoinVoice={voiceChat.joinVoice}
-                    onLeaveVoice={voiceChat.leaveVoice}
-                    onToggleMic={voiceChat.isInVoice ? voiceChat.toggleMute : voiceChat.joinVoice}
-                    onToggleCamera={voiceChat.toggleCamera}
-                    onControlPomodoro={controlPomodoro}
-                    onStudyReaction={sendStudyReaction}
-                    onPersonalPomodoro={controlPersonalPomodoro}
-                    clockOffset={clockOffset}
-                  />
+                  <Suspense fallback={<LazyPanelFallback />}>
+                    <StudyTableStage
+                      members={members}
+                      username={username}
+                      currentSocketId={socketId}
+                      studyTable={studyTable}
+                      jitsiActive={jitsiActive}
+                      pomodoro={pomodoro}
+                      chatMessages={chatMessages}
+                      voiceUsers={voiceChat.voiceUsers}
+                      localVideoStream={voiceChat.localVideoStream}
+                      remoteVideoStreams={voiceChat.remoteVideoStreams}
+                      isInVoice={voiceChat.isInVoice}
+                      isMuted={voiceChat.isMuted}
+                      isCameraOn={voiceChat.isCameraOn}
+                      onToggleJitsi={toggleJitsi}
+                      onJoinVoice={voiceChat.joinVoice}
+                      onLeaveVoice={voiceChat.leaveVoice}
+                      onToggleMic={voiceChat.isInVoice ? voiceChat.toggleMute : voiceChat.joinVoice}
+                      onToggleCamera={voiceChat.toggleCamera}
+                      onControlPomodoro={controlPomodoro}
+                      onStudyReaction={sendStudyReaction}
+                      onPersonalPomodoro={controlPersonalPomodoro}
+                      clockOffset={clockOffset}
+                    />
+                  </Suspense>
                 )}
 
                 {stageMode === 'ideas' && (
-                  <IdeaBoard
-                    tasks={ideaTasks}
-                    members={members}
-                    onChange={handleIdeaTasksChange}
-                    onCreateTemplate={() => setShowCreateTemplate(true)}
-                  />
+                  <Suspense fallback={<LazyPanelFallback />}>
+                    <IdeaBoard
+                      tasks={ideaTasks}
+                      members={members}
+                      onChange={handleIdeaTasksChange}
+                      onCreateTemplate={() => setShowCreateTemplate(true)}
+                    />
+                  </Suspense>
                 )}
               </div>
 

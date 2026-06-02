@@ -21,7 +21,7 @@ import {
   VolumeX,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 type StudyMember = {
@@ -105,6 +105,11 @@ type StudyTableStageProps = {
   clockOffset?: number
 }
 
+const EMPTY_CHAT_MESSAGES: ChatMessage[] = []
+const EMPTY_VOICE_USERS = new Map<string, VoiceUserState>()
+const EMPTY_VIDEO_STREAMS = new Map<string, MediaStream>()
+const EMPTY_REACTIONS: StudyTableReaction[] = []
+
 const seatPalette = [
   { avatar: 'from-[#5F9EA0] via-[#3F8F91] to-[#2F6F73]', desk: 'from-[#BEE7E8] to-[#E7F6F2]', accent: '#28BFB0' },
   { avatar: 'from-[#D79575] via-[#BE7566] to-[#8F544B]', desk: 'from-[#FFE2D4] to-[#FFF5EA]', accent: '#C56F5F' },
@@ -129,7 +134,7 @@ const reactionOptions: Array<{ label: string; Icon: LucideIcon; tone: string }> 
 
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase() || 'DM'
 
-function VideoPreview({
+const VideoPreview = memo(function VideoPreview({
   stream,
   muted = false,
   className = '',
@@ -141,8 +146,13 @@ function VideoPreview({
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
   useEffect(() => {
-    if (!videoRef.current) return
-    videoRef.current.srcObject = stream
+    const video = videoRef.current
+    if (!video) return
+    video.srcObject = stream
+
+    return () => {
+      video.srcObject = null
+    }
   }, [stream])
 
   return (
@@ -154,7 +164,7 @@ function VideoPreview({
       className={className}
     />
   )
-}
+})
 
 // hash ổn định từ id → seed cho hướng bay reaction (không đổi mỗi render)
 const hashSeed = (str: string) => {
@@ -185,10 +195,10 @@ export default function StudyTableStage({
   studyTable,
   jitsiActive,
   pomodoro,
-  chatMessages = [],
-  voiceUsers = new Map(),
+  chatMessages = EMPTY_CHAT_MESSAGES,
+  voiceUsers = EMPTY_VOICE_USERS,
   localVideoStream = null,
-  remoteVideoStreams = new Map(),
+  remoteVideoStreams = EMPTY_VIDEO_STREAMS,
   isInVoice = false,
   isMuted = false,
   isCameraOn = false,
@@ -205,6 +215,7 @@ export default function StudyTableStage({
   const { t } = useTranslation()
   const [now, setNow] = useState(() => Date.now())
   const [seatFilter, setSeatFilter] = useState<'all' | 'focus' | 'break'>('all')
+  const fallbackJoinedAtRef = useRef(Date.now())
 
   const myMember = members.find(m => m.id === currentSocketId)
   const myRole = myMember?.role || (myMember?.isHost ? 'host' : 'member')
@@ -230,7 +241,7 @@ export default function StudyTableStage({
           memberId: member.id,
           username: member.username,
           isHost: member.isHost,
-          joinedAt: now,
+          joinedAt: fallbackJoinedAtRef.current,
           active: true,
           status: 'focus',
           personalPomodoro: {
@@ -242,7 +253,7 @@ export default function StudyTableStage({
         },
       }
     }).filter(member => member.study.active !== false)
-  }, [currentSocketId, members, now, studyTable?.seats, username])
+  }, [currentSocketId, members, studyTable?.seats, username])
 
   const sortedSeats = useMemo(() => {
     return [...seats].sort((a, b) => {
@@ -255,8 +266,20 @@ export default function StudyTableStage({
     })
   }, [currentSocketId, seats])
 
-  const focusCount = seats.filter(member => member.study.personalPomodoro?.isRunning && !member.study.personalPomodoro?.isBreak).length
-  const breakCount = seats.filter(member => member.study.personalPomodoro?.isBreak).length
+  const seatStats = useMemo(() => {
+    let focus = 0
+    let breakCount = 0
+
+    for (const member of seats) {
+      const personal = member.study.personalPomodoro
+      if (personal?.isRunning && !personal.isBreak) focus += 1
+      if (personal?.isBreak) breakCount += 1
+    }
+
+    return { focus, breakCount }
+  }, [seats])
+  const focusCount = seatStats.focus
+  const breakCount = seatStats.breakCount
   const filteredSeats = useMemo(() => {
     if (seatFilter === 'focus') {
       return sortedSeats.filter(member => member.study.personalPomodoro?.isRunning && !member.study.personalPomodoro?.isBreak)
@@ -283,6 +306,21 @@ export default function StudyTableStage({
     const cutoff = serverNow - 3800
     return (studyTable?.reactions || []).filter(reaction => reaction.createdAt >= cutoff)
   }, [now, studyTable?.reactions, clockOffset])
+
+  const visibleReactionsByMember = useMemo(() => {
+    const grouped = new Map<string, StudyTableReaction[]>()
+
+    for (const reaction of visibleReactions) {
+      const current = grouped.get(reaction.memberId)
+      if (current) {
+        current.push(reaction)
+      } else {
+        grouped.set(reaction.memberId, [reaction])
+      }
+    }
+
+    return grouped
+  }, [visibleReactions])
 
   // Chat bubbles: show last message per sender for 3s (dùng sentAt ms, fallback id prefix)
   const chatBubbles = useMemo(() => {
@@ -462,12 +500,74 @@ export default function StudyTableStage({
                   const cameraEnabled = isLocal ? isCameraOn : !!voiceState?.cameraOn
                   const videoStream = isLocal ? localVideoStream : remoteVideoStreams.get(member.id)
                   const showVideo = cameraEnabled && !!videoStream
-                  const activeReactions = visibleReactions.filter(item => item.memberId === member.id)
+                  const isVideoFirst = isCrowded && showVideo
+                  const activeReactions = isVideoFirst
+                    ? EMPTY_REACTIONS
+                    : (visibleReactionsByMember.get(member.id) || EMPTY_REACTIONS)
+
+                  if (isVideoFirst && videoStream) {
+                    return (
+                      <article
+                        key={member.id}
+                        className="group relative w-full overflow-hidden rounded-[22px] border border-white/70 bg-slate-950 shadow-[0_12px_28px_rgba(15,23,42,0.14)] [contain-intrinsic-size:180px] [content-visibility:auto]"
+                      >
+                        {chatBubble && (
+                          <div className="absolute inset-x-2 top-2 z-40 flex animate-fade-in items-center justify-center">
+                            <div className="max-w-full truncate rounded-full border border-white/20 bg-black/60 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+                              {chatBubble}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="relative aspect-video min-h-[118px]">
+                          <VideoPreview
+                            stream={videoStream}
+                            muted={isLocal}
+                            className="h-full w-full bg-slate-950 object-cover"
+                          />
+                          <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/70 via-black/30 to-transparent p-2.5">
+                            <div className="min-w-0">
+                              <p className="flex min-w-0 items-center gap-1 text-xs font-black text-white">
+                                {member.isHost && <Crown size={11} className="shrink-0 text-amber-300" />}
+                                <span className="truncate">{member.username}{isLocal ? ' (Bạn)' : ''}</span>
+                              </p>
+                              <p className="mt-0.5 truncate text-[9px] font-bold text-white/75">
+                                {member.isHost ? 'Chủ bàn học' : member.role === 'cohost' ? 'Co-host' : member.role === 'moderator' ? 'Mod' : 'Bạn học'}
+                              </p>
+                            </div>
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-400 px-2 py-1 text-[9px] font-black text-emerald-950 shadow">
+                              <Video size={10} />
+                              Live
+                            </span>
+                          </div>
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent p-2.5">
+                            <div className="flex items-center justify-between gap-2 text-[10px] font-black text-white">
+                              <span className="inline-flex min-w-0 items-center gap-1">
+                                {mutedInCall ? <MicOff size={11} /> : <Mic size={11} />}
+                                <span className="truncate">{mutedInCall ? 'Tắt mic' : 'Đang học'}</span>
+                              </span>
+                              {!isMicro && (
+                                <span className="shrink-0 tabular-nums text-white/85">
+                                  {formatMinuteTime(personalLeft)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/25">
+                              <div
+                                className={`h-full rounded-full ${isPersonalBreak ? 'bg-amber-300' : 'bg-emerald-300'}`}
+                                style={{ width: `${Math.max(6, personalProgress)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    )
+                  }
 
                   return (
                     <article
                       key={member.id}
-                      className={`group relative w-full rounded-[22px] border border-white/70 bg-white/86 shadow-[0_14px_32px_rgba(76,55,49,0.10)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(76,55,49,0.13)] ${isMicro ? 'p-2.5' : isCrowded ? 'p-3' : 'p-3.5'}`}
+                      className={`group relative w-full rounded-[22px] border border-white/70 bg-white/86 shadow-[0_14px_32px_rgba(76,55,49,0.10)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(76,55,49,0.13)] motion-reduce:transition-none [contain-intrinsic-size:220px] [content-visibility:auto] ${isMicro ? 'p-2.5' : isCrowded ? 'p-3' : 'p-3.5'}`}
                     >
                       {/* Chat bubble – overlay bên trong card, không gây layout shift */}
                       {chatBubble && (
