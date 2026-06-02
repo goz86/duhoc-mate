@@ -80,6 +80,9 @@ const CHAT_MESSAGES_PAGE_SIZE = 25;
 // Tăng nếu guest vẫn trễ, giảm nếu guest vượt trước host.
 const VIDEO_SYNC_BUFFER = 0.2;
 const STUDY_SESSION_HISTORY_KEY = 'duhocmate_study_session_history';
+const STUDY_ROOM_CROWDED_THRESHOLD = 8;
+const STUDY_ROOM_SOFT_LIMIT = 12;
+const MAX_ACTIVE_STUDY_CAMERAS = 4;
 
 type StudySessionStats = {
   minutes: number;
@@ -668,6 +671,47 @@ export default function App() {
   // ── Voice Chat (WebRTC) ────────────────────────────────────────────────────
   // socket là module-level let, có thể undefined trên first render → cast an toàn
   const voiceChat = useVoiceChat((socket as Socket | null) ?? null, roomId, isHost);
+  const activeStudyCameraCount = useMemo(() => {
+    const activeIds = new Set<string>();
+    voiceChat.voiceUsers.forEach((state, userId) => {
+      if (state.cameraOn) activeIds.add(userId);
+    });
+    if (voiceChat.isCameraOn && socketId) activeIds.add(socketId);
+    return activeIds.size;
+  }, [socketId, voiceChat.isCameraOn, voiceChat.voiceUsers]);
+
+  const canUseCameraInCrowdedRoom = myRole === 'host' || myRole === 'cohost' || (voiceChat.isInVoice && voiceChat.isSpeaking);
+  const isStudyRoomCrowded = members.length >= STUDY_ROOM_CROWDED_THRESHOLD;
+  const canStartStudyCamera = !voiceChat.isCameraOn
+    ? activeStudyCameraCount < MAX_ACTIVE_STUDY_CAMERAS && (!isStudyRoomCrowded || canUseCameraInCrowdedRoom)
+    : true;
+  const cameraPolicyNotice = useMemo(() => {
+    if (activeStudyCameraCount >= MAX_ACTIVE_STUDY_CAMERAS && !voiceChat.isCameraOn) {
+      return `Đã có ${MAX_ACTIVE_STUDY_CAMERAS} camera đang bật. Hãy tắt bớt camera hoặc pin một người đại diện để phòng không bị lag.`;
+    }
+    if (isStudyRoomCrowded && !canUseCameraInCrowdedRoom && !voiceChat.isCameraOn) {
+      return `Phòng đang đông (${members.length}/${STUDY_ROOM_SOFT_LIMIT}). Ưu tiên camera cho host, co-host hoặc người đang nói để giữ phòng mượt.`;
+    }
+    if (members.length >= STUDY_ROOM_SOFT_LIMIT) {
+      return `Phòng đã đạt ngưỡng mềm ${STUDY_ROOM_SOFT_LIMIT} người. Nên giữ tối đa ${MAX_ACTIVE_STUDY_CAMERAS} camera cùng lúc.`;
+    }
+    if (members.length >= STUDY_ROOM_CROWDED_THRESHOLD) {
+      return `Phòng bắt đầu đông (${members.length}/${STUDY_ROOM_SOFT_LIMIT}). Nên bật camera có chọn lọc để tránh giật lag.`;
+    }
+    return null;
+  }, [activeStudyCameraCount, canUseCameraInCrowdedRoom, isStudyRoomCrowded, members.length, voiceChat.isCameraOn]);
+
+  const handleStudyCameraToggle = async () => {
+    if (voiceChat.isCameraOn) {
+      await voiceChat.toggleCamera();
+      return;
+    }
+    if (!canStartStudyCamera) {
+      window.alert(cameraPolicyNotice || `Phòng chỉ nên bật tối đa ${MAX_ACTIVE_STUDY_CAMERAS} camera cùng lúc.`);
+      return;
+    }
+    await voiceChat.toggleCamera();
+  };
 
   // Slide URL states (Google Slides / Canva embed)
 
@@ -4315,11 +4359,17 @@ export default function App() {
                       isInVoice={voiceChat.isInVoice}
                       isMuted={voiceChat.isMuted}
                       isCameraOn={voiceChat.isCameraOn}
+                      cameraActiveCount={activeStudyCameraCount}
+                      maxActiveCameras={MAX_ACTIVE_STUDY_CAMERAS}
+                      roomCrowdedThreshold={STUDY_ROOM_CROWDED_THRESHOLD}
+                      roomSoftLimit={STUDY_ROOM_SOFT_LIMIT}
+                      canStartCamera={canStartStudyCamera}
+                      cameraPolicyNotice={cameraPolicyNotice}
                       onToggleJitsi={toggleJitsi}
                       onJoinVoice={voiceChat.joinVoice}
                       onLeaveVoice={voiceChat.leaveVoice}
                       onToggleMic={voiceChat.isInVoice ? voiceChat.toggleMute : voiceChat.joinVoice}
-                      onToggleCamera={voiceChat.toggleCamera}
+                      onToggleCamera={handleStudyCameraToggle}
                       onControlPomodoro={controlPomodoro}
                       onStudyReaction={sendStudyReaction}
                       onPersonalPomodoro={controlPersonalPomodoro}

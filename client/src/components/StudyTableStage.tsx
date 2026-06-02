@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   BookOpen,
   Coffee,
   Crown,
@@ -98,6 +99,12 @@ type StudyTableStageProps = {
   isInVoice?: boolean
   isMuted?: boolean
   isCameraOn?: boolean
+  cameraActiveCount?: number
+  maxActiveCameras?: number
+  roomCrowdedThreshold?: number
+  roomSoftLimit?: number
+  canStartCamera?: boolean
+  cameraPolicyNotice?: string | null
   onToggleJitsi: () => void
   onJoinVoice?: () => Promise<void> | void
   onLeaveVoice?: () => void
@@ -206,6 +213,12 @@ export default function StudyTableStage({
   isInVoice = false,
   isMuted = false,
   isCameraOn = false,
+  cameraActiveCount = 0,
+  maxActiveCameras = 4,
+  roomCrowdedThreshold = 8,
+  roomSoftLimit = 12,
+  canStartCamera = true,
+  cameraPolicyNotice = null,
   onToggleJitsi,
   onJoinVoice,
   onLeaveVoice,
@@ -227,6 +240,7 @@ export default function StudyTableStage({
   const myMember = members.find(m => m.id === currentSocketId)
   const myRole = myMember?.role || (myMember?.isHost ? 'host' : 'member')
   const canControlPomodoro = myRole === 'host' || myRole === 'cohost'
+  const cameraStartBlocked = !isCameraOn && !canStartCamera
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000)
@@ -432,14 +446,17 @@ export default function StudyTableStage({
           <button
             type="button"
             onClick={() => void onToggleCamera?.()}
+            title={cameraStartBlocked ? cameraPolicyNotice || 'Camera dang duoc gioi han de phong khong bi lag' : undefined}
             className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black transition ${
               isCameraOn
                 ? 'bg-sky-500 text-white hover:bg-sky-600'
+                : cameraStartBlocked
+                  ? 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
                 : 'border border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100'
             }`}
           >
-            {isCameraOn ? <VideoOff size={14} /> : <Video size={14} />}
-            {isCameraOn ? 'Tắt camera' : 'Bật camera'}
+            {isCameraOn ? <VideoOff size={14} /> : cameraStartBlocked ? <AlertTriangle size={14} /> : <Video size={14} />}
+            {isCameraOn ? 'Tắt camera' : cameraStartBlocked ? 'Giới hạn camera' : 'Bật camera'}
           </button>
           {isInVoice && (
             <button
@@ -520,6 +537,14 @@ export default function StudyTableStage({
                 <Timer size={13} />
                 {focusCount} đang Pomodoro
               </span>
+              <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-black ${
+                cameraActiveCount >= maxActiveCameras
+                  ? 'border-amber-200 bg-amber-50 text-amber-700'
+                  : 'border-sky-100 bg-sky-50 text-sky-700'
+              }`}>
+                <Video size={13} />
+                {cameraActiveCount}/{maxActiveCameras} camera
+              </span>
               {isCrowded && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-100 bg-amber-50 px-3 py-1.5 text-[11px] font-black text-amber-700">
                   <Users size={13} />
@@ -547,6 +572,22 @@ export default function StudyTableStage({
                 ))}
               </div>
             </div>
+
+            {cameraPolicyNotice && (
+              <div className={`mb-4 flex items-start gap-2 rounded-2xl border px-3 py-2 text-[11px] font-bold ${
+                cameraStartBlocked
+                  ? 'border-amber-200 bg-amber-50 text-amber-800'
+                  : 'border-brand-terracotta-light/25 bg-white/70 text-brand-brown-light'
+              }`}>
+                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                <span>
+                  {cameraPolicyNotice}
+                  {seats.length >= roomCrowdedThreshold && seats.length < roomSoftLimit && (
+                    <span className="ml-1 font-black">Mục tiêu tốt: 8-12 người/phòng.</span>
+                  )}
+                </span>
+              </div>
+            )}
 
             {showVideoWall && activeVideoParticipant && (
               <div className="mb-4 rounded-[24px] border border-white/70 bg-white/78 p-2.5 shadow-[0_16px_40px_rgba(76,55,49,0.10)] backdrop-blur">
