@@ -383,30 +383,14 @@ export default function StudyTableStage({
 
   const expandedVideo = useMemo(() => {
     if (!expandedVideoMemberId) return null
-
-    const member = seats.find(item => item.id === expandedVideoMemberId)
-    if (!member) return null
-
-    const isLocal = member.id === currentSocketId || member.username === username
-    const voiceState = voiceUsers.get(member.id)
-    const cameraEnabled = isLocal ? isCameraOn : !!voiceState?.cameraOn
-    const stream = isLocal ? localVideoStream : remoteVideoStreams.get(member.id)
-
-    if (!cameraEnabled || !stream) return null
-
-    return {
-      member,
-      stream,
-      isLocal,
-      muted: isLocal ? isMuted : !!voiceState?.muted,
-    }
-  }, [currentSocketId, expandedVideoMemberId, isCameraOn, isMuted, localVideoStream, remoteVideoStreams, seats, username, voiceUsers])
+    return videoParticipants.find(item => item.member.id === expandedVideoMemberId) || null
+  }, [expandedVideoMemberId, videoParticipants]) as (typeof videoParticipants)[number]
 
   useEffect(() => {
-    if (expandedVideoMemberId && !expandedVideo) {
+    if (expandedVideoMemberId && !videoParticipants.some(item => item.member.id === expandedVideoMemberId)) {
       setExpandedVideoMemberId(null)
     }
-  }, [expandedVideo, expandedVideoMemberId])
+  }, [expandedVideoMemberId, videoParticipants])
 
   const handleReaction = (option: typeof reactionOptions[number], targetMemberId: string) => {
     onStudyReaction?.(option.label, targetMemberId)
@@ -484,7 +468,7 @@ export default function StudyTableStage({
         <section className="relative min-h-[360px] rounded-[28px] border border-brand-terracotta-light/20 bg-[#FDF8F0] p-3 shadow-[0_24px_70px_rgba(76,55,49,0.08)] sm:min-h-[430px] sm:p-5 xl:min-h-[460px]">
           <div className="pointer-events-none absolute inset-0 rounded-[28px] study-stage-overlay" />
           <div className="pointer-events-none absolute inset-x-4 bottom-4 top-8 rounded-[30px] border border-white/50 bg-white/20 [background-image:linear-gradient(rgba(167,122,108,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(167,122,108,0.07)_1px,transparent_1px)] [background-size:34px_34px]" />
-          {expandedVideo && (
+          {expandedVideo && false && (
             <div className="absolute inset-3 z-[80] overflow-hidden rounded-[26px] border border-white/70 bg-slate-950 shadow-[0_30px_90px_rgba(15,23,42,0.35)] sm:inset-5">
               <button
                 type="button"
@@ -603,7 +587,6 @@ export default function StudyTableStage({
                           setPinnedVideoMemberId(item.member.id)
                           setVideoLayoutMode('pinned')
                         }}
-                        onDoubleClick={() => setExpandedVideoMemberId(item.member.id)}
                         className={`group relative aspect-video overflow-hidden rounded-2xl border bg-slate-950 text-left shadow-inner transition hover:-translate-y-0.5 hover:shadow-lg ${
                           item.member.id === pinnedVideoMemberId ? 'border-brand-terracotta ring-2 ring-brand-terracotta/25' : 'border-white/80'
                         }`}
@@ -626,7 +609,10 @@ export default function StudyTableStage({
                   <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_150px]">
                     <button
                       type="button"
-                      onClick={() => setExpandedVideoMemberId(activeVideoParticipant.member.id)}
+                      onClick={() => {
+                        setPinnedVideoMemberId(activeVideoParticipant.member.id)
+                        setVideoLayoutMode('pinned')
+                      }}
                       className="relative aspect-video min-h-[220px] overflow-hidden rounded-[22px] border border-white/80 bg-slate-950 text-left shadow-inner"
                       title="Phóng to video"
                     >
@@ -720,6 +706,7 @@ export default function StudyTableStage({
                   const videoStream = isLocal ? localVideoStream : remoteVideoStreams.get(member.id)
                   const showVideo = cameraEnabled && !!videoStream
                   const showCardVideo = showVideo && !showVideoWall
+                  const isCardVideoExpanded = showCardVideo && expandedVideoMemberId === member.id && !isMicro
                   const isVideoFirst = isCrowded && showCardVideo
                   const activeReactions = isVideoFirst
                     ? EMPTY_REACTIONS
@@ -741,8 +728,8 @@ export default function StudyTableStage({
 
                         <button
                           type="button"
-                          onClick={() => setExpandedVideoMemberId(member.id)}
-                          className="relative block aspect-video min-h-[118px] w-full cursor-zoom-in overflow-hidden text-left"
+                          onClick={() => setExpandedVideoMemberId(null)}
+                          className="relative block aspect-video min-h-[118px] w-full cursor-default overflow-hidden text-left"
                           aria-label={`Phóng to video của ${member.username}`}
                           title="Phóng to video"
                         >
@@ -766,9 +753,6 @@ export default function StudyTableStage({
                               Live
                             </span>
                           </div>
-                          <span className="absolute right-2 top-10 grid h-7 w-7 place-items-center rounded-full bg-black/40 text-white shadow backdrop-blur">
-                            <Maximize2 size={13} />
-                          </span>
                           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent p-2.5">
                             <div className="flex items-center justify-between gap-2 text-[10px] font-black text-white">
                               <span className="inline-flex min-w-0 items-center gap-1">
@@ -851,6 +835,38 @@ export default function StudyTableStage({
                           })}
                         </div>
 
+                        {isCardVideoExpanded && videoStream && (
+                          <div className="mb-3 overflow-hidden rounded-[20px] border border-white/80 bg-slate-950 shadow-[0_14px_30px_rgba(15,23,42,0.16)]">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedVideoMemberId(null)}
+                              className="relative block aspect-video w-full cursor-zoom-out overflow-hidden text-left"
+                              aria-label={`Thu nho video cua ${member.username}`}
+                              title="Thu nho video"
+                            >
+                              <VideoPreview
+                                stream={videoStream}
+                                muted={isLocal}
+                                className="pointer-events-none h-full w-full bg-slate-950 object-contain"
+                              />
+                              <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/75 via-black/35 to-transparent p-2.5">
+                                <span className="min-w-0 truncate text-xs font-black text-white">
+                                  {member.username}{isLocal ? ' (Ban)' : ''}
+                                </span>
+                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/15 text-white shadow backdrop-blur">
+                                  <Minimize2 size={13} />
+                                </span>
+                              </div>
+                              {mutedInCall && (
+                                <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-red-500 px-2 py-1 text-[10px] font-black text-white shadow">
+                                  <MicOff size={10} />
+                                  Tat mic
+                                </span>
+                              )}
+                            </button>
+                          </div>
+                        )}
+
                         <div className="flex items-start gap-3">
                           <div className="relative shrink-0">
                             <div
@@ -913,7 +929,7 @@ export default function StudyTableStage({
                               </div>
                             )}
                           </div>
-                          {showCardVideo && !isMicro && videoStream && (
+                          {showCardVideo && !isMicro && videoStream && !isCardVideoExpanded && (
                             <button
                               type="button"
                               onClick={() => setExpandedVideoMemberId(member.id)}
