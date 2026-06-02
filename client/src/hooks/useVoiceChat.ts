@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import { getRemoteAudioVolume } from './voiceAudioPlayback';
 import { VOICE_RTC_CONFIG } from './voiceIceServers';
+import { canApplyRemoteAnswer, getOfferCollisionAction } from './voiceSignaling';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,8 @@ interface PeerData {
   sourceNode: MediaStreamAudioSourceNode | null;
   remoteStream: MediaStream | null;
   audioElement: HTMLAudioElement | null;
+  makingOffer: boolean;
+  ignoreOffer: boolean;
 }
 
 interface UseVoiceChatReturn {
@@ -131,12 +134,17 @@ export function useVoiceChat(
 
   const renegotiatePeer = useCallback(async (targetId: string, pc: RTCPeerConnection) => {
     if (!socket || pc.signalingState === 'closed') return;
+    const peer = peersRef.current.get(targetId);
+    if (!peer) return;
     try {
+      peer.makingOffer = true;
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      socket.emit('voice-offer', { targetId, offer });
+      socket.emit('voice-offer', { targetId, offer: pc.localDescription ?? offer });
     } catch (err) {
       console.warn('[VoiceChat] Renegotiation failed:', targetId, err);
+    } finally {
+      peer.makingOffer = false;
     }
   }, [socket]);
 
@@ -550,6 +558,8 @@ export function useVoiceChat(
       sourceNode: null,
       remoteStream: null,
       audioElement: null,
+      makingOffer: false,
+      ignoreOffer: false,
     });
   }, []);
 
@@ -571,9 +581,18 @@ export function useVoiceChat(
       }
       registerPeer(userId, pc);
 
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit('voice-offer', { targetId: userId, offer });
+      const peer = peersRef.current.get(userId);
+      if (!peer) return;
+      try {
+        peer.makingOffer = true;
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit('voice-offer', { targetId: userId, offer: pc.localDescription ?? offer });
+      } catch (err) {
+        console.warn('[VoiceChat] Failed to open peer:', userId, err);
+      } finally {
+        peer.makingOffer = false;
+      }
     };
 
     const onVoiceUsers = ({ users }: { users: Record<string, VoiceUserState> }) => {
@@ -610,13 +629,32 @@ export function useVoiceChat(
       if (!pc || pc.signalingState === 'closed') {
         pc = createPeerConnection(fromId);
         registerPeer(fromId, pc);
-      } else if (pc.signalingState !== 'stable') {
+      }
+      const peer = peersRef.current.get(fromId);
+      if (!peer) return;
+
+      const collisionAction = getOfferCollisionAction({
+        localId: socket.id ?? '',
+        remoteId: fromId,
+        makingOffer: peer.makingOffer,
+        signalingState: pc.signalingState,
+      });
+
+      if (collisionAction === 'ignore') {
+        peer.ignoreOffer = true;
+        console.info('[VoiceChat] Ignored colliding offer from impolite peer:', fromId);
+        return;
+      }
+
+      peer.ignoreOffer = false;
+      if (collisionAction === 'rollback-and-accept') {
         try {
-          await pc.setLocalDescription({ type: 'rollback' });
+          await pc.setLocalDescription({ type: 'rollback' } as RTCSessionDescriptionInit);
         } catch (err) {
           console.warn('[VoiceChat] Failed to rollback before remote offer:', fromId, err);
         }
       }
+
       if (isInVoiceRef.current) {
         addLocalTracks(pc);
       }
@@ -632,13 +670,22 @@ export function useVoiceChat(
     const onVoiceAnswer = async ({ fromId, answer }: { fromId: string; answer: RTCSessionDescriptionInit }) => {
       const peer = peersRef.current.get(fromId);
       if (!peer) return;
-      await peer.pc.setRemoteDescription(new RTCSessionDescription(answer));
-      await flushPendingIceCandidates(fromId, peer.pc);
+      if (!canApplyRemoteAnswer(peer.pc.signalingState)) {
+        console.info('[VoiceChat] Ignored stale answer:', fromId, peer.pc.signalingState);
+        return;
+      }
+      try {
+        await peer.pc.setRemoteDescription(new RTCSessionDescription(answer));
+        await flushPendingIceCandidates(fromId, peer.pc);
+      } catch (err) {
+        console.warn('[VoiceChat] Failed to apply answer:', fromId, err);
+      }
     };
 
     // Nhận ICE candidate
     const onVoiceIce = async ({ fromId, candidate }: { fromId: string; candidate: RTCIceCandidateInit }) => {
       const peer = peersRef.current.get(fromId);
+      if (peer?.ignoreOffer) return;
       if (!peer || !peer.pc.remoteDescription) {
         const pending = pendingIceCandidatesRef.current.get(fromId) ?? [];
         pending.push(candidate);
