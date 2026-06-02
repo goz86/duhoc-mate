@@ -9,7 +9,7 @@ import {
   Headphones, Music2, ChevronRight, Search,
   Minimize2, Palette, Settings, Crown,
   Link2, Volume2, VolumeX, SkipForward, Plus, X, Trash2, Shuffle,
-  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, Sparkles, ClipboardList
+  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, Sparkles, ClipboardList, Timer
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
 import { useTranslation } from 'react-i18next';
@@ -79,6 +79,19 @@ const CHAT_MESSAGES_PAGE_SIZE = 25;
 // Bù thời gian YouTube buffer khi seek (giây) để guest theo kịp host khi đồng bộ video.
 // Tăng nếu guest vẫn trễ, giảm nếu guest vượt trước host.
 const VIDEO_SYNC_BUFFER = 0.2;
+const STUDY_SESSION_HISTORY_KEY = 'duhocmate_study_session_history';
+
+type StudySessionStats = {
+  minutes: number;
+  songs: number;
+  messages: number;
+  pomodoros: number;
+  notes: number;
+  roomId: string;
+  roomTitle: string;
+  companions: string[];
+  leftAt: string;
+};
 
 const getApiBaseCandidates = () => {
   const bases = [API_BASE_URL, '', LOCAL_API_BASE_URL];
@@ -318,7 +331,17 @@ export default function App() {
   const messagesSentRef = useRef<number>(0);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showMobileRoomMenu, setShowMobileRoomMenu] = useState(false);
-  const [sessionStats, setSessionStats] = useState({ minutes: 0, songs: 0, messages: 0 });
+  const [sessionStats, setSessionStats] = useState<StudySessionStats>({
+    minutes: 0,
+    songs: 0,
+    messages: 0,
+    pomodoros: 0,
+    notes: 0,
+    roomId: '',
+    roomTitle: '',
+    companions: [],
+    leftAt: '',
+  });
 
   // Help board – persists tab across page reloads
   const [showHelpBoard, setShowHelpBoard] = useState<boolean>(() => {
@@ -1878,11 +1901,38 @@ export default function App() {
 
   const handleLeaveRoom = () => {
     const minutes = Math.max(0, Math.floor((Date.now() - joinTimeRef.current) / 60000));
-    setSessionStats({ minutes, songs: songsPlayedRef.current, messages: messagesSentRef.current });
+    const companions = members
+      .filter(member => member.id !== socketId)
+      .map(member => member.username)
+      .filter(Boolean)
+      .slice(0, 8);
+    const notes = ideaTasks.filter(task => task.title.trim() || task.note?.trim()).length;
+    setSessionStats({
+      minutes,
+      songs: songsPlayedRef.current,
+      messages: messagesSentRef.current,
+      pomodoros: Math.floor(minutes / 25),
+      notes,
+      roomId,
+      roomTitle: currentRoomTitle || `Phòng ${roomId}`,
+      companions,
+      leftAt: new Date().toISOString(),
+    });
     setShowLeaveConfirm(true);
   };
 
   const confirmLeaveRoom = () => {
+    try {
+      const rawHistory = localStorage.getItem(STUDY_SESSION_HISTORY_KEY);
+      const history = rawHistory ? JSON.parse(rawHistory) : [];
+      localStorage.setItem(
+        STUDY_SESSION_HISTORY_KEY,
+        JSON.stringify([sessionStats, ...(Array.isArray(history) ? history : [])].slice(0, 50))
+      );
+    } catch (error) {
+      console.warn('Không thể lưu lịch sử phiên học:', error);
+    }
+
     // Rời phòng: ngắt socket khỏi phòng, reset state, về landing (KHÔNG reload page)
     if (socket && roomId) {
       socket.emit('leave-room', { roomId });
@@ -3250,7 +3300,7 @@ export default function App() {
       {/* ── Popup tổng kết phiên học khi rời phòng ── */}
       {showLeaveConfirm && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Header gradient */}
             <div className="bg-gradient-to-br from-brand-terracotta to-brand-brown-dark px-6 pt-8 pb-10 text-center relative overflow-hidden">
               <div className="absolute inset-0 opacity-10">
@@ -3277,6 +3327,31 @@ export default function App() {
                 <span className="font-display font-black text-2xl text-brand-terracotta">{sessionStats.messages}</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-brand-brown-light mt-0.5">{t('room.session.messages')}</span>
               </div>
+            </div>
+            <div className="mx-6 mt-4 grid grid-cols-2 gap-2">
+              <div className="rounded-2xl border border-brand-terracotta-light/20 bg-brand-light/55 px-3 py-3">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-brand-brown-light">
+                  <Timer size={13} />
+                  Pomodoro
+                </div>
+                <p className="mt-1 font-display text-xl font-black text-brand-brown-dark">{sessionStats.pomodoros}</p>
+              </div>
+              <div className="rounded-2xl border border-brand-terracotta-light/20 bg-brand-light/55 px-3 py-3">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-brand-brown-light">
+                  <ClipboardList size={13} />
+                  Từ mới / ghi chú
+                </div>
+                <p className="mt-1 font-display text-xl font-black text-brand-brown-dark">{sessionStats.notes}</p>
+              </div>
+            </div>
+            <div className="mx-6 mt-3 rounded-2xl border border-brand-terracotta-light/20 bg-white px-3 py-3">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase text-brand-brown-light">
+                <Users size={13} />
+                Bạn học cùng
+              </div>
+              <p className="mt-1 truncate text-sm font-bold text-brand-brown-dark">
+                {sessionStats.companions.length > 0 ? sessionStats.companions.join(', ') : 'Bạn đã tự học một mình'}
+              </p>
             </div>
             {/* Motivational message */}
             <p className="text-center text-brand-brown-light text-sm px-6 mt-5">

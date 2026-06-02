@@ -82,6 +82,8 @@ type VoiceUserState = {
   volume: number
 }
 
+type VideoLayoutMode = 'grid' | 'speaker' | 'pinned'
+
 type StudyTableStageProps = {
   members: StudyMember[]
   username: string
@@ -218,6 +220,8 @@ export default function StudyTableStage({
   const [now, setNow] = useState(() => Date.now())
   const [seatFilter, setSeatFilter] = useState<'all' | 'focus' | 'break'>('all')
   const [expandedVideoMemberId, setExpandedVideoMemberId] = useState<string | null>(null)
+  const [videoLayoutMode, setVideoLayoutMode] = useState<VideoLayoutMode>('grid')
+  const [pinnedVideoMemberId, setPinnedVideoMemberId] = useState<string | null>(null)
   const fallbackJoinedAtRef = useRef(Date.now())
 
   const myMember = members.find(m => m.id === currentSocketId)
@@ -340,6 +344,42 @@ export default function StudyTableStage({
     })
     return bubbles
   }, [chatMessages, now, clockOffset])
+
+  const videoParticipants = useMemo(() => {
+    return sortedSeats.flatMap(member => {
+      const isLocal = member.id === currentSocketId || member.username === username
+      const voiceState = voiceUsers.get(member.id)
+      const cameraEnabled = isLocal ? isCameraOn : !!voiceState?.cameraOn
+      const stream = isLocal ? localVideoStream : remoteVideoStreams.get(member.id)
+
+      if (!cameraEnabled || !stream) return []
+
+      return [{
+        member,
+        stream,
+        isLocal,
+        muted: isLocal ? isMuted : !!voiceState?.muted,
+        speaking: isLocal ? isInVoice && !isMuted : !!voiceState?.speaking,
+      }]
+    })
+  }, [currentSocketId, isCameraOn, isInVoice, isMuted, localVideoStream, remoteVideoStreams, sortedSeats, username, voiceUsers])
+
+  const showVideoWall = videoParticipants.length >= 2
+  const activeVideoParticipant = useMemo(() => {
+    if (videoParticipants.length === 0) return null
+    return (
+      videoParticipants.find(item => item.member.id === pinnedVideoMemberId) ||
+      videoParticipants.find(item => item.speaking) ||
+      videoParticipants[0]
+    )
+  }, [pinnedVideoMemberId, videoParticipants])
+
+  useEffect(() => {
+    if (pinnedVideoMemberId && !videoParticipants.some(item => item.member.id === pinnedVideoMemberId)) {
+      setPinnedVideoMemberId(null)
+      if (videoLayoutMode === 'pinned') setVideoLayoutMode('grid')
+    }
+  }, [pinnedVideoMemberId, videoLayoutMode, videoParticipants])
 
   const expandedVideo = useMemo(() => {
     if (!expandedVideoMemberId) return null
@@ -524,6 +564,114 @@ export default function StudyTableStage({
               </div>
             </div>
 
+            {showVideoWall && activeVideoParticipant && (
+              <div className="mb-4 rounded-[24px] border border-white/70 bg-white/78 p-2.5 shadow-[0_16px_40px_rgba(76,55,49,0.10)] backdrop-blur">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-[11px] font-black text-sky-700">
+                    <Video size={13} />
+                    {videoParticipants.length} camera đang bật
+                  </div>
+                  <div className="flex rounded-2xl border border-brand-terracotta-light/15 bg-white/80 p-1">
+                    {[
+                      { key: 'grid', label: 'Grid' },
+                      { key: 'speaker', label: 'Speaker' },
+                      { key: 'pinned', label: 'Pinned' },
+                    ].map(item => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setVideoLayoutMode(item.key as VideoLayoutMode)}
+                        className={`rounded-xl px-2.5 py-1.5 text-[10px] font-black transition ${
+                          videoLayoutMode === item.key
+                            ? 'bg-brand-terracotta text-white shadow-sm'
+                            : 'text-brand-brown-light hover:bg-brand-light'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {videoLayoutMode === 'grid' ? (
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    {videoParticipants.map(item => (
+                      <button
+                        key={item.member.id}
+                        type="button"
+                        onClick={() => {
+                          setPinnedVideoMemberId(item.member.id)
+                          setVideoLayoutMode('pinned')
+                        }}
+                        onDoubleClick={() => setExpandedVideoMemberId(item.member.id)}
+                        className={`group relative aspect-video overflow-hidden rounded-2xl border bg-slate-950 text-left shadow-inner transition hover:-translate-y-0.5 hover:shadow-lg ${
+                          item.member.id === pinnedVideoMemberId ? 'border-brand-terracotta ring-2 ring-brand-terracotta/25' : 'border-white/80'
+                        }`}
+                        title="Bấm để pin, nhấp đúp để phóng to"
+                      >
+                        <VideoPreview stream={item.stream} muted={item.isLocal} className="pointer-events-none h-full w-full object-cover" />
+                        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/75 to-transparent p-2">
+                          <span className="min-w-0 truncate text-[11px] font-black text-white">
+                            {item.member.username}{item.isLocal ? ' (Bạn)' : ''}
+                          </span>
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/15 px-2 py-1 text-[9px] font-black text-white backdrop-blur">
+                            {item.muted ? <MicOff size={10} /> : <Mic size={10} />}
+                            {item.speaking ? 'Speaking' : item.member.id === pinnedVideoMemberId ? 'Pinned' : 'Pin'}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_150px]">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedVideoMemberId(activeVideoParticipant.member.id)}
+                      className="relative aspect-video min-h-[220px] overflow-hidden rounded-[22px] border border-white/80 bg-slate-950 text-left shadow-inner"
+                      title="Phóng to video"
+                    >
+                      <VideoPreview stream={activeVideoParticipant.stream} muted={activeVideoParticipant.isLocal} className="pointer-events-none h-full w-full object-contain" />
+                      <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/75 to-transparent p-3">
+                        <div className="min-w-0 text-white">
+                          <p className="truncate text-sm font-black">
+                            {activeVideoParticipant.member.username}{activeVideoParticipant.isLocal ? ' (Bạn)' : ''}
+                          </p>
+                          <p className="mt-1 text-[10px] font-bold text-white/75">
+                            {videoLayoutMode === 'speaker' ? 'Speaker view' : 'Pinned view'}
+                          </p>
+                        </div>
+                        <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15 text-white backdrop-blur">
+                          <Maximize2 size={15} />
+                        </span>
+                      </div>
+                    </button>
+
+                    <div className="grid max-h-[260px] grid-cols-2 gap-2 overflow-y-auto lg:grid-cols-1">
+                      {videoParticipants.map(item => (
+                        <button
+                          key={item.member.id}
+                          type="button"
+                          onClick={() => {
+                            setPinnedVideoMemberId(item.member.id)
+                            setVideoLayoutMode('pinned')
+                          }}
+                          className={`relative aspect-video overflow-hidden rounded-2xl border bg-slate-950 text-left ${
+                            item.member.id === activeVideoParticipant.member.id ? 'border-brand-terracotta ring-2 ring-brand-terracotta/25' : 'border-white/80'
+                          }`}
+                          title="Pin video này"
+                        >
+                          <VideoPreview stream={item.stream} muted={item.isLocal} className="pointer-events-none h-full w-full object-cover" />
+                          <span className="absolute inset-x-1 bottom-1 truncate rounded-full bg-black/55 px-2 py-1 text-[9px] font-black text-white backdrop-blur">
+                            {item.member.username}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="relative min-h-0 flex-1">
               {/* overflow-visible để chat bubble không bị cắt bởi card bên trên */}
               <div className={`relative grid max-h-[min(62vh,620px)] w-full ${gridClass} content-start gap-2 overflow-y-auto overflow-x-visible pr-1 sm:gap-3 xl:gap-4`}>
@@ -571,7 +719,8 @@ export default function StudyTableStage({
                   const cameraEnabled = isLocal ? isCameraOn : !!voiceState?.cameraOn
                   const videoStream = isLocal ? localVideoStream : remoteVideoStreams.get(member.id)
                   const showVideo = cameraEnabled && !!videoStream
-                  const isVideoFirst = isCrowded && showVideo
+                  const showCardVideo = showVideo && !showVideoWall
+                  const isVideoFirst = isCrowded && showCardVideo
                   const activeReactions = isVideoFirst
                     ? EMPTY_REACTIONS
                     : (visibleReactionsByMember.get(member.id) || EMPTY_REACTIONS)
@@ -658,10 +807,10 @@ export default function StudyTableStage({
                         </div>
                       )}
 
-                      {!showVideo && (
+                      {!showCardVideo && (
                         <div className={`pointer-events-none absolute inset-x-3 top-3 z-0 ${isMicro ? 'h-14' : isCrowded ? 'h-16' : 'h-20'} rounded-[20px] bg-gradient-to-br ${palette.desk} desk-overlay`} />
                       )}
-                      {!isMicro && !showVideo && (
+                      {!isMicro && !showCardVideo && (
                         <>
                           <div className="pointer-events-none absolute right-4 top-4 z-0 h-6 w-12 rounded-full border border-white/70 bg-white/65" />
                           <div className="pointer-events-none absolute right-6 top-6 z-0 h-1.5 w-7 rounded-full bg-brand-terracotta-light/60" />
@@ -764,7 +913,7 @@ export default function StudyTableStage({
                               </div>
                             )}
                           </div>
-                          {showVideo && !isMicro && videoStream && (
+                          {showCardVideo && !isMicro && videoStream && (
                             <button
                               type="button"
                               onClick={() => setExpandedVideoMemberId(member.id)}
