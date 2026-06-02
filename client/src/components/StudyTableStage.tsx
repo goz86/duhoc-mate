@@ -26,7 +26,6 @@ import {
 } from 'lucide-react'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getStudyVideoPreviewPlayback } from './studyVideoPreview'
 
 type StudyMember = {
   id: string
@@ -148,34 +147,31 @@ const initials = (name: string) => name.trim().slice(0, 2).toUpperCase() || 'DM'
 
 const VideoPreview = memo(function VideoPreview({
   stream,
+  muted = false,
   className = '',
 }: {
   stream: MediaStream
+  muted?: boolean
   className?: string
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
-  const playback = getStudyVideoPreviewPlayback()
 
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
-    video.muted = playback.muted
     video.srcObject = stream
-    void video.play().catch(err => {
-      console.warn('[StudyTableStage] Camera preview playback blocked:', err)
-    })
 
     return () => {
       video.srcObject = null
     }
-  }, [stream, playback.muted])
+  }, [stream])
 
   return (
     <video
       ref={videoRef}
       autoPlay
-      playsInline={playback.playsInline}
-      muted={playback.muted}
+      playsInline
+      muted={muted}
       className={className}
     />
   )
@@ -485,8 +481,8 @@ export default function StudyTableStage({
         </div>
       </div>
 
-      <div className="grid min-w-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
-        <section className="relative min-w-0 overflow-visible rounded-[28px] border border-brand-terracotta-light/20 bg-[#FDF8F0] p-3 shadow-[0_24px_70px_rgba(76,55,49,0.08)] sm:min-h-[430px] sm:p-5 xl:min-h-[460px]">
+      <div className="grid flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <section className="relative min-h-[360px] rounded-[28px] border border-brand-terracotta-light/20 bg-[#FDF8F0] p-3 shadow-[0_24px_70px_rgba(76,55,49,0.08)] sm:min-h-[430px] sm:p-5 xl:min-h-[460px]">
           <div className="pointer-events-none absolute inset-0 rounded-[28px] study-stage-overlay" />
           <div className="pointer-events-none absolute inset-x-4 bottom-4 top-8 rounded-[30px] border border-white/50 bg-white/20 [background-image:linear-gradient(rgba(167,122,108,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(167,122,108,0.07)_1px,transparent_1px)] [background-size:34px_34px]" />
           {expandedVideo && false && (
@@ -499,6 +495,7 @@ export default function StudyTableStage({
               />
               <VideoPreview
                 stream={expandedVideo.stream}
+                muted={expandedVideo.isLocal}
                 className="pointer-events-none relative z-10 h-full w-full bg-slate-950 object-contain"
               />
               <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 bg-gradient-to-b from-black/75 via-black/35 to-transparent p-4">
@@ -530,7 +527,7 @@ export default function StudyTableStage({
             </div>
           )}
 
-          <div className="relative z-10 flex min-h-[330px] min-w-0 flex-col sm:min-h-[390px] xl:min-h-[420px]">
+          <div className="relative z-10 flex min-h-[330px] flex-col sm:min-h-[390px] xl:min-h-[420px]">
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white/70 px-3 py-1.5 text-[11px] font-black text-brand-brown-light">
                 <Users size={13} />
@@ -593,7 +590,7 @@ export default function StudyTableStage({
             )}
 
             {showVideoWall && activeVideoParticipant && (
-              <div className="mb-4 min-w-0 overflow-hidden rounded-[24px] border border-white/70 bg-white/78 p-2.5 shadow-[0_16px_40px_rgba(76,55,49,0.10)] backdrop-blur">
+              <div className="mb-4 rounded-[24px] border border-white/70 bg-white/78 p-2.5 shadow-[0_16px_40px_rgba(76,55,49,0.10)] backdrop-blur">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <div className="inline-flex items-center gap-1.5 rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-[11px] font-black text-sky-700">
                     <Video size={13} />
@@ -636,7 +633,7 @@ export default function StudyTableStage({
                         }`}
                         title="Bấm để pin, nhấp đúp để phóng to"
                       >
-                        <VideoPreview stream={item.stream} className="pointer-events-none h-full w-full object-cover" />
+                        <VideoPreview stream={item.stream} muted={item.isLocal} className="pointer-events-none h-full w-full object-cover" />
                         <div className="absolute inset-x-2 bottom-2 flex items-end justify-between gap-2">
                           <span className="inline-flex min-w-0 max-w-[70%] truncate rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-black text-white shadow-sm backdrop-blur">
                             {item.member.username}{item.isLocal ? ' (Bạn)' : ''}
@@ -650,17 +647,17 @@ export default function StudyTableStage({
                     ))}
                   </div>
                 ) : (
-                  <div className="grid min-w-0 gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(132px,160px)]">
+                  <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_150px]">
                     <button
                       type="button"
                       onClick={() => {
                         setPinnedVideoMemberId(activeVideoParticipant.member.id)
                         setVideoLayoutMode('pinned')
                       }}
-                      className="relative aspect-video min-h-[190px] max-h-[min(58vh,560px)] min-w-0 overflow-hidden rounded-[22px] border border-white/80 bg-slate-950 text-left shadow-inner sm:min-h-[220px]"
+                      className="relative aspect-video min-h-[220px] overflow-hidden rounded-[22px] border border-white/80 bg-slate-950 text-left shadow-inner"
                       title="Phóng to video"
                     >
-                      <VideoPreview stream={activeVideoParticipant.stream} className="pointer-events-none h-full w-full object-contain" />
+                      <VideoPreview stream={activeVideoParticipant.stream} muted={activeVideoParticipant.isLocal} className="pointer-events-none h-full w-full object-contain" />
                       <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/75 to-transparent p-3">
                         <div className="min-w-0 text-white">
                           <p className="truncate text-sm font-black">
@@ -676,7 +673,7 @@ export default function StudyTableStage({
                       </div>
                     </button>
 
-                    <div className="grid min-w-0 grid-cols-2 gap-2 overflow-visible sm:max-h-[260px] sm:overflow-y-auto lg:grid-cols-1">
+                    <div className="grid max-h-[260px] grid-cols-2 gap-2 overflow-y-auto lg:grid-cols-1">
                       {videoParticipants.map(item => (
                         <button
                           key={item.member.id}
@@ -690,8 +687,8 @@ export default function StudyTableStage({
                           }`}
                           title="Pin video này"
                         >
-                          <VideoPreview stream={item.stream} className="pointer-events-none h-full w-full object-cover" />
-                          <span className="absolute bottom-1 left-1 inline-flex max-w-[calc(100%-0.5rem)] truncate rounded-full bg-black/55 px-2 py-1 text-[9px] font-black text-white backdrop-blur">
+                          <VideoPreview stream={item.stream} muted={item.isLocal} className="pointer-events-none h-full w-full object-cover" />
+                          <span className="absolute inset-x-1 bottom-1 truncate rounded-full bg-black/55 px-2 py-1 text-[9px] font-black text-white backdrop-blur">
                             {item.member.username}
                           </span>
                         </button>
@@ -779,6 +776,7 @@ export default function StudyTableStage({
                         >
                           <VideoPreview
                             stream={videoStream}
+                            muted={isLocal}
                             className="pointer-events-none h-full w-full bg-slate-950 object-cover"
                           />
                           <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/70 via-black/30 to-transparent p-2.5">
@@ -889,6 +887,7 @@ export default function StudyTableStage({
                             >
                               <VideoPreview
                                 stream={videoStream}
+                                muted={isLocal}
                                 className="pointer-events-none h-full w-full bg-slate-950 object-contain"
                               />
                               <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/75 via-black/35 to-transparent p-2.5">
@@ -981,6 +980,7 @@ export default function StudyTableStage({
                             >
                               <VideoPreview
                                 stream={videoStream}
+                                muted={isLocal}
                                 className="pointer-events-none h-full w-full bg-slate-950 object-cover"
                               />
                               <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-0.5 rounded-full bg-black/45 px-1.5 py-0.5 text-[8px] font-black text-white backdrop-blur">

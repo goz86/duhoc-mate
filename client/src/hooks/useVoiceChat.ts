@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import { getRemoteAudioVolume } from './voiceAudioPlayback';
 import { VOICE_RTC_CONFIG } from './voiceIceServers';
-import { canApplyRemoteAnswer, getOfferCollisionAction, shouldFlushQueuedRenegotiation, shouldOpenPeerForJoinedVoiceUser, shouldOpenPeerForRemoteCameraChange, shouldQueueRenegotiation } from './voiceSignaling';
+import { canApplyRemoteAnswer, getOfferCollisionAction } from './voiceSignaling';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -30,7 +30,6 @@ interface PeerData {
   audioElement: HTMLAudioElement | null;
   makingOffer: boolean;
   ignoreOffer: boolean;
-  needsNegotiation: boolean;
 }
 
 interface UseVoiceChatReturn {
@@ -137,13 +136,8 @@ export function useVoiceChat(
     if (!socket || pc.signalingState === 'closed') return;
     const peer = peersRef.current.get(targetId);
     if (!peer) return;
-    if (shouldQueueRenegotiation({ makingOffer: peer.makingOffer, signalingState: pc.signalingState })) {
-      peer.needsNegotiation = true;
-      return;
-    }
     try {
       peer.makingOffer = true;
-      peer.needsNegotiation = false;
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       socket.emit('voice-offer', { targetId, offer: pc.localDescription ?? offer });
@@ -566,7 +560,6 @@ export function useVoiceChat(
       audioElement: null,
       makingOffer: false,
       ignoreOffer: false,
-      needsNegotiation: false,
     });
   }, []);
 
@@ -626,9 +619,7 @@ export function useVoiceChat(
         return next;
       });
 
-      if (shouldOpenPeerForJoinedVoiceUser({ isInVoice: isInVoiceRef.current })) {
-        void openPeerToUser(userId);
-      }
+      void openPeerToUser(userId);
     };
 
     // Nhận offer từ user đã có mặt
@@ -673,10 +664,6 @@ export function useVoiceChat(
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       socket.emit('voice-answer', { targetId: fromId, answer });
-      if (shouldFlushQueuedRenegotiation({ needsNegotiation: peer.needsNegotiation, signalingState: pc.signalingState })) {
-        peer.needsNegotiation = false;
-        void renegotiatePeer(fromId, pc);
-      }
     };
 
     // Nhận answer
@@ -688,13 +675,8 @@ export function useVoiceChat(
         return;
       }
       try {
-        peer.ignoreOffer = false;
         await peer.pc.setRemoteDescription(new RTCSessionDescription(answer));
         await flushPendingIceCandidates(fromId, peer.pc);
-        if (shouldFlushQueuedRenegotiation({ needsNegotiation: peer.needsNegotiation, signalingState: peer.pc.signalingState })) {
-          peer.needsNegotiation = false;
-          void renegotiatePeer(fromId, peer.pc);
-        }
       } catch (err) {
         console.warn('[VoiceChat] Failed to apply answer:', fromId, err);
       }
@@ -779,7 +761,7 @@ export function useVoiceChat(
         }
         return next;
       });
-      if (cameraOn && shouldOpenPeerForRemoteCameraChange({ isInVoice: isInVoiceRef.current })) {
+      if (cameraOn) {
         void openPeerToUser(userId);
       }
       if (!cameraOn) {
@@ -815,7 +797,7 @@ export function useVoiceChat(
       socket.off('voice-speaking', onVoiceSpeaking);
       socket.off('voice-camera-changed', onVoiceCameraChanged);
     };
-  }, [socket, createPeerConnection, addLocalTracks, addReceiveOnlyTransceivers, flushPendingIceCandidates, registerPeer, renegotiatePeer]);
+  }, [socket, createPeerConnection, addLocalTracks, addReceiveOnlyTransceivers, flushPendingIceCandidates, registerPeer]);
 
   // ── Cleanup khi unmount ───────────────────────────────────────────────────
   useEffect(() => {
