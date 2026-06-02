@@ -470,24 +470,6 @@ export default function StudyTableStage({
                       className={`group relative w-full rounded-[22px] border border-white/70 bg-white/86 shadow-[0_14px_32px_rgba(76,55,49,0.10)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(76,55,49,0.13)] ${isMicro ? 'p-2.5' : isCrowded ? 'p-3' : 'p-3.5'}`}
                     >
                       {/* Chat bubble – overlay bên trong card, không gây layout shift */}
-                      {showVideo && !isMicro && videoStream && (
-                        <div className="relative mb-3 overflow-hidden rounded-[20px] border border-white/80 bg-slate-950 shadow-inner">
-                          <VideoPreview
-                            stream={videoStream}
-                            muted={isLocal}
-                            className="aspect-video w-full bg-slate-950 object-cover"
-                          />
-                          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/50 px-2 py-1 text-[10px] font-black text-white backdrop-blur">
-                            <Video size={11} />
-                            Live cam
-                          </span>
-                          {mutedInCall && (
-                            <span className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-red-500 text-white shadow">
-                              <MicOff size={13} />
-                            </span>
-                          )}
-                        </div>
-                      )}
                       {chatBubble && (
                         <div className="absolute inset-x-3 top-3 z-40 flex animate-fade-in items-center justify-center">
                           <div className="max-w-full truncate rounded-2xl border border-white/80 bg-white/95 px-3 py-1.5 text-[11px] font-bold text-brand-brown-dark shadow-lg backdrop-blur-sm">
@@ -600,6 +582,24 @@ export default function StudyTableStage({
                               </div>
                             )}
                           </div>
+                          {showVideo && !isMicro && videoStream && (
+                            <div className={`relative shrink-0 overflow-hidden rounded-2xl border border-white/80 bg-slate-950 shadow-inner ${isCrowded ? 'h-14 w-20' : 'h-[72px] w-28'}`}>
+                              <VideoPreview
+                                stream={videoStream}
+                                muted={isLocal}
+                                className="h-full w-full bg-slate-950 object-cover"
+                              />
+                              <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-0.5 rounded-full bg-black/45 px-1.5 py-0.5 text-[8px] font-black text-white backdrop-blur">
+                                <Video size={9} />
+                                Live
+                              </span>
+                              {mutedInCall && (
+                                <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-red-500 text-white shadow">
+                                  <MicOff size={10} />
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         <div className={`${isMicro ? 'mt-3 gap-1.5' : 'mt-4 gap-2'} grid grid-cols-2`}>
