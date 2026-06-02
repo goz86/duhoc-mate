@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import { getRemoteAudioVolume } from './voiceAudioPlayback';
 import { VOICE_RTC_CONFIG } from './voiceIceServers';
+import { syncLocalTracksToPeer } from './voicePeerTracks';
 import { canApplyRemoteAnswer, getOfferCollisionAction } from './voiceSignaling';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -247,14 +248,10 @@ export function useVoiceChat(
   }, [socket, getAudioContext, updateRemoteVideoStream, voiceUsers]);
 
   // ── Helper: thêm local tracks vào peer connection ─────────────────────────
-  const addLocalTracks = useCallback((pc: RTCPeerConnection) => {
+  const addLocalTracks = useCallback((pc: RTCPeerConnection): boolean => {
     const stream = localStreamRef.current;
-    if (!stream) return;
-    stream.getTracks().forEach(track => {
-      if (!pc.getSenders().find(s => s.track === track)) {
-        pc.addTrack(track, stream);
-      }
-    });
+    if (!stream) return false;
+    return syncLocalTracksToPeer(pc, stream);
   }, []);
 
   const addReceiveOnlyTransceivers = useCallback((pc: RTCPeerConnection) => {
@@ -355,13 +352,19 @@ export function useVoiceChat(
       // 4. Thông báo server
       socket.emit('voice-join', { roomId: roomIdRef.current });
 
+      peersRef.current.forEach(({ pc }, userId) => {
+        if (addLocalTracks(pc)) {
+          void renegotiatePeer(userId, pc);
+        }
+      });
+
       // 5. Bắt đầu VAD
       startVAD();
     } catch (err) {
       console.error('[VoiceChat] getUserMedia failed:', err);
       alert('Không thể truy cập microphone. Vui lòng kiểm tra quyền trình duyệt.');
     }
-  }, [socket, getAudioContext, startVAD]);
+  }, [socket, getAudioContext, startVAD, addLocalTracks, renegotiatePeer]);
 
   const startCamera = useCallback(async () => {
     if (!socket) return;
@@ -393,10 +396,9 @@ export function useVoiceChat(
       };
 
       peersRef.current.forEach(({ pc }, userId) => {
-        if (!pc.getSenders().some(sender => sender.track === videoTrack)) {
-          pc.addTrack(videoTrack, localStreamRef.current!);
+        if (localStreamRef.current && syncLocalTracksToPeer(pc, localStreamRef.current)) {
+          void renegotiatePeer(userId, pc);
         }
-        void renegotiatePeer(userId, pc);
       });
 
       socket.emit('voice-camera-changed', { roomId: roomIdRef.current, cameraOn: true });
