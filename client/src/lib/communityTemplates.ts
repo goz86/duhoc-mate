@@ -16,6 +16,7 @@ export type RoomTemplate = {
   title: string
   description: string
   category: 'topik' | 'life' | 'listening' | 'job' | 'study' | 'money'
+  roomAvatarUrl?: string
   creatorName: string
   createdAt: string
   tasks: IdeaTask[]
@@ -35,6 +36,7 @@ export const seedTemplates: RoomTemplate[] = [
     title: 'Phòng ôn TOPIK 30 ngày',
     description: 'Lộ trình học từ vựng, nghe, đọc và mock test mỗi tuần.',
     category: 'topik',
+    roomAvatarUrl: '/topik-room-avatar.svg',
     creatorName: 'Duhoc Mate',
     createdAt: new Date().toISOString(),
     tags: ['TOPIK', '30 ngày', 'flashcard'],

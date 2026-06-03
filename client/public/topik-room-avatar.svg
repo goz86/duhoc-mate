@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">TOPIK room avatar</title>
+  <desc id="desc">Circular TOPIK study room badge inspired by the Test of Proficiency in Korean logo.</desc>
+  <rect width="256" height="256" rx="56" fill="#ffffff"/>
+  <circle cx="128" cy="128" r="104" fill="#ffffff" stroke="#7c7c7c" stroke-width="8"/>
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#8a8a8a" stroke-width="4"/>
+  <circle cx="128" cy="39" r="15" fill="#ffad19"/>
+  <path d="M86 76c9-20 36-28 58-15 25 15 36 48 24 73-8 17-27 28-46 24 17-7 25-23 20-38-5-16-22-24-41-20-17 4-27-8-15-24z" fill="url(#swirlBlue)"/>
+  <path d="M153 55c37 15 63 44 63 76 0 17-7 31-20 39-17 10-42 5-64-10 28 1 49-12 49-32 0-17-15-33-38-43 16-4 24-15 10-30z" fill="url(#swirlRed)"/>
+  <path d="M113 90c17 1 29 11 29 25 0 15-14 26-33 25 8-8 11-17 7-25-4-8-13-13-25-13 5-8 12-12 22-12z" fill="#ffffff"/>
+  <text x="128" y="163" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="45" font-weight="900" fill="#171717" letter-spacing="-3">TOPIK</text>
+  <circle cx="100" cy="147" r="8" fill="#1f6ccf"/>
+  <circle cx="111" cy="147" r="8" fill="#1faa59"/>
+  <circle cx="106" cy="157" r="8" fill="#f0b323"/>
+  <circle cx="116" cy="157" r="8" fill="#d7263d"/>
+  <circle cx="111" cy="152" r="7" fill="#ffffff"/>
+  <circle cx="111" cy="152" r="4" fill="#d7263d"/>
+  <text x="128" y="204" text-anchor="middle" font-family="Plus Jakarta Sans, Arial, sans-serif" font-size="15" font-weight="800" fill="#777777">Test of Proficiency in Korean</text>
+  <defs>
+    <linearGradient id="swirlBlue" x1="84" y1="61" x2="156" y2="151" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#18288d"/>
+      <stop offset="1" stop-color="#20b7d4"/>
+    </linearGradient>
+    <linearGradient id="swirlRed" x1="153" y1="55" x2="203" y2="171" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fb8b20"/>
+      <stop offset="1" stop-color="#ef2034"/>
+    </linearGradient>
+  </defs>
+</svg>

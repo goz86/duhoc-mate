@@ -1,6 +1,6 @@
 import type React from 'react'
 import { useMemo, useState } from 'react'
-import { BookOpen, Clock, Compass, Copy, Globe2, Headphones, LockKeyhole, Search, Users } from 'lucide-react'
+import { Clock, Compass, Copy, Globe2, Headphones, LockKeyhole, Search, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { RoomTemplate } from '../lib/communityTemplates'
 import { getTemplateRoomId, seedRoomIds } from '../lib/templateRooms'
@@ -81,6 +81,7 @@ export default function TemplateMarketplace({
     () => activeRooms.find(room => room.id === topikRoomId),
     [activeRooms, topikRoomId]
   )
+  const topikAvatarUrl = topikActiveRoom?.roomAvatarUrl || topikTemplate?.roomAvatarUrl || ''
 
   const visibleRecentRooms = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -214,8 +215,12 @@ export default function TemplateMarketplace({
             style={{ animationDelay: '0ms' }}
             className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-[15px] border border-black/[0.06] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-sm"
           >
-            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[14px] border border-blue-100 bg-blue-50 text-blue-700">
-              <BookOpen size={19} />
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-blue-100 bg-blue-50 text-blue-700">
+              {topikAvatarUrl ? (
+                <img src={topikAvatarUrl} alt="TOPIK" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-xs font-black">TOPIK</span>
+              )}
             </div>
 
             <div className="min-w-0 flex-1">

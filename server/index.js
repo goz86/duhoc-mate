@@ -1105,7 +1105,7 @@ io.on('connection', (socket) => {
   });
 
   // 1. Tham gia phòng
-  socket.on('join-room', async ({ roomId, username, ideaTasks = [], roomTitle, isPrivate, password, hostAvatarUrl, friendCode, avatarUrl }) => {
+  socket.on('join-room', async ({ roomId, username, ideaTasks = [], roomTitle, isPrivate, password, hostAvatarUrl, roomAvatarUrl, friendCode, avatarUrl }) => {
     const rememberedRoom = roomDirectory.get(roomId);
     const restoredState = savedRoomState.get(roomId) || await loadRoomStateFromSupabase(roomId) || {};
     // Khởi tạo phòng nếu chưa tồn tại
@@ -1138,7 +1138,7 @@ io.on('connection', (socket) => {
         hostReconnectUntil: restoredState.hostReconnectUntil || null,
         studyTable: restoredState.studyTable || createDefaultStudyTable(),
         pinnedMessage: restoredState.pinnedMessage || null,
-        roomAvatarUrl: restoredState.roomAvatarUrl || rememberedRoom?.roomAvatarUrl || '',
+        roomAvatarUrl: roomAvatarUrl || restoredState.roomAvatarUrl || rememberedRoom?.roomAvatarUrl || '',
         roomBackgroundUrl: restoredState.roomBackgroundUrl || '',
         whiteboard: { elements: [] },  // bảng vẽ chung: [{id,type:'stroke'|'image',...}]
         voiceUsers: {}  // { [socketId]: { muted, speaking, cameraOn } }
@@ -1149,6 +1149,9 @@ io.on('connection', (socket) => {
     cancelEmptyRoomCleanup(roomId);
     if (rememberedRoom && !roomTitle) {
       room.roomTitle = rememberedRoom.roomTitle || room.roomTitle;
+    }
+    if (typeof roomAvatarUrl === 'string' && roomAvatarUrl && !room.roomAvatarUrl) {
+      room.roomAvatarUrl = roomAvatarUrl;
     }
 
     // Kiểm tra mật khẩu nếu phòng riêng tư và không phải là chủ phòng (members.length > 0)

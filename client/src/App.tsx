@@ -1818,6 +1818,7 @@ export default function App() {
     guestUsername?: string
   ) => {
     const fixedRoomId = getTemplateRoomId(template);
+    const templateAvatarUrl = template.roomAvatarUrl || '';
 
     // Nếu chưa đăng nhập và chưa có profile khách, bắt buộc hiện popup nhập tên khách / đăng nhập Google
     if (!user && !profile?.username && !isGuestConfirmed) {
@@ -1839,17 +1840,18 @@ export default function App() {
     setRoomSettingsName(template.title);
     setRoomSettingsPublic(true);
     setRoomSettingsPassword('');
+    setCurrentRoomAvatarUrl(templateAvatarUrl);
     setIdeaTasks(seedTasks);
     setStageMode('ideas');
 
     const newRecent = [
-      { id: fixedRoomId, hostName: template.title, currentSong: 'Phòng mở 24/24' },
+      { id: fixedRoomId, hostName: template.title, currentSong: 'Phòng mở 24/24', roomTitle: template.title, roomAvatarUrl: templateAvatarUrl },
       ...recentRooms.filter(r => r.id !== fixedRoomId)
     ].slice(0, 5);
     setRecentRooms(newRecent);
     localStorage.setItem('duhocmate_recent_rooms', JSON.stringify(newRecent));
 
-    socket.emit('join-room', { roomId: fixedRoomId, username: guestUsername || username, ideaTasks: seedTasks, friendCode, roomTitle: template.title, avatarUrl: profile?.avatar_url || '' });
+    socket.emit('join-room', { roomId: fixedRoomId, username: guestUsername || username, ideaTasks: seedTasks, friendCode, roomTitle: template.title, roomAvatarUrl: templateAvatarUrl, avatarUrl: profile?.avatar_url || '' });
     setView('room');
     navigateToRoom(fixedRoomId);
   };
