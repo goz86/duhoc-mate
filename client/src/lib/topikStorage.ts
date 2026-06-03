@@ -9,6 +9,12 @@ import {
   buildTopikWordRow,
   isMissingSupabaseColumnError,
 } from './topikStorageRows'
+import {
+  buildTopikProgressRow,
+  normalizeTopikProgress,
+  topikProgressStorageKey,
+  type TopikProgressState,
+} from './topikProgress'
 
 export interface TopikWord {
   id?: string
@@ -23,6 +29,7 @@ export interface TopikWord {
 }
 
 const LOCAL_KEY = 'topik_ai_words'
+const EMPTY_TOPIK_PROGRESS: TopikProgressState = { knownKeys: [], unknownKeys: [] }
 
 // ─── localStorage helpers ───────────────────────────────────────
 
@@ -46,6 +53,28 @@ function getLocalWords(): TopikWord[] {
 
 function saveLocalWords(words: TopikWord[]) {
   localStorage.setItem(LOCAL_KEY, JSON.stringify(words))
+}
+
+function loadLocalProgress(level: number, userId?: string | null): TopikProgressState {
+  try {
+    const raw = localStorage.getItem(topikProgressStorageKey(level, userId))
+    if (!raw) return EMPTY_TOPIK_PROGRESS
+    const parsed = JSON.parse(raw)
+    return normalizeTopikProgress({
+      knownKeys: Array.isArray(parsed?.knownKeys) ? parsed.knownKeys : [],
+      unknownKeys: Array.isArray(parsed?.unknownKeys) ? parsed.unknownKeys : [],
+    })
+  } catch {
+    localStorage.removeItem(topikProgressStorageKey(level, userId))
+    return EMPTY_TOPIK_PROGRESS
+  }
+}
+
+function saveLocalProgress(level: number, progress: TopikProgressState, userId?: string | null) {
+  localStorage.setItem(
+    topikProgressStorageKey(level, userId),
+    JSON.stringify(normalizeTopikProgress(progress))
+  )
 }
 
 // ─── Public API ─────────────────────────────────────────────────
@@ -244,6 +273,62 @@ export async function saveWordExamples(
 
 
 // ─── Exam Date Persistence (Supabase + localStorage) ────────────
+
+export async function loadTopikProgress(level: number, userId?: string | null): Promise<TopikProgressState> {
+  const localProgress = loadLocalProgress(level, userId)
+
+  if (userId && supabaseEnabled && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('topik_progress')
+        .select('known_keys,unknown_keys')
+        .eq('user_id', userId)
+        .eq('level', level)
+        .maybeSingle()
+
+      if (!error && data) {
+        const progress = normalizeTopikProgress({
+          knownKeys: Array.isArray(data.known_keys) ? data.known_keys : [],
+          unknownKeys: Array.isArray(data.unknown_keys) ? data.unknown_keys : [],
+        })
+        saveLocalProgress(level, progress, userId)
+        return progress
+      }
+    } catch (err) {
+      console.warn('[TopikStorage] Supabase loadTopikProgress fallback:', err)
+    }
+  }
+
+  return localProgress
+}
+
+export async function saveTopikProgress(
+  level: number,
+  progress: TopikProgressState,
+  userId?: string | null
+): Promise<void> {
+  const normalized = normalizeTopikProgress(progress)
+  saveLocalProgress(level, normalized, userId)
+
+  if (userId && supabaseEnabled && supabase) {
+    try {
+      const { error } = await supabase
+        .from('topik_progress')
+        .upsert([{
+          ...buildTopikProgressRow(userId, level, normalized),
+          updated_at: new Date().toISOString(),
+        }], {
+          onConflict: 'user_id,level',
+        })
+
+      if (error) {
+        console.warn('[TopikStorage] Supabase saveTopikProgress warning:', error.message)
+      }
+    } catch (err) {
+      console.warn('[TopikStorage] Supabase saveTopikProgress fallback:', err)
+    }
+  }
+}
 
 const EXAM_DATE_KEY = 'topik_exam_date'
 

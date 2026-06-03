@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../contexts/AuthContext'
 import {
   ChevronLeft, ChevronRight, Calendar, RotateCcw, BookOpen,
   CheckCircle2, XCircle, Volume2, Settings, Loader2,
@@ -13,8 +14,10 @@ import {
   saveWords, getWordsByLevel, getAllSavedKoWords, seedShuffle,
   saveExamDate as saveExamDateToDb, loadExamDate,
   getWordExamples, saveWordExamples,
+  loadTopikProgress, saveTopikProgress,
   type TopikWord,
 } from '../lib/topikStorage'
+import { topikWordProgressKey } from '../lib/topikProgress'
 import TopikExamComponent from './TopikExam'
 
 interface TopikCard {
@@ -115,14 +118,16 @@ interface Props {
 
 export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
   const lang = ((i18n.resolvedLanguage || i18n.language).split('-')[0] || 'vi') as 'vi' | 'ko' | 'en'
+  const progressUserId = user?.id || null
 
   // ── Core states ────────────────────────────────────────────────
   const [selectedLevel, setSelectedLevel] = useState(1)
   const [cardIndex, setCardIndex] = useState(0)
   const [showAnswer, setShowAnswer] = useState(false)
-  const [known, setKnown] = useState<Set<number>>(new Set())
-  const [unknown, setUnknown] = useState<Set<number>>(new Set())
+  const [known, setKnown] = useState<Set<string>>(new Set())
+  const [unknown, setUnknown] = useState<Set<string>>(new Set())
   const [examDate, setExamDate] = useState<string>('')
   const [showDateInput, setShowDateInput] = useState(false)
   const [activeTab, setActiveTab] = useState<'flashcard' | 'countdown' | 'exam'>('flashcard')
@@ -147,6 +152,18 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
       if (date) setExamDate(date)
     })
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    setKnown(new Set())
+    setUnknown(new Set())
+    loadTopikProgress(selectedLevel, progressUserId).then(progress => {
+      if (cancelled) return
+      setKnown(new Set(progress.knownKeys))
+      setUnknown(new Set(progress.unknownKeys))
+    })
+    return () => { cancelled = true }
+  }, [selectedLevel, progressUserId])
 
   // ── Load AI words from storage on level change ─────────────────
   useEffect(() => {
@@ -181,6 +198,11 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
   }, [selectedLevel, aiWords, shuffleSeedState])
 
   const currentCard = allCards[cardIndex]
+  const currentCardKey = currentCard ? topikWordProgressKey(currentCard) : ''
+  const currentLevelKeys = useMemo(
+    () => new Set(allCards.map(card => topikWordProgressKey(card))),
+    [allCards]
+  )
 
   // ── Load saved AI examples on answer reveal ───────────────────
   useEffect(() => {
@@ -248,16 +270,32 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
   }, [])
 
   const markKnown = () => {
-    if (!currentCard) return
-    setKnown(prev => new Set([...prev, currentCard.id]))
-    setUnknown(prev => { const s = new Set(prev); s.delete(currentCard.id); return s })
+    if (!currentCard || !currentCardKey) return
+    const nextKnown = new Set(known)
+    const nextUnknown = new Set(unknown)
+    nextKnown.add(currentCardKey)
+    nextUnknown.delete(currentCardKey)
+    setKnown(nextKnown)
+    setUnknown(nextUnknown)
+    void saveTopikProgress(selectedLevel, {
+      knownKeys: Array.from(nextKnown),
+      unknownKeys: Array.from(nextUnknown),
+    }, progressUserId)
     goNext()
   }
 
   const markUnknown = () => {
-    if (!currentCard) return
-    setUnknown(prev => new Set([...prev, currentCard.id]))
-    setKnown(prev => { const s = new Set(prev); s.delete(currentCard.id); return s })
+    if (!currentCard || !currentCardKey) return
+    const nextKnown = new Set(known)
+    const nextUnknown = new Set(unknown)
+    nextUnknown.add(currentCardKey)
+    nextKnown.delete(currentCardKey)
+    setKnown(nextKnown)
+    setUnknown(nextUnknown)
+    void saveTopikProgress(selectedLevel, {
+      knownKeys: Array.from(nextKnown),
+      unknownKeys: Array.from(nextUnknown),
+    }, progressUserId)
     goNext()
   }
 
@@ -266,6 +304,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
     setShowAnswer(false)
     setKnown(new Set())
     setUnknown(new Set())
+    void saveTopikProgress(selectedLevel, { knownKeys: [], unknownKeys: [] }, progressUserId)
     setAiExamples([])
     setSavedExamplesPool([])
     syncToRoom(selectedLevel, 0)
@@ -303,8 +342,11 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
     ? Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000)
     : null
 
+  const knownCount = Array.from(known).filter(key => currentLevelKeys.has(key)).length
+  const unknownCount = Array.from(unknown).filter(key => currentLevelKeys.has(key)).length
+  const answeredCount = knownCount + unknownCount
   const progress = allCards.length > 0
-    ? Math.round(((known.size + unknown.size) / allCards.length) * 100)
+    ? Math.round((answeredCount / allCards.length) * 100)
     : 0
 
 
@@ -527,8 +569,8 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
           {/* Progress bar */}
           <div className="w-full max-w-sm mx-auto">
             <div className="flex justify-between text-xs text-brand-brown-light mb-1">
-              <span>{t('topik.progress')}: {known.size + unknown.size}/{allCards.length}</span>
-              <span className="text-emerald-600 font-bold">{known.size} ✓  <span className="text-red-400">{unknown.size} ✗</span></span>
+              <span>{t('topik.progress')}: {answeredCount}/{allCards.length}</span>
+              <span className="text-emerald-600 font-bold">{knownCount} ✓  <span className="text-red-400">{unknownCount} ✗</span></span>
             </div>
             <div className="h-2 bg-brand-light rounded-full overflow-hidden">
               <div

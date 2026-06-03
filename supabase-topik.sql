@@ -22,7 +22,28 @@ CREATE POLICY "Allow public access for settings"
   WITH CHECK (true);
 
 
--- 2. Bảng lưu danh sách từ vựng TOPIK tạo bởi AI (chống trùng lặp, chia sẻ giữa mọi người)
+-- 2. Bang luu tien do hoc TOPIK cho tai khoan dang nhap Google
+CREATE TABLE IF NOT EXISTS public.topik_progress (
+  user_id TEXT NOT NULL,
+  level INTEGER NOT NULL,
+  known_keys TEXT[] DEFAULT '{}'::text[],
+  unknown_keys TEXT[] DEFAULT '{}'::text[],
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (user_id, level)
+);
+
+-- Enable RLS
+ALTER TABLE public.topik_progress ENABLE ROW LEVEL SECURITY;
+
+-- Cho phep doc/ghi tien do hoc tu client
+DROP POLICY IF EXISTS "Allow public access for TOPIK progress" ON public.topik_progress;
+CREATE POLICY "Allow public access for TOPIK progress"
+  ON public.topik_progress FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+
+-- 3. Bang luu danh sach tu vung TOPIK tao boi AI
 CREATE TABLE IF NOT EXISTS public.topik_words (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ko TEXT NOT NULL,
