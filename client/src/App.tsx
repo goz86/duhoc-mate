@@ -65,7 +65,7 @@ const TopikStudy = lazy(() => import('./components/TopikStudy'));
 const Whiteboard = lazy(() => import('./components/Whiteboard'));
 
 const LazyPanelFallback = () => (
-  <div className="flex min-h-[280px] flex-1 items-center justify-center rounded-3xl border border-brand-terracotta-light/15 bg-white/55">
+  <div className="flex min-h-[280px] w-full min-w-0 flex-1 items-center justify-center rounded-3xl border border-brand-terracotta-light/15 bg-white/55">
     <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-terracotta-light/30 border-t-brand-terracotta" />
   </div>
 );
