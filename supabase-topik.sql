@@ -55,4 +55,7 @@ CREATE POLICY "Allow public insert/update for words"
 ALTER TABLE public.topik_words ADD COLUMN IF NOT EXISTS ai_examples JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.topik_words ADD COLUMN IF NOT EXISTS pronunciation TEXT;
 
+-- Reload PostgREST schema cache so REST/Supabase API can see the new columns immediately.
+NOTIFY pgrst, 'reload schema';
+
 

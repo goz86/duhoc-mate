@@ -333,20 +333,23 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
         }
       }
 
-      await saveWordExamples(
-        {
-          ko: currentCard.ko,
-          level: selectedLevel,
-          vi: currentCard.vi,
-          en: currentCard.en,
-          example: currentCard.example,
-          pronunciation: currentCard.pronunciation,
-        },
-        updatedPool
-      )
-
       setSavedExamplesPool(updatedPool)
       setAiExamples(newExamples)
+      try {
+        await saveWordExamples(
+          {
+            ko: currentCard.ko,
+            level: selectedLevel,
+            vi: currentCard.vi,
+            en: currentCard.en,
+            example: currentCard.example,
+            pronunciation: currentCard.pronunciation,
+          },
+          updatedPool
+        )
+      } catch (saveErr: any) {
+        setAiError(saveErr.message || 'Ví dụ AI đã lưu tạm trên máy nhưng chưa lưu được vào Supabase.')
+      }
     } catch (err: any) {
       setAiError(err.message || 'Lỗi tạo ví dụ')
     } finally {

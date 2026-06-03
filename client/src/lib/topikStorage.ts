@@ -4,6 +4,11 @@
  */
 
 import { supabase, supabaseEnabled } from './supabase'
+import {
+  buildTopikExampleRow,
+  buildTopikWordRow,
+  isMissingSupabaseColumnError,
+} from './topikStorageRows'
 
 export interface TopikWord {
   id?: string
@@ -63,20 +68,23 @@ export async function saveWords(words: TopikWord[]): Promise<void> {
   // Thử Supabase
   if (supabaseEnabled && supabase) {
     try {
-      const rows = words.map(w => ({
-        ko: w.ko,
-        vi: w.vi,
-        en: w.en,
-        level: w.level,
-        example: w.example || null,
-        pronunciation: w.pronunciation || null,
-      }))
+      const rows = words.map(w => buildTopikWordRow(w))
       // upsert-style: chỉ insert những từ chưa tồn tại
       const { error } = await supabase.from('topik_words').upsert(rows, {
         onConflict: 'ko,level',
         ignoreDuplicates: true,
       })
       if (error) {
+        if (isMissingSupabaseColumnError(error, 'pronunciation')) {
+          const retryRows = words.map(w => buildTopikWordRow(w, { includePronunciation: false }))
+          const { error: retryError } = await supabase.from('topik_words').upsert(retryRows, {
+            onConflict: 'ko,level',
+            ignoreDuplicates: true,
+          })
+          if (!retryError) return
+          console.warn('[TopikStorage] Supabase retry without pronunciation warning:', retryError.message)
+          return
+        }
         console.warn('[TopikStorage] Supabase upsert warning:', error.message)
       }
     } catch (err) {
@@ -203,22 +211,32 @@ export async function saveWordExamples(
   // 2. Lưu Supabase
   if (supabaseEnabled && supabase) {
     try {
-      const row = {
-        ko: card.ko,
-        level: card.level,
-        vi: card.vi,
-        en: card.en,
-        example: card.example || null,
-        pronunciation: card.pronunciation || null,
-        ai_examples: examples,
-      }
+      const row = buildTopikExampleRow(card, examples)
       const { error } = await supabase.from('topik_words').upsert([row], {
         onConflict: 'ko,level',
       })
       if (error) {
+        if (isMissingSupabaseColumnError(error, 'pronunciation')) {
+          const retryRow = buildTopikExampleRow(card, examples, { includePronunciation: false })
+          const { error: retryError } = await supabase.from('topik_words').upsert([retryRow], {
+            onConflict: 'ko,level',
+          })
+          if (!retryError) return
+          if (isMissingSupabaseColumnError(retryError, 'ai_examples')) {
+            throw new Error('Supabase đang thiếu cột ai_examples nên ví dụ AI chỉ được lưu tạm trên máy. Hãy chạy lại supabase-topik.sql trong Supabase SQL Editor.')
+          }
+          console.warn('[TopikStorage] Supabase saveWordExamples retry warning:', retryError.message)
+          return
+        }
+        if (isMissingSupabaseColumnError(error, 'ai_examples')) {
+          throw new Error('Supabase đang thiếu cột ai_examples nên ví dụ AI chỉ được lưu tạm trên máy. Hãy chạy lại supabase-topik.sql trong Supabase SQL Editor.')
+        }
         console.warn('[TopikStorage] Supabase saveWordExamples upsert warning:', error.message)
       }
     } catch (err) {
+      if (err instanceof Error && err.message.includes('Supabase đang thiếu cột ai_examples')) {
+        throw err
+      }
       console.warn('[TopikStorage] Supabase saveWordExamples fallback to localStorage:', err)
     }
   }
