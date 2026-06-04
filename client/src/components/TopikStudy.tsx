@@ -19,6 +19,7 @@ import {
 } from '../lib/topikStorage'
 import { topikWordProgressKey } from '../lib/topikProgress'
 import TopikExamComponent from './TopikExam'
+import TopikGrammarLab from './TopikGrammarLab'
 
 interface TopikCard {
   id: number
@@ -130,7 +131,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
   const [unknown, setUnknown] = useState<Set<string>>(new Set())
   const [examDate, setExamDate] = useState<string>('')
   const [showDateInput, setShowDateInput] = useState(false)
-  const [activeTab, setActiveTab] = useState<'flashcard' | 'countdown' | 'exam'>('flashcard')
+  const [activeTab, setActiveTab] = useState<'flashcard' | 'grammar' | 'countdown' | 'exam'>('flashcard')
 
   // ── AI states ──────────────────────────────────────────────────
   const [aiWords, setAiWords] = useState<TopikCard[]>([])
@@ -479,6 +480,12 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
           className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition cursor-pointer ${activeTab === 'exam' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
         >
           <ClipboardList size={15} /> Luyện đề thi
+        </button>
+        <button
+          onClick={() => setActiveTab('grammar')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition cursor-pointer ${activeTab === 'grammar' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
+        >
+          <BookOpen size={15} /> Ngữ pháp
         </button>
         <button
           onClick={() => setActiveTab('countdown')}
@@ -881,6 +888,10 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
 
       {activeTab === 'exam' && (
         <TopikExamComponent roomId={roomId} isAdmin={isAdmin} />
+      )}
+
+      {activeTab === 'grammar' && (
+        <TopikGrammarLab roomId={roomId} socket={socket} />
       )}
     </div>
   )

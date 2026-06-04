@@ -37,6 +37,180 @@ export interface AiGeneratedWord {
   example: string
 }
 
+export type AiGrammarQuestion = {
+  usage: 'practice' | 'game'
+  category: 'grammar' | 'vocabulary' | 'reading' | 'sentence'
+  game_types: Array<'grammar-race' | 'topik-master' | 'sentence-build' | 'vocab-speed'>
+  error_type: 'vocabulary' | 'grammar_connector' | 'honorific' | 'reading' | 'similar_meaning'
+  prompt: string
+  options: string[]
+  answer_index: number
+  explanation: string
+  difficulty: number
+}
+
+export type AiGrammarBundle = {
+  pattern: {
+    title: string
+    formula: string
+    meaning_vi: string
+    meaning_en: string
+    grammar_type: string
+    tags: string[]
+    examples: Array<{ ko: string; vi: string }>
+    common_mistake: string
+    similar_patterns: string[]
+    contrast_notes: string
+    prerequisites: string[]
+  }
+  questions: AiGrammarQuestion[]
+}
+
+export type AiGrammarValidation = {
+  valid: boolean
+  errors: string[]
+  practiceCount: number
+  gameCount: number
+}
+
+function normalizeAiGrammarBundle(rawBundle: any): AiGrammarBundle {
+  const pattern = rawBundle?.pattern || {}
+  const questions = Array.isArray(rawBundle?.questions) ? rawBundle.questions : []
+  return {
+    pattern: {
+      title: String(pattern.title || '').trim(),
+      formula: String(pattern.formula || '').trim(),
+      meaning_vi: String(pattern.meaning_vi || '').trim(),
+      meaning_en: String(pattern.meaning_en || '').trim(),
+      grammar_type: String(pattern.grammar_type || 'general').trim(),
+      tags: Array.isArray(pattern.tags) ? pattern.tags.map((item: unknown) => String(item).trim()).filter(Boolean) : [],
+      examples: Array.isArray(pattern.examples)
+        ? pattern.examples.map((item: any) => ({ ko: String(item?.ko || '').trim(), vi: String(item?.vi || '').trim() }))
+        : [],
+      common_mistake: String(pattern.common_mistake || '').trim(),
+      similar_patterns: Array.isArray(pattern.similar_patterns)
+        ? pattern.similar_patterns.map((item: unknown) => String(item).trim()).filter(Boolean)
+        : [],
+      contrast_notes: String(pattern.contrast_notes || '').trim(),
+      prerequisites: Array.isArray(pattern.prerequisites)
+        ? pattern.prerequisites.map((item: unknown) => String(item).trim()).filter(Boolean)
+        : [],
+    },
+    questions: questions.map((question: any) => ({
+      usage: question?.usage === 'game' ? 'game' : 'practice',
+      category: ['grammar', 'vocabulary', 'reading', 'sentence'].includes(question?.category) ? question.category : 'grammar',
+      game_types: Array.isArray(question?.game_types)
+        ? question.game_types.filter((game: string) => ['grammar-race', 'topik-master', 'sentence-build', 'vocab-speed'].includes(game))
+        : [],
+      error_type: ['vocabulary', 'grammar_connector', 'honorific', 'reading', 'similar_meaning'].includes(question?.error_type)
+        ? question.error_type
+        : 'grammar_connector',
+      prompt: String(question?.prompt || '').trim(),
+      options: Array.isArray(question?.options) ? question.options.map((option: unknown) => String(option).trim()) : [],
+      answer_index: Number(question?.answer_index),
+      explanation: String(question?.explanation || '').trim(),
+      difficulty: Math.max(1, Math.min(5, Number(question?.difficulty) || 3)),
+    })),
+  }
+}
+
+export function validateAiGrammarBundle(bundle: AiGrammarBundle, existingTitles: string[] = []): AiGrammarValidation {
+  const errors: string[] = []
+  const normalizedExisting = new Set(existingTitles.map(title => title.replace(/\s+/g, '').toLowerCase()))
+  const normalizedTitle = bundle.pattern.title.replace(/\s+/g, '').toLowerCase()
+  const practiceCount = bundle.questions.filter(question => question.usage === 'practice').length
+  const gameCount = bundle.questions.filter(question => question.usage === 'game').length
+
+  if (!bundle.pattern.title || !bundle.pattern.formula || !bundle.pattern.meaning_vi) {
+    errors.push('Mẫu ngữ pháp thiếu tên, công thức hoặc nghĩa tiếng Việt.')
+  }
+  if (normalizedExisting.has(normalizedTitle)) errors.push('Mẫu ngữ pháp đã tồn tại trong kho.')
+  if (bundle.pattern.examples.filter(example => example.ko && example.vi).length < 3) {
+    errors.push('Mẫu ngữ pháp cần ít nhất 3 ví dụ Hàn - Việt.')
+  }
+  if (!bundle.pattern.common_mistake) errors.push('Thiếu phần lỗi thường gặp.')
+  if (practiceCount < 10) errors.push(`Chỉ có ${practiceCount}/10 câu luyện tập.`)
+  if (gameCount < 5) errors.push(`Chỉ có ${gameCount}/5 câu game.`)
+
+  bundle.questions.forEach((question, index) => {
+    if (!question.prompt || !question.explanation) errors.push(`Câu ${index + 1} thiếu đề bài hoặc giải thích.`)
+    if (question.options.length !== 4) errors.push(`Câu ${index + 1} phải có đúng 4 lựa chọn.`)
+    if (!Number.isInteger(question.answer_index) || question.answer_index < 0 || question.answer_index > 3) {
+      errors.push(`Câu ${index + 1} có answer_index không hợp lệ.`)
+    }
+    if (new Set(question.options).size !== question.options.length) errors.push(`Câu ${index + 1} có lựa chọn trùng nhau.`)
+    if (question.usage === 'game' && question.game_types.length === 0) {
+      errors.push(`Câu game ${index + 1} chưa có game_types.`)
+    }
+  })
+
+  return { valid: errors.length === 0, errors: [...new Set(errors)], practiceCount, gameCount }
+}
+
+export async function generateGrammarBundle(
+  level: number,
+  grammarType: string,
+  topic: string,
+  existingTitles: string[],
+): Promise<AiGrammarBundle> {
+  const prompt = `You are a professional Korean TOPIK curriculum editor.
+Create exactly ONE new TOPIK level ${level} grammar pattern.
+Grammar type: ${grammarType || 'general'}.
+Preferred topic/context: ${topic || 'general TOPIK contexts'}.
+Do not duplicate these existing patterns: ${existingTitles.slice(0, 200).join(', ')}.
+
+CONTENT RULES
+- Korean must be natural, standard, and appropriate for TOPIK. No slang.
+- The assigned TOPIK level must be realistic.
+- Explain in Vietnamese and English.
+- Include at least 3 Korean-Vietnamese examples.
+- Explain common mistakes and contrast with similar patterns.
+- Create exactly 15 multiple-choice questions: 10 usage="practice" and 5 usage="game".
+- Every question has exactly 4 plausible options and exactly one correct answer.
+- answer_index is zero-based: 0, 1, 2, or 3.
+- Every question includes a Vietnamese explanation explaining why the correct option is right.
+- Game questions must include at least one game_types value from grammar-race, topik-master, sentence-build, vocab-speed.
+
+Return only one valid JSON object:
+{
+  "pattern": {
+    "title": "-...",
+    "formula": "V/A-...",
+    "meaning_vi": "...",
+    "meaning_en": "...",
+    "grammar_type": "${grammarType || 'general'}",
+    "tags": ["..."],
+    "examples": [{"ko":"...","vi":"..."}],
+    "common_mistake": "...",
+    "similar_patterns": ["..."],
+    "contrast_notes": "...",
+    "prerequisites": ["..."]
+  },
+  "questions": [{
+    "usage": "practice or game",
+    "category": "grammar or vocabulary or reading or sentence",
+    "game_types": ["grammar-race"],
+    "error_type": "vocabulary or grammar_connector or honorific or reading or similar_meaning",
+    "prompt": "...",
+    "options": ["...", "...", "...", "..."],
+    "answer_index": 0,
+    "explanation": "...",
+    "difficulty": ${Math.max(1, Math.min(5, Math.ceil(level / 1.5)))}
+  }]
+}
+
+Before returning, verify that there are exactly 10 practice questions and exactly 5 game questions.`
+
+  const raw = await callDeepSeek(prompt, 8192)
+  const parsed = JSON.parse(extractJson(raw))
+  const bundle = normalizeAiGrammarBundle(parsed)
+  const validation = validateAiGrammarBundle(bundle, existingTitles)
+  if (!validation.valid) {
+    throw new Error(`Nội dung AI chưa đạt chuẩn: ${validation.errors.slice(0, 4).join(' ')}`)
+  }
+  return bundle
+}
+
 /**
  * Gọi qua Vercel Proxy trước, fallback gọi trực tiếp DeepSeek
  */

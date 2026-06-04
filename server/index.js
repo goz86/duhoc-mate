@@ -13,6 +13,8 @@ app.use(express.json());
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://imqrvssxfrhivlumhoze.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_d-szvo4evO2V69FCNc__IQ_xc8OqFPV';
 const ROOM_STATES_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/room_states`;
+const TOPIK_QUESTION_BANK_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/topik_question_bank`;
+const TOPIK_GAME_SESSIONS_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/topik_game_sessions`;
 const supabaseHeaders = () => ({
   apikey: SUPABASE_KEY,
   Authorization: `Bearer ${SUPABASE_KEY}`,
@@ -690,6 +692,301 @@ const hasPermission = (member, action) => {
   return false;
 };
 
+const TOPIK_GAME_QUESTIONS = [
+  {
+    id: 'game-vocab-cha-byeol',
+    level: 6,
+    gameType: 'vocab-speed',
+    category: 'vocabulary',
+    errorType: 'vocabulary',
+    prompt: '차별',
+    options: ['Phân biệt đối xử', 'Thỏa hiệp', 'Dự báo', 'Tập trung'],
+    answerIndex: 0,
+    explanation: '차별 nghĩa là sự phân biệt đối xử.'
+  },
+  {
+    id: 'game-vocab-gachi',
+    level: 4,
+    gameType: 'vocab-speed',
+    category: 'vocabulary',
+    errorType: 'similar_meaning',
+    prompt: '가치관',
+    options: ['Quan niệm giá trị', 'Kế hoạch du lịch', 'Phí sinh hoạt', 'Thời tiết'],
+    answerIndex: 0,
+    explanation: '가치관 là quan niệm/hệ giá trị.'
+  },
+  {
+    id: 'game-vocab-hyogwa',
+    level: 3,
+    gameType: 'vocab-speed',
+    category: 'vocabulary',
+    errorType: 'vocabulary',
+    prompt: '효과',
+    options: ['Hiệu quả', 'Lịch hẹn', 'Mùa', 'Quảng cáo'],
+    answerIndex: 0,
+    explanation: '효과 nghĩa là hiệu quả/tác dụng.'
+  },
+  {
+    id: 'game-grammar-go-sipda',
+    level: 1,
+    gameType: 'grammar-race',
+    category: 'grammar',
+    errorType: 'grammar_connector',
+    prompt: '한국어를 ____.',
+    options: ['배우고 싶어요', '배우러 싶어요', '배우기 전에', '배우는 바람에'],
+    answerIndex: 0,
+    explanation: 'Muốn làm gì dùng V-고 싶다.'
+  },
+  {
+    id: 'game-grammar-eumyeon',
+    level: 2,
+    gameType: 'grammar-race',
+    category: 'grammar',
+    errorType: 'grammar_connector',
+    prompt: '시간이 ____ 같이 공부합시다.',
+    options: ['있으면', '있기 전에', '있는 바람에', '있는 둥 마는 둥'],
+    answerIndex: 0,
+    explanation: 'Điều kiện “nếu có thời gian” dùng A/V-(으)면.'
+  },
+  {
+    id: 'game-grammar-baram',
+    level: 3,
+    gameType: 'grammar-race',
+    category: 'grammar',
+    errorType: 'grammar_connector',
+    prompt: '비가 많이 ____ 약속이 취소됐어요.',
+    options: ['오는 바람에', '오도록', '올 뿐만 아니라', '오는 한'],
+    answerIndex: 0,
+    explanation: '-는 바람에 hợp với nguyên nhân bất ngờ dẫn tới kết quả không mong muốn.'
+  },
+  {
+    id: 'game-sentence-before',
+    level: 2,
+    gameType: 'sentence-build',
+    category: 'sentence',
+    errorType: 'grammar_connector',
+    prompt: 'Chọn câu ghép đúng: “Trước khi ngủ, tôi đọc sách.”',
+    options: ['자기 전에 책을 읽어요.', '자고 전에 책을 읽어요.', '자기 바람에 책을 읽어요.', '자는 한 책을 읽어요.'],
+    answerIndex: 0,
+    explanation: 'Trước khi làm gì dùng V-기 전에.'
+  },
+  {
+    id: 'game-sentence-dorok',
+    level: 3,
+    gameType: 'sentence-build',
+    category: 'sentence',
+    errorType: 'grammar_connector',
+    prompt: 'Chọn câu tự nhiên nhất: “Hãy nói to để mọi người nghe được.”',
+    options: ['모두 들을 수 있도록 크게 말하세요.', '모두 듣는 바람에 크게 말하세요.', '모두 듣기 전에 크게 말하세요.', '모두 듣는 한 크게 말하세요.'],
+    answerIndex: 0,
+    explanation: 'Mục tiêu/kết quả mong muốn dùng -도록.'
+  },
+  {
+    id: 'game-master-honorific',
+    level: 2,
+    gameType: 'topik-master',
+    category: 'grammar',
+    errorType: 'honorific',
+    prompt: 'Câu nào dùng kính ngữ tự nhiên nhất khi nói với giáo viên?',
+    options: ['선생님, 어디 가?', '선생님, 어디 가세요?', '선생님, 어디 갔어?', '선생님, 어디야?'],
+    answerIndex: 1,
+    explanation: 'Với giáo viên nên dùng đuôi kính ngữ -세요.'
+  },
+  {
+    id: 'game-master-reading',
+    level: 3,
+    gameType: 'topik-master',
+    category: 'reading',
+    errorType: 'reading',
+    prompt: '“비가 와서 행사가 취소되었습니다.” Ý chính là gì?',
+    options: ['Sự kiện bị hủy vì trời mưa', 'Sự kiện được tổ chức ngoài trời', 'Trời mưa sau sự kiện', 'Sự kiện bị hoãn vì tắc đường'],
+    answerIndex: 0,
+    explanation: '취소되다 là bị hủy, nguyên nhân là 비가 와서.'
+  }
+];
+
+const topikGameTimers = new Map();
+let topikQuestionBankCache = { loadedAt: 0, questions: [] };
+const TOPIK_QUESTION_BANK_CACHE_MS = 5 * 60 * 1000;
+
+const createDefaultTopikGame = () => ({
+  status: 'idle',
+  gameType: null,
+  round: 0,
+  totalRounds: 0,
+  question: null,
+  questionOrder: [],
+  questionPool: [],
+  roundStartedAt: 0,
+  startedAt: 0,
+  sessionSaved: false,
+  leaderboard: {},
+  answers: {}
+});
+
+const shuffleList = (items) => [...items].sort(() => Math.random() - 0.5);
+
+const ensureTopikGame = (room) => {
+  if (!room.topikGame) room.topikGame = createDefaultTopikGame();
+  return room.topikGame;
+};
+
+const publicTopikQuestion = (question, revealed) => {
+  if (!question) return null;
+  const { answerIndex, ...safeQuestion } = question;
+  return revealed ? { ...safeQuestion, answerIndex } : safeQuestion;
+};
+
+const publicTopikGameState = (room) => {
+  const game = ensureTopikGame(room);
+  const revealed = game.status === 'revealed' || game.status === 'finished';
+  const leaderboard = Object.entries(game.leaderboard || {})
+    .map(([memberId, score]) => {
+      const member = room.members.find(m => m.id === memberId);
+      return {
+        memberId,
+        username: member?.username || score.username || 'Bạn học',
+        score: score.score || 0,
+        correct: score.correct || 0,
+        answeredAt: score.answeredAt || null
+      };
+    })
+    .sort((a, b) => b.score - a.score || a.username.localeCompare(b.username));
+
+  return {
+    status: game.status,
+    gameType: game.gameType,
+    round: game.round,
+    totalRounds: game.totalRounds,
+    question: publicTopikQuestion(game.question, revealed),
+    roundStartedAt: game.roundStartedAt,
+    leaderboard,
+    answers: game.answers || {}
+  };
+};
+
+const emitTopikGame = (roomId) => {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  io.to(roomId).emit('topik-game-sync', publicTopikGameState(room));
+};
+
+const clearTopikGameTimer = (roomId) => {
+  const timer = topikGameTimers.get(roomId);
+  if (timer) clearTimeout(timer);
+  topikGameTimers.delete(roomId);
+};
+
+const revealTopikGameRound = (roomId) => {
+  const room = rooms.get(roomId);
+  if (!room?.topikGame || room.topikGame.status !== 'question') return;
+  room.topikGame.status = 'revealed';
+  clearTopikGameTimer(roomId);
+  emitTopikGame(roomId);
+};
+
+const startTopikGameRound = (roomId) => {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  const game = ensureTopikGame(room);
+  const questionId = game.questionOrder[game.round - 1];
+  const question = [...(game.questionPool || []), ...TOPIK_GAME_QUESTIONS].find(q => q.id === questionId);
+  if (!question) {
+    game.status = 'finished';
+    game.question = null;
+    emitTopikGame(roomId);
+    return;
+  }
+
+  game.status = 'question';
+  game.question = question;
+  game.answers = {};
+  game.roundStartedAt = Date.now();
+  clearTopikGameTimer(roomId);
+  topikGameTimers.set(roomId, setTimeout(() => revealTopikGameRound(roomId), 20000));
+  emitTopikGame(roomId);
+};
+
+const normalizeTopikQuestionRow = (row) => ({
+  id: row.id,
+  level: row.level,
+  gameType: Array.isArray(row.game_types) ? row.game_types[0] : row.game_type,
+  gameTypes: Array.isArray(row.game_types) ? row.game_types : [],
+  category: row.category,
+  errorType: row.error_type,
+  patternId: row.pattern_id || undefined,
+  prompt: row.prompt,
+  options: Array.isArray(row.options) ? row.options : [],
+  answerIndex: row.answer_index,
+  explanation: row.explanation || ''
+});
+
+const getPublishedTopikQuestions = async (gameType) => {
+  const now = Date.now();
+  if (topikQuestionBankCache.questions.length && now - topikQuestionBankCache.loadedAt < TOPIK_QUESTION_BANK_CACHE_MS) {
+    return topikQuestionBankCache.questions.filter(q => q.gameTypes?.includes(gameType) || gameType === 'topik-master');
+  }
+
+  try {
+    const rows = [];
+    const pageSize = 1000;
+    for (let offset = 0; offset < 10000; offset += pageSize) {
+      const url = `${TOPIK_QUESTION_BANK_ENDPOINT}?select=id,level,category,game_types,error_type,pattern_id,prompt,options,answer_index,explanation&status=eq.published&order=quality_score.desc&limit=${pageSize}&offset=${offset}`;
+      const response = await fetch(url, { headers: supabaseHeaders() });
+      if (response.ok) {
+        const pageRows = await response.json();
+        if (!Array.isArray(pageRows) || pageRows.length === 0) break;
+        rows.push(...pageRows);
+        if (pageRows.length < pageSize) break;
+      } else {
+        if (response.status !== 404) {
+          console.warn('[TOPIK] Question bank fetch warning:', response.status, await response.text());
+        }
+        break;
+      }
+    }
+    const questions = rows.map(normalizeTopikQuestionRow);
+    if (questions.length) {
+      topikQuestionBankCache = { loadedAt: now, questions };
+      return questions.filter(q => q.gameTypes?.includes(gameType) || gameType === 'topik-master');
+    }
+  } catch (error) {
+    console.warn('[TOPIK] Question bank fallback:', error.message);
+  }
+
+  const fallback = TOPIK_GAME_QUESTIONS.map(q => ({ ...q, gameTypes: q.gameType ? [q.gameType, 'topik-master'] : ['topik-master'] }));
+  return fallback.filter(q => q.gameTypes?.includes(gameType) || gameType === 'topik-master');
+};
+
+const persistTopikGameSession = async (room, game) => {
+  if (!room || !game || game.sessionSaved || !game.startedAt || !game.gameType) return;
+  game.sessionSaved = true;
+  try {
+    const leaderboard = publicTopikGameState(room).leaderboard;
+    const response = await fetch(TOPIK_GAME_SESSIONS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        ...supabaseHeaders(),
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        room_id: room.roomId,
+        game_type: game.gameType,
+        started_at: new Date(game.startedAt).toISOString(),
+        ended_at: new Date().toISOString(),
+        questions_used: game.questionOrder || [],
+        leaderboard,
+        player_count: leaderboard.length,
+      }),
+    });
+    if (!response.ok && response.status !== 404) {
+      console.warn('[TOPIK] Game session save warning:', response.status, await response.text());
+    }
+  } catch (error) {
+    console.warn('[TOPIK] Game session save fallback:', error.message);
+  }
+};
+
 const normalizeStr = (str) => {
   if (!str) return '';
   return str
@@ -1141,11 +1438,13 @@ io.on('connection', (socket) => {
         roomAvatarUrl: roomAvatarUrl || restoredState.roomAvatarUrl || rememberedRoom?.roomAvatarUrl || '',
         roomBackgroundUrl: restoredState.roomBackgroundUrl || '',
         whiteboard: { elements: [] },  // bảng vẽ chung: [{id,type:'stroke'|'image',...}]
-        voiceUsers: {}  // { [socketId]: { muted, speaking, cameraOn } }
+        voiceUsers: {},  // { [socketId]: { muted, speaking, cameraOn } }
+        topikGame: createDefaultTopikGame()
       });
     }
 
     const room = rooms.get(roomId);
+    ensureTopikGame(room);
     cancelEmptyRoomCleanup(roomId);
     if (rememberedRoom && !roomTitle) {
       room.roomTitle = rememberedRoom.roomTitle || room.roomTitle;
@@ -1871,6 +2170,114 @@ io.on('connection', (socket) => {
   });
 
   // Phase B: TikTok sync — host tải video → broadcast cho cả phòng
+  socket.on('topik-game-subscribe', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    socket.emit('topik-game-sync', publicTopikGameState(room));
+  });
+
+  socket.on('topik-game-action', async ({ roomId, type, payload = {} }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const member = room.members.find(m => m.id === socket.id);
+    if (!member) return;
+
+    const game = ensureTopikGame(room);
+    const canManageGame = member.isHost || member.role === 'cohost' || member.role === 'host';
+
+    if (type === 'start') {
+      if (!canManageGame) return;
+      const requestedType = typeof payload.gameType === 'string' ? payload.gameType : 'topik-master';
+      const allowedTypes = new Set(['vocab-speed', 'sentence-build', 'topik-master', 'grammar-race']);
+      const gameType = allowedTypes.has(requestedType) ? requestedType : 'topik-master';
+      const pool = await getPublishedTopikQuestions(gameType);
+      const totalRounds = Math.max(1, Math.min(Number(payload.totalRounds) || 8, 10));
+      const questionOrder = shuffleList(pool.length ? pool : TOPIK_GAME_QUESTIONS)
+        .slice(0, totalRounds)
+        .map(q => q.id);
+
+      room.topikGame = {
+        ...createDefaultTopikGame(),
+        status: 'question',
+        gameType,
+        round: 1,
+        totalRounds: questionOrder.length,
+        questionOrder,
+        questionPool: pool,
+        startedAt: Date.now(),
+        leaderboard: {}
+      };
+      startTopikGameRound(roomId);
+      return;
+    }
+
+    if (type === 'answer') {
+      if (game.status !== 'question' || !game.question) return;
+      if (game.answers?.[socket.id]) return;
+      const optionIndex = Number(payload.optionIndex);
+      if (!Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= game.question.options.length) return;
+
+      const correct = optionIndex === game.question.answerIndex;
+      const elapsedMs = Math.max(0, Date.now() - (game.roundStartedAt || Date.now()));
+      const speedBonus = correct ? Math.max(0, 50 - Math.floor(elapsedMs / 500)) : 0;
+      const points = correct ? 100 + speedBonus : 0;
+      const current = game.leaderboard[socket.id] || {
+        username: member.username || 'Bạn học',
+        score: 0,
+        correct: 0
+      };
+
+      game.answers = {
+        ...(game.answers || {}),
+        [socket.id]: { optionIndex, correct, answeredAt: Date.now() }
+      };
+      game.leaderboard[socket.id] = {
+        username: member.username || current.username,
+        score: (current.score || 0) + points,
+        correct: (current.correct || 0) + (correct ? 1 : 0),
+        answeredAt: Date.now()
+      };
+
+      const activeMemberIds = room.members.map(m => m.id);
+      const everyoneAnswered = activeMemberIds.length > 0 && activeMemberIds.every(id => !!game.answers[id]);
+      if (everyoneAnswered) {
+        game.status = 'revealed';
+        clearTopikGameTimer(roomId);
+      }
+      emitTopikGame(roomId);
+      return;
+    }
+
+    if (type === 'next') {
+      if (!canManageGame) return;
+      if (game.status === 'question') {
+        revealTopikGameRound(roomId);
+        return;
+      }
+      if (game.round >= game.totalRounds) {
+        game.status = 'finished';
+        game.question = null;
+        clearTopikGameTimer(roomId);
+        emitTopikGame(roomId);
+        void persistTopikGameSession(room, game);
+        return;
+      }
+      game.round += 1;
+      startTopikGameRound(roomId);
+      return;
+    }
+
+    if (type === 'reset') {
+      if (!canManageGame) return;
+      if (game.status === 'finished' || game.round > 0) {
+        void persistTopikGameSession(room, game);
+      }
+      clearTopikGameTimer(roomId);
+      room.topikGame = createDefaultTopikGame();
+      emitTopikGame(roomId);
+    }
+  });
+
   socket.on('idea-board-update', ({ roomId, tasks }) => {
     const room = rooms.get(roomId);
     if (!room) return;

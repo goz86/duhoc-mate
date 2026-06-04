@@ -14,9 +14,11 @@ import {
   LogOut,
   RefreshCw,
   AlertCircle,
-  ChevronLeft
+  ChevronLeft,
+  BookOpen
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import TopikContentReview from './TopikContentReview'
 
 interface AdminStats {
   totalUsers: number
@@ -64,7 +66,7 @@ interface Props {
   onClose: () => void
 }
 
-type TabType = 'stats' | 'members' | 'forum' | 'rooms'
+type TabType = 'stats' | 'members' | 'forum' | 'rooms' | 'topik'
 
 export default function AdminDashboard({ currentUserId, onClose }: Props) {
   const { t } = useTranslation()
@@ -343,7 +345,8 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
           { value: 'stats', label: t('admin.tab.stats'), Icon: Activity },
           { value: 'members', label: t('admin.tab.members'), Icon: Users },
           { value: 'forum', label: t('admin.tab.forum'), Icon: MessageSquare },
-          { value: 'rooms', label: t('admin.tab.rooms'), Icon: Timer }
+          { value: 'rooms', label: t('admin.tab.rooms'), Icon: Timer },
+          { value: 'topik', label: 'Duyệt TOPIK', Icon: BookOpen }
         ] as const).map(tab => {
           const TabIcon = tab.Icon
           return (
@@ -663,6 +666,8 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
               </table>
             </div>
           )}
+
+          {activeTab === 'topik' && <TopikContentReview />}
         </div>
       )}
 
