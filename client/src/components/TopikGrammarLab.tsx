@@ -96,6 +96,7 @@ export default function TopikGrammarLab({ roomId, socket }: Props) {
   const [practiceIndex, setPracticeIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
   const [practiceScore, setPracticeScore] = useState(0)
+  const recentPracticeIdsRef = useRef<string[]>([])
   const [mistakes, setMistakes] = useState<TopikMistake[]>(() => loadTopikMistakes())
 
   const [roomGame, setRoomGame] = useState<RoomGameState | null>(null)
@@ -111,6 +112,14 @@ export default function TopikGrammarLab({ roomId, socket }: Props) {
     })
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    recentPracticeIdsRef.current = []
+    setPracticeQuestions([])
+    setPracticeIndex(0)
+    setSelectedAnswer(null)
+    setPracticeScore(0)
+  }, [roomId])
 
   useEffect(() => {
     let cancelled = false
@@ -164,7 +173,8 @@ export default function TopikGrammarLab({ roomId, socket }: Props) {
   }, [roomGame, roomSelections, saveMistake])
 
   const startPractice = useCallback((patternId?: string) => {
-    const session = pickQuestionSession(questionBank, level, patternId, 5)
+    const session = pickQuestionSession(questionBank, level, patternId, 5, recentPracticeIdsRef.current)
+    recentPracticeIdsRef.current = session.map(question => question.id)
     setPracticeQuestions(session)
     setPracticeIndex(0)
     setSelectedAnswer(null)

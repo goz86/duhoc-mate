@@ -11,6 +11,10 @@ import type { AiGrammarBundle, AiGrammarValidation } from './aiService'
 const GRAMMAR_CACHE_KEY = 'duhocmate_topik_grammar_cache_v1'
 const QUESTION_CACHE_KEY = 'duhocmate_topik_question_cache_v1'
 const PAGE_SIZE = 1000
+const CURATED_QUESTION_BANK = mergeById(
+  TOPIK_PRACTICE_QUESTIONS,
+  buildPatternPracticeQuestions(TOPIK_GRAMMAR_PATTERNS)
+)
 
 export const TOPIK_GRAMMAR_TARGETS: Record<number, number> = {
   1: 50,
@@ -72,6 +76,31 @@ function writeCache<T>(key: string, rows: T[]) {
   } catch {
     // Content still remains usable from memory if browser storage is full.
   }
+}
+
+function buildPatternPracticeQuestions(patterns: TopikGrammarPattern[]): TopikPracticeQuestion[] {
+  return patterns.map(pattern => {
+    const sameLevel = patterns.filter(item => item.level === pattern.level && item.id !== pattern.id)
+    const fallback = patterns.filter(item => item.id !== pattern.id)
+    const distractors = shuffleQuestions([...sameLevel, ...fallback])
+      .filter((item, itemIndex, source) => source.findIndex(candidate => candidate.id === item.id) === itemIndex)
+      .slice(0, 3)
+      .map(item => item.formula)
+    const options = shuffleQuestions([pattern.formula, ...distractors])
+    const answerIndex = options.indexOf(pattern.formula)
+    return {
+      id: `curated-pattern-${pattern.id}`,
+      level: pattern.level,
+      gameType: 'grammar-race',
+      category: 'grammar',
+      errorType: 'grammar_connector',
+      patternId: pattern.id,
+      prompt: `Chọn mẫu ngữ pháp phù hợp với nghĩa: ${pattern.meaningVi}`,
+      options,
+      answerIndex,
+      explanation: `${pattern.title} (${pattern.formula}) nghĩa là: ${pattern.meaningVi}`,
+    }
+  })
 }
 
 function slugifyPattern(title: string) {
@@ -198,7 +227,7 @@ export async function loadPublishedQuestionBank(): Promise<TopikPracticeQuestion
       }
 
       if (rows.length) {
-        const mapped = mergeById(rows.map(mapQuestionRow), TOPIK_PRACTICE_QUESTIONS)
+        const mapped = mergeById(rows.map(mapQuestionRow), CURATED_QUESTION_BANK)
         writeCache(QUESTION_CACHE_KEY, mapped)
         return mapped
       }
@@ -208,50 +237,71 @@ export async function loadPublishedQuestionBank(): Promise<TopikPracticeQuestion
   }
 
   const cached = readCache<TopikPracticeQuestion>(QUESTION_CACHE_KEY)
-  return cached.length ? mergeById(cached, TOPIK_PRACTICE_QUESTIONS) : TOPIK_PRACTICE_QUESTIONS
+  return cached.length ? mergeById(cached, CURATED_QUESTION_BANK) : CURATED_QUESTION_BANK
 }
 
 export function pickQuestionSession(
   bank: TopikPracticeQuestion[],
   level: number,
   patternId?: string,
-  count = 5
+  count = 5,
+  avoidIds: string[] = []
 ) {
   const exact = bank.filter(question => patternId ? question.patternId === patternId : question.level === level)
   const sameLevel = bank.filter(question => question.level === level)
   const grammarFallback = bank.filter(question => question.category === 'grammar')
   const seen = new Set<string>()
-  return [...exact, ...sameLevel, ...grammarFallback]
+  const avoid = new Set(avoidIds)
+  const pool = [...exact, ...sameLevel, ...grammarFallback]
     .filter(question => {
       if (seen.has(question.id)) return false
       seen.add(question.id)
       return true
     })
-    .sort(() => Math.random() - 0.5)
-    .slice(0, count)
+  const freshPool = pool.filter(question => !avoid.has(question.id))
+  const source = freshPool.length >= count ? freshPool : pool
+  return shuffleQuestions(source).slice(0, count)
+}
+
+function shuffleQuestions<T>(items: T[]) {
+  const shuffled = [...items]
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1))
+    const current = shuffled[index]
+    shuffled[index] = shuffled[randomIndex]
+    shuffled[randomIndex] = current
+  }
+  return shuffled
 }
 
 export async function loadPublishedGrammarCounts(): Promise<Record<number, number>> {
-  const fallback = TOPIK_GRAMMAR_PATTERNS.reduce<Record<number, number>>((counts, pattern) => {
-    counts[pattern.level] = (counts[pattern.level] || 0) + 1
+  const merged = TOPIK_GRAMMAR_PATTERNS.reduce<Record<number, Set<string>>>((counts, pattern) => {
+    counts[pattern.level] = counts[pattern.level] || new Set<string>()
+    counts[pattern.level].add(pattern.id)
     return counts
   }, {})
-  if (!supabaseEnabled || !supabase) return fallback
+  const toCounts = () => Object.fromEntries(
+    Object.entries(merged).map(([level, ids]) => [Number(level), ids.size])
+  ) as Record<number, number>
+  if (!supabaseEnabled || !supabase) return toCounts()
 
   try {
     const { data, error } = await supabase
       .from('topik_grammar_patterns')
-      .select('level')
+      .select('id,level')
       .eq('status', 'published')
       .limit(2000)
-    if (error || !data) return fallback
-    if (data.length === 0) return fallback
-    return data.reduce<Record<number, number>>((counts, row: any) => {
-      counts[row.level] = (counts[row.level] || 0) + 1
-      return counts
-    }, {})
+    if (error || !data) return toCounts()
+    data.forEach((row: any) => {
+      const level = Number(row.level)
+      const id = String(row.id || '')
+      if (!level || !id) return
+      merged[level] = merged[level] || new Set<string>()
+      merged[level].add(id)
+    })
+    return toCounts()
   } catch {
-    return fallback
+    return toCounts()
   }
 }
 

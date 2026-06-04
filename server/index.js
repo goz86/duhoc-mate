@@ -2183,10 +2183,8 @@ io.on('connection', (socket) => {
     if (!member) return;
 
     const game = ensureTopikGame(room);
-    const canManageGame = member.isHost || member.role === 'cohost' || member.role === 'host';
 
     if (type === 'start') {
-      if (!canManageGame) return;
       const requestedType = typeof payload.gameType === 'string' ? payload.gameType : 'topik-master';
       const allowedTypes = new Set(['vocab-speed', 'sentence-build', 'topik-master', 'grammar-race']);
       const gameType = allowedTypes.has(requestedType) ? requestedType : 'topik-master';
