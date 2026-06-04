@@ -1,4 +1,12 @@
-import { publishTopikGrammarBundle } from '../server/topik-publish.mjs'
+import { publishTopikGrammarBundle } from './_topik-publish.mjs'
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '2mb',
+    },
+  },
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -15,6 +23,7 @@ export default async function handler(req, res) {
     })
     return res.status(201).json(result)
   } catch (error) {
+    console.error('[TOPIK Grammar Publish]', error)
     const message = error instanceof Error ? error.message : 'Khong the luu mau ngu phap.'
     const status = Number.isInteger(error?.status) ? error.status : 500
     return res.status(status).json({ error: message })
