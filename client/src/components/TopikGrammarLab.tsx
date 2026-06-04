@@ -137,7 +137,13 @@ export default function TopikGrammarLab({ roomId, socket }: Props) {
 
   useEffect(() => {
     if (!socket || !roomId) return
-    const handleSync = (state: RoomGameState) => setRoomGame(state)
+    const handleSync = (state: RoomGameState) => {
+      setRoomGame(state)
+      if (state.status === 'idle' || state.status === 'finished') {
+        setRoomSelections({})
+        savedRoomMistakesRef.current.clear()
+      }
+    }
     socket.on('topik-game-sync', handleSync)
     socket.emit('topik-game-subscribe', { roomId })
     return () => {
@@ -216,6 +222,8 @@ export default function TopikGrammarLab({ roomId, socket }: Props) {
   }
 
   const startRoomGame = (gameType: TopikRoomGameType) => {
+    setRoomSelections({})
+    savedRoomMistakesRef.current.clear()
     socket?.emit('topik-game-action', {
       roomId,
       type: 'start',
@@ -502,8 +510,9 @@ export default function TopikGrammarLab({ roomId, socket }: Props) {
               {(Object.keys(ROOM_GAME_LABELS) as TopikRoomGameType[]).map(gameType => (
                 <button
                   key={gameType}
+                  type="button"
                   onClick={() => startRoomGame(gameType)}
-                  className="w-full rounded-2xl border border-brand-terracotta-light/20 bg-white p-4 text-left transition hover:border-brand-terracotta hover:bg-brand-light/50"
+                  className="w-full cursor-pointer rounded-2xl border border-brand-terracotta-light/20 bg-white p-4 text-left transition hover:border-brand-terracotta hover:bg-brand-light/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-terracotta/35"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="font-black text-brand-brown-dark">{ROOM_GAME_LABELS[gameType].title}</span>

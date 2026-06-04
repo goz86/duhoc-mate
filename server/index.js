@@ -6,6 +6,7 @@ import yts from 'yt-search';
 import ytsr from 'ytsr';
 import { readFileSync, writeFileSync } from 'fs';
 import { publishTopikGrammarBundle } from './topik-publish.mjs';
+import { buildTopikQuestionOrder, canManageTopikRoomGame } from './topik-game-utils.mjs';
 
 const app = express();
 app.use(cors());
@@ -858,8 +859,6 @@ app.post('/api/topik-grammar-publish', async (req, res) => {
     return res.status(status).json({ error: message });
   }
 });
-
-const shuffleList = (items) => [...items].sort(() => Math.random() - 0.5);
 
 const ensureTopikGame = (room) => {
   if (!room.topikGame) room.topikGame = createDefaultTopikGame();
@@ -2218,16 +2217,14 @@ io.on('connection', (socket) => {
     if (!member) return;
 
     const game = ensureTopikGame(room);
+    const canManageGame = canManageTopikRoomGame(member);
 
     if (type === 'start') {
       const requestedType = typeof payload.gameType === 'string' ? payload.gameType : 'topik-master';
       const allowedTypes = new Set(['vocab-speed', 'sentence-build', 'topik-master', 'grammar-race']);
       const gameType = allowedTypes.has(requestedType) ? requestedType : 'topik-master';
       const pool = await getPublishedTopikQuestions(gameType);
-      const totalRounds = Math.max(1, Math.min(Number(payload.totalRounds) || 8, 10));
-      const questionOrder = shuffleList(pool.length ? pool : TOPIK_GAME_QUESTIONS)
-        .slice(0, totalRounds)
-        .map(q => q.id);
+      const questionOrder = buildTopikQuestionOrder(pool.length ? pool : TOPIK_GAME_QUESTIONS, Number(payload.totalRounds) || 8);
 
       room.topikGame = {
         ...createDefaultTopikGame(),
