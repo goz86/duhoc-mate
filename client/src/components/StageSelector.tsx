@@ -23,7 +23,7 @@ export default function StageSelector({ stageMode, onChange }: StageSelectorProp
     { key: 'pdf', icon: Pencil, label: t('room.stage.whiteboard') },
     { key: 'topik', icon: BookOpen, label: t('room.stage.topik') },
     { key: 'video', icon: Coffee, label: t('room.stage.studyTable') },
-    { key: 'ideas', icon: ClipboardList, label: 'Idea Board' },
+    { key: 'ideas', icon: ClipboardList, label: t('room.stage.ideas') },
   ]
 
   return (

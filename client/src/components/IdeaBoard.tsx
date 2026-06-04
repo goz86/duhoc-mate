@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, useRef } from 'react'
 import type { FormEvent } from 'react'
 import { CheckCircle2, ClipboardList, Plus, Trash2, UserRound, ChevronDown } from 'lucide-react'
 import confetti from 'canvas-confetti'
+import { useTranslation } from 'react-i18next'
 import type { IdeaStatus, IdeaTask } from '../lib/communityTemplates'
 import { createIdeaTask } from '../lib/communityTemplates'
 
@@ -81,21 +82,14 @@ type Props = {
   onCreateTemplate?: () => void
 }
 
-const columns: Array<{ key: IdeaStatus; title: string; hint: string; tone: string }> = [
-  { key: 'todo', title: 'Cần làm', hint: 'Ý tưởng và việc mới', tone: 'column-todo' },
-  { key: 'doing', title: 'Đang làm', hint: 'Việc đang tập trung', tone: 'column-doing' },
-  { key: 'done', title: 'Hoàn thành', hint: 'Đã xong hoặc đã review', tone: 'column-done' },
-]
-
-const workflowSteps = [
-  'Ghi ý tưởng',
-  'Giao người làm',
-  'Đang làm',
-  'Review',
-  'Hoàn thành',
-]
+const columnTones: Record<IdeaStatus, string> = {
+  todo: 'column-todo',
+  doing: 'column-doing',
+  done: 'column-done',
+}
 
 export default function IdeaBoard({ tasks, members, onChange }: Props) {
+  const { t } = useTranslation()
   const [title, setTitle] = useState('')
   const [owner, setOwner] = useState('')
   const [activeColumn, setActiveColumn] = useState<IdeaStatus>('todo')
@@ -154,6 +148,23 @@ export default function IdeaBoard({ tasks, members, onChange }: Props) {
   }, [counts.doing, counts.done, tasks])
 
   const completionPercent = tasks.length ? Math.round((counts.done / tasks.length) * 100) : 0
+  const columns = useMemo(() => ([
+    { key: 'todo' as IdeaStatus, title: t('ideas.column.todo'), hint: t('ideas.column.todoHint'), tone: columnTones.todo },
+    { key: 'doing' as IdeaStatus, title: t('ideas.column.doing'), hint: t('ideas.column.doingHint'), tone: columnTones.doing },
+    { key: 'done' as IdeaStatus, title: t('ideas.column.done'), hint: t('ideas.column.doneHint'), tone: columnTones.done },
+  ]), [t])
+  const workflowSteps = useMemo(() => [
+    t('ideas.workflow.idea'),
+    t('ideas.workflow.assign'),
+    t('ideas.workflow.doing'),
+    t('ideas.workflow.review'),
+    t('ideas.workflow.done'),
+  ], [t])
+  const statusOptions = useMemo(() => [
+    { value: 'todo', label: t('ideas.column.todo') },
+    { value: 'doing', label: t('ideas.column.doing') },
+    { value: 'done', label: t('ideas.column.done') },
+  ], [t])
 
   const addTask = (event?: FormEvent) => {
     event?.preventDefault()
@@ -184,9 +195,9 @@ export default function IdeaBoard({ tasks, members, onChange }: Props) {
                 <ClipboardList size={25} />
               </div>
               <div className="min-w-0 hidden sm:block">
-                <h2 className="font-display text-xl font-black leading-tight text-brand-brown-dark sm:text-2xl">Bảng ý tưởng của phòng</h2>
+                <h2 className="font-display text-xl font-black leading-tight text-brand-brown-dark sm:text-2xl">{t('ideas.title')}</h2>
                 <p className="mt-1 text-sm leading-relaxed text-brand-brown-light">
-                  Biến mục tiêu thành việc nhỏ, giao người làm và lưu lại thành template cho cộng đồng.
+                  {t('ideas.subtitle')}
                 </p>
               </div>
             </div>
@@ -232,41 +243,41 @@ export default function IdeaBoard({ tasks, members, onChange }: Props) {
           <input
             value={title}
             onChange={event => setTitle(event.target.value)}
-            placeholder="Thêm mục tiêu học: làm ARC, nghe 20 phút, viết CV..."
+            placeholder={t('ideas.inputPlaceholder')}
             className="rounded-xl border border-brand-terracotta-light/30 bg-brand-cream px-3 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-brand-terracotta/30"
           />
           <CustomSelect
             value={owner}
             onChange={setOwner}
-            placeholder="Giao người làm"
+            placeholder={t('ideas.assignPlaceholder')}
             options={[
-              { value: '', label: 'Chưa giao' },
+              { value: '', label: t('ideas.unassigned') },
               ...members.map(member => ({ value: member.username, label: member.username }))
             ]}
           />
           <button className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-terracotta px-4 py-3 text-sm font-black text-white transition hover:bg-brand-brown-dark">
             <Plus size={16} />
-            Thêm
+            {t('ideas.add')}
           </button>
         </form>
 
         <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
           <div className="flex flex-col items-center justify-center rounded-2xl border border-brand-terracotta-light/20 bg-white/85 p-2 sm:p-4 text-center shadow-sm">
             <div className="text-[9px] sm:text-xs font-black uppercase text-brand-brown-light">
-              Tổng việc
+              {t('ideas.stat.total')}
             </div>
             <p className="mt-1 sm:mt-2 font-display text-xl sm:text-2xl font-black text-brand-brown-dark">{tasks.length}</p>
           </div>
           <div className="flex flex-col items-center justify-center rounded-2xl border border-brand-terracotta-light/20 bg-white/85 p-2 sm:p-4 text-center shadow-sm">
             <div className="text-[9px] sm:text-xs font-black uppercase text-brand-brown-light">
-              Đang làm
+              {t('ideas.stat.doing')}
             </div>
             <p className="mt-1 sm:mt-2 font-display text-xl sm:text-2xl font-black text-brand-brown-dark">{counts.doing}</p>
           </div>
           <div className="flex flex-col justify-center rounded-2xl border border-brand-terracotta-light/20 bg-white/85 p-2 sm:p-4 shadow-sm">
             <div className="flex flex-col items-center justify-center text-center">
               <div className="text-[9px] sm:text-xs font-black uppercase text-brand-brown-light">
-                Hoàn thành
+                {t('ideas.stat.done')}
               </div>
               <p className="mt-1 sm:mt-2 font-display text-xl sm:text-2xl font-black text-brand-terracotta">{completionPercent}%</p>
             </div>
@@ -293,8 +304,8 @@ export default function IdeaBoard({ tasks, members, onChange }: Props) {
           <div className="flex min-h-[260px] flex-1 flex-col items-center justify-center gap-3 rounded-[28px] border-2 border-dashed border-brand-terracotta-light/30 bg-white/70 p-8 text-center">
             <ClipboardList size={36} className="text-brand-terracotta/45" />
             <div>
-              <p className="font-display font-black text-brand-brown-dark">Chưa có ý tưởng nào trong phòng</p>
-              <p className="mt-1 text-sm text-brand-brown-light">Thêm task đầu tiên hoặc chọn chip gợi ý ở trên.</p>
+              <p className="font-display font-black text-brand-brown-dark">{t('ideas.emptyTitle')}</p>
+              <p className="mt-1 text-sm text-brand-brown-light">{t('ideas.emptyDesc')}</p>
             </div>
           </div>
         ) : (
@@ -305,6 +316,11 @@ export default function IdeaBoard({ tasks, members, onChange }: Props) {
                 column={column}
                 tasks={tasks}
                 count={counts[column.key]}
+                statusOptions={statusOptions}
+                emptyText={t('ideas.column.empty')}
+                deleteTitle={t('ideas.deleteTask')}
+                ownerPlaceholder={t('ideas.ownerPlaceholder')}
+                doneLabel={t('ideas.doneBadge')}
                 updateTask={updateTask}
                 removeTask={removeTask}
               />
@@ -320,6 +336,11 @@ export default function IdeaBoard({ tasks, members, onChange }: Props) {
                 column={column}
                 tasks={tasks}
                 count={counts[column.key]}
+                statusOptions={statusOptions}
+                emptyText={t('ideas.column.empty')}
+                deleteTitle={t('ideas.deleteTask')}
+                ownerPlaceholder={t('ideas.ownerPlaceholder')}
+                doneLabel={t('ideas.doneBadge')}
                 updateTask={updateTask}
                 removeTask={removeTask}
               />
@@ -335,12 +356,22 @@ function BoardColumn({
   column,
   tasks,
   count,
+  statusOptions,
+  emptyText,
+  deleteTitle,
+  ownerPlaceholder,
+  doneLabel,
   updateTask,
   removeTask,
 }: {
-  column: typeof columns[number]
+  column: { key: IdeaStatus; title: string; hint: string; tone: string }
   tasks: IdeaTask[]
   count: number
+  statusOptions: Option[]
+  emptyText: string
+  deleteTitle: string
+  ownerPlaceholder: string
+  doneLabel: string
   updateTask: (id: string, patch: Partial<IdeaTask>) => void
   removeTask: (id: string) => void
 }) {
@@ -361,7 +392,7 @@ function BoardColumn({
                 <div className="min-h-[220px] space-y-2">
                   {columnTasks.length === 0 && (
                     <div className="flex min-h-[120px] items-center justify-center rounded-xl border border-dashed border-white bg-white/45 p-4 text-center text-xs font-bold text-brand-brown-light">
-                      Chưa có việc ở bước này
+                      {emptyText}
                     </div>
                   )}
 
@@ -376,7 +407,7 @@ function BoardColumn({
                           type="button"
                           onClick={() => removeTask(task.id)}
                           className="rounded-md p-1 text-brand-brown-light transition hover:bg-red-50 hover:text-red-600"
-                          title="Xóa task"
+                          title={deleteTitle}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -386,11 +417,7 @@ function BoardColumn({
                         <CustomSelect
                           value={task.status}
                           onChange={val => updateTask(task.id, { status: val as IdeaStatus })}
-                          options={[
-                            { value: 'todo', label: 'Cần làm' },
-                            { value: 'doing', label: 'Đang làm' },
-                            { value: 'done', label: 'Hoàn thành' }
-                          ]}
+                          options={statusOptions}
                           size="sm"
                           className="w-[110px]"
                         />
@@ -399,7 +426,7 @@ function BoardColumn({
                           <input
                             value={task.owner || ''}
                             onChange={event => updateTask(task.id, { owner: event.target.value })}
-                            placeholder="Người phụ trách"
+                            placeholder={ownerPlaceholder}
                             className="min-w-0 flex-1 bg-transparent outline-none"
                           />
                         </label>
@@ -408,7 +435,7 @@ function BoardColumn({
                       {task.status === 'done' && (
                         <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
                           <CheckCircle2 size={12} />
-                          Đã hoàn thành
+                          {doneLabel}
                         </div>
                       )}
                     </article>

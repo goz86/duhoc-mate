@@ -687,19 +687,19 @@ export default function App() {
     : true;
   const cameraPolicyNotice = useMemo(() => {
     if (activeStudyCameraCount >= MAX_ACTIVE_STUDY_CAMERAS && !voiceChat.isCameraOn) {
-      return `Đã có ${MAX_ACTIVE_STUDY_CAMERAS} camera đang bật. Hãy tắt bớt camera hoặc pin một người đại diện để phòng không bị lag.`;
+      return t('study.cameraNotice.maxActive', { max: MAX_ACTIVE_STUDY_CAMERAS });
     }
     if (isStudyRoomCrowded && !canUseCameraInCrowdedRoom && !voiceChat.isCameraOn) {
-      return `Phòng đang đông (${members.length}/${STUDY_ROOM_SOFT_LIMIT}). Ưu tiên camera cho host, co-host hoặc người đang nói để giữ phòng mượt.`;
+      return t('study.cameraNotice.crowdedRestricted', { count: members.length, limit: STUDY_ROOM_SOFT_LIMIT });
     }
     if (members.length >= STUDY_ROOM_SOFT_LIMIT) {
-      return `Phòng đã đạt ngưỡng mềm ${STUDY_ROOM_SOFT_LIMIT} người. Nên giữ tối đa ${MAX_ACTIVE_STUDY_CAMERAS} camera cùng lúc.`;
+      return t('study.cameraNotice.softLimit', { limit: STUDY_ROOM_SOFT_LIMIT, max: MAX_ACTIVE_STUDY_CAMERAS });
     }
     if (members.length >= STUDY_ROOM_CROWDED_THRESHOLD) {
-      return `Phòng bắt đầu đông (${members.length}/${STUDY_ROOM_SOFT_LIMIT}). Nên bật camera có chọn lọc để tránh giật lag.`;
+      return t('study.cameraNotice.crowded', { count: members.length, limit: STUDY_ROOM_SOFT_LIMIT });
     }
     return null;
-  }, [activeStudyCameraCount, canUseCameraInCrowdedRoom, isStudyRoomCrowded, members.length, voiceChat.isCameraOn]);
+  }, [activeStudyCameraCount, canUseCameraInCrowdedRoom, isStudyRoomCrowded, members.length, t, voiceChat.isCameraOn]);
 
   const handleStudyCameraToggle = async () => {
     if (voiceChat.isCameraOn) {
@@ -707,7 +707,7 @@ export default function App() {
       return;
     }
     if (!canStartStudyCamera) {
-      window.alert(cameraPolicyNotice || `Phòng chỉ nên bật tối đa ${MAX_ACTIVE_STUDY_CAMERAS} camera cùng lúc.`);
+      window.alert(cameraPolicyNotice || t('study.cameraNotice.maxSimple', { max: MAX_ACTIVE_STUDY_CAMERAS }));
       return;
     }
     await voiceChat.toggleCamera();

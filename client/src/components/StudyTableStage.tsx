@@ -129,19 +129,19 @@ const seatPalette = [
   { avatar: 'from-[#D6A85F] via-[#BD8545] to-[#8C5F3D]', desk: 'from-[#FFE6B8] to-[#FFF7DE]', accent: '#D4943B' },
 ]
 
-const statusCycle: Array<{ label: string; Icon: LucideIcon; tone: string }> = [
-  { label: 'đang gõ phím', Icon: Keyboard, tone: 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' },
-  { label: 'tập trung sâu', Icon: VolumeX, tone: 'text-sky-700 bg-sky-50 border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900/30' },
-  { label: 'đang đọc tài liệu', Icon: BookOpen, tone: 'text-amber-700 bg-amber-50 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' },
-  { label: 'nghỉ một chút', Icon: Coffee, tone: 'text-orange-700 bg-orange-50 border-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30' },
-  { label: 'away', Icon: Moon, tone: 'text-slate-600 bg-slate-50 border-slate-100 dark:bg-slate-900/30 dark:text-slate-400 dark:border-slate-800/40' },
+const statusCycle: Array<{ labelKey: string; Icon: LucideIcon; tone: string }> = [
+  { labelKey: 'study.status.typing', Icon: Keyboard, tone: 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' },
+  { labelKey: 'study.status.focusDeep', Icon: VolumeX, tone: 'text-sky-700 bg-sky-50 border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900/30' },
+  { labelKey: 'study.status.reading', Icon: BookOpen, tone: 'text-amber-700 bg-amber-50 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' },
+  { labelKey: 'study.status.breakShort', Icon: Coffee, tone: 'text-orange-700 bg-orange-50 border-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30' },
+  { labelKey: 'study.status.away', Icon: Moon, tone: 'text-slate-600 bg-slate-50 border-slate-100 dark:bg-slate-900/30 dark:text-slate-400 dark:border-slate-800/40' },
 ]
 
-const reactionOptions: Array<{ label: string; Icon: LucideIcon; tone: string }> = [
-  { label: 'Cố lên', Icon: Flame, tone: 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30' },
-  { label: 'Nghỉ chút', Icon: Coffee, tone: 'bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900/30' },
-  { label: 'Thích', Icon: Heart, tone: 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30' },
-  { label: 'Haha', Icon: Laugh, tone: 'bg-yellow-50 text-yellow-700 border-yellow-100 dark:bg-yellow-950/20 dark:text-yellow-400 dark:border-yellow-900/30' },
+const reactionOptions: Array<{ label: string; labelKey: string; Icon: LucideIcon; tone: string }> = [
+  { label: 'Cố lên', labelKey: 'study.reaction.cheer', Icon: Flame, tone: 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30' },
+  { label: 'Nghỉ chút', labelKey: 'study.reaction.rest', Icon: Coffee, tone: 'bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900/30' },
+  { label: 'Thích', labelKey: 'study.reaction.like', Icon: Heart, tone: 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30' },
+  { label: 'Haha', labelKey: 'study.reaction.haha', Icon: Laugh, tone: 'bg-yellow-50 text-yellow-700 border-yellow-100 dark:bg-yellow-950/20 dark:text-yellow-400 dark:border-yellow-900/30' },
 ]
 
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase() || 'DM'
@@ -255,7 +255,7 @@ export default function StudyTableStage({
     const serverSeats = studyTable?.seats || {}
     const baseMembers = members.length > 0
       ? members
-      : [{ id: currentSocketId || 'local-preview', username: username || 'Bạn học', isHost: true }]
+      : [{ id: currentSocketId || 'local-preview', username: username || t('members.member'), isHost: true }]
 
     return baseMembers.map(member => {
       const serverSeat = serverSeats[member.id]
@@ -278,7 +278,7 @@ export default function StudyTableStage({
         },
       }
     }).filter(member => member.study.active !== false)
-  }, [currentSocketId, members, studyTable?.seats, username])
+  }, [currentSocketId, members, studyTable?.seats, t, username])
 
   const sortedSeats = useMemo(() => {
     return [...seats].sort((a, b) => {
@@ -418,16 +418,16 @@ export default function StudyTableStage({
     <div className="flex flex-1 flex-col gap-4">
       <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
         <div className="max-w-2xl">
-          <h2 className="font-display text-2xl font-black leading-tight text-brand-brown-dark">Bàn học chung</h2>
+          <h2 className="font-display text-2xl font-black leading-tight text-brand-brown-dark">{t('study.title')}</h2>
           <p className="mt-1 text-sm leading-relaxed text-brand-brown-light">
-            Cùng ngồi học, theo dõi thời gian hiện diện, Pomodoro cá nhân và gửi biểu cảm động viên cho nhau.
+            {t('study.subtitle')}
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">
             <MicOff size={14} />
-            {isInVoice ? (isMuted ? 'Mic tắt' : 'Mic bật') : 'Mặc định tắt mic'}
+            {isInVoice ? (isMuted ? t('study.micOff') : t('study.micOn')) : t('study.micDefaultOff')}
           </span>
           <button
             type="button"
@@ -445,12 +445,12 @@ export default function StudyTableStage({
             }`}
           >
             {isInVoice && !isMuted ? <MicOff size={14} /> : <Mic size={14} />}
-            {isInVoice ? (isMuted ? 'Bật mic' : 'Tắt mic') : 'Bật mic'}
+            {isInVoice ? (isMuted ? t('study.turnMicOn') : t('study.turnMicOff')) : t('study.turnMicOn')}
           </button>
           <button
             type="button"
             onClick={() => void onToggleCamera?.()}
-            title={cameraStartBlocked ? cameraPolicyNotice || 'Camera dang duoc gioi han de phong khong bi lag' : undefined}
+            title={cameraStartBlocked ? cameraPolicyNotice || t('study.cameraLimitedHint') : undefined}
             className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black transition ${
               isCameraOn
                 ? 'bg-sky-500 text-white hover:bg-sky-600'
@@ -460,7 +460,7 @@ export default function StudyTableStage({
             }`}
           >
             {isCameraOn ? <VideoOff size={14} /> : cameraStartBlocked ? <AlertTriangle size={14} /> : <Video size={14} />}
-            {isCameraOn ? 'Tắt camera' : cameraStartBlocked ? 'Giới hạn camera' : 'Bật camera'}
+            {isCameraOn ? t('study.turnCameraOff') : cameraStartBlocked ? t('study.cameraLimited') : t('study.turnCameraOn')}
           </button>
           {isInVoice && (
             <button
@@ -469,7 +469,7 @@ export default function StudyTableStage({
               className="inline-flex items-center gap-1.5 rounded-xl bg-red-500 px-4 py-2 text-xs font-black text-white transition hover:bg-red-600"
             >
               <PhoneOff size={14} />
-              Rời call
+              {t('study.leaveCall')}
             </button>
           )}
           <button
@@ -480,7 +480,7 @@ export default function StudyTableStage({
             }`}
           >
             {jitsiActive ? <PhoneOff size={14} /> : <Phone size={14} />}
-            {jitsiActive ? 'Rời bàn học' : 'Ngồi vào bàn'}
+            {jitsiActive ? t('study.leaveTable') : t('study.joinTable')}
           </button>
         </div>
       </div>
@@ -495,7 +495,7 @@ export default function StudyTableStage({
                 type="button"
                 onClick={() => setExpandedVideoMemberId(null)}
                 className="absolute inset-0 z-10 cursor-zoom-out"
-                aria-label="Thu nhỏ video"
+                aria-label={t('study.collapseVideo')}
               />
               <VideoPreview
                 stream={expandedVideo.stream}
@@ -504,19 +504,19 @@ export default function StudyTableStage({
               <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 bg-gradient-to-b from-black/75 via-black/35 to-transparent p-4">
                 <div className="min-w-0 text-white">
                   <p className="truncate text-sm font-black sm:text-base">
-                    {expandedVideo.member.username}{expandedVideo.isLocal ? ' (Bạn)' : ''}
+                    {expandedVideo.member.username}{expandedVideo.isLocal ? ` (${t('members.you')})` : ''}
                   </p>
                   <p className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-black text-white/85 backdrop-blur">
                     <Video size={11} />
-                    Live cam
+                    {t('study.live')}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setExpandedVideoMemberId(null)}
                   className="pointer-events-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-lg backdrop-blur transition hover:bg-white/25"
-                  aria-label="Thu nhỏ video"
-                  title="Thu nhỏ"
+                  aria-label={t('study.collapseVideo')}
+                  title={t('study.collapseVideo')}
                 >
                   <Minimize2 size={18} />
                 </button>
@@ -524,7 +524,7 @@ export default function StudyTableStage({
               {expandedVideo.muted && (
                 <span className="absolute bottom-4 left-4 z-20 inline-flex items-center gap-1.5 rounded-full bg-red-500 px-3 py-1.5 text-xs font-black text-white shadow-lg">
                   <MicOff size={13} />
-                  Tắt mic
+                  {t('study.micOff')}
                 </span>
               )}
             </div>
@@ -534,11 +534,11 @@ export default function StudyTableStage({
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta-light/20 bg-white/70 px-3 py-1.5 text-[11px] font-black text-brand-brown-light">
                 <Users size={13} />
-                {seats.length} ghế đang học
+                {t('study.seatsActive', { count: seats.length })}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-[11px] font-black text-sky-700">
                 <Timer size={13} />
-                {focusCount} đang Pomodoro
+                {t('study.pomodoroActive', { count: focusCount })}
               </span>
               <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-black ${
                 cameraActiveCount >= maxActiveCameras
@@ -551,14 +551,14 @@ export default function StudyTableStage({
               {isCrowded && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-100 bg-amber-50 px-3 py-1.5 text-[11px] font-black text-amber-700">
                   <Users size={13} />
-                  Chế độ phòng đông
+                  {t('study.crowdedMode')}
                 </span>
               )}
               <div className="ml-0 flex w-full gap-1 rounded-2xl border border-brand-terracotta-light/15 bg-white/70 p-1 sm:ml-auto sm:w-auto">
                 {[
-                  { key: 'all', label: 'Tất cả', count: seats.length },
+                  { key: 'all', label: t('study.filterAll'), count: seats.length },
                   { key: 'focus', label: 'Focus', count: focusCount },
-                  { key: 'break', label: 'Nghỉ', count: breakCount },
+                  { key: 'break', label: t('study.filterBreak'), count: breakCount },
                 ].map(item => (
                   <button
                     key={item.key}
@@ -586,7 +586,7 @@ export default function StudyTableStage({
                 <span>
                   {cameraPolicyNotice}
                   {seats.length >= roomCrowdedThreshold && seats.length < roomSoftLimit && (
-                    <span className="ml-1 font-black">Mục tiêu tốt: 8-12 người/phòng.</span>
+                    <span className="ml-1 font-black">{t('study.goodTarget')}</span>
                   )}
                 </span>
               </div>
@@ -597,7 +597,7 @@ export default function StudyTableStage({
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <div className="inline-flex items-center gap-1.5 rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-[11px] font-black text-sky-700">
                     <Video size={13} />
-                    {videoParticipants.length} camera đang bật
+                    {t('study.camerasOn', { count: videoParticipants.length })}
                   </div>
                   <div className="flex rounded-2xl border border-brand-terracotta-light/15 bg-white/80 p-1">
                     {[
@@ -658,7 +658,7 @@ export default function StudyTableStage({
                         setVideoLayoutMode('pinned')
                       }}
                       className="relative aspect-video min-h-[220px] overflow-hidden rounded-[22px] border border-white/80 bg-slate-950 text-left shadow-inner"
-                      title="Phóng to video"
+                      title={t('study.expandVideo')}
                     >
                       <VideoPreview stream={activeVideoParticipant.stream} className="pointer-events-none h-full w-full object-contain" />
                       <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/75 to-transparent p-3">
@@ -708,7 +708,7 @@ export default function StudyTableStage({
                 {filteredSeats.length === 0 && (
                   <div className="col-span-full rounded-3xl border border-dashed border-brand-terracotta-light/35 bg-white/65 px-5 py-8 text-center">
                     <p className="font-display text-sm font-black text-brand-brown-dark">Chưa có ai trong nhóm này</p>
-                    <p className="mt-1 text-xs font-bold text-brand-brown-light">Đổi bộ lọc để xem các ghế khác trong phòng.</p>
+                    <p className="mt-1 text-xs font-bold text-brand-brown-light">{t('study.emptyFilterDesc')}</p>
                   </div>
                 )}
                 {filteredSeats.map((member, index) => {
@@ -738,10 +738,11 @@ export default function StudyTableStage({
                     ? ((personal.duration - personalLeft) / personal.duration) * 100
                     : 0
                   const status = personal.isRunning
-                    ? { label: 'Tập trung', Icon: statusCycle[1].Icon, tone: 'text-sky-700 bg-sky-50 border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900/30' }
+                    ? { label: t('study.status.focus'), Icon: statusCycle[1].Icon, tone: 'text-sky-700 bg-sky-50 border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900/30' }
                     : personal.isBreak
-                      ? { label: 'Giải lao', Icon: statusCycle[3].Icon, tone: 'text-amber-700 bg-amber-50 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' }
-                      : { label: 'Sẵn sàng', Icon: statusCycle[0].Icon, tone: 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' }
+                      ? { label: t('study.status.break'), Icon: statusCycle[3].Icon, tone: 'text-amber-700 bg-amber-50 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' }
+                      : { label: t('study.status.ready'), Icon: statusCycle[0].Icon, tone: 'text-emerald-700 bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' }
+                  const roleLabel = member.isHost ? t('study.role.host') : member.role === 'cohost' ? 'Co-host' : member.role === 'moderator' ? 'Mod' : t('study.role.member')
                   const isLocal = member.id === currentSocketId || member.username === username
                   const voiceState = voiceUsers.get(member.id)
                   const inCall = isLocal ? isInVoice : !!voiceState
@@ -774,8 +775,8 @@ export default function StudyTableStage({
                           type="button"
                           onClick={() => setExpandedVideoMemberId(null)}
                           className="relative block aspect-video min-h-[118px] w-full cursor-default overflow-hidden text-left"
-                          aria-label={`Phóng to video của ${member.username}`}
-                          title="Phóng to video"
+                          aria-label={t('study.expandVideoFor', { name: member.username })}
+                          title={t('study.expandVideo')}
                         >
                           <VideoPreview
                             stream={videoStream}
@@ -788,7 +789,7 @@ export default function StudyTableStage({
                                 <span className="truncate">{member.username}{isLocal ? ' (Bạn)' : ''}</span>
                               </p>
                               <p className="mt-0.5 truncate text-[9px] font-bold text-white/75">
-                                {member.isHost ? 'Chủ bàn học' : member.role === 'cohost' ? 'Co-host' : member.role === 'moderator' ? 'Mod' : 'Bạn học'}
+                              {roleLabel}
                               </p>
                             </div>
                             <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-400 px-2 py-1 text-[9px] font-black text-emerald-950 shadow">
@@ -800,7 +801,7 @@ export default function StudyTableStage({
                             <div className="flex items-center justify-between gap-2 text-[10px] font-black text-white">
                               <span className="inline-flex min-w-0 items-center gap-1">
                                 {mutedInCall ? <MicOff size={11} /> : <Mic size={11} />}
-                                <span className="truncate">{mutedInCall ? 'Tắt mic' : 'Đang học'}</span>
+                                <span className="truncate">{mutedInCall ? t('study.micOff') : t('study.studying')}</span>
                               </span>
                               {!isMicro && (
                                 <span className="shrink-0 tabular-nums text-white/85">
@@ -871,7 +872,7 @@ export default function StudyTableStage({
                                 {reaction.senderName && (
                                   <span className="font-bold">{reaction.senderName}</span>
                                 )}
-                                <span className="opacity-80">· {reaction.label}</span>
+                                <span className="opacity-80">· {t(reactionMeta.labelKey)}</span>
                                 <ReactionIcon size={11} />
                               </span>
                             )
@@ -884,8 +885,8 @@ export default function StudyTableStage({
                               type="button"
                               onClick={() => setExpandedVideoMemberId(null)}
                               className="relative block aspect-video w-full cursor-zoom-out overflow-hidden text-left"
-                              aria-label={`Thu nho video cua ${member.username}`}
-                              title="Thu nho video"
+                              aria-label={t('study.collapseVideoFor', { name: member.username })}
+                              title={t('study.collapseVideo')}
                             >
                               <VideoPreview
                                 stream={videoStream}
@@ -893,7 +894,7 @@ export default function StudyTableStage({
                               />
                               <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/75 via-black/35 to-transparent p-2.5">
                                 <span className="min-w-0 truncate text-xs font-black text-white">
-                                  {member.username}{isLocal ? ' (Ban)' : ''}
+                                  {member.username}{isLocal ? ` (${t('members.you')})` : ''}
                                 </span>
                                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/15 text-white shadow backdrop-blur">
                                   <Minimize2 size={13} />
@@ -902,7 +903,7 @@ export default function StudyTableStage({
                               {mutedInCall && (
                                 <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-red-500 px-2 py-1 text-[10px] font-black text-white shadow">
                                   <MicOff size={10} />
-                                  Tat mic
+                                  {t('study.micOff')}
                                 </span>
                               )}
                             </button>
@@ -949,10 +950,10 @@ export default function StudyTableStage({
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <h3 className={`truncate font-display font-black text-brand-brown-dark ${isMicro ? 'text-xs' : 'text-sm'}`}>
-                                  {member.username}{isLocal ? ' (Bạn)' : ''}
+                                  {member.username}{isLocal ? ` (${t('members.you')})` : ''}
                                 </h3>
                                 <p className="mt-0.5 truncate text-[10px] font-bold text-brand-brown-light">
-                                  {member.isHost ? 'Chủ bàn học' : member.role === 'cohost' ? 'Co-host' : member.role === 'moderator' ? 'Mod' : 'Bạn học'}
+                                  {roleLabel}
                                 </p>
                               </div>
                               <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-black ${isMicro ? 'hidden lg:inline-flex' : ''} ${isPersonalBreak ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700'}`}>
@@ -967,7 +968,7 @@ export default function StudyTableStage({
                             {inCall && (
                               <div className="ml-1 mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-sky-100 bg-sky-50 px-2.5 py-1 text-[10px] font-black text-sky-700">
                                 {cameraEnabled ? <Video size={11} /> : <Phone size={11} />}
-                                <span className="truncate">{cameraEnabled ? 'Camera' : 'Voice'}</span>
+                                <span className="truncate">{cameraEnabled ? t('study.camera') : t('study.voice')}</span>
                               </div>
                             )}
                           </div>
@@ -976,8 +977,8 @@ export default function StudyTableStage({
                               type="button"
                               onClick={() => setExpandedVideoMemberId(member.id)}
                               className={`relative z-20 shrink-0 cursor-zoom-in overflow-hidden rounded-2xl border border-white/80 bg-slate-950 text-left shadow-inner transition hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-sky-300 ${isCrowded ? 'h-14 w-20' : 'h-[72px] w-28'}`}
-                              aria-label={`Phóng to video của ${member.username}`}
-                              title="Phóng to video"
+                              aria-label={t('study.expandVideoFor', { name: member.username })}
+                              title={t('study.expandVideo')}
                             >
                               <VideoPreview
                                 stream={videoStream}
@@ -985,7 +986,7 @@ export default function StudyTableStage({
                               />
                               <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-0.5 rounded-full bg-black/45 px-1.5 py-0.5 text-[8px] font-black text-white backdrop-blur">
                                 <Video size={9} />
-                                Live
+                                {t('study.live')}
                               </span>
                               <span className="absolute bottom-1.5 right-1.5 grid h-5 w-5 place-items-center rounded-full bg-black/45 text-white shadow backdrop-blur">
                                 <Maximize2 size={10} />
@@ -1002,7 +1003,7 @@ export default function StudyTableStage({
                         <div className={`${isMicro ? 'mt-3 gap-1.5' : 'mt-4 gap-2'} grid grid-cols-2`}>
                           {/* Ngồi bàn timer */}
                           <div className={`${isMicro ? 'px-2 py-1.5' : 'px-3 py-2'} rounded-xl border border-brand-terracotta-light/20 bg-white/70`}>
-                            <p className="truncate text-[9px] font-black uppercase text-brand-brown-light">Ngồi bàn</p>
+                            <p className="truncate text-[9px] font-black uppercase text-brand-brown-light">{t('study.deskTime')}</p>
                             <p className={`${isMicro ? 'text-xs' : 'text-base'} mt-0.5 font-display font-black tabular-nums text-brand-brown-dark`}>
                               {isSeated ? formatDeskTime(elapsed) : <span className="text-slate-400">—</span>}
                             </p>
@@ -1011,7 +1012,7 @@ export default function StudyTableStage({
                           {/* Pomo riêng – controls bên trong box */}
                           <div className={`${isMicro ? 'px-2 py-1.5' : 'px-3 py-2'} rounded-xl border border-brand-terracotta-light/20 bg-white/70`}>
                             <div className="flex items-center justify-between">
-                              <p className="truncate text-[9px] font-black uppercase text-brand-brown-light">Pomo riêng</p>
+                              <p className="truncate text-[9px] font-black uppercase text-brand-brown-light">{t('study.personalPomo')}</p>
                               {isLocal && onPersonalPomodoro && !isMicro && (
                                 <div className="flex gap-0.5">
                                   <button
@@ -1061,10 +1062,10 @@ export default function StudyTableStage({
                                   type="button"
                                   onClick={() => handleReaction(option, member.id)}
                                   className={`inline-flex items-center gap-1 rounded-full border ${isCrowded ? 'px-1.5 py-1' : 'px-2 py-1'} text-[9px] font-black transition hover:-translate-y-0.5 hover:shadow-sm active:scale-95 ${option.tone}`}
-                                  title={`Gửi ${option.label} cho ${member.username}`}
+                                  title={t('study.sendReactionTo', { reaction: t(option.labelKey), name: member.username })}
                                 >
                                   <OptionIcon size={10} />
-                                  <span className={isCrowded ? 'sr-only' : ''}>{option.label}</span>
+                                  <span className={isCrowded ? 'sr-only' : ''}>{t(option.labelKey)}</span>
                                 </button>
                               )
                             })}
@@ -1085,8 +1086,8 @@ export default function StudyTableStage({
               <Timer size={18} />
             </span>
             <div>
-              <p className="text-sm font-black text-brand-brown-dark">Pomodoro nhóm</p>
-              <p className="text-[11px] font-bold text-brand-brown-light">Nhịp chung của phòng</p>
+              <p className="text-sm font-black text-brand-brown-dark">{t('study.groupPomodoro')}</p>
+              <p className="text-[11px] font-bold text-brand-brown-light">{t('study.roomRhythm')}</p>
             </div>
           </div>
 
@@ -1115,10 +1116,10 @@ export default function StudyTableStage({
               )}
               <div className="grid grid-cols-2 gap-2">
                 <button type="button" onClick={() => onControlPomodoro('reset', false)} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-terracotta-light/20 bg-white px-3 py-2.5 text-[11px] font-black text-brand-brown-dark transition hover:bg-brand-light">
-                  <RotateCcw size={13} /> 25 phút
+                  <RotateCcw size={13} /> {t('study.minutes25')}
                 </button>
                 <button type="button" onClick={() => onControlPomodoro('reset', true)} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-terracotta-light/20 bg-white px-3 py-2.5 text-[11px] font-black text-brand-brown-dark transition hover:bg-brand-light">
-                  <Coffee size={13} /> 5 phút
+                  <Coffee size={13} /> {t('study.minutes5')}
                 </button>
               </div>
             </div>
@@ -1127,7 +1128,7 @@ export default function StudyTableStage({
           <div className="mt-4 space-y-2">
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-700">
               <Users size={13} className="mr-1 inline" />
-              {seats.length} bạn đang hiện diện trong bàn học.
+              {t('study.presentCount', { count: seats.length })}
             </div>
           </div>
         </aside>
