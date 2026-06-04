@@ -2449,6 +2449,18 @@ export default function App() {
   const trendingCacheVpopRef = useRef<any[]>([]);
   const trendingCacheKpopRef = useRef<any[]>([]);
   const trendingCacheVinahouseRef = useRef<any[]>([]);
+  const aiSuggestFallbackQueries = {
+    vpop: 'nhạc việt vpop hot nhất hiện nay official mv',
+    kpop: 'kpop trending music video official korean pop',
+    vinahouse: 'vinahouse tik tok remix hot nhất',
+  };
+
+  const fetchAiSuggestionsBySearch = async (type: 'vpop' | 'kpop' | 'vinahouse') => {
+    const SEARCH_URL = `${getApiBaseCandidates()[0]}/api/search-music`;
+    const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(aiSuggestFallbackQueries[type])}`);
+    const data = await res.json();
+    return (data.results || []).filter((song: any) => song?.videoId).slice(0, 12);
+  };
 
   const preloadTrendingMusic = async () => {
     const types: ('vpop' | 'kpop' | 'vinahouse')[] = ['vpop', 'kpop', 'vinahouse'];
@@ -2491,13 +2503,21 @@ export default function App() {
         cacheRef.current = data.results;
         shuffleAndSetAiSuggestions(data.results);
       } else {
-        cacheRef.current = trendingVideoSuggestions;
-        shuffleAndSetAiSuggestions(trendingVideoSuggestions);
+        const searchResults = await fetchAiSuggestionsBySearch(type);
+        cacheRef.current = searchResults;
+        shuffleAndSetAiSuggestions(searchResults);
       }
     } catch (err) {
       console.error(`Failed to fetch AI trending suggestions for ${type}`, err);
-      cacheRef.current = trendingVideoSuggestions;
-      shuffleAndSetAiSuggestions(trendingVideoSuggestions);
+      try {
+        const searchResults = await fetchAiSuggestionsBySearch(type);
+        cacheRef.current = searchResults;
+        shuffleAndSetAiSuggestions(searchResults);
+      } catch (searchErr) {
+        console.error(`Failed to fetch AI search suggestions for ${type}`, searchErr);
+        cacheRef.current = [];
+        setAiSuggestions([]);
+      }
     } finally {
       setAiLoading(false);
     }
@@ -5540,6 +5560,13 @@ export default function App() {
               <div className="flex flex-col items-center justify-center py-10 gap-3">
                 <span className="h-6 w-6 rounded-full border-2 border-brand-terracotta/30 border-t-brand-terracotta animate-spin" />
                 <span className="text-xs text-brand-brown-light dark:text-zinc-500">Đang phân tích xu hướng...</span>
+              </div>
+            ) : aiSuggestions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
+                <Music2 size={22} className="text-brand-terracotta/70" />
+                <span className="text-xs font-bold text-brand-brown-light dark:text-zinc-400">
+                  Chưa tìm được bài phù hợp. Bấm Random bài khác để thử lại.
+                </span>
               </div>
             ) : (
               <div className="space-y-3 relative z-10">
