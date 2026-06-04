@@ -6,7 +6,7 @@ import yts from 'yt-search';
 import ytsr from 'ytsr';
 import { readFileSync, writeFileSync } from 'fs';
 import { publishTopikGrammarBundle } from './topik-publish.mjs';
-import { buildTopikQuestionOrder, canManageTopikRoomGame } from './topik-game-utils.mjs';
+import { buildTopikQuestionOrder, canManageTopikRoomGame, shuffleTopikQuestionOptions } from './topik-game-utils.mjs';
 
 const app = express();
 app.use(cors());
@@ -933,7 +933,7 @@ const startTopikGameRound = (roomId) => {
   }
 
   game.status = 'question';
-  game.question = question;
+  game.question = shuffleTopikQuestionOptions(question);
   game.answers = {};
   game.roundStartedAt = Date.now();
   clearTopikGameTimer(roomId);

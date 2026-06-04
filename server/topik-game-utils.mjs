@@ -16,6 +16,24 @@ export function buildTopikQuestionOrder(pool, requestedRounds, random = Math.ran
   return shuffleTopikQuestions(questions, random).slice(0, roundCount).map(question => question.id)
 }
 
+export function shuffleTopikQuestionOptions(question, random = Math.random) {
+  if (!question || !Array.isArray(question.options)) return question
+
+  const answerIndex = Number(question.answerIndex)
+  if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex >= question.options.length) {
+    return { ...question, options: [...question.options] }
+  }
+
+  const options = question.options.map((option, index) => ({ option, index }))
+  const shuffled = shuffleTopikQuestions(options, random)
+
+  return {
+    ...question,
+    options: shuffled.map(item => item.option),
+    answerIndex: shuffled.findIndex(item => item.index === answerIndex),
+  }
+}
+
 export function canManageTopikRoomGame(member) {
   return Boolean(member)
 }

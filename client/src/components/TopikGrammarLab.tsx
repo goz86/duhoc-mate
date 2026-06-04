@@ -268,7 +268,7 @@ export default function TopikGrammarLab({ roomId, socket }: Props) {
           { key: 'grammar' as const, label: 'Ngữ pháp', icon: BookOpen },
           { key: 'practice' as const, label: 'Luyện nhanh', icon: ListChecks },
           { key: 'mistakes' as const, label: `Sổ lỗi sai (${mistakes.length})`, icon: AlertCircle },
-          { key: 'room-games' as const, label: 'Game phòng', icon: Gamepad2 },
+          { key: 'room-games' as const, label: 'Chơi game', icon: Gamepad2 },
           { key: 'ai-generator' as const, label: 'AI tạo ngữ pháp', icon: Sparkles },
         ].map(item => {
           const Icon = item.icon
