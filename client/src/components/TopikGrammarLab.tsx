@@ -537,7 +537,6 @@ export default function TopikGrammarLab({ roomId, socket }: Props) {
 
       {view === 'ai-generator' && (
         <TopikGrammarGenerator
-          userId={userId}
           existingTitles={grammarPatterns.map(pattern => pattern.title)}
         />
       )}

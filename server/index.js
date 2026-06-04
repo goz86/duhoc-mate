@@ -5,6 +5,7 @@ import cors from 'cors';
 import yts from 'yt-search';
 import ytsr from 'ytsr';
 import { readFileSync, writeFileSync } from 'fs';
+import { publishTopikGrammarBundle } from '../lib/topik-publish.mjs';
 
 const app = express();
 app.use(cors());
@@ -822,6 +823,22 @@ const createDefaultTopikGame = () => ({
   sessionSaved: false,
   leaderboard: {},
   answers: {}
+});
+
+app.post('/api/topik-grammar-publish', async (req, res) => {
+  try {
+    const result = await publishTopikGrammarBundle({
+      bundle: req.body?.bundle,
+      level: Number(req.body?.level),
+      supabaseUrl: SUPABASE_URL,
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
+    return res.status(201).json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Không thể lưu mẫu ngữ pháp.';
+    const status = Number.isInteger(error?.status) ? error.status : 500;
+    return res.status(status).json({ error: message });
+  }
 });
 
 const shuffleList = (items) => [...items].sort(() => Math.random() - 0.5);

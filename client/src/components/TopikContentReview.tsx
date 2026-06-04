@@ -7,17 +7,22 @@ import {
   LoaderCircle,
   RefreshCw,
   ShieldCheck,
+  Trash2,
   XCircle,
 } from 'lucide-react'
 import {
   approveGrammarSubmission,
+  deletePublishedGrammarPattern,
+  loadPublishedAiGrammarPatterns,
   loadPendingGrammarSubmissions,
   rejectGrammarSubmission,
+  type PublishedAiGrammar,
   type TopikContentSubmission,
 } from '../lib/topikContentStorage'
 
 export default function TopikContentReview() {
   const [submissions, setSubmissions] = useState<TopikContentSubmission[]>([])
+  const [published, setPublished] = useState<PublishedAiGrammar[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -28,11 +33,30 @@ export default function TopikContentReview() {
     setLoading(true)
     setError('')
     try {
-      setSubmissions(await loadPendingGrammarSubmissions())
+      const [nextSubmissions, nextPublished] = await Promise.all([
+        loadPendingGrammarSubmissions(),
+        loadPublishedAiGrammarPatterns(),
+      ])
+      setSubmissions(nextSubmissions)
+      setPublished(nextPublished)
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Không thể tải hàng chờ duyệt.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const removePublished = async (grammar: PublishedAiGrammar) => {
+    if (reviewingId || !confirm(`Xóa mẫu "${grammar.title}" và toàn bộ câu hỏi liên quan?`)) return
+    setReviewingId(grammar.id)
+    setError('')
+    try {
+      await deletePublishedGrammarPattern(grammar.id)
+      setPublished(current => current.filter(item => item.id !== grammar.id))
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Không thể xóa nội dung.')
+    } finally {
+      setReviewingId(null)
     }
   }
 
@@ -229,6 +253,46 @@ export default function TopikContentReview() {
             )
           })}
         </div>
+      )}
+
+      {!loading && (
+        <section className="mt-5">
+          <div className="mb-3">
+            <h3 className="font-black text-brand-brown-dark">Nội dung AI đã xuất bản</h3>
+            <p className="mt-1 text-xs text-brand-brown-light">Hậu kiểm và xóa mẫu sai cùng toàn bộ câu hỏi liên quan.</p>
+          </div>
+          {published.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-brand-terracotta-light/25 bg-white/70 p-4 text-center text-xs font-semibold text-brand-brown-light">
+              Chưa có mẫu AI nào được xuất bản.
+            </p>
+          ) : (
+            <div className="grid gap-2 md:grid-cols-2">
+              {published.map(grammar => (
+                <article key={grammar.id} className="rounded-2xl border border-brand-terracotta-light/15 bg-white/90 p-3 shadow-sm dark:bg-brand-panel/90">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-brand-light px-2 py-1 text-[10px] font-black text-brand-terracotta">TOPIK {grammar.level}</span>
+                        <span className="text-[10px] font-bold text-brand-brown-light">{grammar.source}</span>
+                      </div>
+                      <h4 className="mt-2 truncate text-sm font-black text-brand-brown-dark">{grammar.title}</h4>
+                      <p className="mt-1 truncate text-xs font-semibold text-brand-brown-light">{grammar.formula}</p>
+                      <p className="mt-2 line-clamp-2 text-xs text-brand-brown-light">{grammar.meaning_vi}</p>
+                    </div>
+                    <button
+                      onClick={() => removePublished(grammar)}
+                      disabled={reviewingId === grammar.id}
+                      className="rounded-xl border border-red-200 bg-red-50 p-2 text-red-600 transition hover:bg-red-100 disabled:opacity-50"
+                      title="Xóa mẫu và câu hỏi"
+                    >
+                      {reviewingId === grammar.id ? <LoaderCircle size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       )}
     </div>
   )

@@ -37,6 +37,16 @@ export type TopikContentSubmission = {
   created_at: string
 }
 
+export type PublishedAiGrammar = {
+  id: string
+  level: number
+  title: string
+  formula: string
+  meaning_vi: string
+  source: string
+  created_at: string
+}
+
 type GrammarRow = {
   id: string
   level: number
@@ -376,6 +386,38 @@ export async function submitGrammarBundle(
     .single()
   if (error) throw new Error(error.code === '42P01' ? 'Hãy chạy supabase-topik-product.sql trước.' : error.message)
   return data?.id as string
+}
+
+export async function publishGrammarBundleDirect(level: number, bundle: AiGrammarBundle) {
+  const response = await fetch('/api/topik-grammar-publish', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ level, bundle }),
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(data.error || 'Không thể lưu mẫu ngữ pháp vào database.')
+  return data as { id: string; title: string; level: number; practiceCount: number; gameCount: number }
+}
+
+export async function loadPublishedAiGrammarPatterns(): Promise<PublishedAiGrammar[]> {
+  if (!supabaseEnabled || !supabase) return []
+  const { data, error } = await supabase
+    .from('topik_grammar_patterns')
+    .select('id,level,title,formula,meaning_vi,source,created_at')
+    .in('source', ['ai-direct', 'ai-submission'])
+    .eq('status', 'published')
+    .order('created_at', { ascending: false })
+    .limit(200)
+  if (error) throw error
+  return (data || []) as PublishedAiGrammar[]
+}
+
+export async function deletePublishedGrammarPattern(id: string) {
+  if (!supabaseEnabled || !supabase) throw new Error('Supabase chưa được cấu hình.')
+  const questionsResult = await supabase.from('topik_question_bank').delete().eq('pattern_id', id)
+  if (questionsResult.error) throw questionsResult.error
+  const grammarResult = await supabase.from('topik_grammar_patterns').delete().eq('id', id)
+  if (grammarResult.error) throw grammarResult.error
 }
 
 export async function loadOwnGrammarSubmissions(userId: string): Promise<TopikContentSubmission[]> {
