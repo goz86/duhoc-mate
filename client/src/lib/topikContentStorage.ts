@@ -394,7 +394,13 @@ export async function publishGrammarBundleDirect(level: number, bundle: AiGramma
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ level, bundle }),
   })
-  const data = await response.json().catch(() => ({}))
+  const responseText = await response.text()
+  let data: any = {}
+  try {
+    data = responseText ? JSON.parse(responseText) : {}
+  } catch {
+    data = { error: responseText }
+  }
   if (!response.ok) throw new Error(data.error || 'Không thể lưu mẫu ngữ pháp vào database.')
   return data as { id: string; title: string; level: number; practiceCount: number; gameCount: number }
 }

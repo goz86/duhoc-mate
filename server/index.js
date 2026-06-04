@@ -9,7 +9,16 @@ import { publishTopikGrammarBundle } from '../lib/topik-publish.mjs';
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
+app.use((error, req, res, next) => {
+  if (error?.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Nội dung AI quá lớn để gửi lên server. Hãy thử tạo ít mẫu hơn mỗi lần.' });
+  }
+  if (error instanceof SyntaxError && 'body' in error) {
+    return res.status(400).json({ error: 'Dữ liệu gửi lên server không đúng định dạng JSON.' });
+  }
+  return next(error);
+});
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://imqrvssxfrhivlumhoze.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_d-szvo4evO2V69FCNc__IQ_xc8OqFPV';
