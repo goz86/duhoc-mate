@@ -173,7 +173,7 @@ export async function loadPublishedGrammarPatterns(): Promise<TopikGrammarPatter
   }
 
   const cached = readCache<TopikGrammarPattern>(GRAMMAR_CACHE_KEY)
-  return cached.length ? cached : TOPIK_GRAMMAR_PATTERNS
+  return cached.length ? mergeById(cached, TOPIK_GRAMMAR_PATTERNS) : TOPIK_GRAMMAR_PATTERNS
 }
 
 export async function loadPublishedQuestionBank(): Promise<TopikPracticeQuestion[]> {
@@ -208,7 +208,7 @@ export async function loadPublishedQuestionBank(): Promise<TopikPracticeQuestion
   }
 
   const cached = readCache<TopikPracticeQuestion>(QUESTION_CACHE_KEY)
-  return cached.length ? cached : TOPIK_PRACTICE_QUESTIONS
+  return cached.length ? mergeById(cached, TOPIK_PRACTICE_QUESTIONS) : TOPIK_PRACTICE_QUESTIONS
 }
 
 export function pickQuestionSession(

@@ -294,9 +294,9 @@ export default function TopikGrammarLab({ roomId, socket }: Props) {
 
       {view === 'grammar' && selectedPattern && (
         <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
-          <div className="rounded-3xl border border-brand-terracotta-light/20 bg-white/90 p-3 shadow-sm">
+          <div className="rounded-3xl border border-brand-terracotta-light/20 bg-white/90 p-3 shadow-sm lg:sticky lg:top-4 lg:max-h-[calc(100vh-170px)]">
             <div className="mb-3 px-2 text-xs font-black uppercase text-brand-brown-light">Mẫu ngữ pháp TOPIK {level}</div>
-            <div className="space-y-2">
+            <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1 custom-scrollbar lg:max-h-[calc(100vh-230px)]">
               {patterns.map(pattern => (
                 <button
                   key={pattern.id}
