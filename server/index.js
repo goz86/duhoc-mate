@@ -20,6 +20,14 @@ app.use((error, req, res, next) => {
   return next(error);
 });
 
+app.get('/', (req, res) => {
+  res.status(200).json({ ok: true, service: 'duhoc-mate-server' });
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ ok: true });
+});
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://imqrvssxfrhivlumhoze.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_d-szvo4evO2V69FCNc__IQ_xc8OqFPV';
 const ROOM_STATES_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/room_states`;
@@ -2735,6 +2743,7 @@ setInterval(() => {
 const DEFAULT_PORT = 3001;
 const PORT = Number(process.env.PORT) || DEFAULT_PORT;
 const HOST = '0.0.0.0';
+const DISABLE_FALLBACK_PORT = ['1', 'true', 'yes'].includes(String(process.env.DISABLE_FALLBACK_PORT || '').toLowerCase());
 
 const listen = (server, port, label) => {
   server.listen(port, HOST, () => {
@@ -2748,7 +2757,7 @@ const listen = (server, port, label) => {
 
 listen(httpServer, PORT, 'primary');
 
-if (PORT !== DEFAULT_PORT) {
+if (PORT !== DEFAULT_PORT && !DISABLE_FALLBACK_PORT) {
   const fallbackServer = createServer(app);
   io.attach(fallbackServer, socketOptions);
   listen(fallbackServer, DEFAULT_PORT, 'fallback');
