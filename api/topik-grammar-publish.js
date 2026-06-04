@@ -9,6 +9,9 @@ export default async function handler(req, res) {
       level: Number(req.body?.level),
       supabaseUrl: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
       serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      supabaseKey: process.env.SUPABASE_ANON_KEY
+        || process.env.VITE_SUPABASE_ANON_KEY
+        || 'sb_publishable_d-szvo4evO2V69FCNc__IQ_xc8OqFPV',
     })
     return res.status(201).json(result)
   } catch (error) {

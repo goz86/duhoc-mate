@@ -181,6 +181,23 @@ create policy "Admins manage grammar"
   using ((select public.is_topik_admin()))
   with check ((select public.is_topik_admin()));
 
+drop policy if exists "AI direct grammar can be inserted" on public.topik_grammar_patterns;
+create policy "AI direct grammar can be inserted"
+  on public.topik_grammar_patterns for insert
+  with check (
+    id like 'ai-grammar-%'
+    and source = 'ai-direct'
+    and status = 'published'
+  );
+
+drop policy if exists "AI direct grammar cleanup is allowed" on public.topik_grammar_patterns;
+create policy "AI direct grammar cleanup is allowed"
+  on public.topik_grammar_patterns for delete
+  using (
+    id like 'ai-grammar-%'
+    and source = 'ai-direct'
+  );
+
 drop policy if exists "Published questions are readable" on public.topik_question_bank;
 create policy "Published questions are readable"
   on public.topik_question_bank for select
@@ -191,6 +208,16 @@ create policy "Admins manage questions"
   on public.topik_question_bank for all
   using ((select public.is_topik_admin()))
   with check ((select public.is_topik_admin()));
+
+drop policy if exists "AI direct questions can be inserted" on public.topik_question_bank;
+create policy "AI direct questions can be inserted"
+  on public.topik_question_bank for insert
+  with check (
+    id like 'ai-grammar-%'
+    and pattern_id like 'ai-grammar-%'
+    and source = 'ai-direct'
+    and status = 'published'
+  );
 
 drop policy if exists "Users read own TOPIK submissions" on public.topik_content_submissions;
 create policy "Users read own TOPIK submissions"

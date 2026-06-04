@@ -832,6 +832,7 @@ app.post('/api/topik-grammar-publish', async (req, res) => {
       level: Number(req.body?.level),
       supabaseUrl: SUPABASE_URL,
       serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      supabaseKey: SUPABASE_KEY,
     });
     return res.status(201).json(result);
   } catch (error) {
