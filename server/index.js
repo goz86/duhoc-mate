@@ -5,7 +5,7 @@ import cors from 'cors';
 import yts from 'yt-search';
 import ytsr from 'ytsr';
 import { readFileSync, writeFileSync } from 'fs';
-import { publishTopikGrammarBundle } from '../lib/topik-publish.mjs';
+import { publishTopikGrammarBundle } from './topik-publish.mjs';
 
 const app = express();
 app.use(cors());
