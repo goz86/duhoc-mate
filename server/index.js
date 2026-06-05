@@ -47,22 +47,101 @@ const supabaseHeaders = () => ({
 });
 
 const MAX_CHAT_MESSAGE_LENGTH = 800;
+const MAX_ROOM_CHAT_MESSAGES = 100;
 const CHAT_RATE_LIMIT_WINDOW_MS = 10_000;
 const CHAT_RATE_LIMIT_MAX_MESSAGES = 12;
 const MAX_WHITEBOARD_IMAGE_DATA_URL_LENGTH = 3_000_000;
 const MAX_WB_POINTS_PER_EVENT = 80;
 const MAX_WB_POINTS_PER_STROKE = 2_000;
+const MAX_IDEA_TASKS = 120;
+const MAX_IDEA_TITLE_LENGTH = 240;
+const MAX_IDEA_NOTE_LENGTH = 800;
+const MAX_IDEA_META_LENGTH = 80;
+const MAX_PLAYLIST_ITEMS = 80;
+const MAX_PLAYLIST_TITLE_LENGTH = 180;
+const MAX_PLAYLIST_DURATION_LENGTH = 20;
+const MAX_ROOM_TITLE_LENGTH = 80;
+const MAX_ROOM_PASSWORD_LENGTH = 80;
+const MAX_MEDIA_URL_LENGTH = 1200;
 const SAFE_DATA_IMAGE_RE = /^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i;
+const SAFE_MEDIA_URL_RE = /^(https?:\/\/|\/)[^\s<>"]*$/i;
 
 const chatRateBuckets = new Map();
+const eventRateBuckets = new Map();
 
-const sanitizeChatMessage = (message) => {
-  if (typeof message !== 'string') return '';
-  return message
+const rateLimitSocketEvent = (socketId, key, maxCount, windowMs) => {
+  const now = Date.now();
+  const bucketKey = `${socketId}:${key}`;
+  const bucket = eventRateBuckets.get(bucketKey) || { windowStart: now, count: 0 };
+  if (now - bucket.windowStart > windowMs) {
+    bucket.windowStart = now;
+    bucket.count = 0;
+  }
+  bucket.count += 1;
+  eventRateBuckets.set(bucketKey, bucket);
+  return bucket.count > maxCount;
+};
+
+const clearSocketRateBuckets = (socketId) => {
+  chatRateBuckets.delete(socketId);
+  const prefix = `${socketId}:`;
+  for (const key of eventRateBuckets.keys()) {
+    if (key.startsWith(prefix)) eventRateBuckets.delete(key);
+  }
+};
+
+const findRoomMember = (room, socketId) => room?.members?.find(member => member.id === socketId) || null;
+
+const sanitizeBoundedString = (value, maxLength) => {
+  if (typeof value !== 'string') return '';
+  return value
     .replace(/\r\n?/g, '\n')
     .replace(/\u0000/g, '')
     .trim()
-    .slice(0, MAX_CHAT_MESSAGE_LENGTH);
+    .slice(0, maxLength);
+};
+
+const sanitizeShortId = (value, maxLength = 80) => {
+  const text = sanitizeBoundedString(value, maxLength);
+  return /^[\w:.-]+$/u.test(text) ? text : '';
+};
+
+const sanitizeMediaUrl = (value) => {
+  const url = sanitizeBoundedString(value, MAX_MEDIA_URL_LENGTH);
+  if (!url) return '';
+  return SAFE_MEDIA_URL_RE.test(url) ? url : '';
+};
+
+const trimRoomChatMessages = (room) => {
+  if (!Array.isArray(room.chatMessages)) room.chatMessages = [];
+  if (room.chatMessages.length > MAX_ROOM_CHAT_MESSAGES) {
+    room.chatMessages.splice(0, room.chatMessages.length - MAX_ROOM_CHAT_MESSAGES);
+  }
+};
+
+const sanitizeIdeaTasks = (tasks) => {
+  if (!Array.isArray(tasks)) return [];
+  const allowedStatuses = new Set(['todo', 'doing', 'done']);
+  const seenIds = new Set();
+  return tasks.slice(0, MAX_IDEA_TASKS).map((task, index) => {
+    const rawId = sanitizeBoundedString(task?.id, MAX_IDEA_META_LENGTH);
+    const id = rawId && !seenIds.has(rawId) ? rawId : `task-${Date.now()}-${index}`;
+    seenIds.add(id);
+    const title = sanitizeBoundedString(task?.title, MAX_IDEA_TITLE_LENGTH);
+    const status = allowedStatuses.has(task?.status) ? task.status : 'todo';
+    return {
+      id,
+      title,
+      status,
+      note: sanitizeBoundedString(task?.note, MAX_IDEA_NOTE_LENGTH),
+      owner: sanitizeBoundedString(task?.owner, MAX_IDEA_META_LENGTH),
+      due: sanitizeBoundedString(task?.due, MAX_IDEA_META_LENGTH),
+    };
+  }).filter(task => task.title || task.note);
+};
+
+const sanitizeChatMessage = (message) => {
+  return sanitizeBoundedString(message, MAX_CHAT_MESSAGE_LENGTH);
 };
 
 const isChatRateLimited = (socketId) => {
@@ -1325,8 +1404,8 @@ const serializeRoomState = (room) => ({
   playlist: room.playlist || [],
   videoState: room.videoState || { id: '', time: 0, playing: false, pausedByHost: false, lastUpdated: Date.now() },
   pomodoro: room.pomodoro || createDefaultPomodoro(),
-  chatMessages: room.chatMessages || [],
-  ideaTasks: room.ideaTasks || [],
+  chatMessages: Array.isArray(room.chatMessages) ? room.chatMessages.slice(-MAX_ROOM_CHAT_MESSAGES) : [],
+  ideaTasks: sanitizeIdeaTasks(room.ideaTasks),
   roomTitle: room.roomTitle || '',
   isPrivate: !!room.isPrivate,
   password: room.password || '',
@@ -1571,17 +1650,15 @@ const sendSystemMessage = (roomId, text) => {
     sender: 'Hệ thống',
     senderId: 'system',
     isHost: false,
-    text,
+    text: sanitizeBoundedString(text, MAX_CHAT_MESSAGE_LENGTH),
     type: 'system',
     timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
   };
 
   if (!room.chatMessages) room.chatMessages = [];
   room.chatMessages.push(systemMsg);
+  trimRoomChatMessages(room);
   rememberRoomState(room);
-  if (room.chatMessages.length > 100) {
-    room.chatMessages.shift();
-  }
 
   io.to(roomId).emit('receive-message', systemMsg);
 };
@@ -1659,6 +1736,13 @@ io.on('connection', (socket) => {
     }
 
     const room = rooms.get(roomId);
+    room.chatMessages = Array.isArray(room.chatMessages) ? room.chatMessages.slice(-MAX_ROOM_CHAT_MESSAGES) : [];
+    room.ideaTasks = sanitizeIdeaTasks(room.ideaTasks);
+    room.roomTitle = sanitizeBoundedString(room.roomTitle, MAX_ROOM_TITLE_LENGTH) || room.roomTitle || '';
+    room.password = sanitizeBoundedString(room.password, MAX_ROOM_PASSWORD_LENGTH);
+    room.hostAvatarUrl = sanitizeMediaUrl(room.hostAvatarUrl);
+    room.roomAvatarUrl = sanitizeMediaUrl(room.roomAvatarUrl);
+    room.roomBackgroundUrl = sanitizeMediaUrl(room.roomBackgroundUrl);
     ensureTopikGame(room);
     ensureVocabMatchGame(room);
     cancelEmptyRoomCleanup(roomId);
@@ -1679,7 +1763,7 @@ io.on('connection', (socket) => {
 
     socket.join(roomId);
     if (Array.isArray(ideaTasks) && ideaTasks.length && (!room.ideaTasks || room.ideaTasks.length === 0)) {
-      room.ideaTasks = ideaTasks;
+      room.ideaTasks = sanitizeIdeaTasks(ideaTasks);
     }
     
     // Kiểm tra xem user đã tồn tại trong phòng chưa (qua friendCode hoặc username đã chuẩn hóa)
@@ -1901,10 +1985,8 @@ io.on('connection', (socket) => {
 
     if (!room.chatMessages) room.chatMessages = [];
     room.chatMessages.push(chatMsg);
+    trimRoomChatMessages(room);
     rememberRoomState(room);
-    if (room.chatMessages.length > 100) {
-      room.chatMessages.shift();
-    }
 
     io.to(roomId).emit('receive-message', chatMsg);
   });
@@ -1919,6 +2001,8 @@ io.on('connection', (socket) => {
   socket.on('video-action', ({ roomId, action, time, videoId, playlistItemId, userInitiated }) => {
     const room = rooms.get(roomId);
     if (!room) return;
+    if (!findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'video-action', 40, 10_000)) return;
 
     // GUARD 1: chặn pause liên tục khi đã pausedByHost (host onStateChange spam state=2)
     // → không re-broadcast, không update lastUpdated (để guard 2 hoạt động đúng)
@@ -1983,7 +2067,9 @@ io.on('connection', (socket) => {
   socket.on('slide-url-set', ({ roomId, url }) => {
     const room = rooms.get(roomId);
     if (!room) return;
-    room.slideUrl = url || '';
+    if (!findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'slide-url-set', 8, 60_000)) return;
+    room.slideUrl = sanitizeMediaUrl(url);
     // Broadcast tới tất cả người trong phòng (kể cả người gửi để confirm)
     io.to(roomId).emit('slide-url-sync', { url: room.slideUrl });
   });
@@ -1999,6 +2085,8 @@ io.on('connection', (socket) => {
   socket.on('whiteboard-stroke-start', ({ roomId, stroke }) => {
     const room = rooms.get(roomId);
     if (!room || typeof stroke?.id !== 'string' || stroke.id.length > 80) return;
+    if (!findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'whiteboard-stroke-start', 80, 10_000)) return;
     const initialPoints = sanitizeWhiteboardPoints(stroke.points, 4);
     const wb = ensureWhiteboard(room);
     wb.elements.push({
@@ -2018,6 +2106,8 @@ io.on('connection', (socket) => {
   socket.on('whiteboard-stroke-point', ({ roomId, strokeId, points }) => {
     const room = rooms.get(roomId);
     if (!room || typeof strokeId !== 'string' || !Array.isArray(points)) return;
+    if (!findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'whiteboard-stroke-point', 300, 10_000)) return;
     const wb = ensureWhiteboard(room);
     const el = wb.elements.find(e => e.id === strokeId);
     const safePoints = sanitizeWhiteboardPoints(points);
@@ -2035,6 +2125,11 @@ io.on('connection', (socket) => {
   socket.on('whiteboard-image', ({ roomId, image }) => {
     const room = rooms.get(roomId);
     if (!room || typeof image?.id !== 'string' || image.id.length > 80) return;
+    if (!findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'whiteboard-image', 5, 60_000)) {
+      socket.emit('whiteboard-image-error', { code: 'rateLimit' });
+      return;
+    }
     if (!isSafeWhiteboardImageSrc(image.src)) {
       socket.emit('whiteboard-image-error', { code: 'invalidImage' });
       return;
@@ -2063,6 +2158,8 @@ io.on('connection', (socket) => {
   socket.on('whiteboard-clear', ({ roomId }) => {
     const room = rooms.get(roomId);
     if (!room) return;
+    if (!findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'whiteboard-clear', 6, 60_000)) return;
     ensureWhiteboard(room).elements = [];
     io.to(roomId).emit('whiteboard-clear', {});
   });
@@ -2071,6 +2168,8 @@ io.on('connection', (socket) => {
   socket.on('whiteboard-request', ({ roomId }) => {
     const room = rooms.get(roomId);
     if (!room) return;
+    if (!findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'whiteboard-request', 20, 60_000)) return;
     socket.emit('whiteboard-state', { elements: ensureWhiteboard(room).elements });
   });
 
@@ -2080,6 +2179,16 @@ io.on('connection', (socket) => {
     if (!room) return;
 
     const sender = room.members.find(m => m.id === socket.id);
+    if (!sender) return;
+    if (rateLimitSocketEvent(socket.id, 'add-to-playlist', 10, 60_000)) return;
+    if (room.playlist.length >= MAX_PLAYLIST_ITEMS) {
+      socket.emit('playlist-error', { code: 'playlistFull' });
+      return;
+    }
+    const safeVideoId = sanitizeShortId(videoId, 80);
+    const safeTitle = sanitizeBoundedString(title, MAX_PLAYLIST_TITLE_LENGTH);
+    const safeDuration = sanitizeBoundedString(duration, MAX_PLAYLIST_DURATION_LENGTH) || '00:00';
+    if (!safeVideoId || !safeTitle) return;
     const addedBy = sender ? sender.username : 'Ẩn danh';
 
     const queuedItems = room.playlist.filter(item => item.status === 'queued' && item.queueOrder !== undefined);
@@ -2091,9 +2200,9 @@ io.on('connection', (socket) => {
 
     const newItem = {
       id: `${Date.now()}-${Math.random()}`,
-      videoId,
-      title,
-      duration: duration || '00:00',
+      videoId: safeVideoId,
+      title: safeTitle,
+      duration: safeDuration,
       votes: 1, // Bắt đầu bằng 1 vote từ người thêm
       votedUsers: [socket.id],
       addedBy,
@@ -2141,8 +2250,11 @@ io.on('connection', (socket) => {
   socket.on('vote-song', ({ roomId, songId }) => {
     const room = rooms.get(roomId);
     if (!room) return;
+    if (!findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'vote-song', 30, 60_000)) return;
 
-    const song = room.playlist.find(item => item.id === songId);
+    const safeSongId = sanitizeBoundedString(songId, 100);
+    const song = room.playlist.find(item => item.id === safeSongId);
     if (!song) return;
 
     const userIndex = song.votedUsers.indexOf(socket.id);
@@ -2227,11 +2339,13 @@ io.on('connection', (socket) => {
 
     const sender = room.members.find(m => m.id === socket.id);
     if (!hasPermission(sender, 'music.control')) return;
+    if (!Array.isArray(orderedIds) || orderedIds.length > MAX_PLAYLIST_ITEMS) return;
+    if (rateLimitSocketEvent(socket.id, 'reorder-playlist', 12, 60_000)) return;
 
     const playlistMap = new Map(room.playlist.map(item => [item.id, item]));
     const newPlaylist = [];
 
-    orderedIds.forEach(id => {
+    orderedIds.map(id => sanitizeBoundedString(id, 100)).forEach(id => {
       const item = playlistMap.get(id);
       if (item) {
         newPlaylist.push(item);
@@ -2288,6 +2402,8 @@ io.on('connection', (socket) => {
     if (!room) return;
     const member = room.members.find(m => m.id === socket.id);
     if (!member) return;
+    const studyRateMax = type === 'reaction' ? 24 : type === 'presence' ? 90 : 40;
+    if (rateLimitSocketEvent(socket.id, `study-table-${type}`, studyRateMax, 60_000)) return;
 
     const studyTable = syncStudyMembers(room);
     const seat = ensureStudySeat(room, member);
@@ -2308,10 +2424,12 @@ io.on('connection', (socket) => {
     }
 
     if (type === 'status' && typeof payload.status === 'string') {
-      seat.status = payload.status.slice(0, 40);
+      seat.status = sanitizeBoundedString(payload.status, 40);
     }
 
     if (type === 'personal-pomodoro') {
+      const allowedActions = new Set(['start', 'pause', 'reset']);
+      if (!allowedActions.has(payload.action)) return;
       const pomo = seat.personalPomodoro || createPersonalPomodoro();
       if (payload.action === 'start') {
         pomo.isRunning = true;
@@ -2328,11 +2446,12 @@ io.on('connection', (socket) => {
     }
 
     if (type === 'reaction') {
-      const label = typeof payload.label === 'string' ? payload.label.slice(0, 24) : '';
+      const label = sanitizeBoundedString(payload.label, 24);
       // targetMemberId = người NHẬN reaction; nếu không truyền thì về người gửi
       const targetMemberId = typeof payload.targetMemberId === 'string' && payload.targetMemberId
         ? payload.targetMemberId
         : socket.id;
+      if (!room.members.some(item => item.id === targetMemberId)) return;
       if (label) {
         studyTable.reactions = [
           ...studyTable.reactions.slice(-20),
@@ -2358,7 +2477,8 @@ io.on('connection', (socket) => {
     if (!room) return;
     const member = room.members.find(m => m.id === socket.id);
     if (!member) return;
-    const url = typeof avatarUrl === 'string' ? avatarUrl : '';
+    if (rateLimitSocketEvent(socket.id, 'update-avatar', 10, 60_000)) return;
+    const url = sanitizeMediaUrl(avatarUrl);
     if (member.avatarUrl === url) return; // không đổi → bỏ qua
     member.avatarUrl = url;
     if (member.isHost && url) room.hostAvatarUrl = url;
@@ -2373,7 +2493,8 @@ io.on('connection', (socket) => {
     if (!room) return;
     const member = room.members.find(m => m.id === socket.id);
     if (!member) return;
-    const name = typeof username === 'string' ? username.trim() : '';
+    if (rateLimitSocketEvent(socket.id, 'update-username', 6, 60_000)) return;
+    const name = sanitizeBoundedString(username, 40);
     if (!name || member.username === name) return;
     const oldName = member.username;
     member.username = name;
@@ -2386,17 +2507,25 @@ io.on('connection', (socket) => {
 
   // 7. Đồng bộ TOPIK Study giữa thành viên phòng
   socket.on('topik-action', ({ roomId, level, index }) => {
-    socket.to(roomId).emit('topik-sync', { level, index });
+    const room = rooms.get(roomId);
+    if (!room || !findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'topik-action', 40, 60_000)) return;
+    const safeLevel = Math.max(1, Math.min(6, Number(level) || 1));
+    const safeIndex = Math.max(0, Math.min(500, Number(index) || 0));
+    socket.to(roomId).emit('topik-sync', { level: safeLevel, index: safeIndex });
   });
 
   // Phase B: TikTok sync — host tải video → broadcast cho cả phòng
   socket.on('topik-game-subscribe', ({ roomId }) => {
     const room = rooms.get(roomId);
     if (!room) return;
+    if (!findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'topik-game-subscribe', 20, 60_000)) return;
     socket.emit('topik-game-sync', publicTopikGameState(room));
   });
 
   socket.on('topik-arena-leaderboard', async ({ period = 'week' } = {}) => {
+    if (rateLimitSocketEvent(socket.id, 'topik-arena-leaderboard', 12, 60_000)) return;
     const normalizedPeriod = period === 'month' ? 'month' : 'week';
     const leaderboard = await fetchTopikArenaLeaderboard(normalizedPeriod);
     socket.emit('topik-arena-leaderboard-sync', {
@@ -2410,6 +2539,8 @@ io.on('connection', (socket) => {
     if (!room) return;
     const member = room.members.find(m => m.id === socket.id);
     if (!member) return;
+    const gameRateMax = type === 'answer' ? 40 : 12;
+    if (rateLimitSocketEvent(socket.id, `topik-game-${type}`, gameRateMax, 60_000)) return;
 
     const game = ensureTopikGame(room);
     const canManageGame = canManageTopikRoomGame(member);
@@ -2506,6 +2637,8 @@ io.on('connection', (socket) => {
   socket.on('vocab-match-subscribe', ({ roomId }) => {
     const room = rooms.get(roomId);
     if (!room) return;
+    if (!findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'vocab-match-subscribe', 20, 60_000)) return;
     socket.emit('vocab-match-sync', publicVocabMatchGameState(room));
   });
 
@@ -2514,6 +2647,8 @@ io.on('connection', (socket) => {
     if (!room) return;
     const member = room.members.find(m => m.id === socket.id);
     if (!member) return;
+    const vocabRateMax = type === 'match' ? 80 : 16;
+    if (rateLimitSocketEvent(socket.id, `vocab-match-${type}`, vocabRateMax, 60_000)) return;
     const game = ensureVocabMatchGame(room);
 
     if (type === 'join' || type === 'ready') {
@@ -2669,7 +2804,9 @@ io.on('connection', (socket) => {
   socket.on('idea-board-update', ({ roomId, tasks }) => {
     const room = rooms.get(roomId);
     if (!room) return;
-    room.ideaTasks = Array.isArray(tasks) ? tasks : [];
+    if (!findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'idea-board-update', 20, 60_000)) return;
+    room.ideaTasks = sanitizeIdeaTasks(tasks);
     rememberRoomState(room);
     socket.to(roomId).emit('idea-board-sync', room.ideaTasks);
   });
