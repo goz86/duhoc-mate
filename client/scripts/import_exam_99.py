@@ -84,7 +84,7 @@ def find_or_create_exam():
     if progress["created_exam_id"]:
         return progress["created_exam_id"]
         
-    title = "De thi chinh thuc TOPIK II Doc - Ky 99"
+    title = "Đề thi chính thức TOPIK II Đọc - Kỳ 99"
     # Check if exists in DB
     res = requests.get(f"{supabase_url}/rest/v1/topik_exams?title=eq.{title}", headers=headers)
     if res.ok:
