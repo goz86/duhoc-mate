@@ -65,9 +65,11 @@ const MAX_ROOM_PASSWORD_LENGTH = 80;
 const MAX_MEDIA_URL_LENGTH = 1200;
 const SAFE_DATA_IMAGE_RE = /^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i;
 const SAFE_MEDIA_URL_RE = /^(https?:\/\/|\/)[^\s<>"]*$/i;
+const TRENDING_MUSIC_TYPES = new Set(['vpop', 'kpop', 'vinahouse']);
 
 const chatRateBuckets = new Map();
 const eventRateBuckets = new Map();
+const restRateBuckets = new Map();
 
 const rateLimitSocketEvent = (socketId, key, maxCount, windowMs) => {
   const now = Date.now();
@@ -88,6 +90,26 @@ const clearSocketRateBuckets = (socketId) => {
   for (const key of eventRateBuckets.keys()) {
     if (key.startsWith(prefix)) eventRateBuckets.delete(key);
   }
+};
+
+const rateLimitRest = (key, maxCount, windowMs) => (req, res, next) => {
+  const forwardedFor = typeof req.headers['x-forwarded-for'] === 'string'
+    ? req.headers['x-forwarded-for'].split(',')[0].trim()
+    : '';
+  const actor = forwardedFor || req.ip || req.socket?.remoteAddress || 'unknown';
+  const bucketKey = `${actor}:${key}`;
+  const now = Date.now();
+  const bucket = restRateBuckets.get(bucketKey) || { windowStart: now, count: 0 };
+  if (now - bucket.windowStart > windowMs) {
+    bucket.windowStart = now;
+    bucket.count = 0;
+  }
+  bucket.count += 1;
+  restRateBuckets.set(bucketKey, bucket);
+  if (bucket.count > maxCount) {
+    return res.status(429).json({ error: 'rate_limited' });
+  }
+  return next();
 };
 
 const findRoomMember = (room, socketId) => room?.members?.find(member => member.id === socketId) || null;
@@ -295,8 +317,8 @@ const searchWithInvidious = async (query) => {
   throw new Error("All Invidious searches failed or no instances available");
 };
 
-app.get('/api/search-music', async (req, res) => {
-  const query = req.query.q;
+app.get('/api/search-music', rateLimitRest('search-music', 30, 60_000), async (req, res) => {
+  const query = sanitizeBoundedString(req.query.q, 120);
   if (!query) return res.json({ results: [] });
 
   // Tầng 1: Official YouTube API v3
@@ -364,9 +386,27 @@ app.get('/api/search-music', async (req, res) => {
   }
 });
 
+const uniqueMusicResults = (items, type = 'vpop', limit = 80) => {
+  const uniqueVideos = [];
+  const seenIds = new Set();
+  for (const item of items || []) {
+    if (!item?.videoId || seenIds.has(item.videoId)) continue;
+    seenIds.add(item.videoId);
+    if (filterMusicVideo(item, type)) {
+      uniqueVideos.push(item);
+    }
+    if (uniqueVideos.length >= limit) break;
+  }
+  return uniqueVideos;
+};
+
 const getTrendingMusicWithOfficialApi = async (type = 'vpop') => {
   if (!YOUTUBE_API_KEY) throw new Error('No YOUTUBE_API_KEY configured');
-  return searchWithOfficialApi(getFallbackMusicSearchQuery(type));
+  const queries = getTrendingMusicQueries(type);
+  const shuffledQueries = [...queries].sort(() => 0.5 - Math.random()).slice(0, 5);
+  const searchResults = await Promise.allSettled(shuffledQueries.map(query => searchWithOfficialApi(query)));
+  const allVideos = searchResults.flatMap(result => result.status === 'fulfilled' ? result.value : []);
+  return uniqueMusicResults(allVideos, type, 60);
 };
 
 const getTrendingMusicWithInvidious = async (type = 'vpop') => {
@@ -377,9 +417,9 @@ const getTrendingMusicWithYtSearch = async (type = 'vpop') => {
   console.log(`Fetching trending music via yt-search fallback for ${type}...`);
   const queries = getTrendingMusicQueries(type);
   
-  // Pick 2 random queries from the list to get a rich combined pool
+  // Use the full query set so Random has a richer pool while the endpoint stays rate-limited.
   const shuffledQueries = [...queries].sort(() => 0.5 - Math.random());
-  const selectedQueries = shuffledQueries.slice(0, 2);
+  const selectedQueries = shuffledQueries.slice(0, 6);
   
   const searchPromises = selectedQueries.map(q => yts(q));
   const searchResults = await Promise.all(searchPromises);
@@ -391,18 +431,7 @@ const getTrendingMusicWithYtSearch = async (type = 'vpop') => {
     }
   }
   
-  const uniqueVideos = [];
-  const seenIds = new Set();
-  for (const v of allVideos) {
-    if (v && v.videoId && !seenIds.has(v.videoId)) {
-      seenIds.add(v.videoId);
-      if (filterMusicVideo(v, type)) {
-        uniqueVideos.push(v);
-      }
-    }
-  }
-  
-  return uniqueVideos.slice(0, 40).map(v => ({
+  return uniqueMusicResults(allVideos, type, 80).map(v => ({
     videoId: v.videoId,
     title: v.title,
     author: v.author?.name || String(v.author) || '',
@@ -470,8 +499,9 @@ const getZingVpopChart = async () => {
   return null;
 };
 
-app.get('/api/trending-music', async (req, res) => {
-  const type = req.query.type || 'vpop';
+app.get('/api/trending-music', rateLimitRest('trending-music', 30, 60_000), async (req, res) => {
+  const requestedType = sanitizeBoundedString(req.query.type, 24);
+  const type = TRENDING_MUSIC_TYPES.has(requestedType) ? requestedType : 'vpop';
   
   if (type === 'vpop') {
     try {
@@ -857,7 +887,7 @@ const createDefaultTopikGame = () => ({
   answers: {}
 });
 
-app.post('/api/topik-grammar-publish', async (req, res) => {
+app.post('/api/topik-grammar-publish', rateLimitRest('topik-grammar-publish', 5, 10 * 60_000), async (req, res) => {
   try {
     const result = await publishTopikGrammarBundle({
       bundle: req.body?.bundle,
@@ -2814,10 +2844,12 @@ io.on('connection', (socket) => {
   socket.on('tiktok-sync', ({ roomId, videoId }) => {
     const room = rooms.get(roomId);
     if (!room) return;
+    if (!findRoomMember(room, socket.id)) return;
+    if (rateLimitSocketEvent(socket.id, 'tiktok-sync', 12, 60_000)) return;
     // Lưu state TikTok vào room để members join sau cũng nhận được
-    room.tiktokVideoId = videoId;
+    room.tiktokVideoId = sanitizeShortId(videoId, 80);
     rememberRoomState(room);
-    socket.to(roomId).emit('tiktok-sync', { videoId });
+    socket.to(roomId).emit('tiktok-sync', { videoId: room.tiktokVideoId });
   });
 
   // 6. Ngắt kết nối
@@ -2826,12 +2858,14 @@ io.on('connection', (socket) => {
     if (!room) return;
     const sender = room.members.find(m => m.id === socket.id);
     if (!sender?.isHost) return;
+    if (rateLimitSocketEvent(socket.id, 'room-settings-update', 12, 60_000)) return;
 
-    if (roomTitle) room.roomTitle = roomTitle;
+    const safeRoomTitle = sanitizeBoundedString(roomTitle, MAX_ROOM_TITLE_LENGTH);
+    if (safeRoomTitle) room.roomTitle = safeRoomTitle;
     if (typeof isPrivate === 'boolean') room.isPrivate = isPrivate;
-    if (password !== undefined) room.password = password || '';
-    if (typeof roomAvatarUrl === 'string') room.roomAvatarUrl = roomAvatarUrl;
-    if (typeof roomBackgroundUrl === 'string') room.roomBackgroundUrl = roomBackgroundUrl;
+    if (password !== undefined) room.password = sanitizeBoundedString(password, MAX_ROOM_PASSWORD_LENGTH);
+    if (typeof roomAvatarUrl === 'string') room.roomAvatarUrl = sanitizeMediaUrl(roomAvatarUrl);
+    if (typeof roomBackgroundUrl === 'string') room.roomBackgroundUrl = sanitizeMediaUrl(roomBackgroundUrl);
     rememberRoom(room, room.members.find(m => m.isHost)?.username || sender.username);
     rememberRoomState(room);
 
@@ -3146,7 +3180,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
-    chatRateBuckets.delete(socket.id);
+    clearSocketRateBuckets(socket.id);
     onlineUsers.delete(socket.id);
     broadcastFriendsStatus();
 

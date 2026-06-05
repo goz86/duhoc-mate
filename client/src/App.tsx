@@ -2460,7 +2460,7 @@ export default function App() {
     const SEARCH_URL = `${getApiBaseCandidates()[0]}/api/search-music`;
     const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(aiSuggestFallbackQueries[type])}`);
     const data = await res.json();
-    return (data.results || []).filter((song: any) => song?.videoId).slice(0, 12);
+    return (data.results || []).filter((song: any) => song?.videoId).slice(0, 30);
   };
 
   const preloadTrendingMusic = async () => {
@@ -2526,7 +2526,7 @@ export default function App() {
 
   const shuffleAndSetAiSuggestions = (list: any[]) => {
     const shuffled = [...list].sort(() => 0.5 - Math.random());
-    setAiSuggestions(shuffled.slice(0, 3));
+    setAiSuggestions(shuffled.slice(0, 5));
   };
 
   const handleRandomizeSuggestions = () => {
@@ -5581,7 +5581,7 @@ export default function App() {
                 </span>
               </div>
             ) : (
-              <div className="space-y-3 relative z-10">
+              <div className="max-h-[56vh] space-y-3 overflow-y-auto pr-1 relative z-10">
                 {aiSuggestions.map((song) => (
                   <div
                     key={song.videoId}
