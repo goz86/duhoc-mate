@@ -184,6 +184,7 @@ export default function PersonalDashboard({ profile, username, onStartRoom, onOp
   const completionPct = Math.round((completedToday.length / missions.length) * 100)
   const daysLeft = coachProfile.examDate ? Math.max(0, daysBetween(new Date(), new Date(coachProfile.examDate))) : null
   const planDay = Math.min(coachProfile.days, Math.max(1, daysBetween(new Date(coachProfile.startedAt), new Date()) + 1))
+  const planPct = Math.round((planDay / coachProfile.days) * 100)
 
   const saveCoachProfile = (patch: Partial<CoachProfile>) => {
     const next = { ...coachProfile, ...patch }
@@ -201,12 +202,13 @@ export default function PersonalDashboard({ profile, username, onStartRoom, onOp
 
   return (
     <section className="animate-custom-fade-in pb-8">
-      <div className="rounded-[28px] border border-black/[0.06] bg-white/92 p-5 shadow-sm md:p-7">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-brand-terracotta/20 bg-brand-terracotta/5 px-3 py-1 text-xs font-black uppercase tracking-wide text-brand-terracotta">
+      <div className="relative overflow-hidden rounded-[32px] border border-black/[0.06] bg-[#fffdf9] p-4 shadow-[0_20px_70px_rgba(76,55,49,0.10)] md:p-6 xl:p-7">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-44 bg-[radial-gradient(circle_at_18%_0%,rgba(180,125,105,0.18),transparent_34%),radial-gradient(circle_at_88%_8%,rgba(125,211,252,0.18),transparent_32%)]" />
+        <div className="relative grid gap-5 xl:grid-cols-[1.1fr_0.9fr] xl:items-stretch">
+          <div className="rounded-[26px] border border-white/80 bg-white/80 p-5 shadow-sm backdrop-blur md:p-6">
+            <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-brand-terracotta/20 bg-brand-terracotta/5 px-3 py-1 text-xs font-black text-brand-terracotta">
               <Sparkles size={14} />
-              TOPIK Coach
+              <span className="truncate">Lộ trình TOPIK</span>
             </div>
             <h1 className="mt-3 font-display text-3xl font-black leading-tight text-brand-brown-dark md:text-5xl">
               Lộ trình hôm nay của {profile?.username || username || 'bạn'}
@@ -214,8 +216,27 @@ export default function PersonalDashboard({ profile, username, onStartRoom, onOp
             <p className="mt-2 max-w-2xl text-sm font-semibold leading-relaxed text-brand-brown-light">
               Dashboard gom mục tiêu TOPIK, streak học, lỗi sai và nhiệm vụ mỗi ngày để web tự điều chỉnh bài học tiếp theo.
             </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <div>
+                <div className="flex items-center justify-between text-xs font-black text-brand-brown-dark">
+                  <span>Tiến độ lộ trình ngày {planDay}/{coachProfile.days}</span>
+                  <span>{planPct}%</span>
+                </div>
+                <div className="mt-2 h-3 overflow-hidden rounded-full bg-brand-light">
+                  <div className="h-full rounded-full bg-brand-terracotta transition-all" style={{ width: `${planPct}%` }} />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenTopikRoom || onStartRoom}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-brand-brown-dark px-4 text-sm font-black text-white shadow-sm transition hover:bg-brand-terracotta"
+              >
+                <Target size={16} />
+                Học 30 phút
+              </button>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:w-[520px]">
+          <div className="grid grid-cols-2 gap-3 rounded-[26px] border border-white/80 bg-white/70 p-4 shadow-sm backdrop-blur sm:grid-cols-4 xl:grid-cols-2">
             <Metric icon={<Flame size={16} />} label="Streak" value={`${stats.streak} ngày`} />
             <Metric icon={<Timer size={16} />} label="Tổng học" value={`${stats.totalHours}h`} />
             <Metric icon={<Target size={16} />} label="TOPIK" value={`Level ${coachProfile.targetLevel}`} />
@@ -223,8 +244,8 @@ export default function PersonalDashboard({ profile, username, onStartRoom, onOp
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-[0.9fr_1.35fr_0.85fr]">
-          <div className="rounded-2xl border border-brand-terracotta-light/20 bg-[#fffaf4] p-4">
+        <div className="relative mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.35fr_0.85fr]">
+          <div className="rounded-[24px] border border-brand-terracotta-light/20 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2">
               <GraduationCap size={18} className="text-brand-terracotta" />
               <h2 className="text-sm font-black text-brand-brown-dark">Mục tiêu TOPIK</h2>
@@ -266,7 +287,7 @@ export default function PersonalDashboard({ profile, username, onStartRoom, onOp
             </div>
           </div>
 
-          <div className="rounded-2xl border border-brand-terracotta-light/20 bg-white p-4">
+          <div className="rounded-[24px] border border-brand-terracotta-light/20 bg-white p-4 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -302,7 +323,7 @@ export default function PersonalDashboard({ profile, username, onStartRoom, onOp
             </div>
           </div>
 
-          <div className="rounded-2xl border border-brand-terracotta-light/20 bg-[#f8fbff] p-4">
+          <div className="rounded-[24px] border border-sky-100 bg-[#f8fbff] p-4 shadow-sm">
             <div className="flex items-center gap-2">
               <BarChart3 size={18} className="text-sky-700" />
               <h2 className="text-sm font-black text-brand-brown-dark">Bản đồ điểm yếu</h2>
@@ -332,8 +353,8 @@ export default function PersonalDashboard({ profile, username, onStartRoom, onOp
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr]">
-          <div className="rounded-2xl border border-brand-terracotta-light/20 bg-white p-4">
+        <div className="relative mt-4 grid gap-4 lg:grid-cols-[1fr_1fr]">
+          <div className="rounded-[24px] border border-brand-terracotta-light/20 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2">
               <Trophy size={18} className="text-amber-600" />
               <h2 className="text-sm font-black text-brand-brown-dark">Arena/Game</h2>
@@ -348,7 +369,7 @@ export default function PersonalDashboard({ profile, username, onStartRoom, onOp
               ))}
             </div>
           </div>
-          <div className="rounded-2xl border border-brand-terracotta-light/20 bg-white p-4">
+          <div className="rounded-[24px] border border-brand-terracotta-light/20 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2">
               <BookOpen size={18} className="text-emerald-700" />
               <h2 className="text-sm font-black text-brand-brown-dark">Bộ đang học dở</h2>

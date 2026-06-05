@@ -463,6 +463,19 @@ export default function LandingPage({
                     <button
                       type="button"
                       onClick={() => {
+                        setHomeView('dashboard')
+                        setShowHelpBoard(false)
+                        setShowExploreFull(false)
+                        setShowProfileMenu(false)
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-bold text-brand-brown-dark transition hover:bg-[#fbf6ef]"
+                    >
+                      <LayoutDashboard size={16} className="text-brand-brown-light" />
+                      Dashboard học tập
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
                         setShowProfileModal(true)
                         setShowProfileMenu(false)
                       }}
@@ -534,25 +547,6 @@ export default function LandingPage({
             >
               <span className="relative z-10">{t('landing.nav.board')}</span>
               {homeView === 'board' ? (
-                <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/75 rounded-[8px_100%_12px_95%] skew-x-[-6deg] animate-marker-draw z-0" />
-              ) : (
-                <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/20 rounded-[8px_100%_12px_95%] skew-x-[-6deg] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-200 z-0" />
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setHomeView('dashboard')
-                setShowHelpBoard(false)
-                setShowExploreFull(false)
-              }}
-              className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all cursor-pointer relative group inline-flex items-center gap-1.5 ${homeView === 'dashboard'
-                  ? 'text-brand-brown-dark'
-                  : 'text-brand-brown-light hover:text-brand-brown-dark'
-                }`}
-            >
-              <LayoutDashboard size={15} className="relative z-10" />
-              <span className="relative z-10">Dashboard</span>
-              {homeView === 'dashboard' ? (
                 <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/75 rounded-[8px_100%_12px_95%] skew-x-[-6deg] animate-marker-draw z-0" />
               ) : (
                 <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/20 rounded-[8px_100%_12px_95%] skew-x-[-6deg] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-200 z-0" />
