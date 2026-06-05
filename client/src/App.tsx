@@ -3650,7 +3650,7 @@ export default function App() {
               )}
 
               {/* ── STAGE DISPLAY AREA – adapts per stageMode ── */}
-              <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : `glass-panel rounded-3xl p-2.5 sm:p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col ${stageMode === 'topik' ? 'h-auto shrink-0' : 'flex-1'}`} relative ${stageMode === 'topik' ? 'overflow-visible' : 'overflow-hidden'}`}>
+              <div className={`${roomCollapsed ? 'flex-1 min-h-[520px] flex items-center justify-center p-5' : `glass-panel rounded-3xl p-2.5 sm:p-4 xl:p-5 shadow-xl border border-white min-h-[360px] xl:min-h-[420px] flex flex-col ${stageMode === 'topik' || stageMode === 'game' ? 'h-auto shrink-0' : 'flex-1'}`} relative ${stageMode === 'topik' || stageMode === 'game' ? 'overflow-visible' : 'overflow-hidden'}`}>
 
                 {roomCollapsed && (
                   <div className="w-full max-w-xl space-y-5 text-center">

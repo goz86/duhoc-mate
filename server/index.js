@@ -1153,6 +1153,52 @@ const persistTopikGameSession = async (room, game) => {
   }
 };
 
+const fetchTopikArenaLeaderboard = async (period = 'week') => {
+  const days = period === 'month' ? 30 : 7;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  try {
+    const url = `${TOPIK_GAME_SESSIONS_ENDPOINT}?select=game_type,ended_at,leaderboard&ended_at=gte.${encodeURIComponent(since)}&order=ended_at.desc&limit=200`;
+    const response = await fetch(url, { headers: supabaseHeaders() });
+    if (!response.ok) {
+      if (response.status !== 404) {
+        console.warn('[TOPIK] Arena leaderboard fetch warning:', response.status, await response.text());
+      }
+      return [];
+    }
+    const rows = await response.json();
+    const scoreMap = new Map();
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const leaderboard = Array.isArray(row.leaderboard) ? row.leaderboard : [];
+      for (const player of leaderboard) {
+        const key = player.memberId || player.username;
+        if (!key) continue;
+        const current = scoreMap.get(key) || {
+          memberId: player.memberId || key,
+          username: player.username || 'Bạn học',
+          score: 0,
+          correct: 0,
+          games: 0,
+          lastPlayedAt: row.ended_at
+        };
+        current.username = player.username || current.username;
+        current.score += Number(player.score) || 0;
+        current.correct += Number(player.correct) || 0;
+        current.games += 1;
+        if (!current.lastPlayedAt || new Date(row.ended_at).getTime() > new Date(current.lastPlayedAt).getTime()) {
+          current.lastPlayedAt = row.ended_at;
+        }
+        scoreMap.set(key, current);
+      }
+    }
+    return Array.from(scoreMap.values())
+      .sort((a, b) => b.score - a.score || b.correct - a.correct || a.username.localeCompare(b.username))
+      .slice(0, 20);
+  } catch (error) {
+    console.warn('[TOPIK] Arena leaderboard fallback:', error.message);
+    return [];
+  }
+};
+
 const normalizeStr = (str) => {
   if (!str) return '';
   return str
@@ -2348,6 +2394,15 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomId);
     if (!room) return;
     socket.emit('topik-game-sync', publicTopikGameState(room));
+  });
+
+  socket.on('topik-arena-leaderboard', async ({ period = 'week' } = {}) => {
+    const normalizedPeriod = period === 'month' ? 'month' : 'week';
+    const leaderboard = await fetchTopikArenaLeaderboard(normalizedPeriod);
+    socket.emit('topik-arena-leaderboard-sync', {
+      period: normalizedPeriod,
+      leaderboard
+    });
   });
 
   socket.on('topik-game-action', async ({ roomId, type, payload = {} }) => {
