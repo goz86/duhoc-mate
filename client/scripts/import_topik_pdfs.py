@@ -60,7 +60,6 @@ headers = {
 }
 
 print("[INFO] Supabase Connected to:", safe_str(supabase_url))
-print("[INFO] OCR.space API Key configured as:", "helloworld (fallback)" if ocr_space_key == "helloworld" else "User private key")
 
 # ─── 2. LOAD ANSWER KEYS ────────────────────────────────────────────
 answers_json_path = r"C:\Users\junwi\.gemini\antigravity-ide\brain\9e008c83-115a-43d3-a990-b81681838822\scratch\parsed_answers.json"
@@ -75,7 +74,6 @@ with open(answers_json_path, "r", encoding="utf-8") as f:
 sessions = [35, 36, 37, 41, 47, 52, 60, 64]
 
 def get_correct_option(dang, ky, q_num):
-    # Find block
     block = ans_keys.get(dang)
     if not block:
         return None
@@ -90,8 +88,8 @@ def get_correct_option(dang, ky, q_num):
         return None
 
 # ─── 3. RESUME STATE MECHANISM ──────────────────────────────────────
-progress_path = r"C:\Users\junwi\.gemini\antigravity-ide\brain\9e008c83-115a-43d3-a990-b81681838822\scratch\ingestion_progress.json"
-progress = {"created_exams": {}, "imported_questions": []}
+progress_path = os.path.join(script_dir, "ingestion_progress_v2.json")
+progress = {"created_exams": {}, "imported_pages": []}
 
 if os.path.exists(progress_path):
     try:
@@ -110,7 +108,7 @@ def find_or_create_exam(ky):
     if ky_str in progress["created_exams"]:
         return progress["created_exams"][ky_str]
         
-    title = f"Đề thi chính thức TOPIK II Đọc - Kỳ {ky}"
+    title = f"De thi chinh thuc TOPIK II Doc - Ky {ky}"
     # Check if exists in db
     res = requests.get(f"{supabase_url}/rest/v1/topik_exams?title=eq.{title}", headers=headers)
     if res.ok:
@@ -150,98 +148,240 @@ def extract_largest_image(page):
     return largest_img
 
 def perform_ocr(image_data):
-    try:
-        img = Image.open(io.BytesIO(image_data))
-        if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
-            background = Image.new("RGBA", img.size, (255, 255, 255, 255))
-            background.paste(img, (0, 0), img)
-            img = background.convert("RGB")
-        else:
-            img = img.convert("RGB")
-        out_buf = io.BytesIO()
-        img.save(out_buf, format="JPEG", quality=90)
-        image_data = out_buf.getvalue()
-    except Exception as e:
-        print("[WARN] Image flattening failed:", safe_str(e))
+    for attempt in range(5):
+        try:
+            img = Image.open(io.BytesIO(image_data))
+            if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+                background = Image.new("RGBA", img.size, (255, 255, 255, 255))
+                background.paste(img, (0, 0), img)
+                img = background.convert("RGB")
+            else:
+                img = img.convert("RGB")
+            out_buf = io.BytesIO()
+            img.save(out_buf, format="JPEG", quality=90)
+            img_bytes = out_buf.getvalue()
+        except Exception as e:
+            print("[WARN] Image flattening failed:", safe_str(e))
+            img_bytes = image_data
 
-    payload = {
-        'apikey': ocr_space_key,
-        'language': 'kor',
-        'isOverlayRequired': False
-    }
-    try:
-        r = requests.post('https://api.ocr.space/parse/image',
-                          files={'image.jpg': image_data},
-                          data=payload,
-                          timeout=15)
-        if r.ok:
-            res = r.json()
-            if not res.get("IsErroredOnProcessing"):
-                parsed_results = res.get("ParsedResults", [])
-                if parsed_results:
-                    return parsed_results[0].get("ParsedText", "").strip()
-    except Exception as e:
-        print("[WARN] OCR Call Exception:", safe_str(e))
+        payload = {
+            'apikey': ocr_space_key,
+            'language': 'kor',
+            'isOverlayRequired': False
+        }
+        try:
+            r = requests.post('https://api.ocr.space/parse/image',
+                              files={'image.jpg': img_bytes},
+                              data=payload,
+                              timeout=20)
+            if r.status_code == 429:
+                try:
+                    retry_sec = int(r.json().get("retryAfter", 60))
+                except:
+                    retry_sec = 60
+                print(f"    [OCR RATE LIMIT] Hit limit. Sleeping for {retry_sec} seconds before retrying...")
+                time.sleep(retry_sec + 2)
+                continue
+                
+            if r.ok:
+                res = r.json()
+                if "error" in res:
+                    err_text = str(res["error"])
+                    if "limit exceeded" in err_text.lower() or "rate limit" in err_text.lower() or "quota" in err_text.lower():
+                        try:
+                            retry_sec = int(res.get("retryAfter", 60))
+                        except:
+                            retry_sec = 65
+                        print(f"    [OCR ERROR LIMIT] rate limit in JSON error: {safe_str(err_text)}. Sleeping {retry_sec}s...")
+                        time.sleep(retry_sec + 2)
+                        continue
+                    else:
+                        print(f"    [OCR ERROR] JSON error: {safe_str(err_text)}")
+                elif not res.get("IsErroredOnProcessing"):
+                    parsed_results = res.get("ParsedResults", [])
+                    if parsed_results:
+                        return parsed_results[0].get("ParsedText", "").strip()
+                else:
+                    error_msg = str(res.get("ErrorMessage", ""))
+                    if "limit exceeded" in error_msg.lower() or "rate limit" in error_msg.lower() or "quota" in error_msg.lower():
+                        print(f"    [OCR ERROR LIMIT] rate limit in ErrorMessage: {safe_str(error_msg)}. Sleeping 65 seconds...")
+                        time.sleep(65)
+                        continue
+                    print(f"    [OCR ERROR] IsErroredOnProcessing: {safe_str(error_msg)}")
+            else:
+                print(f"    [OCR HTTP ERROR] Status {r.status_code}: {safe_str(r.text)}")
+        except Exception as e:
+            print("[WARN] OCR Call Exception:", safe_str(e))
+        
+        # Small wait between retries
+        time.sleep(2)
     return ""
 
 
-def process_question_with_ai(ocr_text, dang, ky, q_num, correct_ans):
+def process_page_questions_with_ai(ocr_text, dang, ky, page_questions, correct_answers):
     system_prompt = (
         "Bạn là một chuyên gia khảo thí tiếng Hàn chuyên nghiệp biên soạn đề thi TOPIK II đọc hiểu.\n"
-        "Nhiệm vụ của bạn là nhận vào văn bản thô kết quả OCR và cấu trúc lại thành câu hỏi trắc nghiệm tiếng Hàn chuẩn xác.\n"
+        "Nhiệm vụ của bạn là nhận vào văn bản thô kết quả OCR của một trang đề thi và phân tích thành danh sách câu hỏi trắc nghiệm tiếng Hàn chuẩn xác.\n"
         "YÊU CẦU ĐỘ CHÍNH XÁC TUYỆT ĐỐI:\n"
-        "1. Trích xuất duy nhất nội dung câu hỏi số " + str(q_num) + " từ kết quả OCR.\n"
-        "2. Sửa toàn bộ lỗi chính tả tiếng Hàn và ký hiệu trắc nghiệm bị nhận diện sai (ví dụ ㉦, ㉩, ㉭... phải thành các lựa chọn đúng chuẩn).\n"
-        "3. Mảng 'options' bắt buộc phải chứa đúng 4 lựa chọn tiếng Hàn (không bao gồm ký hiệu số ①, ②, ③, ④).\n"
-        "4. CỰC KỲ QUAN TRỌNG: Bạn được cung cấp đáp án đúng là phương án số " + str(correct_ans) + " (từ 1 đến 4). Bạn phải sắp xếp sao cho câu trả lời đúng nằm chính xác ở vị trí index " + str(correct_ans - 1) + " trong mảng 'options'.\n"
-        "5. Điền thông tin hướng dẫn đề bài (instructions), ví dụ: '[1~2] ( )에 들어갈 말로 가장 알맞은 것을 고르십시오.'\n"
-        "6. Nếu câu hỏi có đoạn văn đi kèm (passage), trích xuất toàn bộ đoạn văn đó vào trường 'passage'. Nếu không có, để null.\n"
-        "7. Trường 'explanation' phải dịch nghĩa chi tiết câu hỏi, giải thích ngữ pháp liên quan và lý do vì sao đáp án đó đúng bằng tiếng Việt.\n"
-        "Trả về JSON duy nhất, KHÔNG viết markdown code blocks (KHÔNG dùng ```json), KHÔNG giải thích dông dài bên ngoài."
+        "1. Trang này chứa các câu hỏi số: " + str(page_questions) + ".\n"
+        "2. Với mỗi câu hỏi trong danh sách trên, hãy trích xuất và cấu trúc hóa thông tin.\n"
+        "3. Sửa toàn bộ lỗi chính tả tiếng Hàn và ký hiệu trắc nghiệm bị nhận diện sai.\n"
+        "4. Mảng 'options' bắt buộc phải chứa đúng 4 lựa chọn tiếng Hàn (không bao gồm ký hiệu số ①, ②, ③, ④).\n"
+        "5. CỰC KỲ QUAN TRỌNG: Bạn được cung cấp đáp án đúng của từng câu:\n"
+        + str(correct_answers) + "\n"
+        "Bạn phải sắp xếp các lựa chọn sao cho câu trả lời đúng nằm chính xác ở vị trí index (đáp án đúng - 1) trong mảng 'options' của câu hỏi đó.\n"
+        "6. Trích xuất thông tin hướng dẫn chung (instructions) cho trang này.\n"
+        "7. Nếu trang có đoạn văn đi kèm (passage), trích xuất toàn bộ đoạn văn đó vào trường 'passage' cho các câu hỏi liên quan. Nếu không có, để null.\n"
+        "8. Trường 'explanation' phải dịch nghĩa câu hỏi, giải thích ngữ pháp liên quan và lý do vì sao đáp án đó đúng bằng tiếng Việt.\n"
+        "Trả về định dạng JSON duy nhất chứa đối tượng có mảng 'questions', KHÔNG viết markdown code blocks (KHÔNG dùng ```json), KHÔNG giải thích dông dài bên ngoài.\n"
+        "Cấu trúc JSON trả về:\n"
+        "{\n"
+        "  \"questions\": [\n"
+        "    {\n"
+        "      \"question_number\": 1,\n"
+        "      \"instructions\": \"...\",\n"
+        "      \"passage\": \"... hoặc null\",\n"
+        "      \"question_text\": \"...\",\n"
+        "      \"options\": [\"Option 1\", \"Option 2\", \"Option 3\", \"Option 4\"],\n"
+        "      \"explanation\": \"...\"\n"
+        "    }\n"
+        "  ]\n"
+        "}"
     )
     
     user_prompt = (
-        f"Hãy cấu trúc câu hỏi sau:\n"
+        f"Hãy cấu trúc các câu hỏi sau:\n"
         f"- Dạng câu hỏi: {dang}\n"
         f"- Kỳ thi TOPIK: {ky}\n"
-        f"- Câu số: {q_num}\n"
-        f"- Chỉ số đáp án đúng (1-4): {correct_ans}\n"
+        f"- Danh sách câu hỏi cần trích xuất: {page_questions}\n"
+        f"- Map đáp án đúng: {correct_answers}\n"
         f"- OCR Text:\n{ocr_text}"
     )
 
-    try:
-        r = requests.post("https://api.deepseek.com/chat/completions",
-                          headers={
-                              "Content-Type": "application/json",
-                              "Authorization": f"Bearer {deepseek_key}"
-                          },
-                          json={
-                              "model": "deepseek-chat",
-                              "messages": [
-                                  {"role": "system", "content": system_prompt},
-                                  {"role": "user", "content": user_prompt}
-                              ],
-                              "temperature": 0.1,
-                              "max_tokens": 2048
-                          },
-                          timeout=30)
-        if r.ok:
-            data = r.json()
-            content = data["choices"][0]["message"]["content"].strip()
-            
-            # Remove potential markdown code blocks
-            if content.startswith("```"):
-                match = re.match(r"```(?:json)?\s*([\s\S]*?)```", content)
+    for attempt in range(3):
+        try:
+            r = requests.post("https://api.deepseek.com/chat/completions",
+                              headers={
+                                  "Content-Type": "application/json",
+                                  "Authorization": f"Bearer {deepseek_key}"
+                              },
+                              json={
+                                  "model": "deepseek-chat",
+                                  "messages": [
+                                      {"role": "system", "content": system_prompt},
+                                      {"role": "user", "content": user_prompt}
+                                  ],
+                                  "temperature": 0.1,
+                                  "max_tokens": 3000,
+                                  "response_format": {"type": "json_object"}
+                              },
+                              timeout=45)
+            if r.ok:
+                data = r.json()
+                content = data["choices"][0]["message"]["content"].strip()
+                
+                # Robust extraction between first '{' and last '}'
+                match = re.search(r"```(?:json)?\s*([\s\S]*?)```", content)
                 if match:
                     content = match.group(1).strip()
-            return json.loads(content)
-    except Exception as e:
-        print(f"[WARN] DeepSeek API Exception for Cau {q_num}:", safe_str(e))
+                else:
+                    start = content.find('{')
+                    end = content.rfind('}')
+                    if start != -1 and end != -1:
+                        content = content[start:end+1]
+                
+                try:
+                    return json.loads(content)
+                except Exception as json_err:
+                    print(f"    [AI JSON ERROR] Attempt {attempt+1} failed to parse JSON: {safe_str(json_err)}")
+            else:
+                print(f"[ERROR] DeepSeek API returned code {r.status_code}: {safe_str(r.text)}")
+        except Exception as e:
+            print(f"[WARN] DeepSeek API Exception for Ky {ky} Dang {dang} questions {page_questions} (Attempt {attempt+1}):", safe_str(e))
+        time.sleep(2.0)
     return None
 
+# ─── 6. MASTER PAGE MAPPING ───────────────────────────────────────────
+def get_pdf_page_mapping(dang, num_pages):
+    mapping = []
+    
+    if dang in ["1", "3B", "4", "5", "6", "7", "8", "9", "14", "15", "16", "17"]:
+        for idx in range(min(num_pages, len(sessions))):
+            mapping.append((idx, sessions[idx], "", idx))
+            
+    elif dang == "2":
+        for idx in range(min(num_pages, 8)):
+            mapping.append((idx, sessions[idx], "", idx))
+            
+    elif dang == "3A":
+        ky_list = [36, 37, 41, 47, 52, 60, 64]
+        for idx in range(min(num_pages, len(ky_list))):
+            mapping.append((idx, ky_list[idx], "", idx))
+            
+    elif dang in ["10", "11", "13"]:
+        for idx in range(num_pages):
+            ky_idx = idx // 2
+            if ky_idx < len(sessions):
+                ky = sessions[ky_idx]
+                part = f"_p{(idx % 2) + 1}"
+                mapping.append((idx, ky, part, idx % 2))
+                
+    elif dang == "12":
+        page_to_ky = [
+            (0, 35, "_p1", 0), (1, 35, "_p2", 1),
+            (2, 36, "_p1", 0), (3, 36, "_p2", 1),
+            (4, 37, "_p1", 0), (5, 37, "_p2", 1), (6, 37, "_p3", 2),
+            (7, 41, "_p1", 0), (8, 41, "_p2", 1), (9, 41, "_p3", 2),
+            (10, 47, "_p1", 0), (11, 47, "_p2", 1),
+            (12, 52, "_p1", 0), (13, 52, "_p2", 1),
+            (14, 60, "_p1", 0), (15, 60, "_p2", 1),
+            (16, 64, "_p1", 0), (17, 64, "_p2", 1)
+        ]
+        for idx, ky, part, p_in_ky in page_to_ky:
+            if idx < num_pages:
+                mapping.append((idx, ky, part, p_in_ky))
+                
+    return mapping
 
+def get_page_questions(dang, ky, p_idx_in_ky):
+    if dang in ["1", "2", "3A", "3B", "4", "5", "6", "7", "8", "9", "14", "15", "16", "17"]:
+        q_start, q_end = ans_keys[dang]["range"]
+        return list(range(q_start, q_end + 1))
+        
+    elif dang == "10":
+        if p_idx_in_ky == 0:
+            return [28, 29]
+        else:
+            return [30, 31]
+            
+    elif dang == "11":
+        if p_idx_in_ky == 0:
+            return [32]
+        else:
+            return [33, 34]
+            
+    elif dang == "12":
+        if ky in [37, 41]:
+            if p_idx_in_ky == 0:
+                return [35]
+            elif p_idx_in_ky == 1:
+                return [36]
+            else:
+                return [37, 38]
+        else:
+            if p_idx_in_ky == 0:
+                return [35, 36]
+            else:
+                return [37, 38]
+                
+    elif dang == "13":
+        if p_idx_in_ky == 0:
+            return [39]
+        else:
+            return [40, 41]
+            
+    return []
 
-# ─── 6. MASTER IMPORT ROUTINE ────────────────────────────────────────
 def get_dang_from_filename(filename):
     if filename.startswith("1. "): return "1"
     if filename.startswith("2. "): return "2"
@@ -263,10 +403,11 @@ def get_dang_from_filename(filename):
     if filename.startswith("18. "): return "17"
     return None
 
+# ─── 7. MASTER IMPORT ROUTINE ────────────────────────────────────────
 def main():
     dir_path = r"C:\Users\junwi\Downloads\ĐỀ ĐỌC TOPIK II THEO DẠNG-20260528T064124Z-3-001\ĐỀ ĐỌC TOPIK II THEO DẠNG"
     print("=========================================================")
-    print("[START] AUTOMATED TOPIK II PDF INGESTION SYSTEM")
+    print("[START] AUTOMATED TOPIK II PDF INGESTION SYSTEM V2 (FULL PAGE BATCH)")
     print("=========================================================")
     
     filenames = sorted(os.listdir(dir_path))
@@ -281,77 +422,199 @@ def main():
         print(f"\n[FILE] Processing PDF: {safe_str(filename)} (Dang {dang})")
         
         reader = PdfReader(pdf_path)
-        q_start, q_end = ans_keys[dang]["range"]
+        num_pages = len(reader.pages)
+        page_mapping = get_pdf_page_mapping(dang, num_pages)
         
-        for p_idx, page in enumerate(reader.pages):
-            page_text = page.extract_text()
-            
-            # Find which Kỳ this page belongs to
-            match = re.search(r"TOPIK\s*(\d+)", page_text, re.IGNORECASE)
-            if not match:
-                print(f"[WARN] Page {p_idx+1}: Could not determine Ky from text headers. Skipping page.")
+        # We loop through mapping
+        for p_idx, ky, part, p_in_ky in page_mapping:
+            prog_key = f"{dang}_{ky}_{p_idx}"
+            if prog_key in progress["imported_pages"]:
+                print(f"  [SKIP] Page {p_idx+1} (Ky {ky}) already imported. Skipping.")
                 continue
                 
-            ky = int(match.group(1))
-            print(f"  [PAGE] Page {p_idx+1} matches TOPIK II Ky {ky}")
+            page_questions = get_page_questions(dang, ky, p_in_ky)
+            if not page_questions:
+                continue
+                
+            # Fetch answers from key
+            correct_answers = {}
+            for q_num in page_questions:
+                ans = get_correct_option(dang, ky, q_num)
+                if ans:
+                    correct_answers[q_num] = ans
+                    
+            if not correct_answers:
+                print(f"  [WARN] Page {p_idx+1}: No correct options found for questions {page_questions}. Skipping.")
+                continue
+                
+            page = reader.pages[p_idx]
             
-            # Find which questions on this page need to be processed
-            # For each question in this Dạng range:
-            for q_num in range(q_start, q_end + 1):
-                prog_key = f"{dang}_{ky}_{q_num}"
-                if prog_key in progress["imported_questions"]:
-                    print(f"    [SKIP] Cau {q_num} (Ky {ky}) already imported. Skipping.")
-                    continue
-                    
-                correct_ans = get_correct_option(dang, ky, q_num)
-                if not correct_ans:
-                    print(f"    [WARN] Answer key not found for Cau {q_num} Ky {ky}. Skipping.")
-                    continue
-                    
-                # Extract image for OCR
+            # ALWAYS render the page via PyMuPDF to ensure we capture all text, graphics, and layout
+            print(f"  [RENDER] Rendering Page {p_idx+1} (Ky {ky}) via PyMuPDF...")
+            img_data = None
+            try:
+                import fitz
+                fitz_doc = fitz.open(pdf_path)
+                fitz_page = fitz_doc.load_page(p_idx)
+                pix = fitz_page.get_pixmap(matrix=fitz.Matrix(2, 2))
+                img_data = pix.tobytes("jpg")
+                fitz_doc.close()
+            except Exception as render_err:
+                print(f"    [ERROR] Failed to render page via PyMuPDF: {safe_str(render_err)}")
+                
+            if not img_data:
+                # Fallback to pypdf image extraction if rendering fails
                 img_data = extract_largest_image(page)
                 if not img_data:
-                    print(f"    [WARN] No image found on Page {p_idx+1} for Cau {q_num}. Skipping.")
                     continue
-                    
-                print(f"    [OCR] running OCR.space for Cau {q_num} (Ky {ky})...")
-                ocr_text = perform_ocr(img_data)
-                if not ocr_text:
-                    print("    [ERROR] OCR failed or empty text returned.")
-                    continue
-                    
-                print(f"    [AI] Structuring through DeepSeek for Cau {q_num}...")
-                q_data = process_question_with_ai(ocr_text, dang, ky, q_num, correct_ans)
-                if not q_data:
-                    print("    [ERROR] DeepSeek processing failed.")
-                    continue
-                    
-                # Find/Create Exam ID
-                exam_id = find_or_create_exam(ky)
+            
+            # Save the image to the public folder
+            try:
+                public_exams_dir = os.path.join(client_dir, "public", "topik_exams")
+                os.makedirs(public_exams_dir, exist_ok=True)
+                img_file_path = os.path.join(public_exams_dir, f"dang_{dang}_ky_{ky}{part}.jpg")
+                with open(img_file_path, "wb") as img_f:
+                    img_f.write(img_data)
+                print(f"  [SAVE IMAGE] Saved page image to {img_file_path}")
+            except Exception as write_err:
+                print(f"    [WARN] Failed to write image file: {safe_str(write_err)}")
                 
-                # Ingest into Supabase
+            print(f"  [OCR] running OCR.space for Page {p_idx+1} (Ky {ky}) questions {page_questions}...")
+            ocr_text = perform_ocr(img_data)
+            if not ocr_text:
+                print("    [ERROR] OCR failed or empty text returned.")
+                continue
+                
+            print(f"  [AI] Structuring through DeepSeek for questions {page_questions}...")
+            ai_data = process_page_questions_with_ai(ocr_text, dang, ky, page_questions, correct_answers)
+            if not ai_data or "questions" not in ai_data:
+                print("    [ERROR] DeepSeek processing failed or invalid JSON returned.")
+                continue
+                
+            exam_id = find_or_create_exam(ky)
+            
+            # Save all parsed questions to database
+            for q_parsed in ai_data["questions"]:
+                q_num = q_parsed.get("question_number")
+                if q_num not in page_questions:
+                    print(f"    [WARN] AI returned question_number {q_num} which is not in {page_questions}. Skipping Q.")
+                    continue
+                    
+                correct_ans = correct_answers[q_num]
+                
+                # Naming standard for image URL
+                img_url = f"/topik_exams/dang_{dang}_ky_{ky}{part}.jpg"
+                
                 question_record = {
                     "exam_id": exam_id,
                     "question_number": q_num,
                     "question_type": f"reading_dang_{dang}",
-                    "instructions": q_data.get("instructions", ""),
-                    "passage": q_data.get("passage", None),
-                    "question_text": q_data.get("question_text", ""),
-                    "options": q_data.get("options", []),
+                    "instructions": q_parsed.get("instructions", ""),
+                    "passage": q_parsed.get("passage", None),
+                    "question_text": q_parsed.get("question_text", ""),
+                    "options": q_parsed.get("options", []),
                     "correct_option": correct_ans,
-                    "explanation": q_data.get("explanation", None)
+                    "explanation": q_parsed.get("explanation", None),
+                    "audio_script": img_url # image path goes here
                 }
                 
-                res = requests.post(f"{supabase_url}/rest/v1/topik_exam_questions", headers=headers, json=question_record)
-                if res.ok:
-                    print(f"    [SAVE] Successfully saved Cau {q_num} Ky {ky} in Supabase!")
-                    progress["imported_questions"].append(prog_key)
-                    save_progress()
+                # Check if exists in db, if so overwrite, else insert
+                # Get existing ID
+                check_res = requests.get(f"{supabase_url}/rest/v1/topik_exam_questions?exam_id=eq.{exam_id}&question_number=eq.{q_num}", headers=headers)
+                if check_res.ok and check_res.json():
+                    q_id = check_res.json()[0]["id"]
+                    res = requests.patch(f"{supabase_url}/rest/v1/topik_exam_questions?id=eq.{q_id}", headers=headers, json=question_record)
                 else:
-                    print(f"    [ERROR] Failed to save in Supabase: {safe_str(res.text)}")
+                    res = requests.post(f"{supabase_url}/rest/v1/topik_exam_questions", headers=headers, json=question_record)
+                    
+                if res.ok:
+                    print(f"    [SAVE] Successfully saved Q#{q_num} Ky {ky} in database!")
+                else:
+                    print(f"    [ERROR] Failed to save Q#{q_num} in Supabase: {safe_str(res.text)}")
+            
+            progress["imported_pages"].append(prog_key)
+            save_progress()
+            time.sleep(2.0)
+            
+        # ─── Special Case: Dang 2, Page 9 is dang_3A_ky_35 ───
+        if dang == "2" and num_pages >= 9:
+            ky = 35
+            page_questions = [9, 10]
+            prog_key = "3A_35_special"
+            
+            if prog_key not in progress["imported_pages"]:
+                correct_answers = {
+                    9: get_correct_option("3A", ky, 9),
+                    10: get_correct_option("3A", ky, 10)
+                }
                 
-                # Small rate-limit delay
-                time.sleep(1.5)
+                page = reader.pages[8] # Page 9
+                img_data = extract_largest_image(page)
+                if not img_data or len(img_data) < 15000:
+                    print(f"  [RENDER SPECIAL] Vector page or placeholder detected. Rendering via PyMuPDF...")
+                    try:
+                        import fitz
+                        fitz_doc = fitz.open(pdf_path)
+                        fitz_page = fitz_doc.load_page(8)
+                        pix = fitz_page.get_pixmap(matrix=fitz.Matrix(2, 2))
+                        img_data = pix.tobytes("jpg")
+                        fitz_doc.close()
+                    except Exception as render_err:
+                        print(f"    [ERROR] Failed to render special page via PyMuPDF: {safe_str(render_err)}")
+                
+                if img_data:
+                    # Save the image to the public folder
+                    try:
+                        public_exams_dir = os.path.join(client_dir, "public", "topik_exams")
+                        os.makedirs(public_exams_dir, exist_ok=True)
+                        img_file_path = os.path.join(public_exams_dir, "dang_3A_ky_35.jpg")
+                        with open(img_file_path, "wb") as img_f:
+                            img_f.write(img_data)
+                        print(f"  [SAVE IMAGE] Saved special page image to {img_file_path}")
+                    except Exception as write_err:
+                        print(f"    [WARN] Failed to write special image file: {safe_str(write_err)}")
+                        
+                    print(f"\n  [SPECIAL] Processing Page 9 of Dang 2 PDF as Ky 35 Dang 3A...")
+                    print(f"  [OCR] running OCR.space for Ky 35 Q9-10...")
+                    ocr_text = perform_ocr(img_data)
+                    if ocr_text:
+                        print(f"  [AI] Structuring through DeepSeek for Ky 35 Q9-10...")
+                        ai_data = process_page_questions_with_ai(ocr_text, "3A", ky, page_questions, correct_answers)
+                        if ai_data and "questions" in ai_data:
+                            exam_id = find_or_create_exam(ky)
+                            for q_parsed in ai_data["questions"]:
+                                q_num = q_parsed.get("question_number")
+                                correct_ans = correct_answers[q_num]
+                                img_url = "/topik_exams/dang_3A_ky_35.jpg"
+                                
+                                question_record = {
+                                    "exam_id": exam_id,
+                                    "question_number": q_num,
+                                    "question_type": "reading_dang_3A",
+                                    "instructions": q_parsed.get("instructions", ""),
+                                    "passage": q_parsed.get("passage", None),
+                                    "question_text": q_parsed.get("question_text", ""),
+                                    "options": q_parsed.get("options", []),
+                                    "correct_option": correct_ans,
+                                    "explanation": q_parsed.get("explanation", None),
+                                    "audio_script": img_url
+                                }
+                                
+                                check_res = requests.get(f"{supabase_url}/rest/v1/topik_exam_questions?exam_id=eq.{exam_id}&question_number=eq.{q_num}", headers=headers)
+                                if check_res.ok and check_res.json():
+                                    q_id = check_res.json()[0]["id"]
+                                    res = requests.patch(f"{supabase_url}/rest/v1/topik_exam_questions?id=eq.{q_id}", headers=headers, json=question_record)
+                                else:
+                                    res = requests.post(f"{supabase_url}/rest/v1/topik_exam_questions", headers=headers, json=question_record)
+                                    
+                                if res.ok:
+                                    print(f"    [SAVE] Successfully saved Q#{q_num} Ky {ky} in database!")
+                                else:
+                                    print(f"    [ERROR] Failed to save Q#{q_num} in Supabase: {safe_str(res.text)}")
+                            
+                            progress["imported_pages"].append(prog_key)
+                            save_progress()
+                            time.sleep(2.0)
 
 if __name__ == "__main__":
     main()

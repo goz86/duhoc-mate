@@ -340,7 +340,7 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
           CBT TEST ROOM (Đang thi thử hoặc Đã xong xem kết quả)
           ───────────────────────────────────────────────────────────── */}
       {isTesting && selectedExam && (
-        <div className="w-full max-w-4xl mx-auto flex flex-col gap-4 px-3 sm:px-0">
+        <div className="w-full max-w-7xl mx-auto flex flex-col gap-4 px-3 sm:px-0">
           {/* Header thi thử */}
           <div className="flex flex-col gap-3 p-4 rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-lg backdrop-blur">
             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -423,116 +423,47 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
             </div>
           )}
 
-          {/* Khung thi chính */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_260px] gap-4 items-start w-full">
-            {/* Cột 1: Câu hỏi đang làm */}
+          {/* Khung thi chính dạng Split Screen */}
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-5 items-stretch w-full lg:h-[calc(100vh-180px)] min-h-[500px]">
+            {/* Cột 1 (Bên trái): Đề thi hoặc Bài đọc (Cuộn độc lập trên desktop) */}
             {questions[activeQuestionIdx] && (
-              <div className="flex flex-col gap-4 w-full">
+              <div className="flex flex-col gap-4 w-full lg:h-full lg:overflow-y-auto pr-0 lg:pr-2">
                 {/* ── CHẾ ĐỘ ẢNH (Đề thi thực từ PDF) ───────────────── */}
                 {questions[activeQuestionIdx].audio_script?.startsWith('/topik_exams/') ? (
-                  <div className="flex flex-col gap-4 w-full">
-                    {/* Khung ảnh đề thi */}
-                    <div className="rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md overflow-hidden">
-                      {/* Toolbar ảnh */}
-                      <div className="flex items-center justify-between px-4 py-2.5 border-b border-brand-terracotta-light/10 bg-brand-light/40">
-                        <div className="flex items-center gap-2">
-                          <BookOpen size={14} className="text-brand-terracotta" />
-                          <span className="text-xs font-black text-brand-brown-dark">
-                            Câu {questions[activeQuestionIdx].question_number} — Đề thi chính thức TOPIK
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => setImageZoomed(true)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-brand-terracotta text-[11px] font-black transition cursor-pointer"
-                          title="Xem ảnh toàn màn hình"
-                        >
-                          <Maximize2 size={12} /> Toàn màn hình
-                        </button>
+                  <div className="rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md overflow-hidden flex flex-col h-full">
+                    {/* Toolbar ảnh */}
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-brand-terracotta-light/10 bg-brand-light/40 flex-shrink-0">
+                      <div className="flex items-center gap-2">
+                        <BookOpen size={14} className="text-brand-terracotta" />
+                        <span className="text-xs font-black text-brand-brown-dark">
+                          Câu {questions[activeQuestionIdx].question_number} — Đề thi chính thức TOPIK
+                        </span>
                       </div>
-                      {/* Ảnh đề thi (scrollable) */}
-                      <div className="relative overflow-hidden" style={{ maxHeight: '65vh' }}>
-                        <div className="overflow-y-auto" style={{ maxHeight: '65vh' }}>
-                          <img
-                            src={questions[activeQuestionIdx].audio_script!}
-                            alt={`Đề thi TOPIK - Câu ${questions[activeQuestionIdx].question_number}`}
-                            className="w-full object-contain select-none"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/topik_exams/placeholder.jpg'
-                            }}
-                          />
-                        </div>
-                        {/* Zoom hint */}
-                        <button
-                          onClick={() => setImageZoomed(true)}
-                          className="absolute bottom-3 right-3 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition cursor-pointer shadow-lg"
-                          title="Phóng to ảnh"
-                        >
-                          <ZoomIn size={16} />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => setImageZoomed(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-brand-terracotta text-[11px] font-black transition cursor-pointer"
+                        title="Xem ảnh toàn màn hình"
+                      >
+                        <Maximize2 size={12} /> Toàn màn hình
+                      </button>
                     </div>
-
-                    {/* Khung đáp án (riêng biệt bên dưới ảnh) */}
-                    <div className="p-5 rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md flex flex-col gap-3">
-                      <p className="text-xs font-black text-brand-brown-light uppercase tracking-wider">
-                        Chọn đáp án cho câu {questions[activeQuestionIdx].question_number}
-                      </p>
-
-                      {/* 4 Choices */}
-                      <div className="flex flex-col gap-2.5">
-                        {questions[activeQuestionIdx].options.map((opt, oIdx) => {
-                          const optNum = oIdx + 1
-                          const isSelected = answers[questions[activeQuestionIdx].question_number] === optNum
-                          const isCorrect = questions[activeQuestionIdx].correct_option === optNum
-
-                          let btnStyle = 'border-brand-terracotta-light/20 bg-white text-brand-brown-dark hover:bg-brand-light'
-                          if (isTesting && !isFinished) {
-                            if (isSelected) btnStyle = 'border-brand-terracotta bg-brand-terracotta text-white shadow-md'
-                          } else if (isFinished) {
-                            if (isCorrect) {
-                              btnStyle = 'border-emerald-500 bg-emerald-50 text-emerald-800 font-bold'
-                            } else if (isSelected) {
-                              btnStyle = 'border-red-500 bg-red-50 text-red-800'
-                            } else {
-                              btnStyle = 'border-brand-terracotta-light/10 bg-white/50 text-brand-brown-light/60'
-                            }
-                          }
-
-                          return (
-                            <button
-                              key={oIdx}
-                              disabled={isFinished}
-                              onClick={() => {
-                                setAnswers(prev => ({
-                                  ...prev,
-                                  [questions[activeQuestionIdx].question_number]: optNum
-                                }))
-                              }}
-                              className={`w-full text-left px-4 py-3 rounded-2xl border transition-all text-sm font-bold flex items-center gap-3 cursor-pointer ${btnStyle}`}
-                            >
-                              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-black border flex-shrink-0 ${
-                                isSelected ? 'bg-white/20 border-white' : 'border-brand-terracotta-light/20 bg-brand-cream/60'
-                              }`}>
-                                {['①','②','③','④'][oIdx]}
-                              </span>
-                              <span className="leading-snug">{opt}</span>
-                              {isFinished && isCorrect && <CheckCircle size={14} className="ml-auto text-emerald-600 flex-shrink-0" />}
-                              {isFinished && isSelected && !isCorrect && <XCircle size={14} className="ml-auto text-red-600 flex-shrink-0" />}
-                            </button>
-                          )
-                        })}
-                      </div>
-
-                      {/* Giải nghĩa (Result Mode only) */}
-                      {isFinished && questions[activeQuestionIdx].explanation && (
-                        <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 flex gap-2.5 items-start mt-1">
-                          <Info size={16} className="text-emerald-600 shrink-0 mt-0.5" />
-                          <div className="text-xs sm:text-sm text-emerald-800 leading-relaxed font-semibold">
-                            <span className="font-black text-emerald-900 block mb-1">HƯỚNG DẪN GIẢI:</span>
-                            {questions[activeQuestionIdx].explanation}
-                          </div>
-                        </div>
-                      )}
+                    {/* Ảnh đề thi (scrollable inside card) */}
+                    <div className="relative flex-1 overflow-y-auto p-2 bg-gray-50/50 flex justify-center items-start">
+                      <img
+                        src={questions[activeQuestionIdx].audio_script!}
+                        alt={`Đề thi TOPIK - Câu ${questions[activeQuestionIdx].question_number}`}
+                        className="w-full max-h-none object-contain select-none"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/topik_exams/placeholder.jpg'
+                        }}
+                      />
+                      <button
+                        onClick={() => setImageZoomed(true)}
+                        className="absolute bottom-3 right-3 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition cursor-pointer shadow-lg"
+                        title="Phóng to ảnh"
+                      >
+                        <ZoomIn size={16} />
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -592,60 +523,6 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
                     <div className="text-base sm:text-lg font-black text-brand-brown-dark py-2 border-b border-brand-terracotta-light/10 select-text">
                       {questions[activeQuestionIdx].question_number}. {questions[activeQuestionIdx].question_text}
                     </div>
-
-                    {/* 4 Choices */}
-                    <div className="flex flex-col gap-2.5">
-                      {questions[activeQuestionIdx].options.map((opt, oIdx) => {
-                        const optNum = oIdx + 1
-                        const isSelected = answers[questions[activeQuestionIdx].question_number] === optNum
-                        const isCorrect = questions[activeQuestionIdx].correct_option === optNum
-
-                        let btnStyle = 'border-brand-terracotta-light/20 bg-white text-brand-brown-dark hover:bg-brand-light'
-                        if (isTesting && !isFinished) {
-                          if (isSelected) btnStyle = 'border-brand-terracotta bg-brand-terracotta text-white shadow-md'
-                        } else if (isFinished) {
-                          if (isCorrect) {
-                            btnStyle = 'border-emerald-500 bg-emerald-50 text-emerald-800 font-bold'
-                          } else if (isSelected) {
-                            btnStyle = 'border-red-500 bg-red-50 text-red-800'
-                          } else {
-                            btnStyle = 'border-brand-terracotta-light/10 bg-white/50 text-brand-brown-light/60'
-                          }
-                        }
-
-                        return (
-                          <button
-                            key={oIdx}
-                            disabled={isFinished}
-                            onClick={() => {
-                              setAnswers(prev => ({
-                                ...prev,
-                                [questions[activeQuestionIdx].question_number]: optNum
-                              }))
-                            }}
-                            className={`w-full text-left px-4 py-3 rounded-2xl border transition-all text-sm font-bold flex items-center gap-3 cursor-pointer ${btnStyle}`}
-                          >
-                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border ${isSelected ? 'bg-white/20 border-white' : 'border-brand-terracotta-light/20 bg-brand-cream/60'}`}>
-                              {optNum}
-                            </span>
-                            <span>{opt}</span>
-                            {isFinished && isCorrect && <CheckCircle size={14} className="ml-auto text-emerald-600 flex-shrink-0" />}
-                            {isFinished && isSelected && !isCorrect && <XCircle size={14} className="ml-auto text-red-600 flex-shrink-0" />}
-                          </button>
-                        )
-                      })}
-                    </div>
-
-                    {/* Giải nghĩa (Result Mode only) */}
-                    {isFinished && questions[activeQuestionIdx].explanation && (
-                      <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 flex gap-2.5 items-start mt-2">
-                        <Info size={16} className="text-emerald-600 shrink-0 mt-0.5" />
-                        <div className="text-xs sm:text-sm text-emerald-800 leading-relaxed font-semibold">
-                          <span className="font-black text-emerald-900 block mb-1">HƯỚNG DẪN GIẢI:</span>
-                          {questions[activeQuestionIdx].explanation}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -669,8 +546,74 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
               </div>
             )}
 
-            {/* Cột 2: Bảng lưới câu hỏi (Sidebar) */}
-            <div className="flex flex-col gap-3 p-4 rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md">
+            {/* Cột 2 (Bên phải): Khung chọn đáp án & Bảng lưới câu hỏi (Cuộn độc lập trên desktop) */}
+            {questions[activeQuestionIdx] && (
+              <div className="flex flex-col gap-4 w-full lg:h-full lg:overflow-y-auto pl-0 lg:pl-2">
+                {/* Khung đáp án */}
+                <div className="p-5 rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md flex flex-col gap-3">
+                  <p className="text-xs font-black text-brand-brown-light uppercase tracking-wider">
+                    Chọn đáp án cho câu {questions[activeQuestionIdx].question_number}
+                  </p>
+
+                  {/* 4 Choices */}
+                  <div className="flex flex-col gap-2.5">
+                    {questions[activeQuestionIdx].options.map((opt, oIdx) => {
+                      const optNum = oIdx + 1
+                      const isSelected = answers[questions[activeQuestionIdx].question_number] === optNum
+                      const isCorrect = questions[activeQuestionIdx].correct_option === optNum
+
+                      let btnStyle = 'border-brand-terracotta-light/20 bg-white text-brand-brown-dark hover:bg-brand-light'
+                      if (isTesting && !isFinished) {
+                        if (isSelected) btnStyle = 'border-brand-terracotta bg-brand-terracotta text-white shadow-md'
+                      } else if (isFinished) {
+                        if (isCorrect) {
+                          btnStyle = 'border-emerald-500 bg-emerald-50 text-emerald-800 font-bold'
+                        } else if (isSelected) {
+                          btnStyle = 'border-red-500 bg-red-50 text-red-800'
+                        } else {
+                          btnStyle = 'border-brand-terracotta-light/10 bg-white/50 text-brand-brown-light/60'
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={oIdx}
+                          disabled={isFinished}
+                          onClick={() => {
+                            setAnswers(prev => ({
+                              ...prev,
+                              [questions[activeQuestionIdx].question_number]: optNum
+                            }))
+                          }}
+                          className={`w-full text-left px-4 py-3 rounded-2xl border transition-all text-sm font-bold flex items-center gap-3 cursor-pointer ${btnStyle}`}
+                        >
+                          <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-black border flex-shrink-0 ${
+                            isSelected ? 'bg-white/20 border-white' : 'border-brand-terracotta-light/20 bg-brand-cream/60'
+                          }`}>
+                            {['①','②','③','④'][oIdx]}
+                          </span>
+                          <span className="leading-snug select-text">{opt}</span>
+                          {isFinished && isCorrect && <CheckCircle size={14} className="ml-auto text-emerald-600 flex-shrink-0" />}
+                          {isFinished && isSelected && !isCorrect && <XCircle size={14} className="ml-auto text-red-600 flex-shrink-0" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Giải nghĩa (Result Mode only) */}
+                  {isFinished && questions[activeQuestionIdx].explanation && (
+                    <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 flex gap-2.5 items-start mt-1">
+                      <Info size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                      <div className="text-xs sm:text-sm text-emerald-800 leading-relaxed font-semibold">
+                        <span className="font-black text-emerald-900 block mb-1">HƯỚNG DẪN GIẢI:</span>
+                        {questions[activeQuestionIdx].explanation}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bảng lưới câu hỏi (Sidebar) */}
+                <div className="flex flex-col gap-3 p-4 rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md">
               <h4 className="text-xs font-black text-brand-brown-dark uppercase tracking-wider text-center border-b border-brand-terracotta-light/10 pb-2">
                 Bảng Câu Hỏi
               </h4>
@@ -740,8 +683,10 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
               )}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    </div>
+  )}
 
       {/* ─────────────────────────────────────────────────────────────
           DASHBOARD ĐỀ THI (Danh sách đề thi và tạo đề AI)
