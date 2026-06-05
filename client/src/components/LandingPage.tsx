@@ -11,6 +11,7 @@ import {
   LockKeyhole,
   LogIn,
   LogOut,
+  LayoutDashboard,
   Megaphone,
   Music2,
   Plus,
@@ -32,6 +33,7 @@ import createRoomSceneSecondary from '../assets/create-room-scene-secondary.png'
 import duhocMateLogo from '../assets/duhoc-mate-logo-new.png'
 import LanguageSwitcher from './LanguageSwitcher'
 import CommunityForum from './CommunityForum'
+import PersonalDashboard from './PersonalDashboard'
 import TemplateMarketplace from './TemplateMarketplace'
 import type { RoomTemplate } from '../lib/communityTemplates'
 import { supabase } from '../lib/supabase'
@@ -128,6 +130,7 @@ export default function LandingPage({
   onEnterAdmin,
 }: LandingPageProps) {
   const { t } = useTranslation()
+  const [homeView, setHomeView] = useState<'rooms' | 'board' | 'dashboard'>(showHelpBoard ? 'board' : 'rooms')
 
   const [exchangeRate, setExchangeRate] = useState<string>('Đang tải...')
   const [weather, setWeather] = useState<{ temp: string; desc: string } | null>(null)
@@ -158,6 +161,10 @@ export default function LandingPage({
   const [exploreSort, setExploreSort] = useState<'members' | 'newest'>('members')
   const [explorePage, setExplorePage] = useState(1)
   const roomsPerPage = 9
+
+  useEffect(() => {
+    if (showHelpBoard) setHomeView('board')
+  }, [showHelpBoard])
 
   const displayName = profile?.username || username || 'Bạn học'
   const savedAvatar = profile?.avatar_url || ''
@@ -499,28 +506,53 @@ export default function LandingPage({
         <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:grid lg:grid-cols-[1.05fr_0.9fr_0.95fr] lg:gap-8 2xl:mb-5">
           <div className="flex gap-5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:col-span-2">
             <button
-              onClick={() => setShowHelpBoard(false)}
-              className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all cursor-pointer relative group ${!showHelpBoard
+              onClick={() => {
+                setHomeView('rooms')
+                setShowHelpBoard(false)
+              }}
+              className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all cursor-pointer relative group ${homeView === 'rooms'
                   ? 'text-brand-brown-dark'
                   : 'text-brand-brown-light hover:text-brand-brown-dark'
                 }`}
             >
               <span className="relative z-10">{t('landing.nav.rooms')}</span>
-              {!showHelpBoard ? (
+              {homeView === 'rooms' ? (
                 <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/75 rounded-[8px_100%_12px_95%] skew-x-[-6deg] animate-marker-draw z-0" />
               ) : (
                 <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/20 rounded-[8px_100%_12px_95%] skew-x-[-6deg] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-200 z-0" />
               )}
             </button>
             <button
-              onClick={() => setShowHelpBoard(true)}
-              className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all cursor-pointer relative group ${showHelpBoard
+              onClick={() => {
+                setHomeView('board')
+                setShowHelpBoard(true)
+              }}
+              className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all cursor-pointer relative group ${homeView === 'board'
                   ? 'text-brand-brown-dark'
                   : 'text-brand-brown-light hover:text-brand-brown-dark'
                 }`}
             >
               <span className="relative z-10">{t('landing.nav.board')}</span>
-              {showHelpBoard ? (
+              {homeView === 'board' ? (
+                <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/75 rounded-[8px_100%_12px_95%] skew-x-[-6deg] animate-marker-draw z-0" />
+              ) : (
+                <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/20 rounded-[8px_100%_12px_95%] skew-x-[-6deg] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-200 z-0" />
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setHomeView('dashboard')
+                setShowHelpBoard(false)
+                setShowExploreFull(false)
+              }}
+              className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all cursor-pointer relative group inline-flex items-center gap-1.5 ${homeView === 'dashboard'
+                  ? 'text-brand-brown-dark'
+                  : 'text-brand-brown-light hover:text-brand-brown-dark'
+                }`}
+            >
+              <LayoutDashboard size={15} className="relative z-10" />
+              <span className="relative z-10">Dashboard</span>
+              {homeView === 'dashboard' ? (
                 <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/75 rounded-[8px_100%_12px_95%] skew-x-[-6deg] animate-marker-draw z-0" />
               ) : (
                 <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/20 rounded-[8px_100%_12px_95%] skew-x-[-6deg] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-200 z-0" />
@@ -548,15 +580,31 @@ export default function LandingPage({
 
         </div>
 
-        {showHelpBoard ? (
+        {homeView === 'board' ? (
           <section className="overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-sm flex flex-col min-h-[calc(100svh-118px)]">
             <CommunityForum
               currentUserId={user?.id || ''}
               username={profile?.username || username || 'Bạn học'}
               isAdmin={!!profile?.is_admin}
-              onBackToLobby={() => setShowHelpBoard(false)}
+              onBackToLobby={() => {
+                setHomeView('rooms')
+                setShowHelpBoard(false)
+              }}
             />
           </section>
+        ) : homeView === 'dashboard' ? (
+          <PersonalDashboard
+            profile={profile}
+            username={username}
+            onStartRoom={() => {
+              setHomeView('rooms')
+              setShowHelpBoard(false)
+            }}
+            onOpenTopikRoom={() => {
+              setHomeView('rooms')
+              setShowHelpBoard(false)
+            }}
+          />
         ) : showExploreFull ? (
           <section className="w-full py-4 animate-custom-fade-in">
             {/* Header row with KHÃM PHÃ badge and Quay láº¡i button */}
