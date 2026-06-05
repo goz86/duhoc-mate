@@ -309,6 +309,11 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
 
   const matchedPairSet = useMemo(() => new Set(matchGame.matchedPairIds), [matchGame.matchedPairIds])
   const playerIds = useMemo(() => new Set(matchGame.players.map(player => player.memberId)), [matchGame.players])
+  const currentPlayerName = useMemo(() => {
+    return members.find(member => member.id === socket.id)?.username
+      || matchGame.players.find(player => player.memberId === socket.id)?.username
+      || 'Bạn'
+  }, [matchGame.players, members, socket.id])
   const waitingMembers = useMemo(
     () => members.filter(member => playerIds.has(member.id)),
     [members, playerIds]
@@ -364,9 +369,31 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
       setSelectedCard(card)
       return
     }
+    if (selectedCard.pairId === card.pairId) {
+      const pairId = card.pairId
+      setMatchGame(prev => {
+        if (prev.status !== 'playing' || prev.matchedPairIds.includes(pairId)) return prev
+        return {
+          ...prev,
+          matchedPairIds: [...prev.matchedPairIds, pairId],
+          cards: prev.cards.map(item => (
+            item.pairId === pairId
+              ? { ...item, matchedBy: socket.id, matchedByName: currentPlayerName }
+              : item
+          )),
+          lastResult: {
+            type: 'match',
+            memberId: socket.id,
+            username: currentPlayerName,
+            pairId,
+            optimistic: true,
+          },
+        }
+      })
+    }
     emitMatchAction('match', { firstCardId: selectedCard.id, secondCardId: card.id })
     setSelectedCard(null)
-  }, [emitMatchAction, matchGame.status, matchedPairSet, selectedCard])
+  }, [currentPlayerName, emitMatchAction, matchGame.status, matchedPairSet, selectedCard, socket.id])
 
   const startMatchGame = useCallback(() => emitMatchAction('start', { durationSec }), [durationSec, emitMatchAction])
   const resetMatchGame = useCallback(() => emitMatchAction('reset'), [emitMatchAction])
@@ -636,6 +663,13 @@ function MatchArenaPanel({
           style={{ width: `${progressPercent}%` }}
         />
       </div>
+
+      {game.status === 'playing' && game.lastResult?.type === 'match' && (
+        <div className="mb-4 inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-black text-green-700 shadow-sm">
+          <Trophy size={14} className="shrink-0" />
+          <span className="truncate">{game.lastResult.username || 'Bạn học'} vừa ghép đúng</span>
+        </div>
+      )}
 
       {game.status === 'idle' && (
         <div className="grid flex-1 place-items-center rounded-[24px] border border-dashed border-brand-terracotta-light/35 bg-brand-light/25 px-5 py-12 text-center">
