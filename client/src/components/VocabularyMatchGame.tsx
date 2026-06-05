@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Socket } from 'socket.io-client'
 import {
-  BookOpen,
   Brain,
   Gamepad2,
   Headphones,
-  Heart,
   Layers3,
   Play,
   RotateCcw,
@@ -248,8 +246,6 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
     socket.emit('vocab-match-subscribe', { roomId })
     socket.emit('vocab-match-action', { roomId, type: 'join' })
     socket.emit('topik-game-subscribe', { roomId })
-    socket.emit('topik-arena-leaderboard', { period: 'week' })
-    socket.emit('topik-arena-leaderboard', { period: 'month' })
     socket.on('vocab-match-sync', handleMatchSync)
     socket.on('topik-game-sync', handleTopikSync)
     socket.on('topik-arena-leaderboard-sync', handleArenaLeaderboard)
@@ -263,9 +259,13 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
   }, [roomId, socket])
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 300)
+    if (matchGame.status !== 'playing') {
+      setNow(Date.now())
+      return
+    }
+    const timer = window.setInterval(() => setNow(Date.now()), 500)
     return () => window.clearInterval(timer)
-  }, [])
+  }, [matchGame.status, matchGame.roundEndsAt])
 
   useEffect(() => {
     setSelectedCard(null)
@@ -327,7 +327,10 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
       ? 'Kết thúc'
       : 'Đang chờ'
 
-  const activeModeMeta = ARENA_MODES.find(mode => mode.id === activeMode) || ARENA_MODES[0]
+  const activeModeMeta = useMemo(
+    () => ARENA_MODES.find(mode => mode.id === activeMode) || ARENA_MODES[0],
+    [activeMode]
+  )
   const roomLeaderboard = activeMode === 'match' ? matchGame.leaderboard : roomGame.leaderboard
   const visibleLeaderboard = leaderboardPeriod === 'room'
     ? roomLeaderboard
@@ -342,15 +345,12 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
       .sort((a, b) => b.count - a.count)
   }, [mistakes])
   const topWeakness = weaknessSummary.find(item => item.count > 0)
-  const totalWrong = mistakes.reduce((sum, item) => sum + item.wrongCount, 0)
-  const petXp = Math.min(100, (matchGame.leaderboard[0]?.score || 0) / 10 + (roomGame.leaderboard[0]?.score || 0) / 20 + Math.max(0, 30 - totalWrong))
-  const petLevel = Math.max(1, Math.floor(petXp / 25) + 1)
 
-  const emitMatchAction = (type: string, payload: Record<string, unknown> = {}) => {
+  const emitMatchAction = useCallback((type: string, payload: Record<string, unknown> = {}) => {
     socket.emit('vocab-match-action', { roomId, type, payload })
-  }
+  }, [roomId, socket])
 
-  const handleCardClick = (card: MatchCard) => {
+  const handleCardClick = useCallback((card: MatchCard) => {
     if (matchGame.status !== 'playing' || matchedPairSet.has(card.pairId)) return
     if (!selectedCard) {
       setSelectedCard(card)
@@ -366,12 +366,12 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
     }
     emitMatchAction('match', { firstCardId: selectedCard.id, secondCardId: card.id })
     setSelectedCard(null)
-  }
+  }, [emitMatchAction, matchGame.status, matchedPairSet, selectedCard])
 
-  const startMatchGame = () => emitMatchAction('start', { durationSec })
-  const resetMatchGame = () => emitMatchAction('reset')
+  const startMatchGame = useCallback(() => emitMatchAction('start', { durationSec }), [durationSec, emitMatchAction])
+  const resetMatchGame = useCallback(() => emitMatchAction('reset'), [emitMatchAction])
 
-  const startQuizGame = (mode: ArenaMode) => {
+  const startQuizGame = useCallback((mode: ArenaMode) => {
     const meta = ARENA_MODES.find(item => item.id === mode)
     if (!meta?.gameType) return
     setRoomSelections({})
@@ -381,9 +381,9 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
       type: 'start',
       payload: { gameType: meta.gameType, totalRounds: meta.rounds || 5 },
     })
-  }
+  }, [roomId, socket])
 
-  const answerQuiz = (optionIndex: number) => {
+  const answerQuiz = useCallback((optionIndex: number) => {
     const question = roomGame.question
     if (!question || roomSelections[question.id] !== undefined || roomGame.status !== 'question') return
     setRoomSelections(prev => ({ ...prev, [question.id]: optionIndex }))
@@ -392,19 +392,27 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
       type: 'answer',
       payload: { optionIndex },
     })
-  }
+  }, [roomGame.question, roomGame.status, roomId, roomSelections, socket])
 
-  const nextQuizRound = () => {
+  const nextQuizRound = useCallback(() => {
     socket.emit('topik-game-action', { roomId, type: 'next' })
-    socket.emit('topik-arena-leaderboard', { period: 'week' })
-    socket.emit('topik-arena-leaderboard', { period: 'month' })
-  }
+    if (leaderboardPeriod !== 'room') {
+      socket.emit('topik-arena-leaderboard', { period: leaderboardPeriod })
+    }
+  }, [leaderboardPeriod, roomId, socket])
 
-  const resetQuizGame = () => {
+  const resetQuizGame = useCallback(() => {
     setRoomSelections({})
     savedRoomMistakesRef.current.clear()
     socket.emit('topik-game-action', { roomId, type: 'reset' })
-  }
+  }, [roomId, socket])
+
+  const handleLeaderboardPeriodChange = useCallback((period: LeaderboardPeriod) => {
+    setLeaderboardPeriod(period)
+    if (period !== 'room') socket.emit('topik-arena-leaderboard', { period })
+  }, [socket])
+
+  const startActiveQuizGame = useCallback(() => startQuizGame(activeMode), [activeMode, startQuizGame])
 
   return (
     <div className="flex min-h-[560px] w-full min-w-0 flex-1 flex-col gap-4 text-brand-brown-dark">
@@ -483,7 +491,7 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
       <div className="grid flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <main className="min-w-0">
           {activeMode === 'match' ? (
-            <MatchArenaPanel
+            <MemoMatchArenaPanel
               game={matchGame}
               durationSec={durationSec}
               setDurationSec={setDurationSec}
@@ -501,12 +509,12 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
               onReset={resetMatchGame}
             />
           ) : (
-            <QuizArenaPanel
+            <MemoQuizArenaPanel
               mode={activeModeMeta}
               state={roomGame}
               selectedIndex={roomGame.question ? roomSelections[roomGame.question.id] : undefined}
               activeMode={activeMode}
-              onStart={() => startQuizGame(activeMode)}
+              onStart={startActiveQuizGame}
               onAnswer={answerQuiz}
               onNext={nextQuizRound}
               onReset={resetQuizGame}
@@ -515,17 +523,12 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
         </main>
 
         <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-3 xl:self-start">
-          <LeaderboardPanel
+          <MemoLeaderboardPanel
             period={leaderboardPeriod}
-            onPeriodChange={period => {
-              setLeaderboardPeriod(period)
-              if (period !== 'room') socket.emit('topik-arena-leaderboard', { period })
-            }}
+            onPeriodChange={handleLeaderboardPeriodChange}
             leaderboard={visibleLeaderboard}
           />
-          <WeaknessPanel weaknessSummary={weaknessSummary} mistakes={mistakes} topWeakness={topWeakness} />
-          <PetPanel level={petLevel} xp={petXp} topWeakness={topWeakness?.label} />
-          <CommunityFlashcardPanel />
+          <MemoWeaknessPanel weaknessSummary={weaknessSummary} mistakes={mistakes} topWeakness={topWeakness} />
         </aside>
       </div>
     </div>
@@ -981,6 +984,12 @@ function WeaknessPanel({
   )
 }
 
+const MemoMatchArenaPanel = memo(MatchArenaPanel)
+const MemoQuizArenaPanel = memo(QuizArenaPanel)
+const MemoLeaderboardPanel = memo(LeaderboardPanel)
+const MemoWeaknessPanel = memo(WeaknessPanel)
+
+/*
 function PetPanel({ level, xp, topWeakness }: { level: number; xp: number; topWeakness?: string }) {
   return (
     <div className="rounded-[28px] border border-brand-terracotta-light/20 bg-white/88 p-4 shadow-sm">
@@ -1016,3 +1025,4 @@ function CommunityFlashcardPanel() {
     </div>
   )
 }
+*/

@@ -2509,7 +2509,7 @@ io.on('connection', (socket) => {
     socket.emit('vocab-match-sync', publicVocabMatchGameState(room));
   });
 
-  socket.on('vocab-match-action', ({ roomId, type, payload = {} }) => {
+  socket.on('vocab-match-action', async ({ roomId, type, payload = {} }) => {
     const room = rooms.get(roomId);
     if (!room) return;
     const member = room.members.find(m => m.id === socket.id);
@@ -2621,6 +2621,24 @@ io.on('connection', (socket) => {
 
       const allMatched = (game.matchedPairIds || []).length >= Math.min(VOCAB_MATCH_PAIR_COUNT, Math.floor((game.cards || []).length / 2));
       if (allMatched) {
+        const remainingMs = Math.max(0, (game.roundEndsAt || 0) - Date.now());
+        if (remainingMs > 1200) {
+          const words = await getVocabMatchWords();
+          const nextBoard = buildVocabMatchRound(words);
+          const currentRoom = rooms.get(roomId);
+          const currentGame = currentRoom ? ensureVocabMatchGame(currentRoom) : null;
+          if (!currentRoom || currentGame.status !== 'playing') return;
+          currentGame.cards = nextBoard.cards;
+          currentGame.pairMap = nextBoard.pairMap;
+          currentGame.matchedPairIds = [];
+          currentGame.lastResult = {
+            type: 'board-refill',
+            refillAt: Date.now()
+          };
+          emitVocabMatchGame(roomId);
+          return;
+        }
+
         game.status = 'round-ended';
         game.roundEndsAt = Date.now();
         game.lastResult = {
