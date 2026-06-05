@@ -468,31 +468,33 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
   return (
     <div className="flex-1 flex flex-col gap-5 py-4">
       {/* Tab: Flashcard / Countdown */}
-      <div className="flex gap-1 p-1 bg-brand-light/60 rounded-full w-fit mx-auto">
-        <button
-          onClick={() => setActiveTab('flashcard')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition cursor-pointer ${activeTab === 'flashcard' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
-        >
-          <BookOpen size={15} /> {t('topik.flashcard')}
-        </button>
-        <button
-          onClick={() => setActiveTab('exam')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition cursor-pointer ${activeTab === 'exam' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
-        >
-          <ClipboardList size={15} /> Luyện đề thi
-        </button>
-        <button
-          onClick={() => setActiveTab('grammar')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition cursor-pointer ${activeTab === 'grammar' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
-        >
-          <BookOpen size={15} /> Ngữ pháp
-        </button>
-        <button
-          onClick={() => setActiveTab('countdown')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition cursor-pointer ${activeTab === 'countdown' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
-        >
-          <Calendar size={15} /> {t('topik.countdown')}
-        </button>
+      <div className="mx-auto w-full max-w-full overflow-x-auto px-1 sm:w-fit sm:overflow-visible sm:px-0">
+        <div className="flex w-max gap-1 rounded-full bg-brand-light/60 p-1 sm:w-fit">
+          <button
+            onClick={() => setActiveTab('flashcard')}
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition cursor-pointer sm:px-4 sm:text-sm ${activeTab === 'flashcard' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
+          >
+            <BookOpen size={15} /> {t('topik.flashcard')}
+          </button>
+          <button
+            onClick={() => setActiveTab('exam')}
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition cursor-pointer sm:px-4 sm:text-sm ${activeTab === 'exam' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
+          >
+            <ClipboardList size={15} /> Luyện đề thi
+          </button>
+          <button
+            onClick={() => setActiveTab('grammar')}
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition cursor-pointer sm:px-4 sm:text-sm ${activeTab === 'grammar' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
+          >
+            <BookOpen size={15} /> Ngữ pháp
+          </button>
+          <button
+            onClick={() => setActiveTab('countdown')}
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition cursor-pointer sm:px-4 sm:text-sm ${activeTab === 'countdown' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
+          >
+            <Calendar size={15} /> {t('topik.countdown')}
+          </button>
+        </div>
       </div>
 
       {activeTab === 'flashcard' && (

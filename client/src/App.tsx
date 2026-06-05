@@ -9,7 +9,7 @@ import {
   Headphones, Music2, ChevronRight, Search,
   Minimize2, Palette, Settings, Crown,
   Link2, Volume2, VolumeX, SkipForward, Plus, X, Trash2, Shuffle,
-  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, Sparkles, ClipboardList, Timer
+  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, Sparkles, ClipboardList, Timer, Gamepad2
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
 import { useTranslation } from 'react-i18next';
@@ -62,6 +62,7 @@ const IdeaBoard = lazy(() => import('./components/IdeaBoard'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const StudyTableStage = lazy(() => import('./components/StudyTableStage'));
 const TopikStudy = lazy(() => import('./components/TopikStudy'));
+const VocabularyMatchGame = lazy(() => import('./components/VocabularyMatchGame'));
 const Whiteboard = lazy(() => import('./components/Whiteboard'));
 
 const LazyPanelFallback = () => (
@@ -306,7 +307,7 @@ export default function App() {
         setView('landing');
         navigateToLanding();
       } else if (view === 'landing') {
-        if (hash === '#forum') {
+        if (hash === '#forum' || hash.startsWith('#forum/post/')) {
           setShowHelpBoard(true);
         } else if (hash === '') {
           setShowHelpBoard(false);
@@ -348,7 +349,7 @@ export default function App() {
 
   // Help board – persists tab across page reloads
   const [showHelpBoard, setShowHelpBoard] = useState<boolean>(() => {
-    if (typeof window !== 'undefined' && window.location.hash === '#forum') return true;
+    if (typeof window !== 'undefined' && (window.location.hash === '#forum' || window.location.hash.startsWith('#forum/post/'))) return true;
     try { return localStorage.getItem('duhocmate_show_forum') === 'true' } catch { return false }
   });
   useEffect(() => {
@@ -360,7 +361,7 @@ export default function App() {
     if (val) {
       window.location.hash = 'forum';
     } else {
-      if (window.location.hash === '#forum') {
+      if (window.location.hash === '#forum' || window.location.hash.startsWith('#forum/post/')) {
         window.location.hash = '';
       }
     }
@@ -418,7 +419,7 @@ export default function App() {
   // StageMode controls the main room module: media, focus timer, TOPIK, or idea board.
   const [stageMode, setStageMode] = useState<StageMode>('youtube');
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'playlist' | 'members'>('playlist');
-  const [mobileCompactView, setMobileCompactView] = useState<'youtube' | 'video' | 'topik' | 'chat' | 'pdf'>('youtube');
+  const [mobileCompactView, setMobileCompactView] = useState<'youtube' | 'video' | 'topik' | 'chat' | 'pdf' | 'game'>('youtube');
   interface RoomActivity {
     id: string;
     type: 'chat' | 'reaction';
@@ -454,7 +455,7 @@ export default function App() {
 
   const openMobileCompactView = (view: typeof mobileCompactView) => {
     setMobileCompactView(view);
-    if (view === 'youtube' || view === 'video' || view === 'topik' || view === 'pdf') {
+    if (view === 'youtube' || view === 'video' || view === 'topik' || view === 'pdf' || view === 'game') {
       setStageMode(view);
       // Auto-show playlist panel when switching to youtube tab on mobile
       if (view === 'youtube') {
@@ -3615,7 +3616,7 @@ export default function App() {
                 <div className="hidden sm:flex items-center justify-between gap-4 w-full">
                   <StageSelector stageMode={stageMode} onChange={(mode) => {
                     setStageMode(mode);
-                    if (mode === 'youtube' || mode === 'video' || mode === 'topik' || mode === 'pdf') {
+                    if (mode === 'youtube' || mode === 'video' || mode === 'topik' || mode === 'pdf' || mode === 'game') {
                       setMobileCompactView(mode);
                     }
                     // Tự động ngồi vào bàn khi chuyển sang tab Bàn học
@@ -4412,6 +4413,16 @@ export default function App() {
                       members={members}
                       onChange={handleIdeaTasksChange}
                       onCreateTemplate={() => setShowCreateTemplate(true)}
+                    />
+                  </Suspense>
+                )}
+
+                {stageMode === 'game' && (
+                  <Suspense fallback={<LazyPanelFallback />}>
+                    <VocabularyMatchGame
+                      roomId={roomId}
+                      socket={socket}
+                      members={members}
                     />
                   </Suspense>
                 )}
@@ -5364,11 +5375,12 @@ export default function App() {
           ); // end IIFE return
           })()} {/* end adaptive grid IIFE */}
           <nav className="fixed inset-x-3 bottom-3 z-[120] overflow-visible rounded-[24px] border border-brand-terracotta-light/25 bg-white/92 p-1.5 shadow-[0_18px_55px_rgba(76,55,49,0.18)] backdrop-blur-xl sm:hidden">
-            <div className="grid grid-cols-5 gap-1">
+            <div className="grid grid-cols-6 gap-1">
               {[
                 { key: 'youtube', label: 'YouTube', Icon: Play },
                 { key: 'video', label: t('room.stage.studyTable'), Icon: Coffee },
                 { key: 'topik', label: 'TOPIK', Icon: BookOpen },
+                { key: 'game', label: 'Game', Icon: Gamepad2 },
                 { key: 'chat', label: 'Chat', Icon: MessageCircle, badge: unreadChatCount },
                 { key: 'pdf', label: t('room.stage.whiteboard'), Icon: ClipboardList },
               ].map(item => {

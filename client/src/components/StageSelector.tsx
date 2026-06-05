@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardList, Coffee, Pencil, Play } from 'lucide-react'
+import { BookOpen, ClipboardList, Coffee, Gamepad2, Pencil, Play } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { StageMode } from '../types'
@@ -24,6 +24,7 @@ export default function StageSelector({ stageMode, onChange }: StageSelectorProp
     { key: 'topik', icon: BookOpen, label: t('room.stage.topik') },
     { key: 'video', icon: Coffee, label: t('room.stage.studyTable') },
     { key: 'ideas', icon: ClipboardList, label: t('room.stage.ideas') },
+    { key: 'game', icon: Gamepad2, label: t('room.stage.game') },
   ]
 
   return (

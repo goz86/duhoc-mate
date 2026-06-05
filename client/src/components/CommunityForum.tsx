@@ -78,6 +78,16 @@ const CATEGORIES = [
 
 const MAX_POST_IMAGES = 3
 const MAX_POST_IMAGE_BYTES = 650_000
+const FORUM_HASH = '#forum'
+
+function getForumPostIdFromHash(hash = window.location.hash): string | null {
+  const match = hash.match(/^#forum\/post\/([^/?#]+)$/)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+function getForumPostHash(postId: string): string {
+  return `${FORUM_HASH}/post/${encodeURIComponent(postId)}`
+}
 
 function timeAgo(dateString: string): string {
   const date = new Date(dateString)
@@ -205,6 +215,12 @@ export default function CommunityForum({
     }
   }, [catFilter]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (!window.location.hash.startsWith(FORUM_HASH)) {
+      window.history.replaceState({ page: 'forum' }, '', FORUM_HASH)
+    }
+  }, [])
+
   // Increment views when post is selected (atomic via RPC)
   useEffect(() => {
     const client = supabase
@@ -310,10 +326,41 @@ export default function CommunityForum({
     }
   }
 
-  const handlePostClick = (post: CommunityPost) => {
+  const resetPostDetail = () => {
+    setSelectedPost(null)
+    setComments([])
+    setReplyToCommentId(null)
+    setReplyToDisplayName('')
+    setIsEditing(false)
+    setEditTitle('')
+    setEditContent('')
+  }
+
+  const openPostDetail = (post: CommunityPost, pushHistory = true) => {
     setSelectedPost(post)
     fetchComments(post.id)
+    if (pushHistory && window.location.hash !== getForumPostHash(post.id)) {
+      if (!window.location.hash.startsWith(FORUM_HASH)) {
+        window.history.replaceState({ page: 'forum' }, '', FORUM_HASH)
+      }
+      window.history.pushState({ page: 'forum-post', postId: post.id }, '', getForumPostHash(post.id))
+    }
     // View counting handled by the useEffect watching selectedPost?.id
+  }
+
+  const closePostDetail = () => {
+    if (selectedPost && window.location.hash === getForumPostHash(selectedPost.id)) {
+      if (window.history.state?.page === 'forum-post') {
+        window.history.back()
+        return
+      }
+      window.history.replaceState({ page: 'forum' }, '', FORUM_HASH)
+    }
+    resetPostDetail()
+  }
+
+  const handlePostClick = (post: CommunityPost) => {
+    openPostDetail(post)
   }
 
   const fetchComments = async (postId: string) => {
@@ -330,6 +377,30 @@ export default function CommunityForum({
       console.error('Error fetching comments:', err)
     }
   }
+
+  useEffect(() => {
+    const postId = getForumPostIdFromHash()
+    if (!postId || selectedPost?.id === postId) return
+    const post = posts.find(item => item.id === postId)
+    if (post) openPostDetail(post, false)
+  }, [posts, selectedPost?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const handleForumPopState = () => {
+      const postId = getForumPostIdFromHash()
+      if (!postId) {
+        resetPostDetail()
+        return
+      }
+      if (postId !== selectedPost?.id) {
+        const post = posts.find(item => item.id === postId)
+        if (post) openPostDetail(post, false)
+      }
+    }
+
+    window.addEventListener('popstate', handleForumPopState)
+    return () => window.removeEventListener('popstate', handleForumPopState)
+  }, [posts, selectedPost?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -738,7 +809,7 @@ export default function CommunityForum({
         {/* Sticky header */}
         <header className="sticky top-0 z-30 flex items-center gap-2 px-4 py-3 bg-white/85 backdrop-blur-md border-b border-brand-terracotta-light/15">
           <button
-            onClick={() => { setSelectedPost(null); setComments([]); setReplyToCommentId(null); }}
+            onClick={closePostDetail}
             className="grid h-10 w-10 place-items-center rounded-full text-brand-brown-dark hover:bg-brand-light transition active:scale-95"
             aria-label="Quay lại"
           >

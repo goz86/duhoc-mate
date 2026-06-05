@@ -1,4 +1,4 @@
-export type StageMode = 'youtube' | 'tiktok' | 'music' | 'pdf' | 'pomodoro' | 'topik' | 'video' | 'ideas';
+export type StageMode = 'youtube' | 'tiktok' | 'music' | 'pdf' | 'pomodoro' | 'topik' | 'video' | 'ideas' | 'game';
 
 export interface Member {
   id: string;

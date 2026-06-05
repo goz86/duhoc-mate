@@ -39,6 +39,7 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABA
 const ROOM_STATES_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/room_states`;
 const TOPIK_QUESTION_BANK_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/topik_question_bank`;
 const TOPIK_GAME_SESSIONS_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/topik_game_sessions`;
+const TOPIK_WORDS_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/topik_words`;
 const supabaseHeaders = () => ({
   apikey: SUPABASE_KEY,
   Authorization: `Bearer ${SUPABASE_KEY}`,
@@ -689,6 +690,78 @@ const TOPIK_GAME_QUESTIONS = [
 const topikGameTimers = new Map();
 let topikQuestionBankCache = { loadedAt: 0, questions: [] };
 const TOPIK_QUESTION_BANK_CACHE_MS = 5 * 60 * 1000;
+let vocabMatchWordCache = { loadedAt: 0, words: [] };
+const VOCAB_MATCH_WORD_CACHE_MS = 5 * 60 * 1000;
+
+const VOCAB_MATCH_ROUND_SECONDS = 15;
+const VOCAB_MATCH_MIN_SECONDS = 10;
+const VOCAB_MATCH_MAX_SECONDS = 20;
+const VOCAB_MATCH_PAIR_COUNT = 6;
+const VOCAB_MATCH_WORDS = [
+  { id: 'vm-001', level: 1, ko: '안녕하세요', vi: 'Xin chào' },
+  { id: 'vm-002', level: 1, ko: '감사합니다', vi: 'Cảm ơn' },
+  { id: 'vm-003', level: 1, ko: '죄송합니다', vi: 'Xin lỗi' },
+  { id: 'vm-004', level: 1, ko: '이름', vi: 'Tên' },
+  { id: 'vm-005', level: 1, ko: '학교', vi: 'Trường học' },
+  { id: 'vm-006', level: 1, ko: '선생님', vi: 'Giáo viên' },
+  { id: 'vm-007', level: 1, ko: '친구', vi: 'Bạn bè' },
+  { id: 'vm-008', level: 1, ko: '음식', vi: 'Món ăn' },
+  { id: 'vm-009', level: 1, ko: '가족', vi: 'Gia đình' },
+  { id: 'vm-010', level: 1, ko: '책', vi: 'Sách' },
+  { id: 'vm-011', level: 2, ko: '여행', vi: 'Du lịch' },
+  { id: 'vm-012', level: 2, ko: '날씨', vi: 'Thời tiết' },
+  { id: 'vm-013', level: 2, ko: '교통', vi: 'Giao thông' },
+  { id: 'vm-014', level: 2, ko: '문화', vi: 'Văn hóa' },
+  { id: 'vm-015', level: 2, ko: '경험', vi: 'Kinh nghiệm' },
+  { id: 'vm-016', level: 2, ko: '비교', vi: 'So sánh' },
+  { id: 'vm-017', level: 2, ko: '도서관', vi: 'Thư viện' },
+  { id: 'vm-018', level: 2, ko: '계절', vi: 'Mùa' },
+  { id: 'vm-019', level: 2, ko: '준비', vi: 'Chuẩn bị' },
+  { id: 'vm-020', level: 2, ko: '예약', vi: 'Đặt trước' },
+  { id: 'vm-021', level: 3, ko: '환경', vi: 'Môi trường' },
+  { id: 'vm-022', level: 3, ko: '경제', vi: 'Kinh tế' },
+  { id: 'vm-023', level: 3, ko: '사회', vi: 'Xã hội' },
+  { id: 'vm-024', level: 3, ko: '정치', vi: 'Chính trị' },
+  { id: 'vm-025', level: 3, ko: '과학기술', vi: 'Khoa học kỹ thuật' },
+  { id: 'vm-026', level: 3, ko: '전통', vi: 'Truyền thống' },
+  { id: 'vm-027', level: 3, ko: '광고', vi: 'Quảng cáo' },
+  { id: 'vm-028', level: 3, ko: '설명', vi: 'Giải thích' },
+  { id: 'vm-029', level: 3, ko: '상황', vi: 'Tình huống' },
+  { id: 'vm-030', level: 3, ko: '노력', vi: 'Nỗ lực' },
+  { id: 'vm-031', level: 4, ko: '복지', vi: 'Phúc lợi' },
+  { id: 'vm-032', level: 4, ko: '소통', vi: 'Giao tiếp' },
+  { id: 'vm-033', level: 4, ko: '갈등', vi: 'Mâu thuẫn' },
+  { id: 'vm-034', level: 4, ko: '해결', vi: 'Giải quyết' },
+  { id: 'vm-035', level: 4, ko: '자료', vi: 'Tài liệu' },
+  { id: 'vm-036', level: 4, ko: '원인', vi: 'Nguyên nhân' },
+  { id: 'vm-037', level: 4, ko: '결과', vi: 'Kết quả' },
+  { id: 'vm-038', level: 4, ko: '관점', vi: 'Quan điểm' },
+  { id: 'vm-039', level: 5, ko: '효율성', vi: 'Tính hiệu quả' },
+  { id: 'vm-040', level: 5, ko: '다양성', vi: 'Tính đa dạng' },
+  { id: 'vm-041', level: 5, ko: '가능성', vi: 'Khả năng' },
+  { id: 'vm-042', level: 5, ko: '책임감', vi: 'Tinh thần trách nhiệm' },
+  { id: 'vm-043', level: 5, ko: '경쟁력', vi: 'Năng lực cạnh tranh' },
+  { id: 'vm-044', level: 5, ko: '공동체', vi: 'Cộng đồng' },
+  { id: 'vm-045', level: 5, ko: '인식', vi: 'Nhận thức' },
+  { id: 'vm-046', level: 5, ko: '전망', vi: 'Triển vọng' },
+  { id: 'vm-047', level: 6, ko: '차별', vi: 'Phân biệt đối xử' },
+  { id: 'vm-048', level: 6, ko: '가치관', vi: 'Quan niệm giá trị' },
+  { id: 'vm-049', level: 6, ko: '지속가능성', vi: 'Tính bền vững' },
+  { id: 'vm-050', level: 6, ko: '양극화', vi: 'Phân hóa hai cực' },
+  { id: 'vm-051', level: 6, ko: '고령화', vi: 'Già hóa dân số' },
+  { id: 'vm-052', level: 6, ko: '자율성', vi: 'Tính tự chủ' }
+];
+
+const vocabMatchTimers = new Map();
+
+const shuffleItems = (items) => {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [result[index], result[randomIndex]] = [result[randomIndex], result[index]];
+  }
+  return result;
+};
 
 const createDefaultTopikGame = () => ({
   status: 'idle',
@@ -726,6 +799,203 @@ const ensureTopikGame = (room) => {
   if (!room.topikGame) room.topikGame = createDefaultTopikGame();
   return room.topikGame;
 };
+
+const createDefaultVocabMatchGame = () => ({
+  status: 'idle',
+  round: 0,
+  durationSec: VOCAB_MATCH_ROUND_SECONDS,
+  roundStartedAt: 0,
+  roundEndsAt: 0,
+  cards: [],
+  pairMap: {},
+  matchedPairIds: [],
+  players: {},
+  leaderboard: {},
+  lastResult: null
+});
+
+const ensureVocabMatchGame = (room) => {
+  if (!room.vocabMatchGame) room.vocabMatchGame = createDefaultVocabMatchGame();
+  return room.vocabMatchGame;
+};
+
+const normalizeVocabMatchDuration = (value) => {
+  const duration = Number(value);
+  if (!Number.isFinite(duration)) return VOCAB_MATCH_ROUND_SECONDS;
+  return Math.min(VOCAB_MATCH_MAX_SECONDS, Math.max(VOCAB_MATCH_MIN_SECONDS, Math.round(duration)));
+};
+
+const getVocabMatchPlayerName = (room, memberId) => {
+  const member = room.members.find(m => m.id === memberId);
+  return member?.username || room.vocabMatchGame?.players?.[memberId]?.username || 'Bạn học';
+};
+
+const normalizeVocabMatchWord = (word, index = 0) => ({
+  id: String(word.id || `${word.ko}-${word.level || index}`),
+  level: Number(word.level) || 1,
+  ko: String(word.ko || '').trim(),
+  vi: String(word.vi || word.en || '').trim()
+});
+
+const getVocabMatchWords = async () => {
+  const now = Date.now();
+  if (vocabMatchWordCache.words.length >= VOCAB_MATCH_PAIR_COUNT && now - vocabMatchWordCache.loadedAt < VOCAB_MATCH_WORD_CACHE_MS) {
+    return vocabMatchWordCache.words;
+  }
+
+  try {
+    const response = await fetch(`${TOPIK_WORDS_ENDPOINT}?select=id,ko,vi,en,level&order=created_at.desc&limit=500`, {
+      headers: supabaseHeaders()
+    });
+    if (response.ok) {
+      const rows = await response.json();
+      const seen = new Set();
+      const words = (Array.isArray(rows) ? rows : [])
+        .map(normalizeVocabMatchWord)
+        .filter(word => {
+          const key = `${word.ko}-${word.level}`;
+          if (!word.ko || !word.vi || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      if (words.length >= VOCAB_MATCH_PAIR_COUNT) {
+        vocabMatchWordCache = { loadedAt: now, words };
+        return words;
+      }
+    } else if (response.status !== 404) {
+      console.warn('[VocabMatch] topik_words fetch warning:', response.status, await response.text());
+    }
+  } catch (error) {
+    console.warn('[VocabMatch] topik_words fallback:', error.message);
+  }
+
+  const fallback = VOCAB_MATCH_WORDS.map(normalizeVocabMatchWord);
+  vocabMatchWordCache = { loadedAt: now, words: fallback };
+  return fallback;
+};
+
+const buildVocabMatchRound = (words = VOCAB_MATCH_WORDS) => {
+  const selectedWords = shuffleItems(words).slice(0, VOCAB_MATCH_PAIR_COUNT);
+  const pairMap = {};
+  const cards = selectedWords.flatMap((word, index) => {
+    const pairId = `${word.id}-${Date.now()}-${index}`;
+    const koCardId = `${pairId}-ko`;
+    const viCardId = `${pairId}-vi`;
+    pairMap[pairId] = { koCardId, viCardId };
+    return [
+      { id: koCardId, pairId, type: 'ko', text: word.ko, level: word.level },
+      { id: viCardId, pairId, type: 'vi', text: word.vi, level: word.level }
+    ];
+  });
+  return { cards: shuffleItems(cards), pairMap };
+};
+
+const publicVocabMatchGameState = (room) => {
+  const game = ensureVocabMatchGame(room);
+  const activeMemberIds = new Set(room.members.map(m => m.id));
+  const players = Object.entries(game.players || {})
+    .filter(([memberId]) => activeMemberIds.has(memberId))
+    .map(([memberId, player]) => ({
+      memberId,
+      username: getVocabMatchPlayerName(room, memberId),
+      ready: !!player.ready,
+      joinedAt: player.joinedAt || 0
+    }))
+    .sort((a, b) => a.joinedAt - b.joinedAt);
+  const leaderboard = Object.entries(game.leaderboard || {})
+    .filter(([memberId]) => activeMemberIds.has(memberId))
+    .map(([memberId, score]) => ({
+      memberId,
+      username: getVocabMatchPlayerName(room, memberId),
+      score: score.score || 0,
+      matches: score.matches || 0,
+      wrong: score.wrong || 0,
+      fastestMs: score.fastestMs || null,
+      lastMatchedAt: score.lastMatchedAt || null
+    }))
+    .sort((a, b) => b.score - a.score || b.matches - a.matches || a.username.localeCompare(b.username));
+
+  return {
+    status: game.status,
+    round: game.round,
+    durationSec: game.durationSec,
+    roundStartedAt: game.roundStartedAt,
+    roundEndsAt: game.roundEndsAt,
+    cards: game.cards || [],
+    matchedPairIds: game.matchedPairIds || [],
+    players,
+    leaderboard,
+    lastResult: game.lastResult || null,
+    wordBankSize: VOCAB_MATCH_WORDS.length
+  };
+};
+
+const emitVocabMatchGame = (roomId) => {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  io.to(roomId).emit('vocab-match-sync', publicVocabMatchGameState(room));
+};
+
+const clearVocabMatchTimers = (roomId) => {
+  const timers = vocabMatchTimers.get(roomId);
+  if (timers?.endTimer) clearTimeout(timers.endTimer);
+  if (timers?.nextTimer) clearTimeout(timers.nextTimer);
+  vocabMatchTimers.delete(roomId);
+};
+
+const removeVocabMatchPlayer = (room, memberId) => {
+  const game = ensureVocabMatchGame(room);
+  if (game.players?.[memberId]) delete game.players[memberId];
+};
+
+const startVocabMatchRound = async (roomId, durationSec) => {
+  let room = rooms.get(roomId);
+  if (!room) return;
+  const game = ensureVocabMatchGame(room);
+  const nextDuration = normalizeVocabMatchDuration(durationSec || game.durationSec);
+  const words = await getVocabMatchWords();
+  room = rooms.get(roomId);
+  if (!room) return;
+  const round = buildVocabMatchRound(words);
+  const now = Date.now();
+
+  room.vocabMatchGame = {
+    ...game,
+    status: 'playing',
+    round: (game.round || 0) + 1,
+    durationSec: nextDuration,
+    roundStartedAt: now,
+    roundEndsAt: now + nextDuration * 1000,
+    cards: round.cards,
+    pairMap: round.pairMap,
+    matchedPairIds: [],
+    players: game.players || {},
+    leaderboard: game.leaderboard || {},
+    lastResult: null
+  };
+
+  clearVocabMatchTimers(roomId);
+  const endTimer = setTimeout(() => finishVocabMatchRound(roomId), nextDuration * 1000);
+  vocabMatchTimers.set(roomId, { endTimer, nextTimer: null });
+  emitVocabMatchGame(roomId);
+};
+
+function finishVocabMatchRound(roomId) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  const game = ensureVocabMatchGame(room);
+  if (game.status !== 'playing') return;
+  game.status = 'round-ended';
+  game.roundEndsAt = Date.now();
+  game.lastResult = {
+    reason: 'time',
+    finishedAt: Date.now(),
+    winner: publicVocabMatchGameState(room).leaderboard[0] || null
+  };
+  const timers = vocabMatchTimers.get(roomId);
+  if (timers?.endTimer) clearTimeout(timers.endTimer);
+  emitVocabMatchGame(roomId);
+}
 
 const publicTopikQuestion = (question, revealed) => {
   if (!question) return null;
@@ -1142,6 +1412,8 @@ const scheduleEmptyRoomCleanup = (roomId) => {
     const room = rooms.get(roomId);
     if (room && room.members.length === 0) {
       rememberRoom(room);
+      clearVocabMatchTimers(roomId);
+      clearTopikGameTimer(roomId);
       rooms.delete(roomId);
       console.log(`Deleted inactive empty room after TTL: ${roomId}`);
       broadcastRoomDirectory();
@@ -1335,12 +1607,14 @@ io.on('connection', (socket) => {
         roomBackgroundUrl: restoredState.roomBackgroundUrl || '',
         whiteboard: { elements: [] },  // bảng vẽ chung: [{id,type:'stroke'|'image',...}]
         voiceUsers: {},  // { [socketId]: { muted, speaking, cameraOn } }
-        topikGame: createDefaultTopikGame()
+        topikGame: createDefaultTopikGame(),
+        vocabMatchGame: createDefaultVocabMatchGame()
       });
     }
 
     const room = rooms.get(roomId);
     ensureTopikGame(room);
+    ensureVocabMatchGame(room);
     cancelEmptyRoomCleanup(roomId);
     if (rememberedRoom && !roomTitle) {
       room.roomTitle = rememberedRoom.roomTitle || room.roomTitle;
@@ -1506,9 +1780,13 @@ io.on('connection', (socket) => {
 
     if (room.members.length === 0) {
       rememberRoom(room, removedMember.username);
+      clearVocabMatchTimers(roomId);
+      clearTopikGameTimer(roomId);
       rooms.delete(roomId);
       console.log(`Deleted empty room after leave-room: ${roomId}`);
     } else {
+      removeVocabMatchPlayer(room, socket.id);
+      emitVocabMatchGame(roomId);
       if (removedMember.isHost) {
         let candidate = room.members.find(m => m.role === 'cohost');
         if (!candidate) {
@@ -2170,6 +2448,151 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('vocab-match-subscribe', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    socket.emit('vocab-match-sync', publicVocabMatchGameState(room));
+  });
+
+  socket.on('vocab-match-action', ({ roomId, type, payload = {} }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const member = room.members.find(m => m.id === socket.id);
+    if (!member) return;
+    const game = ensureVocabMatchGame(room);
+
+    if (type === 'join' || type === 'ready') {
+      game.players[socket.id] = {
+        username: member.username || 'Bạn học',
+        ready: true,
+        joinedAt: game.players[socket.id]?.joinedAt || Date.now()
+      };
+      if (!game.leaderboard[socket.id]) {
+        game.leaderboard[socket.id] = {
+          username: member.username || 'Bạn học',
+          score: 0,
+          matches: 0,
+          wrong: 0,
+          fastestMs: null,
+          lastMatchedAt: null
+        };
+      }
+      emitVocabMatchGame(roomId);
+      return;
+    }
+
+    if (type === 'leave') {
+      removeVocabMatchPlayer(room, socket.id);
+      emitVocabMatchGame(roomId);
+      return;
+    }
+
+    if (type === 'start') {
+      game.players[socket.id] = {
+        username: member.username || 'Bạn học',
+        ready: true,
+        joinedAt: game.players[socket.id]?.joinedAt || Date.now()
+      };
+      void startVocabMatchRound(roomId, payload.durationSec);
+      return;
+    }
+
+    if (type === 'match') {
+      if (game.status !== 'playing') return;
+      const firstCardId = typeof payload.firstCardId === 'string' ? payload.firstCardId : '';
+      const secondCardId = typeof payload.secondCardId === 'string' ? payload.secondCardId : '';
+      if (!firstCardId || !secondCardId || firstCardId === secondCardId) return;
+
+      const firstCard = game.cards.find(card => card.id === firstCardId);
+      const secondCard = game.cards.find(card => card.id === secondCardId);
+      if (!firstCard || !secondCard) return;
+
+      game.players[socket.id] = {
+        username: member.username || 'Bạn học',
+        ready: true,
+        joinedAt: game.players[socket.id]?.joinedAt || Date.now()
+      };
+
+      const alreadyMatched = new Set(game.matchedPairIds || []);
+      const samePair = firstCard.pairId === secondCard.pairId;
+      const differentTypes = firstCard.type !== secondCard.type;
+      const canMatch = samePair && differentTypes && !alreadyMatched.has(firstCard.pairId);
+      const elapsedMs = Math.max(0, Date.now() - (game.roundStartedAt || Date.now()));
+      const currentScore = game.leaderboard[socket.id] || {
+        username: member.username || 'Bạn học',
+        score: 0,
+        matches: 0,
+        wrong: 0,
+        fastestMs: null,
+        lastMatchedAt: null
+      };
+
+      if (canMatch) {
+        const speedBonus = Math.max(0, 30 - Math.floor(elapsedMs / 500));
+        const points = 100 + speedBonus;
+        game.matchedPairIds = [...alreadyMatched, firstCard.pairId];
+        game.cards = game.cards.map(card => (
+          card.pairId === firstCard.pairId
+            ? { ...card, matchedBy: socket.id, matchedByName: member.username || 'Bạn học' }
+            : card
+        ));
+        game.leaderboard[socket.id] = {
+          ...currentScore,
+          username: member.username || currentScore.username,
+          score: (currentScore.score || 0) + points,
+          matches: (currentScore.matches || 0) + 1,
+          fastestMs: currentScore.fastestMs ? Math.min(currentScore.fastestMs, elapsedMs) : elapsedMs,
+          lastMatchedAt: Date.now()
+        };
+        game.lastResult = {
+          type: 'match',
+          memberId: socket.id,
+          username: member.username || 'Bạn học',
+          pairId: firstCard.pairId,
+          points
+        };
+      } else {
+        game.leaderboard[socket.id] = {
+          ...currentScore,
+          username: member.username || currentScore.username,
+          wrong: (currentScore.wrong || 0) + 1
+        };
+        game.lastResult = {
+          type: 'miss',
+          memberId: socket.id,
+          username: member.username || 'Bạn học'
+        };
+      }
+
+      const allMatched = (game.matchedPairIds || []).length >= Math.min(VOCAB_MATCH_PAIR_COUNT, Math.floor((game.cards || []).length / 2));
+      if (allMatched) {
+        game.status = 'round-ended';
+        game.roundEndsAt = Date.now();
+        game.lastResult = {
+          type: 'round-complete',
+          finishedAt: Date.now(),
+          winner: publicVocabMatchGameState(room).leaderboard[0] || null
+        };
+        const timers = vocabMatchTimers.get(roomId);
+        if (timers?.endTimer) clearTimeout(timers.endTimer);
+        emitVocabMatchGame(roomId);
+        return;
+      }
+
+      emitVocabMatchGame(roomId);
+      return;
+    }
+
+    if (type === 'reset') {
+      clearVocabMatchTimers(roomId);
+      room.vocabMatchGame = {
+        ...createDefaultVocabMatchGame(),
+        players: game.players || {}
+      };
+      emitVocabMatchGame(roomId);
+    }
+  });
+
   socket.on('idea-board-update', ({ roomId, tasks }) => {
     const room = rooms.get(roomId);
     if (!room) return;
@@ -2416,6 +2839,8 @@ io.on('connection', (socket) => {
       memberSocket?.leave(roomId);
     });
     rooms.delete(roomId);
+    clearVocabMatchTimers(roomId);
+    clearTopikGameTimer(roomId);
     clearHostTransferTimer(roomId);
     roomDirectory.delete(roomId);
     saveRoomDirectory();
@@ -2536,10 +2961,13 @@ io.on('connection', (socket) => {
         if (room.members.length === 0) {
           // Keep state briefly so browser refresh/reconnect does not reset the room.
           rememberRoom(room, removedMember.username);
+          removeVocabMatchPlayer(room, socket.id);
           scheduleEmptyRoomCleanup(roomId);
           console.log(`Room ${roomId} is empty; keeping state for quick reconnect.`);
         } else {
           // Nếu người rời đi là host, chuyển quyền host cho người kế tiếp
+          removeVocabMatchPlayer(room, socket.id);
+          emitVocabMatchGame(roomId);
           if (removedMember.isHost) {
             room.hostFriendCode = removedMember.friendCode || room.hostFriendCode || '';
             room.hostUsername = removedMember.username || room.hostUsername || '';
