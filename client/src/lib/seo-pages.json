@@ -1,6 +1,13 @@
 {
   "siteUrl": "https://www.duhocmate.com",
   "defaultImage": "https://www.duhocmate.com/og-image.png",
+  "crawlLinks": [
+    { "href": "/", "label": "Phòng học" },
+    { "href": "/#create-room", "label": "Tạo phòng học" },
+    { "href": "/#forum", "label": "Bảng tin" },
+    { "href": "https://app.duhocmate.com/", "label": "Tính lương" },
+    { "href": "https://chu-viet.vercel.app/", "label": "Luyện chữ" }
+  ],
   "pages": [
     {
       "path": "/",

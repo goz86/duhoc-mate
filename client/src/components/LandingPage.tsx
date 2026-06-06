@@ -39,7 +39,6 @@ import type { RoomTemplate } from '../lib/communityTemplates'
 import { supabase } from '../lib/supabase'
 import { downscaleImageToDataUrl } from '../lib/image'
 import { useAuth } from '../contexts/AuthContext'
-import type { SeoPage } from '../lib/seo'
 
 
 type ActiveRoom = {
@@ -98,7 +97,6 @@ type LandingPageProps = {
   isDarkMode: boolean
   toggleDarkMode: () => void
   onEnterAdmin: () => void
-  seoPage: SeoPage
 }
 
 export default function LandingPage({
@@ -130,7 +128,6 @@ export default function LandingPage({
   isDarkMode,
   toggleDarkMode,
   onEnterAdmin,
-  seoPage,
 }: LandingPageProps) {
   const { t } = useTranslation()
   const [homeView, setHomeView] = useState<'rooms' | 'board' | 'dashboard'>(showHelpBoard ? 'board' : 'rooms')
@@ -169,18 +166,17 @@ export default function LandingPage({
     if (showHelpBoard) setHomeView('board')
   }, [showHelpBoard])
 
+  useEffect(() => {
+    if (window.location.hash === '#create-room') {
+      setHomeView('rooms')
+      setShowCreateModal(true)
+    }
+  }, [])
+
   const displayName = profile?.username || username || 'Bạn học'
   const savedAvatar = profile?.avatar_url || ''
   const profileModalAvatar = profileAvatarPreview || savedAvatar
   const isSignedIn = !!user
-  const showSeoLandingContent = seoPage.path !== '/'
-  const publicSeoLinks = [
-    { href: '/topik', label: 'Luyện thi TOPIK' },
-    { href: '/phong-hoc-online', label: 'Phòng học online' },
-    { href: '/flashcard', label: 'Flashcard tiếng Hàn' },
-    { href: '/cong-dong', label: 'Cộng đồng' },
-    { href: '/pricing', label: 'Nâng cấp' },
-  ]
 
   useEffect(() => {
     if (showCreateModal) {
@@ -581,48 +577,9 @@ export default function LandingPage({
               <span className="relative z-10">{t('landing.nav.handwriting')}</span>
               <span className="absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/20 rounded-[8px_100%_12px_95%] skew-x-[-6deg] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-200 z-0" />
             </a>
-            {showSeoLandingContent && publicSeoLinks.map(link => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className={`shrink-0 whitespace-nowrap pb-2 text-sm font-black transition-all inline-flex items-center gap-1.5 relative group ${
-                    seoPage.path === link.href
-                      ? 'text-brand-brown-dark'
-                      : 'text-brand-brown-light hover:text-brand-brown-dark'
-                  }`}
-                >
-                  <span className="relative z-10">{link.label}</span>
-                  <span className={`absolute bottom-1 left-0 right-0 h-[7px] bg-brand-terracotta/20 rounded-[8px_100%_12px_95%] skew-x-[-6deg] origin-left transition-transform duration-200 z-0 ${
-                    seoPage.path === link.href ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                  }`} />
-                </a>
-              ))}
           </div>
 
         </div>
-
-        {showSeoLandingContent && (
-          <section className="mb-4 rounded-[28px] border border-brand-terracotta-light/20 bg-white/70 px-5 py-5 shadow-sm md:px-7 md:py-6">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-brand-terracotta">{seoPage.eyebrow}</p>
-            <h1 className="mt-2 font-display text-2xl font-black leading-tight text-brand-brown-dark md:text-4xl">
-              {seoPage.heading}
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm font-semibold leading-relaxed text-brand-brown-light md:text-base">
-              {seoPage.summary}
-            </p>
-            <nav aria-label="Liên kết SEO chính" className="mt-4 flex flex-wrap gap-2">
-              {publicSeoLinks.map(link => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="rounded-full border border-brand-terracotta-light/25 bg-[#fbf6ef] px-3 py-1.5 text-xs font-black text-brand-brown-light transition hover:border-brand-terracotta hover:text-brand-terracotta"
-                >
-                  {link.label}
-                </a>
-              ))}
-            </nav>
-          </section>
-        )}
 
         {homeView === 'board' ? (
           <section className="overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-sm flex flex-col min-h-[calc(100svh-118px)]">

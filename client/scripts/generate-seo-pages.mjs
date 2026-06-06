@@ -65,13 +65,17 @@ const buildNoscript = (page) => {
     .filter(item => item.path !== page.path)
     .map(item => `<li><a href="${item.path}">${escapeHtml(item.heading)}</a></li>`)
     .join('')
+  const crawlLinks = (seoData.crawlLinks || [])
+    .map(item => `<li><a href="${item.href}">${escapeHtml(item.label)}</a></li>`)
+    .join('')
 
   return `<noscript>
       <main>
         <p>${escapeHtml(page.eyebrow)}</p>
         <h1>${escapeHtml(page.heading)}</h1>
         <p>${escapeHtml(page.summary)}</p>
-        <nav aria-label="Trang quan trọng"><ul>${links}</ul></nav>
+        <nav aria-label="Liên kết chức năng"><ul>${crawlLinks}</ul></nav>
+        <nav aria-label="Trang SEO liên quan"><ul>${links}</ul></nav>
       </main>
     </noscript>
     <div id="root"></div>`

@@ -132,6 +132,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
   const [examDate, setExamDate] = useState<string>('')
   const [showDateInput, setShowDateInput] = useState(false)
   const [activeTab, setActiveTab] = useState<'flashcard' | 'grammar' | 'countdown' | 'exam'>('flashcard')
+  const [examTestingMode, setExamTestingMode] = useState(false)
 
   // ── AI states ──────────────────────────────────────────────────
   const [aiWords, setAiWords] = useState<TopikCard[]>([])
@@ -468,7 +469,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
   return (
     <div className="flex-1 flex flex-col gap-5 py-4">
       {/* Tab: Flashcard / Countdown */}
-      <div className="mx-auto w-full max-w-full overflow-x-auto px-1 sm:w-fit sm:overflow-visible sm:px-0">
+      <div className={`${examTestingMode && activeTab === 'exam' ? 'hidden' : 'mx-auto w-full max-w-full overflow-x-auto px-1 sm:w-fit sm:overflow-visible sm:px-0'}`}>
         <div className="flex w-max gap-1 rounded-full bg-brand-light/60 p-1 sm:w-fit">
           <button
             onClick={() => setActiveTab('flashcard')}
@@ -888,9 +889,9 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
         </div>
       )}
 
-      {activeTab === 'exam' && (
-        <TopikExamComponent roomId={roomId} isAdmin={isAdmin} />
-      )}
+      <div className={activeTab === 'exam' ? 'block' : 'hidden'}>
+        <TopikExamComponent roomId={roomId} isAdmin={isAdmin} onTestingChange={setExamTestingMode} />
+      </div>
 
       {activeTab === 'grammar' && (
         <TopikGrammarLab roomId={roomId} socket={socket} />

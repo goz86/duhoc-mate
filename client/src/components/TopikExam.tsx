@@ -17,9 +17,52 @@ import ConfirmDialog from './modals/ConfirmDialog'
 interface Props {
   roomId?: string
   isAdmin?: boolean
+  onTestingChange?: (isTesting: boolean) => void
 }
 
-export default function TopikExamComponent({ roomId, isAdmin }: Props) {
+const READING_INSTRUCTION_RANGES = [
+  { from: 1, to: 2, text: '[1~2] ( )에 들어갈 말로 가장 알맞은 것을 고르십시오.' },
+  { from: 3, to: 4, text: '[3~4] 밑줄 친 부분과 의미가 가장 비슷한 것을 고르십시오.' },
+  { from: 5, to: 8, text: '[5~8] 다음은 무엇에 대한 글인지 고르십시오.' },
+  { from: 9, to: 12, text: '[9~12] 다음 글 또는 그래프의 내용과 같은 것을 고르십시오.' },
+  { from: 13, to: 15, text: '[13~15] 다음을 순서에 맞게 배열한 것을 고르십시오.' },
+  { from: 16, to: 18, text: '[16~18] ( )에 들어갈 말로 가장 알맞은 것을 고르십시오.' },
+  { from: 19, to: 20, text: '[19~20] 다음을 읽고 물음에 답하십시오.' },
+  { from: 21, to: 22, text: '[21~22] 다음을 읽고 물음에 답하십시오.' },
+  { from: 23, to: 24, text: '[23~24] 다음을 읽고 물음에 답하십시오.' },
+  { from: 25, to: 27, text: '[25~27] 다음 신문 기사의 제목을 가장 잘 설명한 것을 고르십시오.' },
+  { from: 28, to: 31, text: '[28~31] ( )에 들어갈 말로 가장 알맞은 것을 고르십시오.' },
+  { from: 32, to: 34, text: '[32~34] 다음을 읽고 글의 내용과 같은 것을 고르십시오.' },
+  { from: 35, to: 38, text: '[35~38] 다음을 읽고 글의 주제로 가장 알맞은 것을 고르십시오.' },
+  { from: 39, to: 41, text: '[39~41] 주어진 문장이 들어갈 곳으로 가장 알맞은 것을 고르십시오.' },
+  { from: 42, to: 43, text: '[42~43] 다음을 읽고 물음에 답하십시오.' },
+  { from: 44, to: 45, text: '[44~45] 다음을 읽고 물음에 답하십시오.' },
+  { from: 46, to: 47, text: '[46~47] 다음을 읽고 물음에 답하십시오.' },
+  { from: 48, to: 50, text: '[48~50] 다음을 읽고 물음에 답하십시오.' },
+]
+
+function getExamDisplayTitle(exam: TopikExam) {
+  const titleNumber = exam.title.match(/(?:Kỳ|Số)\s*(\d+)/i)?.[1]
+  const number = titleNumber || exam.exam_number
+  const category = exam.category === 'reading' ? 'Đọc' : 'Nghe'
+  return number ? `Đề ${number} · ${category}` : exam.title
+}
+
+function getQuestionInstruction(exam: TopikExam, question: TopikExamQuestion) {
+  if (exam.category === 'reading' && question.question_text?.trim()) {
+    return `${question.question_number}. ${question.question_text.trim()}`
+  }
+
+  if (exam.category === 'reading') {
+    const match = READING_INSTRUCTION_RANGES.find(
+      range => question.question_number >= range.from && question.question_number <= range.to
+    )
+    if (match) return match.text
+  }
+  return question.instructions
+}
+
+export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }: Props) {
   
   // ── States ──────────────────────────────────────────────────────
   const [exams, setExams] = useState<TopikExam[]>([])
@@ -57,6 +100,74 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
   // Image zoom state (cho đề thi dạng ảnh PDF)
   const [imageZoomed, setImageZoomed] = useState(false)
   const [imageFitMode, setImageFitMode] = useState<'width' | 'height'>('height')
+  const cbtSessionKey = `topik-cbt-session:${roomId || 'solo'}`
+  const [sessionHydrated, setSessionHydrated] = useState(false)
+
+  useEffect(() => {
+    onTestingChange?.(isTesting)
+  }, [isTesting, onTestingChange])
+
+  useEffect(() => {
+    return () => onTestingChange?.(false)
+  }, [onTestingChange])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(cbtSessionKey)
+      if (!raw) return
+
+      const saved = JSON.parse(raw)
+      if (!saved?.isTesting || !saved?.selectedExam || !Array.isArray(saved?.questions)) return
+
+      const elapsed = saved.isFinished ? 0 : Math.floor((Date.now() - Number(saved.savedAt || Date.now())) / 1000)
+      const restoredTimeLeft = Math.max(0, Number(saved.timeLeft || 0) - elapsed)
+
+      setSelectedExam(saved.selectedExam)
+      setQuestions(saved.questions)
+      setAnswers(saved.answers || {})
+      setPlayCount(saved.playCount || {})
+      setActiveQuestionIdx(Math.min(Number(saved.activeQuestionIdx || 0), Math.max(saved.questions.length - 1, 0)))
+      setTimeLeft(restoredTimeLeft)
+      setIsFinished(Boolean(saved.isFinished) || restoredTimeLeft === 0)
+      setIsTesting(true)
+    } catch {
+      localStorage.removeItem(cbtSessionKey)
+    } finally {
+      setSessionHydrated(true)
+    }
+  }, [cbtSessionKey])
+
+  useEffect(() => {
+    if (!sessionHydrated) return
+
+    if (!isTesting || !selectedExam || questions.length === 0) {
+      localStorage.removeItem(cbtSessionKey)
+      return
+    }
+
+    localStorage.setItem(cbtSessionKey, JSON.stringify({
+      isTesting,
+      selectedExam,
+      questions,
+      activeQuestionIdx,
+      answers,
+      playCount,
+      isFinished,
+      timeLeft,
+      savedAt: Date.now(),
+    }))
+  }, [
+    sessionHydrated,
+    cbtSessionKey,
+    isTesting,
+    selectedExam,
+    questions,
+    activeQuestionIdx,
+    answers,
+    playCount,
+    isFinished,
+    timeLeft,
+  ])
 
   // Sync playback speed with HTML5 audio player
   useEffect(() => {
@@ -174,8 +285,8 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
     }
 
     const currentCount = playCount[qNum] || 0
-    if (currentCount >= 2) {
-      alert('Đề thi thật chỉ cho phép nghe tối đa 2 lần câu hỏi này.')
+    if (currentCount >= 5) {
+      alert('Hệ thống chỉ cho phép nghe tối đa 5 lần câu hỏi này.')
       return
     }
 
@@ -228,8 +339,8 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
 
   const handlePlayRealAudio = (audioUrl: string, qNum: number) => {
     const currentCount = playCount[qNum] || 0
-    if (currentCount >= 2) {
-      alert('Đề thi thật chỉ cho phép nghe tối đa 2 lần câu hỏi này.')
+    if (currentCount >= 5) {
+      alert('Hệ thống chỉ cho phép nghe tối đa 5 lần câu hỏi này.')
       return
     }
 
@@ -450,6 +561,13 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
     return answers[q.question_number] === q.correct_option ? count + 1 : count
   }, 0)
   const scorePercent = questions.length ? Math.round((correctCount / questions.length) * 100) : 0
+  const activeQuestion = questions[activeQuestionIdx]
+  const activeInstruction = selectedExam && activeQuestion ? getQuestionInstruction(selectedExam, activeQuestion) : ''
+  const useCompactImageChoices = Boolean(
+    selectedExam?.category === 'listening'
+    && activeQuestion?.audio_script?.startsWith('/topik_exams/')
+    && activeQuestion.question_number <= 3
+  )
 
   // ── Format Timer ────────────────────────────────────────────────
   const formatTime = (seconds: number) => {
@@ -459,7 +577,7 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
   }
 
   return (
-    <div className="flex-1 flex flex-col gap-5 py-4 w-full">
+    <div className="flex-1 flex flex-col gap-3 py-3 w-full">
       {errorMsg && (
         <div className="w-full max-w-2xl mx-auto px-4 py-3 rounded-2xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-center gap-2">
           <AlertCircle size={15} /> <span>{errorMsg}</span>
@@ -475,39 +593,39 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
           CBT TEST ROOM (Đang thi thử hoặc Đã xong xem kết quả)
           ───────────────────────────────────────────────────────────── */}
       {isTesting && selectedExam && (
-        <div className="w-full max-w-7xl mx-auto flex flex-col gap-4 px-3 sm:px-0">
+        <div className="w-full max-w-7xl mx-auto flex flex-col gap-3 px-3 sm:px-0">
           {/* Header thi thử */}
-          <div className="flex flex-col gap-3 p-4 rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-lg backdrop-blur">
-            <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex flex-col gap-2 px-3 py-2.5 rounded-2xl border border-brand-terracotta-light/15 bg-white/95 shadow-sm backdrop-blur">
+            <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleExitTest}
-                  className="p-2 rounded-full hover:bg-brand-light text-brand-brown-light hover:text-brand-brown-dark transition cursor-pointer"
+                  className="p-1.5 rounded-full hover:bg-brand-light text-brand-brown-light hover:text-brand-brown-dark transition cursor-pointer"
                   title="Thoát phòng thi"
                 >
                   <ArrowLeft size={16} />
                 </button>
-                <div className="min-w-0">
-                  <h3 className="font-display font-black text-base sm:text-lg text-brand-brown-dark leading-snug truncate">
-                    {selectedExam.title}
+                <div className="min-w-0" title={selectedExam.title}>
+                  <h3 className="font-display font-black text-xs sm:text-sm text-brand-brown-dark leading-tight truncate max-w-[42vw]">
+                    {getExamDisplayTitle(selectedExam)}
                   </h3>
-                  <p className="text-xs text-brand-brown-light uppercase tracking-wider font-bold">
-                    CBT Mode · TOPIK {selectedExam.level === 1 ? 'I' : 'II'} {selectedExam.category === 'reading' ? 'Đọc' : 'Nghe'}
+                  <p className="hidden sm:block text-[10px] text-brand-brown-light uppercase tracking-wider font-bold truncate max-w-[42vw]">
+                    CBT Mode
                   </p>
                 </div>
               </div>
 
               {/* Đồng hồ & Nộp bài */}
-              <div className="flex items-center gap-3 ml-auto">
+              <div className="flex items-center gap-2 ml-auto shrink-0">
                 {!isFinished ? (
                   <>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-terracotta/10 text-brand-terracotta text-sm font-black border border-brand-terracotta/20 animate-pulse">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-terracotta/10 text-brand-terracotta text-xs sm:text-sm font-black border border-brand-terracotta/20 animate-pulse">
                       <Clock size={14} />
                       <span>{formatTime(timeLeft)}</span>
                     </div>
                     <button
                       onClick={() => handleFinishTest()}
-                      className="px-4 py-2 rounded-full bg-brand-terracotta text-white text-xs font-black hover:bg-brand-brown-dark transition cursor-pointer shadow flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-full bg-brand-terracotta text-white text-xs font-black hover:bg-brand-brown-dark transition cursor-pointer shadow flex items-center gap-1.5"
                     >
                       <Send size={12} />
                       Nộp bài
@@ -523,11 +641,11 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
 
             {/* Tiến độ hoàn thành bài thi */}
             <div className="w-full">
-              <div className="flex justify-between text-[11px] font-bold text-brand-brown-light mb-1">
+              <div className="flex justify-between text-[10px] font-bold text-brand-brown-light mb-1">
                 <span>Tiến độ: {Object.keys(answers).length}/{questions.length} câu</span>
                 <span>{Math.round((Object.keys(answers).length / questions.length) * 100)}%</span>
               </div>
-              <div className="h-2 bg-brand-light rounded-full overflow-hidden">
+              <div className="h-1.5 bg-brand-light rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-emerald-400 to-brand-terracotta transition-all duration-300"
                   style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
@@ -559,7 +677,7 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
           )}
 
           {/* Khung thi chính dạng Split Screen */}
-          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-5 items-stretch w-full lg:h-[calc(100vh-180px)] min-h-[500px]">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.25fr)_minmax(300px,0.75fr)] gap-4 items-stretch w-full lg:h-[calc(100vh-112px)] min-h-[560px]">
             {/* Cột 1 (Bên trái): Đề thi hoặc Bài đọc (Cuộn độc lập trên desktop) */}
             {questions[activeQuestionIdx] && (
               <div className="flex flex-col gap-4 w-full lg:h-full lg:overflow-hidden pr-0 lg:pr-2">
@@ -594,9 +712,9 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
                   <>
                     {/* ── 1. ĐỀ BÀI (ẢNH HOẶC TEXT) ───────────────── */}
                     {questions[activeQuestionIdx].audio_script?.startsWith('/topik_exams/') ? (
-                      <div className="rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md overflow-hidden flex flex-col flex-1 min-h-0">
+                      <div className="rounded-2xl border border-brand-terracotta-light/15 bg-white/95 shadow-md overflow-hidden flex flex-col flex-1 min-h-0">
                         {/* Toolbar ảnh */}
-                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-brand-terracotta-light/10 bg-brand-light/40 flex-shrink-0">
+                        <div className="flex items-center justify-between px-3 py-2 border-b border-brand-terracotta-light/10 bg-brand-light/40 flex-shrink-0">
                           <div className="flex items-center gap-2">
                             <BookOpen size={14} className="text-brand-terracotta" />
                             <span className="text-xs font-black text-brand-brown-dark">
@@ -608,7 +726,7 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
                             {/* Nút chuyển chế độ xem */}
                             <button
                               onClick={() => setImageFitMode(prev => prev === 'height' ? 'width' : 'height')}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-brand-terracotta text-[11px] font-black transition cursor-pointer"
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-brand-terracotta text-[11px] font-black transition cursor-pointer"
                               title={imageFitMode === 'height' ? "Phóng to chữ (Rộng ngang)" : "Hiện toàn bộ trang (Vừa màn hình)"}
                             >
                               {imageFitMode === 'height' ? <ZoomIn size={12} /> : <ZoomIn size={12} className="rotate-180" />}
@@ -617,7 +735,7 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
                             
                             <button
                               onClick={() => setImageZoomed(true)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-brand-terracotta text-[11px] font-black transition cursor-pointer"
+                              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-brand-terracotta text-[11px] font-black transition cursor-pointer"
                               title="Xem ảnh toàn màn hình"
                             >
                               <Maximize2 size={12} /> Toàn màn hình
@@ -649,7 +767,8 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
                       </div>
                     ) : (
                       /* ── CHẾ ĐỘ TEXT (Đề thi AI tạo) ───────────────── */
-                      <div className="p-5 rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md flex flex-col gap-4 min-h-[200px]">
+                      <div className="p-4 rounded-2xl border border-brand-terracotta-light/15 bg-white/95 shadow-md flex flex-col gap-3 min-h-[200px]">
+                        {/* Instructions */}
                         {/* Instructions */}
                         <div className="p-3 rounded-2xl bg-brand-light/65 border border-brand-terracotta-light/10 text-xs sm:text-sm font-black text-brand-brown-dark leading-relaxed">
                           {questions[activeQuestionIdx].instructions}
@@ -688,7 +807,7 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
                             </div>
 
                             <p className="text-[11px] font-bold text-brand-brown-light">
-                              Lượt đã nghe: <span className="text-brand-terracotta font-black">{playCount[questions[activeQuestionIdx].question_number] || 0}</span> / 2 lần tối đa
+                              Lượt đã nghe: <span className="text-brand-terracotta font-black">{playCount[questions[activeQuestionIdx].question_number] || 0}</span> / 5 lần tối đa
                             </p>
                           </div>
                         )}
@@ -708,10 +827,10 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
                     )}
 
                     {/* ── 2. KHUNG CHỌN ĐÁP ÁN NHANH (BÊN DƯỚI ĐỀ BÀI) ───────────────── */}
-                    <div className="p-5 rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md flex flex-col gap-3">
+                    <div className="p-4 rounded-2xl border border-brand-terracotta-light/15 bg-white/95 shadow-md flex flex-col gap-3">
                       <div className="flex items-center justify-between border-b border-brand-terracotta-light/10 pb-2">
-                        <p className="text-xs font-black text-brand-brown-light uppercase tracking-wider">
-                          {isFinished ? 'KẾT QUẢ ĐÁP ÁN' : `Chọn đáp án cho câu ${questions[activeQuestionIdx].question_number}`}
+                        <p className="text-xs font-black text-brand-brown-dark tracking-wide leading-relaxed">
+                          {isFinished ? 'Kết quả đáp án' : activeInstruction}
                         </p>
                         {isFinished && (
                           <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full ${
@@ -725,9 +844,9 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
                       </div>
 
                       {/* 4 Choices */}
-                      {questions[activeQuestionIdx].options && questions[activeQuestionIdx].options.some(opt => opt && opt.trim() !== '') ? (
+                      {!useCompactImageChoices && questions[activeQuestionIdx].options && questions[activeQuestionIdx].options.some(opt => opt && opt.trim() !== '') ? (
                         /* Hiển thị đầy đủ chữ tiếng Hàn để đọc nếu options có nội dung */
-                        <div className="flex flex-col gap-2.5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                           {questions[activeQuestionIdx].options.map((opt, oIdx) => {
                             const optNum = oIdx + 1
                             const isSelected = answers[questions[activeQuestionIdx].question_number] === optNum
@@ -756,7 +875,7 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
                                     [questions[activeQuestionIdx].question_number]: optNum
                                   }))
                                 }}
-                                className={`w-full text-left px-4 py-3.5 rounded-2xl border transition-all text-sm font-bold flex items-center gap-3 cursor-pointer ${btnStyle}`}
+                                className={`w-full text-left px-4 py-2.5 rounded-2xl border transition-all text-sm font-bold flex items-center gap-3 cursor-pointer ${btnStyle}`}
                               >
                                 <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-black border flex-shrink-0 ${
                                   isSelected ? 'bg-white/20 border-white' : 'border-brand-terracotta-light/20 bg-brand-cream/60'
@@ -848,17 +967,11 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
 
             {/* Cột 2 (Bên phải): Lưới 50 câu hỏi & Đồng hồ & Trình phát Audio nghe */}
             {questions[activeQuestionIdx] && (
-              <div className="flex flex-col gap-4 w-full lg:h-full lg:overflow-y-auto pl-0 lg:pl-2">
+              <div className="flex flex-col gap-3 w-full lg:h-full lg:overflow-y-auto pl-0 lg:pl-1">
                 
                 {/* ── REAL AUDIO PLAYER (Dành cho đề nghe chính thức có file mp3) ── */}
                 {selectedExam.category === 'listening' && questions[activeQuestionIdx].passage?.endsWith('.mp3') && (
-                  <div className="p-5 rounded-3xl border border-brand-terracotta-light/15 bg-brand-cream shadow-md flex flex-col gap-3">
-                    <div className="flex items-center gap-2 border-b border-brand-terracotta-light/10 pb-2">
-                      <Headphones size={16} className="text-brand-terracotta" />
-                      <span className="text-xs font-black text-brand-brown-dark uppercase tracking-wider">
-                        Băng nghe câu {questions[activeQuestionIdx].question_number}
-                      </span>
-                    </div>
+                  <div className="p-4 rounded-2xl border border-brand-terracotta-light/15 bg-brand-cream shadow-md flex flex-col gap-3">
 
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -890,7 +1003,7 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
 
                         {/* Play count */}
                         <span className="text-[11px] font-bold text-brand-brown-light">
-                          Đã nghe: <span className="text-brand-terracotta font-black">{playCount[questions[activeQuestionIdx].question_number] || 0}</span>/2
+                          Đã nghe: <span className="text-brand-terracotta font-black">{playCount[questions[activeQuestionIdx].question_number] || 0}</span>/5
                         </span>
                       </div>
 
@@ -915,54 +1028,14 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
                   </div>
                 )}
 
-                {/* Bảng trạng thái phòng thi (Đồng hồ & Nộp bài/Exit) */}
-                <div className="p-5 rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md flex flex-col gap-3">
-                  <div className="flex items-center justify-between border-b border-brand-terracotta-light/10 pb-2">
-                    <p className="text-xs font-black text-brand-brown-light uppercase tracking-wider">
-                      Trạng thái phòng thi
-                    </p>
-                    {isFinished && (
-                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                        Đã nộp bài
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center justify-between py-1">
-                    <div className="flex items-center gap-1.5 text-brand-brown-dark font-black text-sm">
-                      <Clock size={16} className="text-brand-terracotta" />
-                      <span>{isFinished ? 'ĐÃ KẾT THÚC' : formatTime(timeLeft)}</span>
-                    </div>
-                    <span className="text-xs font-bold text-brand-brown-light">
-                      Đã làm: {Object.keys(answers).length}/{questions.length} câu
-                    </span>
-                  </div>
-
-                  {!isFinished ? (
-                    <button
-                      onClick={() => handleFinishTest()}
-                      className="w-full mt-1 py-2.5 rounded-xl bg-brand-terracotta hover:bg-brand-brown-dark text-white text-xs font-black transition cursor-pointer shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
-                    >
-                      <Send size={12} /> Nộp bài thi (Submit)
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleExitTest}
-                      className="w-full mt-1 py-2.5 rounded-xl bg-brand-brown-dark hover:bg-brand-terracotta text-white text-xs font-black transition cursor-pointer shadow-sm active:scale-95"
-                    >
-                      Trở về danh sách
-                    </button>
-                  )}
-                </div>
-
                 {/* Bảng lưới câu hỏi (Sidebar) */}
-                <div className="flex flex-col gap-3 p-4 rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md flex-1">
+                <div className="flex flex-col gap-3 p-4 rounded-2xl border border-brand-terracotta-light/15 bg-white/95 shadow-md flex-1 min-h-0">
                   <h4 className="text-xs font-black text-brand-brown-dark uppercase tracking-wider text-center border-b border-brand-terracotta-light/10 pb-2">
                     Bảng Câu Hỏi
                   </h4>
 
                   {/* Lưới các nút số */}
-                  <div className="grid grid-cols-5 gap-2 justify-items-center overflow-y-auto max-h-[350px] p-1">
+                  <div className="grid grid-cols-5 gap-2 justify-items-center overflow-y-auto max-h-none lg:flex-1 p-1">
                     {questions.map((q, idx) => {
                       const qNum = q.question_number
                       const hasAnswered = answers[qNum] !== undefined

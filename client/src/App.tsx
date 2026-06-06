@@ -3086,7 +3086,6 @@ export default function App() {
             isDarkMode={isDarkMode}
             toggleDarkMode={toggleDarkMode}
             onEnterAdmin={() => setView('admin')}
-            seoPage={currentSeoPage}
           />
         </Suspense>
       )}
