@@ -1,0 +1,60 @@
+{
+  "siteUrl": "https://www.duhocmate.com",
+  "defaultImage": "https://www.duhocmate.com/og-image.png",
+  "pages": [
+    {
+      "path": "/",
+      "title": "Duhoc Mate - Phòng học online & luyện thi TOPIK cho du học sinh Hàn",
+      "description": "Tạo phòng học online, nghe nhạc cùng nhau, luyện TOPIK, flashcard tiếng Hàn và học nhóm realtime cùng bạn bè.",
+      "heading": "Duhoc Mate",
+      "eyebrow": "Không gian học nhóm cho du học sinh Việt tại Hàn",
+      "summary": "Duhoc Mate giúp bạn tạo phòng học online, đồng bộ nhạc YouTube, trò chuyện, học TOPIK và giữ nhịp tự học cùng bạn bè.",
+      "keywords": ["duhoc mate", "phòng học online", "luyện thi topik", "du học hàn quốc", "học nhóm online"]
+    },
+    {
+      "path": "/topik",
+      "title": "Luyện thi TOPIK online - Ngữ pháp, từ vựng và đề thi | Duhoc Mate",
+      "description": "Ôn luyện TOPIK I, TOPIK II với ngữ pháp, từ vựng, câu hỏi luyện nhanh, sổ lỗi sai và game học tiếng Hàn trong phòng học.",
+      "heading": "Luyện thi TOPIK online",
+      "eyebrow": "TOPIK I, TOPIK II và ngữ pháp tiếng Hàn",
+      "summary": "Học ngữ pháp theo cấp độ, luyện câu hỏi nhanh, lưu lỗi sai cá nhân và chơi game TOPIK cùng bạn bè ngay trong phòng học.",
+      "keywords": ["luyện thi topik", "topik online", "ngữ pháp tiếng hàn", "từ vựng tiếng hàn", "thi thử topik"]
+    },
+    {
+      "path": "/phong-hoc-online",
+      "title": "Phòng học online realtime cho nhóm bạn | Duhoc Mate",
+      "description": "Tạo phòng học riêng, đồng bộ nhạc, video, chat, Pomodoro, bảng ý tưởng và cùng nhau học tập realtime trên Duhoc Mate.",
+      "heading": "Phòng học online realtime",
+      "eyebrow": "Học cùng bạn bè, giữ tập trung mỗi ngày",
+      "summary": "Mỗi phòng có nhạc chung, danh sách phát, chat, tài liệu, Pomodoro và các công cụ học nhóm để bạn duy trì thói quen học tập.",
+      "keywords": ["phòng học online", "học nhóm online", "study room", "pomodoro online", "nghe nhạc cùng nhau"]
+    },
+    {
+      "path": "/flashcard",
+      "title": "Flashcard tiếng Hàn và Spaced Repetition | Duhoc Mate",
+      "description": "Học từ vựng tiếng Hàn bằng flashcard, ôn tập lặp lại ngắt quãng và kết hợp luyện TOPIK trong cùng một không gian học.",
+      "heading": "Flashcard tiếng Hàn",
+      "eyebrow": "Ghi nhớ từ vựng bền hơn",
+      "summary": "Duhoc Mate hướng tới hệ flashcard và ôn tập ngắt quãng để giúp bạn ghi nhớ từ vựng tiếng Hàn khi luyện TOPIK.",
+      "keywords": ["flashcard tiếng hàn", "từ vựng tiếng hàn", "spaced repetition", "học từ vựng topik"]
+    },
+    {
+      "path": "/cong-dong",
+      "title": "Cộng đồng du học sinh Việt tại Hàn | Duhoc Mate",
+      "description": "Tham gia cộng đồng chia sẻ kinh nghiệm học tiếng Hàn, luyện TOPIK, đời sống du học và tìm bạn học cùng trên Duhoc Mate.",
+      "heading": "Cộng đồng du học sinh",
+      "eyebrow": "Chia sẻ kinh nghiệm, tìm bạn học cùng",
+      "summary": "Bảng tin cộng đồng giúp bạn hỏi đáp, chia sẻ kinh nghiệm du học Hàn Quốc và kết nối với những người đang học cùng mục tiêu.",
+      "keywords": ["cộng đồng du học sinh", "du học sinh việt tại hàn", "kinh nghiệm du học hàn", "học tiếng hàn"]
+    },
+    {
+      "path": "/pricing",
+      "title": "Nâng cấp tài khoản Duhoc Mate - Gói học tập và phòng riêng",
+      "description": "Khám phá các gói nâng cấp Duhoc Mate cho phòng học riêng, công cụ học tập nâng cao và trải nghiệm học nhóm tốt hơn.",
+      "heading": "Nâng cấp tài khoản",
+      "eyebrow": "Mở rộng trải nghiệm học tập",
+      "summary": "Trang nâng cấp dành cho người dùng muốn nhiều quyền kiểm soát phòng học, tính năng học tập nâng cao và trải nghiệm cá nhân hơn.",
+      "keywords": ["duhoc mate pricing", "nâng cấp tài khoản", "gói học tập", "phòng học riêng"]
+    }
+  ]
+}

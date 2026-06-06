@@ -4,6 +4,11 @@
   "installCommand": "echo 'skip root install'",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/topik", "destination": "/topik/index.html" },
+    { "source": "/phong-hoc-online", "destination": "/phong-hoc-online/index.html" },
+    { "source": "/flashcard", "destination": "/flashcard/index.html" },
+    { "source": "/cong-dong", "destination": "/cong-dong/index.html" },
+    { "source": "/pricing", "destination": "/pricing/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

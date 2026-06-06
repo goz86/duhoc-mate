@@ -222,11 +222,11 @@ export default function TopikExamComponent({ roomId, isAdmin }: Props) {
     // Auto play Q1
     const firstQ = qList[0]
     if (firstQ && firstQ.passage && firstQ.passage.endsWith('.mp3')) {
-      handlePlayRealAudio(firstQ.passage, firstQ.question_number, qList)
+      handlePlayRealAudio(firstQ.passage, firstQ.question_number)
     }
   }
 
-  const handlePlayRealAudio = (audioUrl: string, qNum: number, currentQs = questions) => {
+  const handlePlayRealAudio = (audioUrl: string, qNum: number) => {
     const currentCount = playCount[qNum] || 0
     if (currentCount >= 2) {
       alert('Đề thi thật chỉ cho phép nghe tối đa 2 lần câu hỏi này.')

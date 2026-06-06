@@ -55,6 +55,14 @@ import {
   parseSyncedLyrics,
   type LyricLine
 } from './lib/lyrics';
+import {
+  buildBreadcrumbSchema,
+  buildSoftwareApplicationSchema,
+  buildWebsiteSchema,
+  getCanonicalUrl,
+  getSeoPage,
+  seoConfig,
+} from './lib/seo';
 
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const CreateTemplateModal = lazy(() => import('./components/CreateTemplateModal'));
@@ -163,6 +171,8 @@ export default function App() {
   const { t } = useTranslation();
   const { user, profile, signOut, updateProfile, loading } = useAuth();
   const [relatedGenre, setRelatedGenre] = useState('');
+  const [currentPathname, setCurrentPathname] = useState(() => window.location.pathname);
+  const currentSeoPage = getSeoPage(currentPathname);
 
   // Dragging logic for the global floating widget
   const [widgetPosition, setWidgetPosition] = useState({ x: 0, y: 0 });
@@ -215,6 +225,52 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [customAlert]);
+
+  useEffect(() => {
+    const updatePathname = () => setCurrentPathname(window.location.pathname);
+    window.addEventListener('popstate', updatePathname);
+    return () => window.removeEventListener('popstate', updatePathname);
+  }, []);
+
+  useEffect(() => {
+    const canonicalUrl = getCanonicalUrl(currentPathname);
+    const schemas = [
+      buildWebsiteSchema(),
+      buildSoftwareApplicationSchema(),
+      buildBreadcrumbSchema(currentPathname),
+    ];
+
+    document.title = currentSeoPage.title;
+
+    const setMeta = (selector: string, attribute: 'content' | 'href', value: string) => {
+      const element = document.querySelector(selector);
+      if (element) element.setAttribute(attribute, value);
+    };
+
+    setMeta('meta[name="title"]', 'content', currentSeoPage.title);
+    setMeta('meta[name="description"]', 'content', currentSeoPage.description);
+    setMeta('meta[name="keywords"]', 'content', currentSeoPage.keywords.join(', '));
+    setMeta('link[rel="canonical"]', 'href', canonicalUrl);
+    setMeta('meta[property="og:url"]', 'content', canonicalUrl);
+    setMeta('meta[property="og:title"]', 'content', currentSeoPage.title);
+    setMeta('meta[property="og:description"]', 'content', currentSeoPage.description);
+    setMeta('meta[property="og:image"]', 'content', seoConfig.defaultImage);
+    setMeta('meta[name="twitter:url"]', 'content', canonicalUrl);
+    setMeta('meta[name="twitter:title"]', 'content', currentSeoPage.title);
+    setMeta('meta[name="twitter:description"]', 'content', currentSeoPage.description);
+    setMeta('meta[name="twitter:image"]', 'content', seoConfig.defaultImage);
+
+    const schemaNode = document.getElementById('duhocmate-runtime-schema');
+    if (schemaNode) {
+      schemaNode.textContent = JSON.stringify(schemas);
+    } else {
+      const script = document.createElement('script');
+      script.id = 'duhocmate-runtime-schema';
+      script.type = 'application/ld+json';
+      script.textContent = JSON.stringify(schemas);
+      document.head.appendChild(script);
+    }
+  }, [currentPathname, currentSeoPage]);
 
   // Navigation & Auth states
   // Hàm helper để điều hướng có URL sync
@@ -3030,6 +3086,7 @@ export default function App() {
             isDarkMode={isDarkMode}
             toggleDarkMode={toggleDarkMode}
             onEnterAdmin={() => setView('admin')}
+            seoPage={currentSeoPage}
           />
         </Suspense>
       )}
