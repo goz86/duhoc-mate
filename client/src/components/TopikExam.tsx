@@ -49,7 +49,7 @@ function getExamDisplayTitle(exam: TopikExam) {
 }
 
 function getQuestionInstruction(exam: TopikExam, question: TopikExamQuestion) {
-  if (exam.category === 'reading' && question.question_text?.trim()) {
+  if (question.question_text?.trim()) {
     return `${question.question_number}. ${question.question_text.trim()}`
   }
 
@@ -60,6 +60,25 @@ function getQuestionInstruction(exam: TopikExam, question: TopikExamQuestion) {
     if (match) return match.text
   }
   return question.instructions
+}
+
+function normalizeTopikText(value?: string | null) {
+  return (value || '').replace(/\s+/g, ' ').trim().toLowerCase()
+}
+
+function isExplanationAlignedWithCorrectOption(question: TopikExamQuestion) {
+  if (!question.explanation || !question.options?.length || !question.correct_option) return true
+
+  const explanation = normalizeTopikText(question.explanation)
+  const correctText = normalizeTopikText(question.options[question.correct_option - 1])
+  if (!correctText) return true
+  if (explanation.includes(correctText)) return true
+
+  return !question.options.some((option, index) => {
+    if (index + 1 === question.correct_option) return false
+    const optionText = normalizeTopikText(option)
+    return optionText.length >= 4 && explanation.includes(optionText)
+  })
 }
 
 export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }: Props) {
@@ -337,7 +356,7 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
     }
   }
 
-  const handlePlayRealAudio = (audioUrl: string, qNum: number) => {
+  const handlePlayRealAudio = (audioUrl: string, qNum: number, restart = false) => {
     const currentCount = playCount[qNum] || 0
     if (currentCount >= 5) {
       alert('Hệ thống chỉ cho phép nghe tối đa 5 lần câu hỏi này.')
@@ -345,14 +364,29 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
     }
 
     if (realAudio) {
-      if (isPlayingAudio) {
-        realAudio.pause()
-        setIsPlayingAudio(false)
-      } else {
-        realAudio.play()
-        setIsPlayingAudio(true)
+      const nextAudioSrc = new URL(audioUrl, window.location.origin).href
+      if (realAudio.src === nextAudioSrc && !restart) {
+        if (isPlayingAudio) {
+          realAudio.pause()
+          setIsPlayingAudio(false)
+        } else {
+          realAudio.play()
+          setIsPlayingAudio(true)
+        }
+        return
       }
-      return
+
+      realAudio.pause()
+      realAudio.src = ''
+      setRealAudio(null)
+      setIsPlayingAudio(false)
+    }
+
+    if (introAudio) {
+      introAudio.pause()
+      introAudio.src = ''
+      setIntroAudio(null)
+      setIsIntroPlaying(false)
     }
 
     // Cancel TTS
@@ -389,6 +423,26 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
   }
 
   // ── CBT Actions ─────────────────────────────────────────────────
+  const goToQuestion = (nextIdx: number, autoPlayListening = false) => {
+    if (nextIdx < 0 || nextIdx >= questions.length) return
+
+    const nextQuestion = questions[nextIdx]
+    stopAudio()
+    setImageZoomed(false)
+    setActiveQuestionIdx(nextIdx)
+
+    if (
+      autoPlayListening
+      && selectedExam?.category === 'listening'
+      && nextQuestion?.passage?.endsWith('.mp3')
+      && !isIntroPlaying
+    ) {
+      window.setTimeout(() => {
+        handlePlayRealAudio(nextQuestion.passage!, nextQuestion.question_number, true)
+      }, 0)
+    }
+  }
+
   const handleStartTest = async (exam: TopikExam) => {
     setSelectedExam(exam)
     setAiLoading(true)
@@ -932,12 +986,21 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
                       )}
 
                       {/* Giải nghĩa (Result Mode only) */}
-                      {isFinished && questions[activeQuestionIdx].explanation && (
+                      {isFinished && questions[activeQuestionIdx].explanation && isExplanationAlignedWithCorrectOption(questions[activeQuestionIdx]) && (
                         <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 flex gap-2.5 items-start mt-2 border-t pt-3">
                           <Info size={16} className="text-emerald-600 shrink-0 mt-0.5" />
                           <div className="text-xs sm:text-sm text-emerald-800 leading-relaxed font-semibold">
                             <span className="font-black text-emerald-900 block mb-1">HƯỚNG DẪN GIẢI THÍCH TIẾNG VIỆT:</span>
                             {questions[activeQuestionIdx].explanation}
+                          </div>
+                        </div>
+                      )}
+                      {isFinished && questions[activeQuestionIdx].explanation && !isExplanationAlignedWithCorrectOption(questions[activeQuestionIdx]) && (
+                        <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-100 flex gap-2.5 items-start mt-2 border-t pt-3">
+                          <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                          <div className="text-xs sm:text-sm text-amber-800 leading-relaxed font-semibold">
+                            <span className="font-black text-amber-900 block mb-1">Loi giai dang duoc cap nhat</span>
+                            He thong phat hien loi giai cu co the khong khop voi dap an chinh thuc, nen tam thoi an de tranh goi y sai.
                           </div>
                         </div>
                       )}
@@ -947,14 +1010,14 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
                     <div className="flex items-center justify-between mt-2">
                       <button
                         disabled={activeQuestionIdx === 0}
-                        onClick={() => { stopAudio(); setImageZoomed(false); setActiveQuestionIdx(prev => prev - 1); }}
+                        onClick={() => goToQuestion(activeQuestionIdx - 1)}
                         className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-full bg-white border border-brand-terracotta-light/20 hover:bg-brand-light text-brand-brown-dark font-bold text-xs transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm active:scale-95"
                       >
                         <ChevronLeft size={14} /> Câu trước
                       </button>
                       <button
                         disabled={activeQuestionIdx === questions.length - 1}
-                        onClick={() => { stopAudio(); setImageZoomed(false); setActiveQuestionIdx(prev => prev + 1); }}
+                        onClick={() => goToQuestion(activeQuestionIdx + 1, true)}
                         className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-full bg-white border border-brand-terracotta-light/20 hover:bg-brand-light text-brand-brown-dark font-bold text-xs transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm active:scale-95"
                       >
                         Câu tiếp theo <ChevronRight size={14} />
@@ -1056,7 +1119,7 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
                       return (
                         <button
                           key={q.id}
-                          onClick={() => { stopAudio(); setImageZoomed(false); setActiveQuestionIdx(idx); }}
+                          onClick={() => goToQuestion(idx, selectedExam.category === 'listening')}
                           className={`w-9 h-9 rounded-full border text-xs font-bold transition flex items-center justify-center cursor-pointer ${btnStyle}`}
                         >
                           {qNum}

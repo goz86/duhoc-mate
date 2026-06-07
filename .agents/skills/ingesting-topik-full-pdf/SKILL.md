@@ -16,6 +16,154 @@ Quy trình này đảm bảo:
 
 ---
 
+## TOPIK II Reading Prompt Canonical Map
+
+Không để AI/OCR tự quyết định `question_text` cho phần Đọc. Format TOPIK II Reading là cố định theo số câu, vì vậy khi import hoặc vá DB phải dùng bảng chuẩn dưới đây. `instructions` có thể là header theo range, nhưng `question_text` phải là prompt riêng của từng câu:
+
+```python
+TOPIK_READING_QUESTION_PROMPTS = {
+    1: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    2: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    3: "밑줄 친 부분과 의미가 가장 비슷한 것을 고르십시오.",
+    4: "밑줄 친 부분과 의미가 가장 비슷한 것을 고르십시오.",
+    5: "다음은 무엇에 대한 글인지 고르십시오.",
+    6: "다음은 무엇에 대한 글인지 고르십시오.",
+    7: "다음은 무엇에 대한 글인지 고르십시오.",
+    8: "다음은 무엇에 대한 글인지 고르십시오.",
+    9: "다음 글 또는 그래프의 내용과 같은 것을 고르십시오.",
+    10: "다음 글 또는 그래프의 내용과 같은 것을 고르십시오.",
+    11: "다음 글 또는 그래프의 내용과 같은 것을 고르십시오.",
+    12: "다음 글 또는 그래프의 내용과 같은 것을 고르십시오.",
+    13: "다음을 순서에 맞게 배열한 것을 고르십시오.",
+    14: "다음을 순서에 맞게 배열한 것을 고르십시오.",
+    15: "다음을 순서에 맞게 배열한 것을 고르십시오.",
+    16: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    17: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    18: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    19: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    20: "윗글의 주제로 가장 알맞은 것을 고르십시오.",
+    21: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    22: "윗글의 내용과 같은 것을 고르십시오.",
+    23: "밑줄 친 부분에 나타난 '나'의 심정으로 가장 알맞은 것을 고르십시오.",
+    24: "윗글의 내용과 같은 것을 고르십시오.",
+    25: "다음 신문 기사의 제목을 가장 잘 설명한 것을 고르십시오.",
+    26: "다음 신문 기사의 제목을 가장 잘 설명한 것을 고르십시오.",
+    27: "다음 신문 기사의 제목을 가장 잘 설명한 것을 고르십시오.",
+    28: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    29: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    30: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    31: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    32: "다음을 읽고 글의 내용과 같은 것을 고르십시오.",
+    33: "다음을 읽고 글의 내용과 같은 것을 고르십시오.",
+    34: "다음을 읽고 글의 내용과 같은 것을 고르십시오.",
+    35: "다음을 읽고 글의 주제로 가장 알맞은 것을 고르십시오.",
+    36: "다음을 읽고 글의 주제로 가장 알맞은 것을 고르십시오.",
+    37: "다음을 읽고 글의 주제로 가장 알맞은 것을 고르십시오.",
+    38: "다음을 읽고 글의 주제로 가장 알맞은 것을 고르십시오.",
+    39: "주어진 문장이 들어갈 곳으로 가장 알맞은 것을 고르십시오.",
+    40: "주어진 문장이 들어갈 곳으로 가장 알맞은 것을 고르십시오.",
+    41: "주어진 문장이 들어갈 곳으로 가장 알맞은 것을 고르십시오.",
+    42: "밑줄 친 부분에 나타난 '미연'의 심정으로 가장 알맞은 것을 고르십시오.",
+    43: "윗글의 내용으로 알 수 있는 것을 고르십시오.",
+    44: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    45: "윗글의 주제로 가장 알맞은 것을 고르십시오.",
+    46: "윗글에 나타난 필자의 태도로 가장 알맞은 것을 고르십시오.",
+    47: "윗글의 내용과 같은 것을 고르십시오.",
+    48: "윗글을 쓴 목적으로 가장 알맞은 것을 고르십시오.",
+    49: "( )에 들어갈 말로 가장 알맞은 것을 고르십시오.",
+    50: "윗글의 내용과 같은 것을 고르십시오.",
+}
+```
+
+Trong repo hiện có helper chuẩn tại `client/scripts/topik_reading_prompts.py`. Khi viết `import_exam_XX.py`, phần Reading phải dùng:
+
+```python
+from topik_reading_prompts import get_reading_question_prompt, get_reading_range_instruction
+
+inst = get_reading_range_instruction(q_num)
+q_text = get_reading_question_prompt(q_num)
+```
+
+Không dùng `q_parsed["question_text"]` từ AI cho Reading, trừ khi người dùng chủ động yêu cầu một đề ngoài format TOPIK II chuẩn.
+
+Sau khi import xong một đề đã có trong DB, có thể patch lại prompt chuẩn bằng script generic:
+
+```powershell
+node client\scripts\patch_topik_exam_prompts.cjs --exam=83 --section=all
+```
+
+`--section` nhận `reading`, `listening`, hoặc `all`. Script này tự đọc `client/scripts/ingestion_progress_XX.json`, patch Reading đủ 50 câu, patch Listening các câu cố định và chỉ giữ nguyên `question_text` của Listening Q44.
+
+## TOPIK II Listening Prompt Canonical Map
+
+Phần Nghe phần lớn có format cố định. Khi import hoặc vá DB, không để AI/OCR đoán `question_text` cho các câu cố định; dùng helper `client/scripts/topik_listening_prompts.py`:
+
+```python
+from topik_listening_prompts import get_listening_question_prompt, get_listening_range_instruction
+
+inst = get_listening_range_instruction(q_num)
+q_text = get_listening_question_prompt(q_num)
+```
+
+Prompt chuẩn theo số câu:
+
+```python
+TOPIK_LISTENING_QUESTION_PROMPTS = {
+    1: "다음을 듣고 가장 알맞은 그림 또는 그래프를 고르십시오.",
+    2: "다음을 듣고 가장 알맞은 그림 또는 그래프를 고르십시오.",
+    3: "다음을 듣고 가장 알맞은 그림 또는 그래프를 고르십시오.",
+    4: "다음을 듣고 이어질 수 있는 말로 가장 알맞은 것을 고르십시오.",
+    5: "다음을 듣고 이어질 수 있는 말로 가장 알맞은 것을 고르십시오.",
+    6: "다음을 듣고 이어질 수 있는 말로 가장 알맞은 것을 고르십시오.",
+    7: "다음을 듣고 이어질 수 있는 말로 가장 알맞은 것을 고르십시오.",
+    8: "다음을 듣고 이어질 수 있는 말로 가장 알맞은 것을 고르십시오.",
+    9: "다음을 듣고 여자가 이어서 할 행동으로 가장 알맞은 것을 고르십시오.",
+    10: "다음을 듣고 여자가 이어서 할 행동으로 가장 알맞은 것을 고르십시오.",
+    11: "다음을 듣고 여자가 이어서 할 행동으로 가장 알맞은 것을 고르십시오.",
+    12: "다음을 듣고 여자가 이어서 할 행동으로 가장 알맞은 것을 고르십시오.",
+    13: "다음을 듣고 들은 내용과 같은 것을 고르십시오.",
+    14: "다음을 듣고 들은 내용과 같은 것을 고르십시오.",
+    15: "다음을 듣고 들은 내용과 같은 것을 고르십시오.",
+    16: "다음을 듣고 들은 내용과 같은 것을 고르십시오.",
+    17: "다음을 듣고 남자의 중심 생각으로 가장 알맞은 것을 고르십시오.",
+    18: "다음을 듣고 남자의 중심 생각으로 가장 알맞은 것을 고르십시오.",
+    19: "다음을 듣고 남자의 중심 생각으로 가장 알맞은 것을 고르십시오.",
+    20: "다음을 듣고 남자의 중심 생각으로 가장 알맞은 것을 고르십시오.",
+    21: "남자의 중심 생각으로 가장 알맞은 것을 고르십시오.",
+    22: "들은 내용과 같은 것을 고르십시오.",
+    23: "남자가 무엇을 하고 있는지 고르십시오.",
+    24: "들은 내용과 같은 것을 고르십시오.",
+    25: "남자의 중심 생각으로 가장 알맞은 것을 고르십시오.",
+    26: "들은 내용과 같은 것을 고르십시오.",
+    27: "남자가 말하는 의도로 알맞은 것을 고르십시오.",
+    28: "들은 내용과 같은 것을 고르십시오.",
+    29: "남자가 누구인지 고르십시오.",
+    30: "들은 내용과 같은 것을 고르십시오.",
+    31: "남자의 중심 생각으로 가장 알맞은 것을 고르십시오.",
+    32: "남자의 태도로 가장 알맞은 것을 고르십시오.",
+    33: "무엇에 대한 내용인지 알맞은 것을 고르십시오.",
+    34: "들은 내용과 같은 것을 고르십시오.",
+    35: "남자가 무엇을 하고 있는지 고르십시오.",
+    36: "들은 내용과 같은 것을 고르십시오.",
+    37: "여자의 중심 생각으로 가장 알맞은 것을 고르십시오.",
+    38: "들은 내용과 같은 것을 고르십시오.",
+    39: "이 대화 전의 내용으로 가장 알맞은 것을 고르십시오.",
+    40: "들은 내용과 같은 것을 고르십시오.",
+    41: "이 강연의 중심 내용으로 가장 알맞은 것을 고르십시오.",
+    42: "들은 내용과 같은 것을 고르십시오.",
+    43: "무엇에 대한 내용인지 알맞은 것을 고르십시오.",
+    # 44 is an exception: prompt depends on the specific passage topic, use AI/OCR.
+    45: "들은 내용과 같은 것을 고르십시오.",
+    46: "여자가 말하는 방식으로 알맞은 것을 고르십시오.",
+    47: "들은 내용과 같은 것을 고르십시오.",
+    48: "남자의 태도로 알맞은 것을 고르십시오.",
+    49: "들은 내용과 같은 것을 고르십시오.",
+    50: "남자의 태도로 알맞은 것을 고르십시오.",
+}
+```
+
+Ngoại lệ quan trọng: **Listening Q44 không cố định**. Ví dụ có đề là `종묘 정전에 대한 설명으로 맞는 것을 고르십시오.`, nhưng đề khác có thể hỏi chủ đề khác. Vì vậy `get_listening_question_prompt(44)` phải trả rỗng và import script phải fallback về `q_parsed["question_text"]` từ AI/OCR cho riêng câu 44.
+
 ## Ingestion Step-by-Step Workflow
 
 ```mermaid
@@ -114,6 +262,7 @@ Ta cần tạo script vá thủ công (ví dụ `fix_failed_options_XX.py`):
 1. Chạy `npm run dev` để khởi động dự án ở Localhost.
 2. Đăng nhập và làm thử đề thi mới để xác nhận hiển thị hình ảnh gọn gàng, trật tự đáp án khớp hoàn toàn với ảnh đề, và âm thanh nghe chính xác.
 3. Nếu ảnh giữ nguyên URL nhưng nội dung đã ghi đè, hard refresh trình duyệt vì browser có thể cache ảnh cũ.
+4. Với phần Nghe chính thức có MP3, khi bấm `Câu tiếp theo` hoặc chọn câu trong bảng câu hỏi, audio của câu mới phải tự phát. Nếu câu kế tiếp dùng cùng track với câu trước (các cặp 21-22, 23-24, ...), vẫn restart track để người học nghe lại đoạn chung cho câu đó.
 
 ### Bước 10: Verification bắt buộc trước khi báo xong
 1. Kiểm tra DB đang trỏ đúng ảnh clean:
@@ -128,38 +277,76 @@ Ta cần tạo script vá thủ công (ví dụ `fix_failed_options_XX.py`):
 2. Mở ảnh bằng `view_image` hoặc tạo contact sheet cho các câu vừa sửa. Không chỉ tin vào log `[OK]`.
 3. Chạy build/typecheck của client: `npx tsc -b`.
 4. Không commit nếu người dùng đã dặn “không commit”.
+5. Luôn chạy audit đáp án chính thức sau import, sau sort options, hoặc sau mọi script có đụng `correct_option`:
+   ```powershell
+   node client/scripts/audit_topik_answer_integrity.cjs --exam=91 --section=all
+   node client/scripts/audit_topik_answer_integrity.cjs --exam=91 --section=all --apply
+   ```
+   Nếu audit patch đáp án, explanation cũ phải bị xóa hoặc sinh lại vì nó có thể đang giải thích theo đáp án sai.
+6. Khi sinh explanation, chỉ dùng AI để giải thích đáp án đã khóa bởi answer key chính thức:
+   ```powershell
+   node client/scripts/regenerate_topik_explanations.cjs --exam=91 --section=reading --q=1 --apply
+   ```
+   Prompt bắt buộc truyền `correct_option` và text đáp án đúng. Không bao giờ hỏi AI “đáp án nào đúng” nếu đã có answer key chính thức.
 
 ---
 
 ## Common Code Patterns & Algorithms
 
 ### 1. Thuật toán sắp xếp trật tự đáp án theo tọa độ OCR
+
+Trước khi sort, phải nhận diện layout đáp án. Không dùng một threshold gom hàng cố định, vì OCR có thể làm cùng một hàng lệch `top` 20-35px và khiến layout 2x2 bị nhận sai. Quy tắc chuẩn:
+
+1. Nếu 4 đáp án có `top_span <= 35`: layout ngang 1 dòng, sort trái sang phải.
+2. Nếu 4 đáp án có `left_span <= 90`: layout dọc 1 cột, sort trên xuống dưới.
+3. Nếu không phải hai dạng trên: thử layout 2x2 bằng cách split tại khoảng cách dọc lớn nhất, rồi sort từng hàng trái sang phải.
+4. Fallback mới gom hàng adaptive theo trung bình `top`, threshold 35px.
+
 ```python
 def sort_options_by_coordinates(options_with_coords):
-    # Sắp xếp theo trục đứng Y (top) trước
-    sorted_by_top = sorted(options_with_coords, key=lambda x: x["top"])
-    
-    # Nhóm thành các dòng (khoảng cách Y giữa các dòng cách nhau dưới 20 pixels)
+    items = [x for x in options_with_coords if x.get("top") is not None and x.get("left") is not None]
+    if len(items) != len(options_with_coords):
+        items = options_with_coords
+
+    if len(items) == 4:
+        top_span = max(x["top"] for x in items) - min(x["top"] for x in items)
+        left_span = max(x["left"] for x in items) - min(x["left"] for x in items)
+
+        if top_span <= 35:
+            return [x["text"] for x in sorted(items, key=lambda x: x["left"])]
+
+        if left_span <= 90:
+            return [x["text"] for x in sorted(items, key=lambda x: x["top"])]
+
+        by_top = sorted(items, key=lambda x: x["top"])
+        gaps = [by_top[i + 1]["top"] - by_top[i]["top"] for i in range(3)]
+        split_at = gaps.index(max(gaps)) + 1
+        first_row = by_top[:split_at]
+        second_row = by_top[split_at:]
+        if len(first_row) == 2 and len(second_row) == 2 and max(gaps) >= 25:
+            return [
+                x["text"]
+                for row in (first_row, second_row)
+                for x in sorted(row, key=lambda item: item["left"])
+            ]
+
+    sorted_by_top = sorted(items, key=lambda x: x["top"])
     rows = []
-    current_row = []
     for item in sorted_by_top:
-        if not current_row:
-            current_row.append(item)
-        else:
-            if abs(item["top"] - current_row[0]["top"]) <= 20:
-                current_row.append(item)
-            else:
-                rows.append(current_row)
-                current_row = [item]
-    if current_row:
-        rows.append(current_row)
-        
-    # Sắp xếp từng dòng theo trục ngang X từ Trái sang Phải
+        placed = False
+        for row in rows:
+            row_top = sum(x["top"] for x in row) / len(row)
+            if abs(item["top"] - row_top) <= 35:
+                row.append(item)
+                placed = True
+                break
+        if not placed:
+            rows.append([item])
+
     final_sorted = []
-    for row in rows:
-        sorted_row = sorted(row, key=lambda x: x["left"])
-        final_sorted.extend(sorted_row)
-        
+    for row in sorted(rows, key=lambda r: sum(x["top"] for x in r) / len(r)):
+        final_sorted.extend(sorted(row, key=lambda x: x["left"]))
+
     return [x["text"] for x in final_sorted]
 ```
 
@@ -203,7 +390,19 @@ Khi thấy các line như `[(366, 366), (784, 785)]`, crop khung nên bao từ t
     > **Co sát viền dưới để tránh dính đáp án ①:** Đối với các câu cắt sạch, cần kiểm tra kỹ toạ độ Y2. Vị trí Y2 tối đa nên cách đáp án ① ít nhất 20px-30px để thuật toán co mép không tự động nhảy xuống dính chữ đáp án.
 *   > [!IMPORTANT]
     > **Không được mất viền khung đen:** Với mọi passage/hộp thoại trong khung, phải kiểm line pixel của viền dưới. Nếu ảnh thiếu thanh dưới hoặc thanh trên, sửa tọa độ `y1/y2`, chạy lại crop, và xem ảnh bằng mắt trước khi báo xong.
+*   > [!IMPORTANT]
+    > **Answer key chính thức là nguồn sự thật duy nhất:** Sau khi sort options hoặc vá OCR, phải chạy `audit_topik_answer_integrity.cjs`. Không để AI tự đổi `correct_option`. Nếu `correct_option` đổi theo answer key, explanation cũ phải xóa hoặc sinh lại.
+*   > [!IMPORTANT]
+    > **Explanation là dữ liệu phụ thuộc đáp án:** Không copy explanation từ lần parse cũ nếu đáp án/options đã thay đổi. UI có guard ẩn explanation có dấu hiệu giải thích theo option khác, nhưng DB vẫn phải được regenerate sạch.
 *   > [!WARNING]
     > **Bảo toàn tính chính xác của đáp án gốc:** Không bao giờ để AI tự quyết định/chọn đáp án đúng khi sắp xếp lại. Phải luôn sử dụng logic khớp chuỗi text thô của đáp án đúng cũ sang vị trí mới để bảo toàn dữ liệu. AI chỉ được dùng để dịch và giải thích (`explanation`) bằng Tiếng Việt.
+*   > [!IMPORTANT]
+    > **Reading/Listening question_text là luật cứng theo số câu, trừ Listening Q44:** TOPIK II có format cố định. Không dùng AI/OCR để điền `question_text`; dùng canonical map ở đầu skill hoặc helper `client/scripts/topik_reading_prompts.py` và `client/scripts/topik_listening_prompts.py`. Riêng Listening Q44 phải lấy từ AI/OCR vì prompt phụ thuộc nội dung bài nghe.
+*   > [!IMPORTANT]
+    > **Sau import phải patch prompt chuẩn bằng script generic:** Chạy `node client\scripts\patch_topik_exam_prompts.cjs --exam=XX --section=all` để xóa các lỗi OCR nhét đáp án vào `question_text` như `㉦ ...`.
+*   > [!IMPORTANT]
+    > **Listening next question auto-play:** UI CBT phải dừng audio cũ, chuyển câu, rồi tự phát MP3 của câu mới khi bấm `Câu tiếp theo` hoặc chọn số câu. Không để nút next chỉ đổi ảnh/câu hỏi mà audio đứng yên.
+*   > [!IMPORTANT]
+    > **Sort đáp án phải nhận diện layout trước:** Với đáp án ngang/dọc/2x2, luôn phân loại layout bằng tọa độ `top_span`, `left_span`, và largest vertical gap trước khi sort. Không quay lại thuật toán threshold hàng cố định 15-20px.
 *   > [!CAUTION]
     > **Lỗi ký tự đặc biệt:** Các câu hỏi chứa ký tự `(가) - (나)` hoặc `㉠` rất hay làm lệch logic OCR và fuzzy matching. Cần tách riêng các câu này để chạy script vá thủ công thay vì để hệ thống tự động sắp xếp.

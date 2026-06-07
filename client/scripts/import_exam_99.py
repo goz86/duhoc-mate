@@ -4,6 +4,7 @@ import json
 import time
 import shutil
 import requests
+from topik_reading_prompts import get_reading_question_prompt, get_reading_range_instruction
 
 def safe_str(s):
     if s is None:
@@ -256,18 +257,9 @@ def main():
             correct_ans = ANSWERS_99[q_num]
             img_url = f"/topik_exams/ky_99_page_{page_num:02d}.jpg"
             
-            inst = q_parsed.get("instructions", "")
-            if not inst or not str(inst).strip():
-                inst = prev_instruction or "다음을 읽고 물음에 답하십시오."
-            else:
-                inst = str(inst).strip()
-                prev_instruction = inst
-                
-            q_text = q_parsed.get("question_text", "")
-            if not q_text or not str(q_text).strip():
-                q_text = "( )에 들어갈 가장 알맞은 것을 고르십시오."
-            else:
-                q_text = str(q_text).strip()
+            inst = get_reading_range_instruction(q_num)
+            prev_instruction = inst or prev_instruction
+            q_text = get_reading_question_prompt(q_num)
             
             question_record = {
                 "exam_id": exam_id,

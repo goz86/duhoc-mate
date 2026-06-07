@@ -240,30 +240,52 @@ def find_matching_ocr_line(opt_text, ocr_lines, y_min=None, y_max=None):
     return None
 
 def sort_options_by_coordinates(options_with_coords):
-    # Sort vertically first
-    sorted_by_top = sorted(options_with_coords, key=lambda x: x["top"])
-    
-    # Group into rows with vertical threshold = 20 pixels
+    items = [x for x in options_with_coords if x.get("top") is not None and x.get("left") is not None]
+    if len(items) != len(options_with_coords):
+        items = options_with_coords
+
+    if len(items) == 4:
+        top_span = max(x["top"] for x in items) - min(x["top"] for x in items)
+        left_span = max(x["left"] for x in items) - min(x["left"] for x in items)
+
+        # 1-line horizontal layout: ① ② ③ ④
+        if top_span <= 35:
+            return [x["text"] for x in sorted(items, key=lambda x: x["left"])]
+
+        # 1-column vertical layout: ① / ② / ③ / ④
+        if left_span <= 90:
+            return [x["text"] for x in sorted(items, key=lambda x: x["top"])]
+
+        # 2x2 layout: ① ② / ③ ④. Split at the largest vertical gap.
+        by_top = sorted(items, key=lambda x: x["top"])
+        gaps = [by_top[i + 1]["top"] - by_top[i]["top"] for i in range(3)]
+        split_at = gaps.index(max(gaps)) + 1
+        first_row = by_top[:split_at]
+        second_row = by_top[split_at:]
+        if len(first_row) == 2 and len(second_row) == 2 and max(gaps) >= 25:
+            return [
+                x["text"]
+                for row in (first_row, second_row)
+                for x in sorted(row, key=lambda item: item["left"])
+            ]
+
+    sorted_by_top = sorted(items, key=lambda x: x["top"])
     rows = []
-    current_row = []
     for item in sorted_by_top:
-        if not current_row:
-            current_row.append(item)
-        else:
-            if abs(item["top"] - current_row[0]["top"]) <= 20:
-                current_row.append(item)
-            else:
-                rows.append(current_row)
-                current_row = [item]
-    if current_row:
-        rows.append(current_row)
-        
-    # Sort each row horizontally (Left to Right)
+        placed = False
+        for row in rows:
+            row_top = sum(x["top"] for x in row) / len(row)
+            if abs(item["top"] - row_top) <= 35:
+                row.append(item)
+                placed = True
+                break
+        if not placed:
+            rows.append([item])
+
     final_sorted = []
-    for row in rows:
-        sorted_row = sorted(row, key=lambda x: x["left"])
-        final_sorted.extend(sorted_row)
-        
+    for row in sorted(rows, key=lambda r: sum(x["top"] for x in r) / len(r)):
+        final_sorted.extend(sorted(row, key=lambda x: x["left"]))
+
     return [x["text"] for x in final_sorted]
 
 # ─── 5. DEEPSEEK VERIFICATION STEP ──────────────────────────────────

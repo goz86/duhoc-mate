@@ -7,6 +7,8 @@ import requests
 import fitz  # PyMuPDF
 import sys
 import io
+from topik_reading_prompts import get_reading_question_prompt, get_reading_range_instruction
+from topik_listening_prompts import get_listening_question_prompt, get_listening_range_instruction
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
@@ -312,18 +314,9 @@ def main():
                 
             correct_ans = ANSWERS_91_READING[q_num]
             
-            inst = q_parsed.get("instructions", "")
-            if not inst or not str(inst).strip():
-                inst = prev_instruction or "다음을 읽고 물음에 답하십시오."
-            else:
-                inst = str(inst).strip()
-                prev_instruction = inst
-                
-            q_text = q_parsed.get("question_text", "")
-            if not q_text or not str(q_text).strip():
-                q_text = "( )에 들어갈 가장 알맞은 것을 고르십시오."
-            else:
-                q_text = str(q_text).strip()
+            inst = get_reading_range_instruction(q_num)
+            prev_instruction = inst or prev_instruction
+            q_text = get_reading_question_prompt(q_num)
                 
             question_record = {
                 "exam_id": reading_exam_id,
@@ -393,18 +386,11 @@ def main():
             correct_ans = ANSWERS_91_LISTENING[q_num]
             audio_path = get_audio_path_for_q(q_num)
             
-            inst = q_parsed.get("instructions", "")
-            if not inst or not str(inst).strip():
-                inst = prev_instruction or "다음을 듣고 물음에 답하십시오."
-            else:
-                inst = str(inst).strip()
-                prev_instruction = inst
-                
-            q_text = q_parsed.get("question_text", "")
-            if not q_text or not str(q_text).strip():
-                q_text = "물음에 알맞은 대답을 고르십시오."
-            else:
-                q_text = str(q_text).strip()
+            inst = get_listening_range_instruction(q_num)
+            prev_instruction = inst or prev_instruction
+            q_text = get_listening_question_prompt(q_num)
+            if not q_text:
+                q_text = str(q_parsed.get("question_text", "")).strip() or "물음에 알맞은 대답을 고르십시오."
                 
             question_record = {
                 "exam_id": listening_exam_id,
