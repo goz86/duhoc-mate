@@ -463,6 +463,7 @@ export default function App() {
   const myMember = members.find(m => m.id === socketId);
   const myRole = isHost ? 'host' : (myMember?.role || 'member');
   const canControlMusic = myRole === 'host' || myRole === 'cohost';
+  const canReorderPlaylist = !!socketId && !!roomId;
   const canControlPomodoro = myRole === 'host' || myRole === 'cohost';
   const canModerateChat = myRole === 'host' || myRole === 'cohost' || myRole === 'moderator';
   const isHostConnected = members.some(m => m.isHost);
@@ -2596,19 +2597,19 @@ export default function App() {
 
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
-    if (!isHost) return;
+    if (!canReorderPlaylist) return;
     dragItemRef.current = index;
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
-    if (!isHost) return;
+    if (!canReorderPlaylist) return;
     e.preventDefault();
     dragOverItemRef.current = index;
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    if (!isHost) return;
+    if (!canReorderPlaylist) return;
     e.preventDefault();
     const dragIndex = dragItemRef.current;
     const hoverIndex = dragOverItemRef.current;
@@ -2635,7 +2636,7 @@ export default function App() {
   };
 
   const movePlaylistItem = (index: number, direction: 'up' | 'down') => {
-    if (!isHost) return;
+    if (!canReorderPlaylist) return;
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= playlist.length) return;
 
@@ -4759,7 +4760,7 @@ export default function App() {
                           return (
                           <div
                             key={item.id}
-                            draggable={isHost && isQueued}
+                            draggable={canReorderPlaylist && isQueued}
                             onDragStart={(e) => handleDragStart(e, idx)}
                             onDragOver={(e) => handleDragOver(e, idx)}
                             onDrop={handleDrop}
@@ -4770,9 +4771,9 @@ export default function App() {
                                 : isPlayed
                                   ? 'opacity-40 grayscale-[30%]'
                                   : idx === 0 ? 'ring-2 ring-brand-terracotta/20 bg-brand-light/30' : ''
-                            } ${isHost && isQueued ? 'cursor-grab active:cursor-grabbing hover:border-brand-terracotta/30' : ''}`}
+                            } ${canReorderPlaylist && isQueued ? 'cursor-grab active:cursor-grabbing hover:border-brand-terracotta/30' : ''}`}
                           >
-                            {isHost && isQueued && (
+                            {canReorderPlaylist && isQueued && (
                               <div className="flex flex-col items-center gap-0.5 mr-2 shrink-0">
                                 {idx > 0 && playlist[idx - 1]?.status === 'queued' && (
                                   <button
@@ -4848,7 +4849,7 @@ export default function App() {
                                   <Play size={14} />
                                 </button>
                               )}
-                              {isHost && !isPlaying && (
+                              {canControlMusic && !isPlaying && (
                                 <button
                                   onClick={() => deletePlaylistItem(item.id)}
                                   className="p-2 rounded-lg bg-white hover:bg-red-50 border border-brand-terracotta-light/10 transition cursor-pointer text-brand-brown-light hover:text-red-500"

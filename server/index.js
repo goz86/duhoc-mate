@@ -674,6 +674,9 @@ const hasPermission = (member, action) => {
   if (action === 'music.control') {
     return role === 'host' || role === 'cohost';
   }
+  if (action === 'music.reorder') {
+    return true;
+  }
   if (action === 'pomodoro.control') {
     return role === 'host' || role === 'cohost';
   }
@@ -2368,7 +2371,7 @@ io.on('connection', (socket) => {
     if (!room) return;
 
     const sender = room.members.find(m => m.id === socket.id);
-    if (!hasPermission(sender, 'music.control')) return;
+    if (!hasPermission(sender, 'music.reorder')) return;
     if (!Array.isArray(orderedIds) || orderedIds.length > MAX_PLAYLIST_ITEMS) return;
     if (rateLimitSocketEvent(socket.id, 'reorder-playlist', 12, 60_000)) return;
 

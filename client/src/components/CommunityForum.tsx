@@ -1494,7 +1494,7 @@ export default function CommunityForum({
       {/* FAB Viết bài */}
       <button
         onClick={() => setIsWriting(true)}
-        className="forum-fab absolute bottom-24 right-4 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-brand-terracotta px-4 text-sm font-black text-white shadow-[0_8px_24px_rgba(193,124,99,0.4)] transition hover:bg-brand-brown-dark active:scale-95 sm:bottom-5 sm:px-5"
+        className="forum-fab fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-50 inline-flex h-12 items-center gap-2 rounded-full bg-brand-terracotta px-4 text-sm font-black text-white shadow-[0_8px_24px_rgba(193,124,99,0.4)] transition hover:bg-brand-brown-dark active:scale-95 sm:bottom-6 sm:right-[max(1.5rem,calc((100vw-760px)/2+1rem))] sm:px-5"
       >
         <Plus size={18} />
         <span>Viết bài</span>
@@ -1602,6 +1602,7 @@ function CommentItem({
   isAdminOrOwner: boolean
   isReply?: boolean
 }) {
+  const [showExpiryInfo, setShowExpiryInfo] = useState(false)
   const [remainingMs, setRemainingMs] = useState<number | null>(() => {
     if (!comment.expires_at) return null
     return new Date(comment.expires_at).getTime() - Date.now()
@@ -1618,6 +1619,14 @@ function CommentItem({
   const showCountdown = remainingMs !== null && remainingMs > 0
   const totalDurationMs = 3 * 3600 * 1000
   const progressPct = showCountdown ? Math.max(0, Math.min(100, (remainingMs! / totalDurationMs) * 100)) : 0
+  const deleteAtText = comment.expires_at
+    ? new Date(comment.expires_at).toLocaleString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit',
+      })
+    : ''
 
   if (comment.expires_at && remainingMs !== null && remainingMs <= 0) {
     return null
@@ -1686,7 +1695,12 @@ function CommentItem({
 
         {/* Countdown bar — 3h self destruct */}
         {showCountdown && (
-          <div className="mt-2 flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setShowExpiryInfo(true)}
+            className="mt-2 flex w-full items-center gap-1.5 rounded-lg py-1 text-left transition hover:bg-amber-50/70 focus:outline-none focus:ring-2 focus:ring-amber-300/40"
+            title="Xem thời gian tự xoá"
+          >
             <Clock size={10} className="text-amber-500 shrink-0" />
             <div className="flex-1">
               <div className="flex items-center gap-1">
@@ -1700,6 +1714,39 @@ function CommentItem({
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
+            </div>
+          </button>
+        )}
+        {showExpiryInfo && showCountdown && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <button
+              type="button"
+              aria-label="Đóng"
+              onClick={() => setShowExpiryInfo(false)}
+              className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
+            />
+            <div className="relative w-full max-w-[320px] rounded-3xl bg-white p-5 shadow-[0_24px_70px_rgba(76,55,49,0.22)]">
+              <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-full bg-amber-50 text-amber-600">
+                <Clock size={20} />
+              </div>
+              <h3 className="text-center text-base font-black text-brand-brown-dark">
+                Bình luận tự xoá
+              </h3>
+              <p className="mt-2 text-center text-sm font-semibold leading-relaxed text-brand-brown-light">
+                Bình luận này sẽ tự xoá sau <span className="font-black text-amber-700">{fmtCountdownHMS(remainingMs!)}</span>.
+              </p>
+              {deleteAtText && (
+                <p className="mt-1 text-center text-xs font-bold text-brand-brown-light/75">
+                  Dự kiến xoá lúc {deleteAtText}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowExpiryInfo(false)}
+                className="mt-4 h-10 w-full rounded-full bg-brand-terracotta text-sm font-black text-white shadow-md shadow-brand-terracotta/20 transition hover:bg-brand-brown-dark active:scale-95"
+              >
+                Đã hiểu
+              </button>
             </div>
           </div>
         )}
