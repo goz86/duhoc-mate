@@ -9,13 +9,13 @@ describe('VOICE_RTC_CONFIG', () => {
       },
       {
         urls: "turn:openrelay.metered.ca:80",
-        username: "openrelay",
-        credential: "openrelay"
+        username: "openrelayproject",
+        credential: "openrelayproject"
       },
       {
         urls: "turn:openrelay.metered.ca:443",
-        username: "openrelay",
-        credential: "openrelay"
+        username: "openrelayproject",
+        credential: "openrelayproject"
       }
     ]);
   });
