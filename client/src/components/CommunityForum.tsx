@@ -89,6 +89,63 @@ function getForumPostHash(postId: string): string {
   return `${FORUM_HASH}/post/${encodeURIComponent(postId)}`
 }
 
+export const BACKGROUND_PRESETS = [
+  { id: 'normal', name: 'Mặc định', bg: '', colorCircle: '#f4ebe1' },
+  { id: 'sunset', name: 'Sunset Coral', bg: 'linear-gradient(135deg, #FF512F 0%, #DD2476 100%)', colorCircle: '#FF512F' },
+  { id: 'ocean', name: 'Ocean Wave', bg: 'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)', colorCircle: '#2193b0' },
+  { id: 'midnight', name: 'Midnight Violet', bg: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)', colorCircle: '#0f2027' },
+  { id: 'forest', name: 'Fresh Emerald', bg: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', colorCircle: '#11998e' },
+  { id: 'candy', name: 'Sweet Candy', bg: 'linear-gradient(135deg, #ff007f 0%, #7f00ff 100%)', colorCircle: '#ff007f' },
+  { id: 'vibrant', name: 'Vibrant Fire', bg: 'linear-gradient(135deg, #f857a6 0%, #ff5858 100%)', colorCircle: '#f857a6' }
+]
+
+export function parsePostContent(content: string) {
+  if (content && content.startsWith('{') && content.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(content)
+      if (typeof parsed.text === 'string') {
+        return {
+          text: parsed.text,
+          backgroundStyle: parsed.backgroundStyle || 'normal'
+        }
+      }
+    } catch (e) {}
+  }
+  return { text: content || '', backgroundStyle: 'normal' }
+}
+
+export function formatPostContent(text: string, backgroundStyle: string) {
+  if (backgroundStyle && backgroundStyle !== 'normal') {
+    return JSON.stringify({ text, backgroundStyle })
+  }
+  return text
+}
+
+export function renderFormattedContent(text: string, isLightText = false) {
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  const headingColorClass = isLightText ? 'text-white font-black' : 'text-brand-brown-dark font-black'
+  html = html.replace(/^### (.*?)$/gm, `<h3 class="text-base sm:text-lg my-2 ${headingColorClass}">$1</h3>`)
+  html = html.replace(/^## (.*?)$/gm, `<h2 class="text-lg sm:text-xl my-3 ${headingColorClass}">$1</h2>`)
+  html = html.replace(/^# (.*?)$/gm, `<h1 class="text-xl sm:text-2xl my-4 ${headingColorClass}">$1</h1>`)
+
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+  html = html.replace(/__(.*?)__/g, '<strong>$1</strong>')
+
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>')
+  html = html.replace(/_(.*?)_/g, '<em>$1</em>')
+
+  const listDotColorClass = isLightText ? 'text-white' : 'text-brand-brown-light'
+  html = html.replace(/^- (.*?)$/gm, `<li class="ml-4 list-disc font-medium my-1 ${listDotColorClass}">$1</li>`)
+
+  html = html.replace(/\n/g, '<br />')
+
+  return <div dangerouslySetInnerHTML={{ __html: html }} />
+}
+
 function timeAgo(dateString: string): string {
   const date = new Date(dateString)
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
@@ -187,6 +244,7 @@ export default function CommunityForum({
   const [writeContent, setWriteContent] = useState('')
   const [writeCat, setWriteCat] = useState<'free' | 'topik' | 'life' | 'job'>('free')
   const [writeImages, setWriteImages] = useState<string[]>([])
+  const [selectedBgStyle, setSelectedBgStyle] = useState('normal')
   const [imageProcessing, setImageProcessing] = useState(false)
   const [postSubmitError, setPostSubmitError] = useState('')
   const [isAnon, setIsAnon] = useState(true)
@@ -402,6 +460,41 @@ export default function CommunityForum({
     return () => window.removeEventListener('popstate', handleForumPopState)
   }, [posts, selectedPost?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const insertFormatting = (type: 'bold' | 'italic' | 'heading' | 'list') => {
+    const textarea = document.getElementById('forum-textarea') as HTMLTextAreaElement
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const text = textarea.value
+    const selected = text.substring(start, end)
+
+    let replacement = ''
+    let newCursorPos = start
+
+    if (type === 'bold') {
+      replacement = `**${selected || 'chữ_đậm'}**`
+      newCursorPos = start + 2 + (selected ? selected.length : 0) + 2
+    } else if (type === 'italic') {
+      replacement = `*${selected || 'chữ_nghiêng'}*`
+      newCursorPos = start + 1 + (selected ? selected.length : 0) + 1
+    } else if (type === 'heading') {
+      replacement = `\n### ${selected || 'Tiêu đề'}`
+      newCursorPos = start + 5 + (selected ? selected.length : 0)
+    } else if (type === 'list') {
+      replacement = `\n- ${selected || 'Mục lục'}`
+      newCursorPos = start + 3 + (selected ? selected.length : 0)
+    }
+
+    setWriteContent(text.substring(0, start) + replacement + text.substring(end))
+    
+    // Focus back and set selection
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(newCursorPos, newCursorPos)
+    }, 50)
+  }
+
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!supabase || !writeTitle.trim() || !writeContent.trim() || submittingPost) return
@@ -420,7 +513,7 @@ export default function CommunityForum({
       const newPostData = {
         user_id: currentUserId,
         title: writeTitle.trim(),
-        content: writeContent.trim(),
+        content: formatPostContent(writeContent.trim(), selectedBgStyle),
         category: writeCat,
         image_urls: writeImages,
         is_anonymous: isAnon,
@@ -438,6 +531,7 @@ export default function CommunityForum({
       setWriteContent('')
       setWriteCat('free')
       setWriteImages([])
+      setSelectedBgStyle('normal')
       setIsAnon(true)
       setPostSubmitError('')
       setIsWriting(false)
@@ -608,15 +702,19 @@ export default function CommunityForum({
       alert('Vui lòng nhập tiêu đề và nội dung')
       return
     }
+    const originalPost = posts.find(p => p.id === postId)
+    const originalParsed = originalPost ? parsePostContent(originalPost.content) : { text: '', backgroundStyle: 'normal' }
+    const updatedContent = formatPostContent(editContent.trim(), originalParsed.backgroundStyle)
+
     try {
       const { error } = await supabase
         .from('community_posts')
-        .update({ title: editTitle.trim(), content: editContent.trim(), updated_at: new Date().toISOString() })
+        .update({ title: editTitle.trim(), content: updatedContent, updated_at: new Date().toISOString() })
         .eq('id', postId)
       if (error) throw error
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, title: editTitle.trim(), content: editContent.trim(), updated_at: new Date().toISOString() } : p))
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, title: editTitle.trim(), content: updatedContent, updated_at: new Date().toISOString() } : p))
       if (selectedPost?.id === postId) {
-        setSelectedPost({ ...selectedPost, title: editTitle.trim(), content: editContent.trim(), updated_at: new Date().toISOString() })
+        setSelectedPost({ ...selectedPost, title: editTitle.trim(), content: updatedContent, updated_at: new Date().toISOString() })
       }
       setIsEditing(false)
       setEditTitle('')
@@ -628,7 +726,8 @@ export default function CommunityForum({
 
   const startEditPost = (post: CommunityPost) => {
     setEditTitle(post.title)
-    setEditContent(post.content)
+    const parsed = parsePostContent(post.content)
+    setEditContent(parsed.text)
     setIsEditing(true)
   }
 
@@ -781,7 +880,7 @@ export default function CommunityForum({
     let result = [...posts]
     const q = searchQuery.toLowerCase()
     if (searchQuery.trim()) {
-      result = result.filter(p => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q))
+      result = result.filter(p => p.title.toLowerCase().includes(q) || parsePostContent(p.content).text.toLowerCase().includes(q))
     }
     if (sortMode === 'hot') {
       result.sort((a, b) => ((b.likes_count * 2) + (b.comments_count * 3) + b.views_count) - ((a.likes_count * 2) + (a.comments_count * 3) + a.views_count))
@@ -909,9 +1008,25 @@ export default function CommunityForum({
                 </h1>
 
                 {/* Content */}
-                <div className="text-[15px] leading-relaxed text-brand-brown-dark/95 whitespace-pre-wrap mb-6">
-                  {selectedPost.content}
-                </div>
+                {(() => {
+                  const parsed = parsePostContent(selectedPost.content)
+                  const preset = BACKGROUND_PRESETS.find(p => p.id === parsed.backgroundStyle)
+                  if (preset && preset.id !== 'normal') {
+                    return (
+                      <div
+                        className="w-full text-white font-extrabold text-center py-16 px-6 text-lg sm:text-xl rounded-2xl flex items-center justify-center min-h-[220px] shadow-sm mb-6 select-none leading-relaxed"
+                        style={{ background: preset.bg }}
+                      >
+                        {renderFormattedContent(parsed.text, true)}
+                      </div>
+                    )
+                  }
+                  return (
+                    <div className="text-[15px] leading-relaxed text-brand-brown-dark/95 whitespace-pre-wrap mb-6">
+                      {renderFormattedContent(parsed.text, false)}
+                    </div>
+                  )
+                })()}
                 {selectedPost.image_urls && selectedPost.image_urls.length > 0 && (
                   <div className="mb-6 flex flex-col gap-4 items-center">
                     {selectedPost.image_urls.map((src, index) => (
@@ -1189,58 +1304,162 @@ export default function CommunityForum({
             className="mx-4 mt-3 py-3 text-lg font-black text-brand-brown-dark bg-transparent outline-none border-b border-brand-terracotta-light/20 placeholder:text-brand-brown-light/40"
           />
 
-          {/* Content */}
-          <textarea
-            value={writeContent}
-            onChange={e => setWriteContent(e.target.value)}
-            placeholder="Chia sẻ trải nghiệm, hỏi đáp, lời khuyên..."
-            maxLength={4000}
-            required
-            className="flex-1 mx-4 mt-3 mb-4 py-2 text-sm leading-relaxed text-brand-brown-dark bg-transparent outline-none placeholder:text-brand-brown-light/40 resize-none min-h-[300px]"
-          />
+          {/* Formatting Toolbar */}
+          <div className="flex gap-2 px-4 py-1.5 bg-brand-light/40 border-y border-brand-terracotta-light/10">
+            <button
+              type="button"
+              onClick={() => insertFormatting('bold')}
+              className="px-2.5 py-1 text-xs font-black rounded-lg border border-brand-terracotta-light/20 bg-white hover:bg-brand-light text-brand-brown-dark transition active:scale-95"
+              title="Tô đậm (**chữ**)"
+            >
+              B
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormatting('italic')}
+              className="px-2.5 py-1 text-xs font-black italic rounded-lg border border-brand-terracotta-light/20 bg-white hover:bg-brand-light text-brand-brown-dark transition active:scale-95"
+              title="In nghiêng (*chữ*)"
+            >
+              I
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormatting('heading')}
+              className="px-2.5 py-1 text-xs font-black rounded-lg border border-brand-terracotta-light/20 bg-white hover:bg-brand-light text-brand-brown-dark transition active:scale-95"
+              title="Tiêu đề (### Tiêu đề)"
+            >
+              H
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormatting('list')}
+              className="px-2.5 py-1 text-xs font-black rounded-lg border border-brand-terracotta-light/20 bg-white hover:bg-brand-light text-brand-brown-dark transition active:scale-95"
+              title="Danh sách (- Mục)"
+            >
+              • Danh sách
+            </button>
+          </div>
 
-          {/* Image upload */}
-          <div className="mx-4 mb-4 rounded-2xl border border-brand-terracotta-light/20 bg-white/75 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-black text-brand-brown-dark">Ảnh đính kèm</p>
-                <p className="mt-0.5 text-[11px] font-medium text-brand-brown-light">Tối đa {MAX_POST_IMAGES} ảnh, tự nén rồi lưu vào bài viết.</p>
-              </div>
-              <label className={`inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-xs font-black transition ${
-                writeImages.length >= MAX_POST_IMAGES || imageProcessing
-                  ? 'bg-brand-light text-brand-brown-light/50'
-                  : 'bg-brand-terracotta text-white hover:bg-brand-brown-dark'
-              }`}>
-                {imageProcessing ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
-                {imageProcessing ? 'Nén...' : 'Thêm ảnh'}
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  disabled={writeImages.length >= MAX_POST_IMAGES || imageProcessing}
-                  onChange={handlePostImagesChange}
-                  className="sr-only"
+          {/* Content */}
+          <div className="mx-4 mt-3 mb-4 flex flex-col min-h-[300px]">
+            {selectedBgStyle !== 'normal' ? (
+              <div 
+                className="w-full rounded-2xl flex items-center justify-center p-6 shadow-sm min-h-[260px]"
+                style={{ background: BACKGROUND_PRESETS.find(p => p.id === selectedBgStyle)?.bg }}
+              >
+                <textarea
+                  id="forum-textarea"
+                  value={writeContent}
+                  onChange={e => setWriteContent(e.target.value)}
+                  placeholder="Bạn đang nghĩ gì thế?"
+                  maxLength={250}
+                  required
+                  className="w-full text-white font-extrabold text-center bg-transparent outline-none placeholder:text-white/60 resize-none h-full overflow-y-auto leading-relaxed text-lg sm:text-xl py-4"
+                  style={{ border: 'none' }}
                 />
-              </label>
-            </div>
-            {writeImages.length > 0 && (
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                {writeImages.map((src, index) => (
-                  <div key={`${src.slice(0, 24)}-${index}`} className="group relative aspect-square overflow-hidden rounded-xl bg-brand-light">
-                    <img src={src} alt={`Ảnh ${index + 1}`} className="h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setWriteImages(prev => prev.filter((_, i) => i !== index))}
-                      className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/45 text-white opacity-100 transition hover:bg-red-500 sm:opacity-0 sm:group-hover:opacity-100"
-                      title="Xoá ảnh"
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                ))}
               </div>
+            ) : (
+              <textarea
+                id="forum-textarea"
+                value={writeContent}
+                onChange={e => setWriteContent(e.target.value)}
+                placeholder="Chia sẻ trải nghiệm, hỏi đáp, lời khuyên..."
+                maxLength={4000}
+                required
+                className="flex-1 w-full py-2 text-sm leading-relaxed text-brand-brown-dark bg-transparent outline-none placeholder:text-brand-brown-light/40 resize-none min-h-[300px]"
+              />
             )}
           </div>
+
+          {/* Background presets selector */}
+          <div className="mx-4 mb-4">
+            <p className="text-[11px] font-black text-brand-brown-light/80 mb-2">Chọn màu nền bài viết (Facebook style):</p>
+            <div className="flex flex-wrap gap-2.5 items-center">
+              {BACKGROUND_PRESETS.map(preset => {
+                const isSelected = selectedBgStyle === preset.id
+                const isDisabled = writeImages.length > 0 && preset.id !== 'normal'
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => {
+                      if (writeContent.length > 250 && preset.id !== 'normal') {
+                        window.alert('Nội dung quá dài để chuyển sang bài viết có màu nền (tối đa 250 ký tự).')
+                        return
+                      }
+                      setSelectedBgStyle(preset.id)
+                    }}
+                    className={`h-8 w-8 rounded-full border transition active:scale-95 flex items-center justify-center ${
+                      isSelected
+                        ? 'border-brand-terracotta ring-2 ring-brand-terracotta/30 scale-105'
+                        : 'border-brand-terracotta-light/20 hover:scale-[1.03]'
+                    } ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    style={{
+                      background: preset.bg || '#f4ebe1'
+                    }}
+                    title={preset.name}
+                  >
+                    {preset.id === 'normal' && (
+                      <span className="text-[9px] text-brand-brown-dark font-black">Mặc định</span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            {writeImages.length > 0 && (
+              <p className="text-[10px] text-brand-brown-light/60 mt-1 font-medium">Màu nền chỉ áp dụng cho bài viết không đính kèm ảnh.</p>
+            )}
+          </div>
+
+          {/* Image upload */}
+          {selectedBgStyle === 'normal' ? (
+            <div className="mx-4 mb-4 rounded-2xl border border-brand-terracotta-light/20 bg-white/75 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black text-brand-brown-dark">Ảnh đính kèm</p>
+                  <p className="mt-0.5 text-[11px] font-medium text-brand-brown-light">Tối đa {MAX_POST_IMAGES} ảnh, tự nén rồi lưu vào bài viết.</p>
+                </div>
+                <label className={`inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-xs font-black transition ${
+                  writeImages.length >= MAX_POST_IMAGES || imageProcessing
+                    ? 'bg-brand-light text-brand-brown-light/50'
+                    : 'bg-brand-terracotta text-white hover:bg-brand-brown-dark'
+                }`}>
+                  {imageProcessing ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
+                  {imageProcessing ? 'Nén...' : 'Thêm ảnh'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    disabled={writeImages.length >= MAX_POST_IMAGES || imageProcessing}
+                    onChange={handlePostImagesChange}
+                    className="sr-only"
+                  />
+                </label>
+              </div>
+              {writeImages.length > 0 && (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {writeImages.map((src, index) => (
+                    <div key={`${src.slice(0, 24)}-${index}`} className="group relative aspect-square overflow-hidden rounded-xl bg-brand-light">
+                      <img src={src} alt={`Ảnh ${index + 1}`} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setWriteImages(prev => prev.filter((_, i) => i !== index))}
+                        className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/45 text-white opacity-100 transition hover:bg-red-500 sm:opacity-0 sm:group-hover:opacity-100"
+                        title="Xoá ảnh"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mx-4 mb-4 rounded-2xl border border-dashed border-brand-terracotta-light/20 bg-brand-light/30 p-4 text-center">
+              <p className="text-xs font-bold text-brand-brown-light">Bài viết có màu nền không hỗ trợ đính kèm ảnh.</p>
+            </div>
+          )}
 
           {/* Footer: anonymous toggle */}
           <div className="sticky bottom-0 left-0 right-0 px-4 py-3 bg-white/95 backdrop-blur-md border-t border-brand-terracotta-light/15">
@@ -1251,7 +1470,7 @@ export default function CommunityForum({
             )}
             <div className="flex items-center justify-between">
             <div className="text-[11px] text-brand-brown-light/70 font-medium">
-              {writeContent.length}/4000
+              {writeContent.length}/{selectedBgStyle !== 'normal' ? 250 : 4000}
             </div>
             <button
               type="button"
@@ -1412,7 +1631,7 @@ export default function CommunityForum({
                 {trendingPost.title}
               </h3>
               <p className="text-xs text-brand-brown-light line-clamp-1 mt-1">
-                {trendingPost.content}
+                {parsePostContent(trendingPost.content).text}
               </p>
               <div className="flex items-center gap-3 mt-2 text-[11px] font-bold text-brand-brown-light/80">
                 <span className="inline-flex items-center gap-1"><ThumbsUp size={11} />{trendingPost.likes_count}</span>
@@ -1461,7 +1680,7 @@ export default function CommunityForum({
                         {post.title}
                       </h3>
                       <p className="mt-1 text-[12px] sm:text-[13px] text-brand-brown-light line-clamp-1 leading-snug">
-                        {post.content}
+                        {parsePostContent(post.content).text}
                       </p>
                       <div className="mt-2 flex items-center gap-1.5 text-[11px] text-brand-brown-light/80">
                         <span className="inline-flex items-center gap-1 font-bold text-brand-brown-dark/80">

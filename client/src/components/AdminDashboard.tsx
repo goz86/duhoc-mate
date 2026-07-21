@@ -69,6 +69,16 @@ interface Props {
 
 type TabType = 'stats' | 'members' | 'forum' | 'rooms' | 'topik'
 
+function getPostTextOnly(content: string): string {
+  if (content && content.startsWith('{') && content.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(content)
+      if (typeof parsed.text === 'string') return parsed.text
+    } catch (e) {}
+  }
+  return content || ''
+}
+
 export default function AdminDashboard({ currentUserId, onClose, socket }: Props) {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<TabType>('stats')
@@ -580,7 +590,7 @@ export default function AdminDashboard({ currentUserId, onClose, socket }: Props
                         <tr key={post.id} className="hover:bg-brand-cream/30 dark:hover:bg-brand-panel/40 transition">
                           <td className="px-5 py-3.5 max-w-[240px]">
                             <div className="font-bold truncate" title={post.title}>{post.title}</div>
-                            <div className="text-[10px] text-brand-brown-light truncate" title={post.content}>{post.content}</div>
+                            <div className="text-[10px] text-brand-brown-light truncate" title={getPostTextOnly(post.content)}>{getPostTextOnly(post.content)}</div>
                           </td>
                           <td className="px-5 py-3.5">
                             <span className="font-bold">{post.display_name}</span>
