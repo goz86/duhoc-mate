@@ -64,11 +64,12 @@ interface AdminPost {
 interface Props {
   currentUserId: string
   onClose: () => void
+  socket?: any
 }
 
 type TabType = 'stats' | 'members' | 'forum' | 'rooms' | 'topik'
 
-export default function AdminDashboard({ currentUserId, onClose }: Props) {
+export default function AdminDashboard({ currentUserId, onClose, socket }: Props) {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<TabType>('stats')
   const [stats, setStats] = useState<AdminStats>({
@@ -289,6 +290,10 @@ export default function AdminDashboard({ currentUserId, onClose }: Props) {
         .eq('id', roomId)
 
       if (error) throw error
+
+      if (socket) {
+        socket.emit('admin-close-room', { roomId, adminUserId: currentUserId })
+      }
 
       setRooms(prev => prev.filter(r => r.id !== roomId))
       fetchStats()

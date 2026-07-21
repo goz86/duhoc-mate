@@ -3101,6 +3101,7 @@ export default function App() {
           <AdminDashboard
             currentUserId={user?.id || ''}
             onClose={() => setView('landing')}
+            socket={socket}
           />
         </Suspense>
       )}

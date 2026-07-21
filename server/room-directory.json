@@ -224,7 +224,7 @@
     "hostAvatarUrl": "https://imqrvssxfrhivlumhoze.supabase.co/storage/v1/object/public/avatars/guests/guest_os9fuoa7kkm/1780131707407.png",
     "roomAvatarUrl": "",
     "createdAt": "2026-05-30T10:03:17.386Z",
-    "lastActiveAt": "2026-07-21T04:39:15.306Z"
+    "lastActiveAt": "2026-07-21T07:05:00.123Z"
   },
   "BQIW2O": {
     "id": "BQIW2O",
@@ -579,15 +579,15 @@
   },
   "T5FS4D": {
     "id": "T5FS4D",
-    "hostName": "hung",
+    "hostName": "히",
     "memberCount": 0,
     "currentSong": "Đang nghe nhạc Lofi",
     "roomTitle": "Vừa học vừa chơi",
     "isPrivate": false,
     "password": "",
-    "hostAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocIbwqqSGMcqCpVJ_8wGAAuuzasRunvJ_KBWndbDvVkzugUM2rNv=s96-c",
+    "hostAvatarUrl": "https://imqrvssxfrhivlumhoze.supabase.co/storage/v1/object/public/avatars/guests/29442d00-11dc-4a5c-9199-0f72faf85eda/1784616066049.png",
     "roomAvatarUrl": "",
     "createdAt": "2026-07-20T07:00:31.731291+00:00",
-    "lastActiveAt": "2026-07-21T04:30:33.123+00:00"
+    "lastActiveAt": "2026-07-21T06:45:53.312+00:00"
   }
 }

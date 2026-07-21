@@ -3445,6 +3445,43 @@ io.on('connection', (socket) => {
     broadcastRoomDirectory();
   });
 
+  socket.on('admin-close-room', async ({ roomId, adminUserId }) => {
+    if (!SUPABASE_KEY) return;
+    try {
+      const response = await fetch(`${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/profiles?id=eq.${encodeURIComponent(adminUserId)}&select=is_admin`, {
+        headers: supabaseHeaders(),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const profile = Array.isArray(data) ? data[0] : null;
+        if (profile && profile.is_admin) {
+          const room = rooms.get(roomId);
+          if (room) {
+            io.to(roomId).emit('room-closed', { roomId });
+            room.members.forEach(member => {
+              const memberSocket = io.sockets.sockets.get(member.id);
+              memberSocket?.leave(roomId);
+            });
+            rooms.delete(roomId);
+            clearVocabMatchTimers(roomId);
+            clearTopikGameTimer(roomId);
+            clearHostTransferTimer(roomId);
+          }
+          roomDirectory.delete(roomId);
+          saveRoomDirectory();
+          void deleteRoomStateFromSupabase(roomId);
+          broadcastRoomDirectory();
+          console.log(`[Admin Delete] Room ${roomId} was deleted by admin ${adminUserId}`);
+        } else {
+          console.warn(`[Admin Delete] Unauthorized delete attempt by user ${adminUserId} for room ${roomId}`);
+        }
+      }
+    } catch (err) {
+      console.error('[Admin Delete] Error verifying admin permissions:', err.message);
+    }
+  });
+
+
   // ─── VOICE CHAT SIGNALING (WebRTC P2P) ─────────────────────────────────────
 
   // User bật mic → join voice channel
