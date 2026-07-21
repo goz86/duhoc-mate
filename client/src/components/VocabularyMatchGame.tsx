@@ -263,7 +263,7 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
       setNow(Date.now())
       return
     }
-    const timer = window.setInterval(() => setNow(Date.now()), 500)
+    const timer = window.setInterval(() => setNow(Date.now()), 100)
     return () => window.clearInterval(timer)
   }, [matchGame.status, matchGame.roundEndsAt])
 
@@ -319,9 +319,9 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
     [members, playerIds]
   )
   const remainingMs = matchGame.status === 'playing' ? Math.max(0, matchGame.roundEndsAt - now) : 0
-  const remainingSec = Math.ceil(remainingMs / 1000)
+  const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000))
   const progressPercent = matchGame.durationSec > 0
-    ? Math.max(0, Math.min(100, (remainingMs / (matchGame.durationSec * 1000)) * 100))
+    ? Math.max(0, Math.min(100, (remainingSec / matchGame.durationSec) * 100))
     : 0
   const matchedCount = matchGame.matchedPairIds.length
   const totalPairs = Math.max(1, Math.floor(matchGame.cards.length / 2))
@@ -659,7 +659,9 @@ function MatchArenaPanel({
 
       <div className="mb-4 h-2 overflow-hidden rounded-full bg-brand-terracotta-light/15">
         <div
-          className="h-full rounded-full bg-green-500 transition-[width] duration-300"
+          className={`h-full rounded-full bg-green-500 ${
+            game.status === 'playing' && progressPercent < 100 ? 'transition-[width] duration-1000 ease-linear' : ''
+          }`}
           style={{ width: `${progressPercent}%` }}
         />
       </div>

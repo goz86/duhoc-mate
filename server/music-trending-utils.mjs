@@ -85,3 +85,34 @@ export function filterMusicVideo(video, type = 'vpop') {
 
   return durationSecs >= 90 && durationSecs <= 600
 }
+
+export const STATIC_TRENDING_FALLBACKS = {
+  vpop: [
+    { videoId: 'xyqR-b2tqB8', title: 'Sơn Tùng M-TP - Chúng Ta Của Tương Lai', author: 'Sơn Tùng M-TP Official', duration: '4:09', thumbnail: 'https://img.youtube.com/vi/xyqR-b2tqB8/mqdefault.jpg', views: 50000000 },
+    { videoId: 'x8VYWazR5mE', title: 'Sơn Tùng M-TP - Muộn Rồi Mà Sao Còn', author: 'Sơn Tùng M-TP Official', duration: '4:35', thumbnail: 'https://img.youtube.com/vi/x8VYWazR5mE/mqdefault.jpg', views: 180000000 },
+    { videoId: 'Hp2Tj4KStN8', title: 'Đen - Mang Tiền Về Cho Mẹ ft. Nguyên Thảo', author: 'Đen Vâu Official', duration: '6:43', thumbnail: 'https://img.youtube.com/vi/Hp2Tj4KStN8/mqdefault.jpg', views: 110000000 },
+    { videoId: 'gJHSDZfPrRY', title: 'Hoàng Thùy Linh - See Tình', author: 'Hoàng Thùy Linh', duration: '3:05', thumbnail: 'https://img.youtube.com/vi/gJHSDZfPrRY/mqdefault.jpg', views: 60000000 },
+    { videoId: '7P2sJq38Ryk', title: 'Double2T x Masew - À Lôi', author: 'Masew', duration: '3:18', thumbnail: 'https://img.youtube.com/vi/7P2sJq38Ryk/mqdefault.jpg', views: 40000000 },
+    { videoId: '7q0qS5fH7P4', title: 'GREY D x tlinh - đưa em về nhà', author: 'GREY D', duration: '3:30', thumbnail: 'https://img.youtube.com/vi/7q0qS5fH7P4/mqdefault.jpg', views: 50000000 },
+    { videoId: 'pYgCjC5n8m0', title: 'RPT MCK - Anh Đã Ổn Hơn', author: 'MCK', duration: '3:20', thumbnail: 'https://img.youtube.com/vi/pYgCjC5n8m0/mqdefault.jpg', views: 30000000 },
+    { videoId: 'wXhQD6S8Jg0', title: 'HIEUTHUHAI - Ngủ Một Mình', author: 'HIEUTHUHAI', duration: '3:46', thumbnail: 'https://img.youtube.com/vi/wXhQD6S8Jg0/mqdefault.jpg', views: 70000000 },
+    { videoId: '8B12k8Mv5M4', title: 'Phan Mạnh Quỳnh - Có Chàng Trai Viết Lên Cây', author: 'Phan Mạnh Quỳnh Official', duration: '5:02', thumbnail: 'https://img.youtube.com/vi/8B12k8Mv5M4/mqdefault.jpg', views: 90000000 },
+    { videoId: 'nSDgHBxUbVQ', title: 'Vũ. - Lạ Lùng', author: 'Vũ.', duration: '4:21', thumbnail: 'https://img.youtube.com/vi/nSDgHBxUbVQ/mqdefault.jpg', views: 120000000 }
+  ],
+  kpop: [
+    { videoId: 'gdZLi9oWNZg', title: 'BTS - Dynamite', author: 'HYBE LABELS', duration: '3:43', thumbnail: 'https://img.youtube.com/vi/gdZLi9oWNZg/mqdefault.jpg', views: 1800000000 },
+    { videoId: 'gQlMMD8auMs', title: 'BLACKPINK - Pink Venom', author: 'BLACKPINK', duration: '3:13', thumbnail: 'https://img.youtube.com/vi/gQlMMD8auMs/mqdefault.jpg', views: 800000000 },
+    { videoId: 'sVTy_wkv5mc', title: 'NewJeans - OMG', author: 'HYBE LABELS', duration: '6:33', thumbnail: 'https://img.youtube.com/vi/sVTy_wkv5mc/mqdefault.jpg', views: 150000000 },
+    { videoId: '11cta61g08Q', title: 'NewJeans - Hype Boy', author: 'HYBE LABELS', duration: '2:59', thumbnail: 'https://img.youtube.com/vi/11cta61g08Q/mqdefault.jpg', views: 180000000 },
+    { videoId: 'F0B7HGP8mE4', title: 'IVE - LOVE DIVE', author: 'STARSHIP entertainment', duration: '2:58', thumbnail: 'https://img.youtube.com/vi/F0B7HGP8mE4/mqdefault.jpg', views: 250000000 },
+    { videoId: 'Qc7_zRmbMSU', title: 'FIFTY FIFTY - Cupid', author: 'FIFTY FIFTY', duration: '3:05', thumbnail: 'https://img.youtube.com/vi/Qc7_zRmbMSU/mqdefault.jpg', views: 160000000 },
+    { videoId: 'UBURTjK3kcA', title: 'LE SSERAFIM - UNFORGIVEN (feat. Nile Rodgers)', author: 'HYBE LABELS', duration: '4:21', thumbnail: 'https://img.youtube.com/vi/UBURTjK3kcA/mqdefault.jpg', views: 110000000 },
+    { videoId: 'ioNng23DkIM', title: 'BLACKPINK - How You Like That', author: 'BLACKPINK', duration: '3:03', thumbnail: 'https://img.youtube.com/vi/ioNng23DkIM/mqdefault.jpg', views: 1200000000 }
+  ],
+  vinahouse: [
+    { videoId: 'g8Jp37Y8g8k', title: 'Pháo - 2 Phút Hơn (KAIZ Remix)', author: 'KAIZ', duration: '3:05', thumbnail: 'https://img.youtube.com/vi/g8Jp37Y8g8k/mqdefault.jpg', views: 300000000 },
+    { videoId: '6S4B9lA89pE', title: 'Thiên Đàng - Wowy x JoliPoli (Vinahouse Remix)', author: 'Remix Official', duration: '4:20', thumbnail: 'https://img.youtube.com/vi/6S4B9lA89pE/mqdefault.jpg', views: 15000000 },
+    { videoId: 'j2_yXNfS_Ww', title: 'Phong Dạ Hành - Anh Rồng (Vinahouse Remix)', author: 'Vinahouse Club', duration: '5:10', thumbnail: 'https://img.youtube.com/vi/j2_yXNfS_Ww/mqdefault.jpg', views: 25000000 },
+    { videoId: 'R-2S1c_z1v4', title: 'Khuê Mộc Lan - Hương Ly x Jombie (Vinahouse Remix)', author: 'Hương Ly Official', duration: '4:15', thumbnail: 'https://img.youtube.com/vi/R-2S1c_z1v4/mqdefault.jpg', views: 20000000 }
+  ]
+}

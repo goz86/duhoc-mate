@@ -11,6 +11,7 @@ import {
   filterMusicVideo,
   getFallbackMusicSearchQuery,
   getTrendingMusicQueries,
+  STATIC_TRENDING_FALLBACKS,
 } from './music-trending-utils.mjs';
 
 const app = express();
@@ -417,9 +418,9 @@ const getTrendingMusicWithYtSearch = async (type = 'vpop') => {
   console.log(`Fetching trending music via yt-search fallback for ${type}...`);
   const queries = getTrendingMusicQueries(type);
   
-  // Use the full query set so Random has a richer pool while the endpoint stays rate-limited.
+  // Use a smaller query set to avoid rate limits
   const shuffledQueries = [...queries].sort(() => 0.5 - Math.random());
-  const selectedQueries = shuffledQueries.slice(0, 6);
+  const selectedQueries = shuffledQueries.slice(0, 2);
   
   const searchPromises = selectedQueries.map(q => yts(q));
   const searchResults = await Promise.all(searchPromises);
@@ -441,17 +442,15 @@ const getTrendingMusicWithYtSearch = async (type = 'vpop') => {
   }));
 };
 
-let cachedVpopChart = null;
-let cachedVpopTime = 0;
+const trendingCache = {
+  vpop: { data: null, lastUpdated: 0 },
+  kpop: { data: null, lastUpdated: 0 },
+  vinahouse: { data: null, lastUpdated: 0 }
+};
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
+const zingResolveCache = new Map();
 
 const getZingVpopChart = async () => {
-  const now = Date.now();
-  // Cache for 2 hours (7,200,000 ms)
-  if (cachedVpopChart && (now - cachedVpopTime < 7200000)) {
-    console.log('Returning cached V-Pop chart from Zing MP3...');
-    return cachedVpopChart;
-  }
-  
   console.log('Fetching fresh V-Pop chart from Zing MP3...');
   try {
     const res = await fetch('https://mp3.zing.vn/xhr/chart-realtime');
@@ -459,18 +458,22 @@ const getZingVpopChart = async () => {
     const json = await res.json();
     const songs = json?.data?.song || [];
     
-    // Take the top 15 songs
-    const topSongs = songs.slice(0, 15);
+    // Take the top 10 songs
+    const topSongs = songs.slice(0, 10);
     if (topSongs.length === 0) throw new Error('No songs in Zing MP3 chart response');
     
     // Resolve each song to a YouTube video in parallel
     const searchPromises = topSongs.map(async (song) => {
+      const cacheKey = `${song.name} - ${song.artists_names}`;
+      if (zingResolveCache.has(cacheKey)) {
+        return zingResolveCache.get(cacheKey);
+      }
       try {
         const query = `${song.name} ${song.artists_names} official mv`;
         const searchResult = await yts(query);
         const video = searchResult?.videos?.[0];
         if (video) {
-          return {
+          const resolvedSong = {
             videoId: video.videoId,
             title: video.title,
             author: video.author?.name || String(video.author) || '',
@@ -478,6 +481,8 @@ const getZingVpopChart = async () => {
             thumbnail: video.image || video.thumbnail || `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`,
             views: video.views || 0,
           };
+          zingResolveCache.set(cacheKey, resolvedSong);
+          return resolvedSong;
         }
       } catch (err) {
         console.warn(`Failed to resolve YouTube video for Zing song: ${song.name}`, err.message);
@@ -486,73 +491,108 @@ const getZingVpopChart = async () => {
     });
 
     const resolved = await Promise.all(searchPromises);
-    const results = resolved.filter(Boolean);
-    
-    if (results.length > 0) {
-      cachedVpopChart = results;
-      cachedVpopTime = now;
-      return results;
-    }
+    return resolved.filter(Boolean);
   } catch (err) {
     console.warn('Failed to fetch Zing V-Pop chart, falling back:', err.message);
   }
   return null;
 };
 
+const fetchAndCacheTrending = async (type) => {
+  console.log(`[TRENDING CACHE] Refreshing cache for: ${type}`);
+  let results = null;
+
+  if (type === 'vpop') {
+    try {
+      results = await getZingVpopChart();
+    } catch (err) {
+      console.warn('[TRENDING CACHE] Zing V-Pop chart refresh failed:', err.message);
+    }
+  }
+
+  // If vpop failed or type is not vpop, try YouTube API/yts/Invidious
+  if (!results || results.length === 0) {
+    if (YOUTUBE_API_KEY) {
+      try {
+        const officialResults = await getTrendingMusicWithOfficialApi(type);
+        if (officialResults && officialResults.length > 0) {
+          results = officialResults.filter(v => filterMusicVideo(v, type));
+        }
+      } catch (err) {
+        console.warn('[TRENDING CACHE] Official YouTube API failed for:', type, err.message);
+      }
+    }
+  }
+
+  if (!results || results.length === 0) {
+    try {
+      results = await getTrendingMusicWithYtSearch(type);
+    } catch (err) {
+      console.warn('[TRENDING CACHE] yt-search failed for:', type, err.message);
+    }
+  }
+
+  if (!results || results.length === 0) {
+    try {
+      const invidiousResults = await getTrendingMusicWithInvidious(type);
+      if (invidiousResults && invidiousResults.length > 0) {
+        results = invidiousResults.filter(v => filterMusicVideo(v, type));
+      }
+    } catch (err) {
+      console.warn('[TRENDING CACHE] Invidious failed for:', type, err.message);
+    }
+  }
+
+  if (results && results.length > 0) {
+    trendingCache[type] = {
+      data: results,
+      lastUpdated: Date.now()
+    };
+    console.log(`[TRENDING CACHE] Successfully updated cache for ${type} with ${results.length} items.`);
+    return results;
+  } else {
+    console.warn(`[TRENDING CACHE] Failed to fetch fresh data for ${type}. Keeping old cache or using fallbacks.`);
+    return null;
+  }
+};
+
 app.get('/api/trending-music', rateLimitRest('trending-music', 30, 60_000), async (req, res) => {
   const requestedType = sanitizeBoundedString(req.query.type, 24);
   const type = TRENDING_MUSIC_TYPES.has(requestedType) ? requestedType : 'vpop';
   
-  if (type === 'vpop') {
-    try {
-      const zingResults = await getZingVpopChart();
-      if (zingResults && zingResults.length > 0) {
-        return res.json({ results: zingResults });
-      }
-    } catch (err) {
-      console.warn('Zing V-Pop chart failed:', err.message);
-    }
+  const now = Date.now();
+  const cached = trendingCache[type];
+  
+  // If cache is expired or missing, trigger background update (non-blocking)
+  if (!cached.data || now - cached.lastUpdated > CACHE_TTL_MS) {
+    fetchAndCacheTrending(type).catch(err => {
+      console.error(`[TRENDING CACHE] Background update error for ${type}:`, err);
+    });
   }
   
-  if (YOUTUBE_API_KEY) {
-    try {
-      const results = await getTrendingMusicWithOfficialApi(type);
-      if (results && results.length > 0) {
-        const filtered = results.filter(v => filterMusicVideo(v, type));
-        if (filtered.length > 0) {
-          return res.json({ results: filtered });
-        }
-      }
-    } catch (err) {
-      console.warn('Official YouTube API trending failed:', err.message);
-    }
+  // If we have cached data, return it immediately
+  if (cached.data && cached.data.length > 0) {
+    return res.json({ results: cached.data });
   }
-
-  // Use yt-search as the primary non-API-key source
-  try {
-    const results = await getTrendingMusicWithYtSearch(type);
-    if (results && results.length > 0) {
-      return res.json({ results });
-    }
-  } catch (err) {
-    console.warn('yt-search trending music failed:', err.message);
-  }
-
-  // Invidious as a fallback if yt-search fails
-  try {
-    const results = await getTrendingMusicWithInvidious(type);
-    if (results && results.length > 0) {
-      const filtered = results.filter(v => filterMusicVideo(v, type));
-      if (filtered.length > 0) {
-        return res.json({ results: filtered });
-      }
-    }
-  } catch (err) {
-    console.warn('Invidious trending music failed:', err.message);
-  }
-
-  return res.status(500).json({ error: 'Failed to fetch trending music' });
+  
+  // If cache is empty/missing, return static fallback instantly
+  console.log(`[TRENDING CACHE] Cache empty/missing for ${type}. Returning static fallback.`);
+  return res.json({ results: STATIC_TRENDING_FALLBACKS[type] || [] });
 });
+
+// Run background pre-fetching on startup
+setTimeout(async () => {
+  console.log('[TRENDING CACHE] Starting initial background pre-fetch...');
+  for (const type of ['vpop', 'kpop', 'vinahouse']) {
+    try {
+      await fetchAndCacheTrending(type);
+    } catch (err) {
+      console.error(`[TRENDING CACHE] Initial background pre-fetch failed for ${type}:`, err);
+    }
+    // Wait 2 seconds between categories to avoid rate limits
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+}, 5000);
 
 
 const socketOptions = {
