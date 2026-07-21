@@ -347,13 +347,6 @@ export default function CommunityForum({
     }
   }
 
-  const handleCommand = (command: string, value: string = '') => {
-    if (editorRef.current) {
-      editorRef.current.focus()
-    }
-    document.execCommand(command, false, value)
-    handleEditorInput()
-  }
 
   // Synchronize WYSIWYG editor content when opened
   useEffect(() => {
@@ -1073,7 +1066,7 @@ export default function CommunityForum({
                 <div
                   ref={editEditorRef}
                   contentEditable
-                  placeholder="Nội dung"
+                  {...{ placeholder: "Nội dung" }}
                   className="w-full px-4 py-3 rounded-xl border border-brand-terracotta-light/25 bg-brand-light/50 text-sm font-medium text-brand-brown-dark outline-none focus:ring-2 focus:ring-brand-terracotta/30 min-h-[180px] overflow-y-auto select-text forum-editor-wysiwyg"
                   onInput={(e) => setEditContent(e.currentTarget.innerHTML)}
                 />
@@ -1477,7 +1470,7 @@ export default function CommunityForum({
                 <div
                   ref={editorRef}
                   contentEditable
-                  placeholder="Bạn đang nghĩ gì thế?"
+                  {...{ placeholder: "Bạn đang nghĩ gì thế?" }}
                   onInput={handleEditorInput}
                   className="w-full text-white font-extrabold text-center bg-transparent outline-none placeholder:text-white/60 resize-none h-full overflow-y-auto leading-relaxed text-lg sm:text-xl py-4 select-text forum-editor-wysiwyg-card"
                   style={{ border: 'none' }}
@@ -1487,7 +1480,7 @@ export default function CommunityForum({
               <div
                 ref={editorRef}
                 contentEditable
-                placeholder="Chia sẻ trải nghiệm, hỏi đáp, lời khuyên..."
+                {...{ placeholder: "Chia sẻ trải nghiệm, hỏi đáp, lời khuyên..." }}
                 onInput={handleEditorInput}
                 className="flex-1 w-full py-2 text-sm leading-relaxed text-brand-brown-dark bg-transparent outline-none resize-none min-h-[300px] overflow-y-auto select-text forum-editor-wysiwyg"
               />
