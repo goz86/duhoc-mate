@@ -95,7 +95,8 @@ type RoomGameState = {
   answers: Record<string, { optionIndex: number; correct: boolean; answeredAt: number }>
 }
 
-type ArenaMode = 'match' | 'grammar-race' | 'topik-master' | 'listening' | 'boss'
+type ArenaMode = 'match' | 'topik-master'
+type QuizSubMode = 'mixed' | 'grammar' | 'listening' | 'boss'
 type LeaderboardPeriod = 'room' | 'week' | 'month'
 
 type VocabularyMatchGameProps = {
@@ -131,59 +132,40 @@ const defaultRoomGameState: RoomGameState = {
 
 const durationOptions = [10, 15, 20]
 
-const ARENA_MODES: Array<{
-  id: ArenaMode
-  title: string
-  subtitle: string
-  badge: string
-  Icon: typeof Gamepad2
-  gameType?: TopikRoomGameType
-  rounds?: number
-}> = [
+const QUIZ_SUB_MODES = [
   {
-    id: 'match',
-    title: 'Ghép thẻ',
-    subtitle: 'Ghép từ Hàn với nghĩa thật nhanh',
-    badge: 'Realtime',
-    Icon: Layers3,
-  },
-  {
-    id: 'grammar-race',
-    title: 'Grammar Race',
-    subtitle: 'Chọn mẫu ngữ pháp đúng trước mọi người',
-    badge: '5 câu',
-    Icon: Zap,
-    gameType: 'grammar-race',
-    rounds: 5,
-  },
-  {
-    id: 'topik-master',
-    title: 'TOPIK Master',
-    subtitle: 'Quiz hỗn hợp từ vựng, ngữ pháp, đọc hiểu',
-    badge: '10 câu',
+    id: 'mixed',
+    title: 'TOPIK Master (Hỗn hợp)',
+    subtitle: 'Trắc nghiệm tổng hợp Từ vựng & Ngữ pháp (10 câu)',
     Icon: Trophy,
-    gameType: 'topik-master',
+    gameType: 'topik-master' as const,
     rounds: 10,
+  },
+  {
+    id: 'grammar',
+    title: 'Grammar Race (Ngữ pháp)',
+    subtitle: 'Chọn mẫu ngữ pháp đúng thật nhanh (5 câu)',
+    Icon: Zap,
+    gameType: 'grammar-race' as const,
+    rounds: 5,
   },
   {
     id: 'listening',
     title: 'Nghe nhanh chọn nghĩa',
-    subtitle: 'Nghe từ/câu tiếng Hàn rồi chọn nghĩa đúng',
-    badge: 'TTS',
+    subtitle: 'Nghe từ phát âm và chọn nghĩa tiếng Việt (5 câu)',
     Icon: Headphones,
-    gameType: 'vocab-speed',
+    gameType: 'vocab-speed' as const,
     rounds: 5,
   },
   {
     id: 'boss',
-    title: 'Boss round',
-    subtitle: '10 câu liên tiếp, điểm tốc độ quyết định MVP',
-    badge: 'Hard',
+    title: 'Boss round (Thử thách)',
+    subtitle: 'Thử thách 10 câu nâng cao tính thời gian tốc độ',
     Icon: Brain,
-    gameType: 'topik-master',
+    gameType: 'topik-master' as const,
     rounds: 10,
   },
-]
+] as const
 
 const ERROR_LABELS: Record<TopikErrorType, string> = {
   vocabulary: 'Sai từ vựng',
@@ -209,6 +191,7 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
   const { user } = useAuth()
   const userId = user?.id || null
   const [activeMode, setActiveMode] = useState<ArenaMode>('match')
+  const [quizSubMode, setQuizSubMode] = useState<QuizSubMode>('mixed')
   const [matchGame, setMatchGame] = useState<MatchState>(defaultMatchState)
   const [roomGame, setRoomGame] = useState<RoomGameState>(defaultRoomGameState)
   const [selectedCard, setSelectedCard] = useState<MatchCard | null>(null)
@@ -238,6 +221,15 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
     }
     const handleTopikSync = (nextState: RoomGameState) => {
       setRoomGame({ ...defaultRoomGameState, ...nextState })
+      if (nextState.status !== 'idle' && nextState.gameType) {
+        if (nextState.gameType === 'grammar-race') {
+          setQuizSubMode('grammar')
+        } else if (nextState.gameType === 'vocab-speed') {
+          setQuizSubMode('listening')
+        } else if (nextState.gameType === 'topik-master') {
+          setQuizSubMode(prev => (prev === 'boss' ? 'boss' : 'mixed'))
+        }
+      }
     }
     const handleArenaLeaderboard = ({ period, leaderboard }: { period: 'week' | 'month'; leaderboard: ArenaScore[] }) => {
       setPeriodLeaderboards(prev => ({ ...prev, [period]: leaderboard || [] }))
@@ -272,7 +264,7 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
   }, [matchGame.round])
 
   useEffect(() => {
-    if (activeMode !== 'listening') return
+    if (activeMode !== 'topik-master' || quizSubMode !== 'listening') return
     const question = roomGame.question
     if (!question || roomGame.status !== 'question') return
     const synth = window.speechSynthesis
@@ -283,7 +275,7 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
     utterance.rate = 0.88
     synth.speak(utterance)
     return () => synth.cancel()
-  }, [activeMode, roomGame.question?.id, roomGame.status])
+  }, [activeMode, quizSubMode, roomGame.question?.id, roomGame.status])
 
   useEffect(() => {
     const question = roomGame.question
@@ -332,10 +324,14 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
       ? 'Kết thúc'
       : 'Đang chờ'
 
-  const activeModeMeta = useMemo(
-    () => ARENA_MODES.find(mode => mode.id === activeMode) || ARENA_MODES[0],
-    [activeMode]
-  )
+  const activeSubModeMeta = useMemo(() => {
+    if (roomGame.status !== 'idle' && roomGame.gameType) {
+      if (roomGame.gameType === 'grammar-race') return QUIZ_SUB_MODES[1]
+      if (roomGame.gameType === 'vocab-speed') return QUIZ_SUB_MODES[2]
+      return quizSubMode === 'boss' ? QUIZ_SUB_MODES[3] : QUIZ_SUB_MODES[0]
+    }
+    return QUIZ_SUB_MODES.find(sub => sub.id === quizSubMode) || QUIZ_SUB_MODES[0]
+  }, [roomGame.status, roomGame.gameType, quizSubMode])
   const roomLeaderboard = activeMode === 'match' ? matchGame.leaderboard : roomGame.leaderboard
   const visibleLeaderboard = leaderboardPeriod === 'room'
     ? roomLeaderboard
@@ -398,15 +394,15 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
   const startMatchGame = useCallback(() => emitMatchAction('start', { durationSec }), [durationSec, emitMatchAction])
   const resetMatchGame = useCallback(() => emitMatchAction('reset'), [emitMatchAction])
 
-  const startQuizGame = useCallback((mode: ArenaMode) => {
-    const meta = ARENA_MODES.find(item => item.id === mode)
+  const startQuizGame = useCallback((subMode: QuizSubMode) => {
+    const meta = QUIZ_SUB_MODES.find(item => item.id === subMode)
     if (!meta?.gameType) return
     setRoomSelections({})
     savedRoomMistakesRef.current.clear()
     socket.emit('topik-game-action', {
       roomId,
       type: 'start',
-      payload: { gameType: meta.gameType, totalRounds: meta.rounds || 5 },
+      payload: { gameType: meta.gameType, totalRounds: meta.rounds },
     })
   }, [roomId, socket])
 
@@ -439,76 +435,52 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
     if (period !== 'room') socket.emit('topik-arena-leaderboard', { period })
   }, [socket])
 
-  const startActiveQuizGame = useCallback(() => startQuizGame(activeMode), [activeMode, startQuizGame])
+  const startActiveQuizGame = useCallback(() => startQuizGame(quizSubMode), [quizSubMode, startQuizGame])
 
   return (
-    <div className="flex min-h-[560px] w-full min-w-0 flex-1 flex-col gap-4 text-brand-brown-dark">
-      <div className="rounded-[30px] border border-brand-terracotta-light/20 bg-white/90 p-4 shadow-sm xl:p-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-brand-terracotta text-white shadow-lg shadow-brand-terracotta/20">
-              <Gamepad2 size={22} />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-black text-brand-terracotta">TOPIK Arena</p>
-              <h2 className="text-xl font-black leading-tight sm:text-2xl">Khu thi đấu học tiếng Hàn</h2>
-              <p className="mt-1 text-xs font-semibold text-brand-brown-light">
-                Chơi realtime, lưu lỗi sai, xem xếp hạng tuần/tháng và gom dữ liệu cho AI chữa lỗi.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 xl:w-[390px]">
-            <div className="rounded-2xl border border-brand-terracotta-light/18 bg-brand-light/35 px-3 py-2">
-              <p className="text-[10px] font-black uppercase tracking-wide text-brand-brown-light">Người chơi</p>
-              <p className="mt-0.5 text-lg font-black text-brand-brown-dark">{members.length}</p>
-            </div>
-            <div className="rounded-2xl border border-brand-terracotta-light/18 bg-brand-light/35 px-3 py-2">
-              <p className="text-[10px] font-black uppercase tracking-wide text-brand-brown-light">Mode</p>
-              <p className="mt-0.5 text-lg font-black text-brand-brown-dark">{ARENA_MODES.length}</p>
-            </div>
-            <div className="rounded-2xl border border-brand-terracotta-light/18 bg-brand-light/35 px-3 py-2">
-              <p className="text-[10px] font-black uppercase tracking-wide text-brand-brown-light">Lỗi sai</p>
-              <p className="mt-0.5 text-lg font-black text-brand-brown-dark">{mistakes.length}</p>
-            </div>
+    <div className="flex min-h-[560px] w-full min-w-0 flex-1 flex-col gap-4 text-brand-brown-dark animate-fadeIn">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-[24px] border border-brand-terracotta-light/15 bg-white/90 p-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-terracotta text-white shadow-md shadow-brand-terracotta/15">
+            <Gamepad2 size={20} />
+          </span>
+          <div>
+            <h2 className="text-lg font-black leading-tight sm:text-xl">TOPIK Arena</h2>
+            <p className="text-[11px] font-bold text-brand-brown-light">Đấu trường ôn luyện tiếng Hàn</p>
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
-          {ARENA_MODES.map(mode => {
-            const Icon = mode.Icon
-            const active = activeMode === mode.id
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-brand-light/60 px-3 py-1 text-[11px] font-black text-brand-brown-dark shadow-sm">
+            <Users size={12} className="text-brand-terracotta" /> {members.length} người học
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-brand-light/60 px-3 py-1 text-[11px] font-black text-brand-brown-dark shadow-sm">
+            <Brain size={12} className="text-brand-terracotta" /> {mistakes.length} lỗi sai
+          </span>
+        </div>
+      </div>
+
+      <div className="flex justify-center sm:justify-start">
+        <div className="flex rounded-2xl bg-brand-light/65 p-1 w-full sm:w-80 shadow-sm border border-brand-terracotta-light/5">
+          {[
+            { id: 'match', label: 'Ghép thẻ', Icon: Layers3 },
+            { id: 'topik-master', label: 'TOPIK Master', Icon: Trophy }
+          ].map(tab => {
+            const Icon = tab.Icon
+            const active = activeMode === tab.id
             return (
               <button
-                key={mode.id}
+                key={tab.id}
                 type="button"
-                onClick={() => setActiveMode(mode.id)}
-                className={`group flex min-h-[86px] min-w-0 flex-col justify-between rounded-2xl border p-3 text-left transition ${
+                onClick={() => setActiveMode(tab.id as ArenaMode)}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-black transition-all cursor-pointer active:scale-95 ${
                   active
-                    ? 'border-brand-terracotta bg-brand-terracotta text-white shadow-md shadow-brand-terracotta/15'
-                    : 'border-brand-terracotta-light/20 bg-white text-brand-brown-light hover:-translate-y-0.5 hover:border-brand-terracotta/35 hover:bg-brand-light/45 hover:shadow-sm'
+                    ? 'bg-brand-terracotta text-white shadow-sm'
+                    : 'text-brand-brown-light hover:text-brand-brown-dark'
                 }`}
               >
-                <span className="flex items-center justify-between gap-2">
-                  <span className={`grid h-9 w-9 place-items-center rounded-xl ${
-                    active ? 'bg-white/18 text-white' : 'bg-brand-light text-brand-terracotta'
-                  }`}>
-                    <Icon size={17} />
-                  </span>
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-black ${
-                    active ? 'bg-white/18 text-white' : 'bg-brand-light text-brand-brown-light'
-                  }`}>
-                    {mode.badge}
-                  </span>
-                </span>
-                <span className="mt-3 min-w-0">
-                  <span className="block truncate text-sm font-black">{mode.title}</span>
-                  <span className={`mt-0.5 hidden text-[11px] font-bold leading-snug xl:line-clamp-2 ${
-                    active ? 'text-white/76' : 'text-brand-brown-light/75'
-                  }`}>
-                    {mode.subtitle}
-                  </span>
-                </span>
+                <Icon size={13} />
+                {tab.label}
               </button>
             )
           })}
@@ -537,14 +509,14 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
             />
           ) : (
             <MemoQuizArenaPanel
-              mode={activeModeMeta}
+              mode={activeSubModeMeta}
               state={roomGame}
               selectedIndex={roomGame.question ? roomSelections[roomGame.question.id] : undefined}
-              activeMode={activeMode}
               onStart={startActiveQuizGame}
               onAnswer={answerQuiz}
               onNext={nextQuizRound}
               onReset={resetQuizGame}
+              onSubModeChange={setQuizSubMode}
             />
           )}
         </main>
@@ -597,12 +569,11 @@ function MatchArenaPanel({
 }) {
   return (
     <section className="flex min-w-0 flex-col rounded-[28px] border border-brand-terracotta-light/20 bg-white/88 p-3 shadow-sm sm:p-4 xl:p-5">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-black text-brand-terracotta">Ghép thẻ realtime</p>
-          <h3 className="text-xl font-black">Ghép từ vựng với nghĩa</h3>
-          <p className="mt-1 text-xs font-semibold text-brand-brown-light">
-            Random {totalPairs} cặp từ kho TOPIK. Hết giờ sẽ dừng để cả phòng xem kết quả.
+          <h3 className="text-lg font-black">Ghép thẻ từ vựng</h3>
+          <p className="text-[11px] font-bold text-brand-brown-light">
+            Ghép các cặp từ Hàn - Việt tương ứng thật nhanh trước khi hết giờ.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -772,20 +743,20 @@ function QuizArenaPanel({
   mode,
   state,
   selectedIndex,
-  activeMode,
   onStart,
   onAnswer,
   onNext,
   onReset,
+  onSubModeChange,
 }: {
-  mode: (typeof ARENA_MODES)[number]
+  mode: (typeof QUIZ_SUB_MODES)[number]
   state: RoomGameState
   selectedIndex?: number
-  activeMode: ArenaMode
   onStart: () => void
   onAnswer: (index: number) => void
   onNext: () => void
   onReset: () => void
+  onSubModeChange?: (subMode: QuizSubMode) => void
 }) {
   const revealed = state.status === 'revealed' || state.status === 'finished'
   const question = state.question
@@ -793,17 +764,45 @@ function QuizArenaPanel({
 
   if (state.status === 'idle' || !question) {
     return (
-      <section className="grid min-h-[520px] place-items-center rounded-[28px] border border-brand-terracotta-light/20 bg-white/88 p-5 text-center shadow-sm xl:min-h-[600px]">
-        <div className="max-w-lg">
-          <span className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-brand-terracotta text-white shadow-lg shadow-brand-terracotta/20">
-            <mode.Icon size={27} />
+      <section className="flex flex-col justify-center min-h-[460px] rounded-[28px] border border-brand-terracotta-light/15 bg-white/88 p-5 text-center shadow-sm xl:min-h-[500px]">
+        <div className="mx-auto w-full max-w-md text-center">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-terracotta text-white shadow-md shadow-brand-terracotta/15">
+            <Trophy size={24} />
           </span>
-          <h3 className="mt-4 text-2xl font-black">{mode.title}</h3>
-          <p className="mt-2 text-sm font-semibold leading-relaxed text-brand-brown-light">{mode.subtitle}</p>
+          <h3 className="mt-4 text-xl font-black">TOPIK Master Quiz</h3>
+          
+          <div className="mt-6 text-left">
+            <span className="block text-[10px] font-black uppercase tracking-wider text-brand-brown-light mb-2">Chọn chế độ thi đấu</span>
+            <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+              {QUIZ_SUB_MODES.map(sub => {
+                const Icon = sub.Icon
+                const active = mode.id === sub.id
+                return (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    onClick={() => onSubModeChange?.(sub.id as QuizSubMode)}
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black transition-all cursor-pointer ${
+                      active
+                        ? 'border-brand-terracotta bg-brand-terracotta text-white shadow-sm'
+                        : 'border-brand-terracotta-light/15 bg-white text-brand-brown-light hover:border-brand-terracotta/30'
+                    }`}
+                  >
+                    <Icon size={12} />
+                    <span>{sub.title}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-3 text-xs font-bold text-brand-brown-light text-center sm:text-left min-h-[32px] leading-relaxed">
+              {mode.subtitle}
+            </p>
+          </div>
+
           <button
             type="button"
             onClick={onStart}
-            className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-green-500 px-5 text-sm font-black text-white shadow-lg shadow-green-500/20 transition hover:bg-green-600"
+            className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-green-500 px-6 text-sm font-black text-white shadow-lg shadow-green-500/20 transition hover:bg-green-600 active:scale-95 cursor-pointer"
           >
             <Play size={16} /> Bắt đầu đấu
           </button>
@@ -814,7 +813,7 @@ function QuizArenaPanel({
 
   if (isFinished) {
     return (
-      <section className="rounded-[28px] border border-brand-terracotta-light/20 bg-white/88 p-5 text-center shadow-sm xl:min-h-[600px]">
+      <section className="rounded-[28px] border border-brand-terracotta-light/15 bg-white/88 p-5 text-center shadow-sm xl:min-h-[500px]">
         <Trophy size={54} className="mx-auto text-amber-500" />
         <h3 className="mt-3 text-3xl font-black text-brand-brown-dark">Kết thúc trận</h3>
         <p className="mt-1 text-sm font-semibold text-brand-brown-light">Điểm đã được lưu vào bảng xếp hạng nếu Supabase đã bật.</p>
@@ -838,17 +837,16 @@ function QuizArenaPanel({
   }
 
   return (
-    <section className="rounded-[28px] border border-brand-terracotta-light/20 bg-white/88 p-4 shadow-sm xl:min-h-[600px] xl:p-5">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-light px-3 py-1 text-xs font-black text-brand-terracotta">
-            <Timer size={13} /> Vòng {state.round}/{state.totalRounds}
-          </span>
-          <h3 className="mt-2 text-2xl font-black text-brand-brown-dark">{mode.title}</h3>
-          <p className="mt-1 text-xs font-semibold text-brand-brown-light">{mode.subtitle}</p>
+    <section className="rounded-[24px] border border-brand-terracotta-light/15 bg-white/88 p-4 shadow-sm xl:min-h-[500px] xl:p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-lg font-black text-brand-brown-dark">{mode.title}</h3>
+          <p className="mt-1 text-[11px] font-bold text-brand-brown-light">
+            Vòng {state.round}/{state.totalRounds} · Chế độ {mode.id === 'boss' ? 'Boss' : mode.id === 'grammar' ? 'Ngữ pháp' : mode.id === 'listening' ? 'Luyện nghe' : 'Hỗn hợp'}
+          </p>
         </div>
         <div className="flex gap-2">
-          {activeMode === 'listening' && (
+          {mode.id === 'listening' && (
             <button
               type="button"
               onClick={() => {
