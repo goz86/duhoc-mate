@@ -88,16 +88,15 @@ export function filterMusicVideo(video, type = 'vpop') {
 
 export const STATIC_TRENDING_FALLBACKS = {
   vpop: [
-    { videoId: 'xyqR-b2tqB8', title: 'Sơn Tùng M-TP - Chúng Ta Của Tương Lai', author: 'Sơn Tùng M-TP Official', duration: '4:09', thumbnail: 'https://img.youtube.com/vi/xyqR-b2tqB8/mqdefault.jpg', views: 50000000 },
-    { videoId: 'x8VYWazR5mE', title: 'Sơn Tùng M-TP - Muộn Rồi Mà Sao Còn', author: 'Sơn Tùng M-TP Official', duration: '4:35', thumbnail: 'https://img.youtube.com/vi/x8VYWazR5mE/mqdefault.jpg', views: 180000000 },
-    { videoId: 'Hp2Tj4KStN8', title: 'Đen - Mang Tiền Về Cho Mẹ ft. Nguyên Thảo', author: 'Đen Vâu Official', duration: '6:43', thumbnail: 'https://img.youtube.com/vi/Hp2Tj4KStN8/mqdefault.jpg', views: 110000000 },
-    { videoId: 'gJHSDZfPrRY', title: 'Hoàng Thùy Linh - See Tình', author: 'Hoàng Thùy Linh', duration: '3:05', thumbnail: 'https://img.youtube.com/vi/gJHSDZfPrRY/mqdefault.jpg', views: 60000000 },
-    { videoId: '7P2sJq38Ryk', title: 'Double2T x Masew - À Lôi', author: 'Masew', duration: '3:18', thumbnail: 'https://img.youtube.com/vi/7P2sJq38Ryk/mqdefault.jpg', views: 40000000 },
-    { videoId: '7q0qS5fH7P4', title: 'GREY D x tlinh - đưa em về nhà', author: 'GREY D', duration: '3:30', thumbnail: 'https://img.youtube.com/vi/7q0qS5fH7P4/mqdefault.jpg', views: 50000000 },
-    { videoId: 'pYgCjC5n8m0', title: 'RPT MCK - Anh Đã Ổn Hơn', author: 'MCK', duration: '3:20', thumbnail: 'https://img.youtube.com/vi/pYgCjC5n8m0/mqdefault.jpg', views: 30000000 },
-    { videoId: 'wXhQD6S8Jg0', title: 'HIEUTHUHAI - Ngủ Một Mình', author: 'HIEUTHUHAI', duration: '3:46', thumbnail: 'https://img.youtube.com/vi/wXhQD6S8Jg0/mqdefault.jpg', views: 70000000 },
-    { videoId: '8B12k8Mv5M4', title: 'Phan Mạnh Quỳnh - Có Chàng Trai Viết Lên Cây', author: 'Phan Mạnh Quỳnh Official', duration: '5:02', thumbnail: 'https://img.youtube.com/vi/8B12k8Mv5M4/mqdefault.jpg', views: 90000000 },
-    { videoId: 'nSDgHBxUbVQ', title: 'Vũ. - Lạ Lùng', author: 'Vũ.', duration: '4:21', thumbnail: 'https://img.youtube.com/vi/nSDgHBxUbVQ/mqdefault.jpg', views: 120000000 }
+    { videoId: 'zoEtcR5EW08', title: 'Sơn Tùng M-TP - Chúng Ta Của Tương Lai', author: 'Sơn Tùng M-TP Official', duration: '4:09', thumbnail: 'https://img.youtube.com/vi/zoEtcR5EW08/mqdefault.jpg', views: 50000000 },
+    { videoId: 'xypzmu5mMPY', title: 'Sơn Tùng M-TP - Muộn Rồi Mà Sao Còn', author: 'Sơn Tùng M-TP Official', duration: '4:35', thumbnail: 'https://img.youtube.com/vi/xypzmu5mMPY/mqdefault.jpg', views: 180000000 },
+    { videoId: 'UVbv-PJXm14', title: 'Đen - Mang Tiền Về Cho Mẹ ft. Nguyên Thảo', author: 'Đen Vâu Official', duration: '6:43', thumbnail: 'https://img.youtube.com/vi/UVbv-PJXm14/mqdefault.jpg', views: 110000000 },
+    { videoId: 'n5l74s26Dks', title: 'Hoàng Thùy Linh - See Tình', author: 'Hoàng Thùy Linh', duration: '3:05', thumbnail: 'https://img.youtube.com/vi/n5l74s26Dks/mqdefault.jpg', views: 60000000 },
+    { videoId: 'ZbR6dYkqorI', title: 'Double2T x Masew - À Lôi', author: 'Masew', duration: '3:18', thumbnail: 'https://img.youtube.com/vi/ZbR6dYkqorI/mqdefault.jpg', views: 40000000 },
+    { videoId: 'L_TqjWbS8Qc', title: 'HIEUTHUHAI - Ngủ Một Mình ft. Negav', author: 'HIEUTHUHAI', duration: '3:46', thumbnail: 'https://img.youtube.com/vi/L_TqjWbS8Qc/mqdefault.jpg', views: 70000000 },
+    { videoId: 'dz6xe0xXqYE', title: 'RPT MCK - Anh Đã Ổn Hơn', author: 'MCK', duration: '3:20', thumbnail: 'https://img.youtube.com/vi/dz6xe0xXqYE/mqdefault.jpg', views: 30000000 },
+    { videoId: 'kYJzX2eU2XQ', title: 'Phan Mạnh Quỳnh - Có Chàng Trai Viết Lên Cây', author: 'Phan Mạnh Quỳnh Official', duration: '5:02', thumbnail: 'https://img.youtube.com/vi/kYJzX2eU2XQ/mqdefault.jpg', views: 90000000 },
+    { videoId: 'kRvYqzCJ4vw', title: 'Vũ. - Lạ Lùng', author: 'Vũ.', duration: '4:21', thumbnail: 'https://img.youtube.com/vi/kRvYqzCJ4vw/mqdefault.jpg', views: 120000000 }
   ],
   kpop: [
     { videoId: 'gdZLi9oWNZg', title: 'BTS - Dynamite', author: 'HYBE LABELS', duration: '3:43', thumbnail: 'https://img.youtube.com/vi/gdZLi9oWNZg/mqdefault.jpg', views: 1800000000 },

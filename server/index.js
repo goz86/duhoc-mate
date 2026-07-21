@@ -485,7 +485,7 @@ const getTrendingMusicWithYtSearch = async (type = 'vpop') => {
     title: v.title,
     author: v.author?.name || String(v.author) || '',
     duration: v.duration?.timestamp || v.timestamp || '0:00',
-    thumbnail: v.image || v.thumbnail || `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`,
+    thumbnail: `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`,
     views: v.views || 0,
   }));
 };
@@ -526,7 +526,7 @@ const getZingVpopChart = async () => {
             title: video.title,
             author: video.author?.name || String(video.author) || '',
             duration: video.duration?.timestamp || video.timestamp || '0:00',
-            thumbnail: video.image || video.thumbnail || `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`,
+            thumbnail: `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`,
             views: video.views || 0,
           };
           zingResolveCache.set(cacheKey, resolvedSong);
