@@ -5578,7 +5578,10 @@ export default function App() {
         description={confirmDialog.description}
         confirmText={confirmDialog.confirmText}
         cancelText={confirmDialog.cancelText}
-        onConfirm={confirmDialog.onConfirm}
+        onConfirm={() => {
+          confirmDialog.onConfirm();
+          closeConfirm();
+        }}
         onCancel={closeConfirm}
       />
 
