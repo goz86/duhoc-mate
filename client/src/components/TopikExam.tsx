@@ -3,7 +3,7 @@ import {
   Loader2, Play, Pause, ChevronLeft, ChevronRight,
   BookOpen, CheckCircle2, XCircle, AlertCircle, Clock, Volume2,
   Headphones, ArrowLeft, Send, CheckCircle, Info, Zap,
-  Maximize2, X as XIcon, ZoomIn
+  Maximize2, X as XIcon, ZoomIn, Eye, EyeOff
 } from 'lucide-react'
 import {
   generateReadingExam, generateListeningExam, type AiGeneratedQuestion
@@ -148,9 +148,10 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
-  // Image zoom state (cho đề thi dạng ảnh PDF)
+  // Image zoom & listening blur state
   const [imageZoomed, setImageZoomed] = useState(false)
   const [imageFitMode, setImageFitMode] = useState<'width' | 'height'>('height')
+  const [isQuestionBlurred, setIsQuestionBlurred] = useState(false)
   const cbtSessionKey = `topik-cbt-session:${roomId || 'solo'}`
   const [sessionHydrated, setSessionHydrated] = useState(false)
 
@@ -826,6 +827,22 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
                             >
                               <Maximize2 size={12} /> Toàn màn hình
                             </button>
+
+                            {/* Nút Ẩn / Che đề bài cho phần thi nghe */}
+                            {selectedExam?.category === 'listening' && (
+                              <button
+                                onClick={() => setIsQuestionBlurred(prev => !prev)}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer ${
+                                  isQuestionBlurred
+                                    ? 'bg-brand-brown-dark text-white shadow-sm'
+                                    : 'bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-brand-terracotta'
+                                }`}
+                                title={isQuestionBlurred ? "Hiện lại nội dung đề" : "Che/mờ nội dung đề để tập trung nghe"}
+                              >
+                                {isQuestionBlurred ? <Eye size={12} /> : <EyeOff size={12} />}
+                                <span>{isQuestionBlurred ? "Hiện đề" : "Ẩn đề"}</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                         {/* Ảnh đề thi (scrollable inside card nếu fit-width, không scroll nếu fit-height) */}
@@ -837,11 +854,33 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
                             alt={`Đề thi TOPIK - Câu ${questions[activeQuestionIdx].question_number}`}
                             className={`topik-exam-image select-none transition-all duration-200 ${
                               imageFitMode === 'height' ? 'w-full h-auto max-h-none object-contain sm:w-auto sm:max-w-full sm:max-h-full' : 'w-full h-auto object-contain'
-                            }`}
+                            } ${isQuestionBlurred ? 'blur-xl select-none filter opacity-20 pointer-events-none' : ''}`}
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = '/topik_exams/placeholder.jpg'
                             }}
                           />
+
+                          {/* Overlay che mờ đề thi khi bấm Ẩn đề */}
+                          {isQuestionBlurred && (
+                            <div className="absolute inset-0 z-20 bg-brand-cream/85 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center gap-2 select-none">
+                              <div className="w-12 h-12 rounded-full bg-brand-brown-dark/10 flex items-center justify-center text-brand-brown-dark mb-1">
+                                <EyeOff size={24} />
+                              </div>
+                              <h4 className="font-display font-black text-sm text-brand-brown-dark">
+                                Đã che mờ nội dung đề thi
+                              </h4>
+                              <p className="text-[11px] font-bold text-brand-brown-light max-w-xs leading-relaxed">
+                                Hãy tập trung lắng nghe audio để trả lời câu hỏi. Bấm &quot;Hiện đề&quot; để xem lại nội dung.
+                              </p>
+                              <button
+                                onClick={() => setIsQuestionBlurred(false)}
+                                className="mt-1 px-3.5 py-1.5 rounded-xl bg-brand-terracotta hover:bg-brand-brown-dark text-white text-xs font-black transition cursor-pointer shadow flex items-center gap-1.5"
+                              >
+                                <Eye size={13} /> Hiện lại nội dung
+                              </button>
+                            </div>
+                          )}
+
                           <button
                             onClick={() => setImageFitMode(prev => prev === 'height' ? 'width' : 'height')}
                             className="absolute bottom-3 right-3 p-2.5 rounded-full bg-black/55 hover:bg-black/75 text-white transition cursor-pointer shadow-lg z-10 flex items-center justify-center"
@@ -853,66 +892,109 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
                       </div>
                     ) : (
                       /* ── CHẾ ĐỘ TEXT (Đề thi AI tạo) ───────────────── */
-                      <div className="p-4 rounded-2xl border border-brand-terracotta-light/15 bg-white/95 shadow-md flex flex-col gap-3 min-h-[200px]">
-                        {/* Instructions */}
-                        {/* Instructions */}
-                        <div className="p-3 rounded-2xl bg-brand-light/65 border border-brand-terracotta-light/10 text-xs sm:text-sm font-black text-brand-brown-dark leading-relaxed">
-                          {questions[activeQuestionIdx].instructions}
-                        </div>
+                      <div className="relative p-4 rounded-2xl border border-brand-terracotta-light/15 bg-white/95 shadow-md flex flex-col gap-3 min-h-[200px] overflow-hidden">
+                        {selectedExam?.category === 'listening' && (
+                          <div className="flex items-center justify-between pb-2 border-b border-brand-terracotta-light/10">
+                            <span className="text-xs font-black text-brand-brown-dark flex items-center gap-2">
+                              <BookOpen size={14} className="text-brand-terracotta" />
+                              Câu {questions[activeQuestionIdx].question_number} — Phần thi Nghe
+                            </span>
+                            <button
+                              onClick={() => setIsQuestionBlurred(prev => !prev)}
+                              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer ${
+                                isQuestionBlurred
+                                  ? 'bg-brand-brown-dark text-white shadow-sm'
+                                  : 'bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-brand-terracotta'
+                              }`}
+                              title={isQuestionBlurred ? "Hiện lại nội dung đề" : "Che/mờ nội dung đề để tập trung nghe"}
+                            >
+                              {isQuestionBlurred ? <Eye size={12} /> : <EyeOff size={12} />}
+                              <span>{isQuestionBlurred ? "Hiện đề" : "Ẩn đề"}</span>
+                            </button>
+                          </div>
+                        )}
 
-                        {/* Audio Player (Dành cho phần thi Nghe) */}
-                        {selectedExam.category === 'listening'
-                          && questions[activeQuestionIdx].audio_script
-                          && !getQuestionImageSource(questions[activeQuestionIdx])
-                          && !isTopikAudioPath(questions[activeQuestionIdx].audio_script)
-                          && (
-                          <div className="p-4 rounded-2xl bg-brand-cream border border-brand-terracotta-light/15 flex flex-col gap-3 items-center text-center">
-                            <div className="flex items-center gap-2">
-                              <Headphones size={20} className="text-brand-terracotta" />
-                              <span className="text-xs font-black text-brand-brown-dark">
-                                BĂNG NGHE TIẾNG HÀN (Speech API)
-                              </span>
-                            </div>
+                        <div className={`flex flex-col gap-3 ${isQuestionBlurred ? 'blur-md select-none filter opacity-30 pointer-events-none' : ''}`}>
+                          {/* Instructions */}
+                          <div className="p-3 rounded-2xl bg-brand-light/65 border border-brand-terracotta-light/10 text-xs sm:text-sm font-black text-brand-brown-dark leading-relaxed">
+                            {questions[activeQuestionIdx].instructions}
+                          </div>
 
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => handlePlayAudio(questions[activeQuestionIdx].audio_script!, questions[activeQuestionIdx].question_number)}
-                                className={`p-3 rounded-full transition cursor-pointer active:scale-95 flex items-center justify-center shadow ${isPlayingAudio ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-brand-terracotta text-white hover:bg-brand-brown-dark'}`}
-                                title={isPlayingAudio ? 'Dừng phát' : 'Phát kịch bản nghe'}
-                              >
-                                {isPlayingAudio ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
-                              </button>
-
-                              <div className="flex gap-1 border border-brand-terracotta-light/20 bg-white p-0.5 rounded-xl">
-                                {[0.75, 1, 1.25, 1.5].map(speed => (
-                                  <button
-                                    key={speed}
-                                    onClick={() => { setAudioSpeed(speed); stopAudio(); }}
-                                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition cursor-pointer ${audioSpeed === speed ? 'bg-brand-terracotta text-white' : 'text-brand-brown-light hover:bg-brand-light'}`}
-                                  >
-                                    {speed}x
-                                  </button>
-                                ))}
+                          {/* Audio Player (Dành cho phần thi Nghe) */}
+                          {selectedExam.category === 'listening'
+                            && questions[activeQuestionIdx].audio_script
+                            && !getQuestionImageSource(questions[activeQuestionIdx])
+                            && !isTopikAudioPath(questions[activeQuestionIdx].audio_script)
+                            && (
+                            <div className="p-4 rounded-2xl bg-brand-cream border border-brand-terracotta-light/15 flex flex-col gap-3 items-center text-center">
+                              <div className="flex items-center gap-2">
+                                <Headphones size={20} className="text-brand-terracotta" />
+                                <span className="text-xs font-black text-brand-brown-dark">
+                                  BĂNG NGHE TIẾNG HÀN (Speech API)
+                                </span>
                               </div>
+
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => handlePlayAudio(questions[activeQuestionIdx].audio_script!, questions[activeQuestionIdx].question_number)}
+                                  className={`p-3 rounded-full transition cursor-pointer active:scale-95 flex items-center justify-center shadow ${isPlayingAudio ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-brand-terracotta text-white hover:bg-brand-brown-dark'}`}
+                                  title={isPlayingAudio ? 'Dừng phát' : 'Phát kịch bản nghe'}
+                                >
+                                  {isPlayingAudio ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
+                                </button>
+
+                                <div className="flex gap-1 border border-brand-terracotta-light/20 bg-white p-0.5 rounded-xl">
+                                  {[0.75, 1, 1.25, 1.5].map(speed => (
+                                    <button
+                                      key={speed}
+                                      onClick={() => { setAudioSpeed(speed); stopAudio(); }}
+                                      className={`px-2 py-1 rounded-lg text-[10px] font-black transition cursor-pointer ${audioSpeed === speed ? 'bg-brand-terracotta text-white' : 'text-brand-brown-light hover:bg-brand-light'}`}
+                                    >
+                                      {speed}x
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <p className="text-[11px] font-bold text-brand-brown-light">
+                                Lượt đã nghe: <span className="text-brand-terracotta font-black">{playCount[questions[activeQuestionIdx].question_number] || 0}</span> / 5 lần tối đa
+                              </p>
                             </div>
+                          )}
 
-                            <p className="text-[11px] font-bold text-brand-brown-light">
-                              Lượt đã nghe: <span className="text-brand-terracotta font-black">{playCount[questions[activeQuestionIdx].question_number] || 0}</span> / 5 lần tối đa
-                            </p>
+                          {/* Passage */}
+                          {questions[activeQuestionIdx].passage && !isTopikAudioPath(questions[activeQuestionIdx].passage) && (
+                            <div className="p-4 rounded-2xl bg-brand-light/35 border border-brand-terracotta-light/10 text-sm leading-relaxed text-brand-brown-dark font-medium whitespace-pre-wrap select-text">
+                              {questions[activeQuestionIdx].passage}
+                            </div>
+                          )}
+
+                          {/* Question Text */}
+                          <div className="text-base sm:text-lg font-black text-brand-brown-dark py-2 border-b border-brand-terracotta-light/10 select-text">
+                            {questions[activeQuestionIdx].question_number}. {questions[activeQuestionIdx].question_text}
                           </div>
-                        )}
-
-                        {/* Passage */}
-                        {questions[activeQuestionIdx].passage && !isTopikAudioPath(questions[activeQuestionIdx].passage) && (
-                          <div className="p-4 rounded-2xl bg-brand-light/35 border border-brand-terracotta-light/10 text-sm leading-relaxed text-brand-brown-dark font-medium whitespace-pre-wrap select-text">
-                            {questions[activeQuestionIdx].passage}
-                          </div>
-                        )}
-
-                        {/* Question Text */}
-                        <div className="text-base sm:text-lg font-black text-brand-brown-dark py-2 border-b border-brand-terracotta-light/10 select-text">
-                          {questions[activeQuestionIdx].question_number}. {questions[activeQuestionIdx].question_text}
                         </div>
+
+                        {/* Overlay che mờ text đề thi khi bấm Ẩn đề */}
+                        {isQuestionBlurred && (
+                          <div className="absolute inset-0 z-20 bg-brand-cream/85 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center gap-2 select-none">
+                            <div className="w-12 h-12 rounded-full bg-brand-brown-dark/10 flex items-center justify-center text-brand-brown-dark mb-1">
+                              <EyeOff size={24} />
+                            </div>
+                            <h4 className="font-display font-black text-sm text-brand-brown-dark">
+                              Đã che mờ nội dung đề thi
+                            </h4>
+                            <p className="text-[11px] font-bold text-brand-brown-light max-w-xs leading-relaxed">
+                              Hãy tập trung lắng nghe audio để trả lời câu hỏi. Bấm &quot;Hiện đề&quot; để xem lại nội dung.
+                            </p>
+                            <button
+                              onClick={() => setIsQuestionBlurred(false)}
+                              className="mt-1 px-3.5 py-1.5 rounded-xl bg-brand-terracotta hover:bg-brand-brown-dark text-white text-xs font-black transition cursor-pointer shadow flex items-center gap-1.5"
+                            >
+                              <Eye size={13} /> Hiện lại nội dung
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 
