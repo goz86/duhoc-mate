@@ -339,16 +339,18 @@ const searchWithInvidious = async (query) => {
         if (res.ok) {
           const items = await res.json();
           if (Array.isArray(items) && items.length > 0) {
-            return items.map(v => ({
-              videoId: v.videoId,
-              title: v.title,
-              author: v.author || '',
-              duration: typeof v.lengthSeconds === 'number' 
-                ? `${Math.floor(v.lengthSeconds / 60)}:${String(v.lengthSeconds % 60).padStart(2, '0')}`
-                : '0:00',
-              thumbnail: v.videoThumbnails?.[0]?.url || `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`,
-              views: v.viewCount || 0,
-            }));
+            return items
+              .filter(v => v && v.videoId)
+              .map(v => ({
+                videoId: v.videoId,
+                title: v.title,
+                author: v.author || '',
+                duration: typeof v.lengthSeconds === 'number' 
+                  ? `${Math.floor(v.lengthSeconds / 60)}:${String(v.lengthSeconds % 60).padStart(2, '0')}`
+                  : '0:00',
+                thumbnail: `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`,
+                views: v.viewCount || 0,
+              }));
           }
         }
       } catch (e) {
@@ -389,14 +391,17 @@ app.get('/api/search-music', rateLimitRest('search-music', 30, 60_000), async (r
   try {
     console.log('Searching via yt-search...');
     const searchResult = await yts(String(query));
-    const results = (searchResult.videos || []).slice(0, 10).map(v => ({
-      videoId: v.videoId,
-      title: v.title,
-      author: v.author?.name || String(v.author) || '',
-      duration: v.duration?.timestamp || v.timestamp || '0:00',
-      thumbnail: v.image || v.thumbnail || `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`,
-      views: v.views || 0,
-    }));
+    const results = (searchResult.videos || [])
+      .filter(v => v && v.videoId)
+      .slice(0, 10)
+      .map(v => ({
+        videoId: v.videoId,
+        title: v.title,
+        author: v.author?.name || String(v.author) || '',
+        duration: v.duration?.timestamp || v.timestamp || '0:00',
+        thumbnail: `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`,
+        views: v.views || 0,
+      }));
     return res.json({ results });
   } catch (err) {
     console.warn('yt-search failed, trying ytsr fallback...', err.message);
@@ -413,13 +418,13 @@ app.get('/api/search-music', rateLimitRest('search-music', 30, 60_000), async (r
       });
       
       const results = (searchResult.items || [])
-        .filter(item => item.type === 'video')
+        .filter(item => item && item.type === 'video' && item.id)
         .map(v => ({
           videoId: v.id,
           title: v.title,
           author: v.author?.name || '',
           duration: v.duration || '0:00',
-          thumbnail: v.bestThumbnail?.url || `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`,
+          thumbnail: `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`,
           views: v.views || 0,
         }));
       return res.json({ results });

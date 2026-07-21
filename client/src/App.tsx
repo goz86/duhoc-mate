@@ -602,6 +602,11 @@ export default function App() {
       preloadTrendingMusic();
     }
   }, [roomId]);
+
+  // Tự động tải trước gợi ý nhạc xu hướng ngầm ngay khi người dùng truy cập trang web
+  useEffect(() => {
+    preloadTrendingMusic();
+  }, []);
   const isHostRef = useRef(isHost);
   useEffect(() => { isHostRef.current = isHost; }, [isHost]);
   const canControlMusicRef = useRef(canControlMusic);
