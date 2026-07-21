@@ -49,6 +49,7 @@ type ActiveRoom = {
   roomTitle?: string
   isPrivate?: boolean
   hostAvatarUrl?: string
+  roomAvatarUrl?: string
   createdAt?: string
   lastActiveAt?: string
 }
@@ -59,6 +60,7 @@ type RecentRoom = {
   roomTitle?: string
   isPrivate?: boolean
   hostAvatarUrl?: string
+  roomAvatarUrl?: string
 }
 type FriendStatus = { code: string; username: string; online: boolean; currentRoomId: string | null; currentSong: string | null }
 
