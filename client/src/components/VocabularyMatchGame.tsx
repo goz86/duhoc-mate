@@ -64,6 +64,7 @@ type MatchState = {
   leaderboard: ArenaScore[]
   lastResult: any
   wordBankSize: number
+  serverTime?: number
 }
 
 type RoomGameQuestion = {
@@ -193,6 +194,7 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
   const [activeMode, setActiveMode] = useState<ArenaMode>('match')
   const [quizSubMode, setQuizSubMode] = useState<QuizSubMode>('mixed')
   const [matchGame, setMatchGame] = useState<MatchState>(defaultMatchState)
+  const [receivedAt, setReceivedAt] = useState<number>(Date.now())
   const [roomGame, setRoomGame] = useState<RoomGameState>(defaultRoomGameState)
   const [selectedCard, setSelectedCard] = useState<MatchCard | null>(null)
   const [durationSec, setDurationSec] = useState(15)
@@ -218,6 +220,9 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
     const handleMatchSync = (nextState: MatchState) => {
       setMatchGame({ ...defaultMatchState, ...nextState })
       setDurationSec(nextState.durationSec || 15)
+      const serverTime = nextState.serverTime || Date.now()
+      const serverElapsed = nextState.roundStartedAt ? Math.max(0, serverTime - nextState.roundStartedAt) : 0
+      setReceivedAt(Date.now() - serverElapsed)
     }
     const handleTopikSync = (nextState: RoomGameState) => {
       setRoomGame({ ...defaultRoomGameState, ...nextState })
@@ -310,10 +315,10 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
     () => members.filter(member => playerIds.has(member.id)),
     [members, playerIds]
   )
-  const remainingMs = matchGame.status === 'playing' ? Math.max(0, matchGame.roundEndsAt - now) : 0
-  const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000))
+  const remainingMs = matchGame.status === 'playing' ? Math.max(0, matchGame.durationSec * 1000 - (now - receivedAt)) : 0
+  const remainingSec = Math.max(0, Math.round(remainingMs / 1000))
   const progressPercent = matchGame.durationSec > 0
-    ? Math.max(0, Math.min(100, (remainingSec / matchGame.durationSec) * 100))
+    ? Math.max(0, Math.min(100, (remainingMs / (matchGame.durationSec * 1000)) * 100))
     : 0
   const matchedCount = matchGame.matchedPairIds.length
   const totalPairs = Math.max(1, Math.floor(matchGame.cards.length / 2))
@@ -631,7 +636,7 @@ function MatchArenaPanel({
       <div className="mb-4 h-2 overflow-hidden rounded-full bg-brand-terracotta-light/15">
         <div
           className={`h-full rounded-full bg-green-500 ${
-            game.status === 'playing' && progressPercent < 100 ? 'transition-[width] duration-1000 ease-linear' : ''
+            game.status === 'playing' && progressPercent < 100 ? 'transition-[width] duration-100 ease-linear' : ''
           }`}
           style={{ width: `${progressPercent}%` }}
         />

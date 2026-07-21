@@ -310,15 +310,15 @@ export default function LandingPage({
   const handleRefreshRates = async () => {
     setExchangeRate('Đang tải...')
     try {
-      const res = await fetch('https://open.er-api.com/v6/latest/KRW')
+      const res = await fetch('/api/exchange-rate')
       const data = await res.json()
-      const vndRate = data.rates?.VND
-      if (vndRate) {
-        const rate1000 = (1000 * vndRate).toFixed(0)
-        setExchangeRate(`1,000 ₩ ≈ ${Number(rate1000).toLocaleString('vi-VN')} ₫`)
+      if (data.rateText) {
+        setExchangeRate(data.rateText)
+      } else {
+        throw new Error('Invalid rate response')
       }
     } catch {
-      setExchangeRate('1,000 ₩ ≈ 17,800 ₫')
+      setExchangeRate('1,000 ₩ ≈ 17.830 ₫')
     }
 
     try {

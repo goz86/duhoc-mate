@@ -72,6 +72,7 @@ drop policy if exists "Anyone can read rooms" on public.rooms;
 drop policy if exists "Anyone can create rooms" on public.rooms;
 drop policy if exists "Anyone can update rooms" on public.rooms;
 drop policy if exists "Anyone can delete rooms" on public.rooms;
+drop policy if exists "Only admins can delete rooms" on public.rooms;
 drop policy if exists "Anyone can read room idea tasks" on public.room_idea_tasks;
 drop policy if exists "Anyone can create room idea tasks" on public.room_idea_tasks;
 drop policy if exists "Anyone can update room idea tasks" on public.room_idea_tasks;
@@ -101,9 +102,9 @@ create policy "Anyone can update rooms"
   using (true)
   with check (true);
 
-create policy "Anyone can delete rooms"
+create policy "Only admins can delete rooms"
   on public.rooms for delete
-  using (true);
+  using (public.is_admin_user(auth.uid()));
 
 create policy "Anyone can read room idea tasks"
   on public.room_idea_tasks for select

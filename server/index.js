@@ -31,13 +31,56 @@ app.get('/', (req, res) => {
   res.status(200).json({ ok: true, service: 'duhoc-mate-server' });
 });
 
+
 app.get('/health', (req, res) => {
   res.status(200).json({ ok: true });
 });
 
+let exchangeRateCache = { loadedAt: 0, rateText: '1,000 ₩ ≈ 17.830 ₫' };
+
+const getExchangeRateText = async () => {
+  const now = Date.now();
+  if (exchangeRateCache.rateText && now - exchangeRateCache.loadedAt < 3600_000) {
+    return exchangeRateCache.rateText;
+  }
+  try {
+    const res = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=KRW');
+    if (res.ok) {
+      const json = await res.json();
+      const vndRateStr = json.data?.rates?.VND;
+      if (vndRateStr) {
+        const vndRate = parseFloat(vndRateStr);
+        if (!isNaN(vndRate)) {
+          const rate1000 = (1000 * vndRate).toFixed(0);
+          const formatted = Number(rate1000).toLocaleString('vi-VN');
+          exchangeRateCache = {
+            loadedAt: now,
+            rateText: `1,000 ₩ ≈ ${formatted} ₫`
+          };
+          return exchangeRateCache.rateText;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Exchange Rate] Fetch failed, using cached/fallback:', err.message);
+  }
+  return exchangeRateCache.rateText || '1,000 ₩ ≈ 17.830 ₫';
+};
+
+app.get('/api/exchange-rate', async (req, res) => {
+  try {
+    const rateText = await getExchangeRateText();
+    res.json({ rateText });
+  } catch (err) {
+    res.json({ rateText: '1,000 ₩ ≈ 17.830 ₫' });
+  }
+});
+
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://imqrvssxfrhivlumhoze.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_d-szvo4evO2V69FCNc__IQ_xc8OqFPV';
 const ROOM_STATES_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/room_states`;
+const ROOMS_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/rooms`;
 const TOPIK_QUESTION_BANK_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/topik_question_bank`;
 const TOPIK_GAME_SESSIONS_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/topik_game_sessions`;
 const TOPIK_WORDS_ENDPOINT = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/topik_words`;
@@ -582,6 +625,11 @@ app.get('/api/trending-music', rateLimitRest('trending-music', 30, 60_000), asyn
 
 // Run background pre-fetching on startup
 setTimeout(async () => {
+  console.log('[STARTUP] Running initial database synchronization...');
+  syncRoomDirectoryWithSupabase().catch(err => {
+    console.error('[Supabase] Initial room directory sync failed:', err.message);
+  });
+
   console.log('[TRENDING CACHE] Starting initial background pre-fetch...');
   for (const type of ['vpop', 'kpop', 'vinahouse']) {
     try {
@@ -592,7 +640,7 @@ setTimeout(async () => {
     // Wait 2 seconds between categories to avoid rate limits
     await new Promise(resolve => setTimeout(resolve, 2000));
   }
-}, 5000);
+}, 3000);
 
 
 const socketOptions = {
@@ -836,6 +884,204 @@ const TOPIK_GAME_QUESTIONS = [
     options: ['Sự kiện bị hủy vì trời mưa', 'Sự kiện được tổ chức ngoài trời', 'Trời mưa sau sự kiện', 'Sự kiện bị hoãn vì tắc đường'],
     answerIndex: 0,
     explanation: '취소되다 là bị hủy, nguyên nhân là 비가 와서.'
+  },
+  {
+    id: 'game-vocab-gyotong',
+    level: 3,
+    gameType: 'vocab-speed',
+    category: 'vocabulary',
+    errorType: 'vocabulary',
+    prompt: '교통',
+    options: ['Giao thông', 'Môi trường', 'Giáo dục', 'Kinh tế'],
+    answerIndex: 0,
+    explanation: '교통 nghĩa là giao thông.'
+  },
+  {
+    id: 'game-vocab-yaksok',
+    level: 1,
+    gameType: 'vocab-speed',
+    category: 'vocabulary',
+    errorType: 'vocabulary',
+    prompt: '약속',
+    options: ['Lịch hẹn/lời hứa', 'Bữa ăn', 'Bài tập', 'Kỳ nghỉ'],
+    answerIndex: 0,
+    explanation: '약속 nghĩa là cuộc hẹn hoặc lời hứa.'
+  },
+  {
+    id: 'game-vocab-seonggong',
+    level: 4,
+    gameType: 'vocab-speed',
+    category: 'vocabulary',
+    errorType: 'vocabulary',
+    prompt: '성공',
+    options: ['Thành công', 'Thất bại', 'Chuẩn bị', 'Trải nghiệm'],
+    answerIndex: 0,
+    explanation: '성공 nghĩa là thành công.'
+  },
+  {
+    id: 'game-vocab-shilpae',
+    level: 4,
+    gameType: 'vocab-speed',
+    category: 'vocabulary',
+    errorType: 'vocabulary',
+    prompt: '실패',
+    options: ['Thất bại', 'Thành công', 'Cố gắng', 'Quyết định'],
+    answerIndex: 0,
+    explanation: '실패 nghĩa là thất bại.'
+  },
+  {
+    id: 'game-vocab-myeongjeo',
+    level: 5,
+    gameType: 'vocab-speed',
+    category: 'vocabulary',
+    errorType: 'vocabulary',
+    prompt: '명절',
+    options: ['Ngày lễ tết', 'Mùa đông', 'Sinh nhật', 'Kỷ niệm'],
+    answerIndex: 0,
+    explanation: '명절 nghĩa là ngày tết/ngày lễ truyền thống.'
+  },
+  {
+    id: 'game-vocab-gibun',
+    level: 2,
+    gameType: 'vocab-speed',
+    category: 'vocabulary',
+    errorType: 'vocabulary',
+    prompt: '기분',
+    options: ['Tâm trạng/cảm xúc', 'Thời tiết', 'Sức khỏe', 'Sở thích'],
+    answerIndex: 0,
+    explanation: '기분 nghĩa là tâm trạng/cảm xúc.'
+  },
+  {
+    id: 'game-grammar-gireul',
+    level: 2,
+    gameType: 'grammar-race',
+    category: 'grammar',
+    errorType: 'grammar_connector',
+    prompt: '길을 ____ 경찰에게 물어보았습니다.',
+    options: ['몰라서', '모르니까', '모르기 전에', '모르는 바람에'],
+    answerIndex: 0,
+    explanation: 'Vì không biết đường nên hỏi cảnh sát, dùng cấu trúc chỉ nguyên nhân khách quan -아/어서.'
+  },
+  {
+    id: 'game-grammar-nuri',
+    level: 3,
+    gameType: 'grammar-race',
+    category: 'grammar',
+    errorType: 'grammar_connector',
+    prompt: '한국에 ____ 한국 문화를 배우고 싶습니다.',
+    options: ['있는 동안', '있기 전에', '있었기 때문에', '있는 대로'],
+    answerIndex: 0,
+    explanation: '-는 동안 diễn tả hành động xảy ra trong suốt thời gian của vế trước (trong khi ở Hàn).'
+  },
+  {
+    id: 'game-grammar-gishiwuda',
+    level: 2,
+    gameType: 'grammar-race',
+    category: 'grammar',
+    errorType: 'grammar_connector',
+    prompt: '이 책은 글씨가 커서 읽기 ____.',
+    options: ['쉬워요', '어려워요', '쉽기 전에', '쉬운 바람에'],
+    answerIndex: 0,
+    explanation: 'V-기 쉽다/어렵다 diễn tả việc làm gì đó dễ/khó.'
+  },
+  {
+    id: 'game-grammar-gittamune',
+    level: 2,
+    gameType: 'grammar-race',
+    category: 'grammar',
+    errorType: 'grammar_connector',
+    prompt: '눈이 오____ 길이 미끄럽습니다.',
+    options: ['기 때문에', '는 바람에', 'ㄹ 뿐만 아니라', '는 한'],
+    answerIndex: 0,
+    explanation: 'Lý do mang tính khách quan dùng -기 때문에.'
+  },
+  {
+    id: 'game-grammar-ryeogo',
+    level: 2,
+    gameType: 'grammar-race',
+    category: 'grammar',
+    errorType: 'grammar_connector',
+    prompt: '의사가 ____ 의대에 진학했습니다.',
+    options: ['되려고', '되도록', '되니까', '되는 바람에'],
+    answerIndex: 0,
+    explanation: 'Biểu thị ý định, mục đích dùng -(으)려고.'
+  },
+  {
+    id: 'game-sentence-myeon',
+    level: 2,
+    gameType: 'sentence-build',
+    category: 'sentence',
+    errorType: 'grammar_connector',
+    prompt: 'Chọn câu tự nhiên nhất: “Nếu ngày mai thời tiết đẹp, tôi sẽ đi công viên.”',
+    options: ['내일 날씨가 좋으면 공원에 갈 거예요.', '내일 날씨가 좋아서 공원에 갈 거예요.', '내일 날씨가 좋기 전에 공원에 갈 거예요.', '내일 날씨가 좋은 한 공원에 갈 거예요.'],
+    answerIndex: 0,
+    explanation: 'Giả định “nếu... thì” dùng -(으)면.'
+  },
+  {
+    id: 'game-sentence-go',
+    level: 1,
+    gameType: 'sentence-build',
+    category: 'sentence',
+    errorType: 'grammar_connector',
+    prompt: 'Chọn câu đúng: “Tôi ăn cơm rồi uống cà phê.”',
+    options: ['밥을 먹고 커피를 마셔요.', '밥을 먹어서 커피를 마셔요.', '밥을 먹기 전에 커피를 마셔요.', '밥을 먹는 바람에 커피를 마셔요.'],
+    answerIndex: 0,
+    explanation: 'Liên kết hai hành động xảy ra theo trình tự thời gian dùng -고.'
+  },
+  {
+    id: 'game-sentence-neo',
+    level: 3,
+    gameType: 'sentence-build',
+    category: 'sentence',
+    errorType: 'grammar_connector',
+    prompt: 'Chọn câu viết lại đúng: “Vì ngủ quên nên tôi đã đi học muộn.”',
+    options: ['늦잠을 자는 바람에 학교에 늦었어요.', '늦잠을 자는 한 학교에 늦었어요.', '늦잠을 자기 전에 학교에 늦었어요.', '늦잠을 자도록 학교에 늦었어요.'],
+    answerIndex: 0,
+    explanation: '-는 바람에 chỉ nguyên nhân khách quan ngoài ý muốn dẫn đến kết quả xấu.'
+  },
+  {
+    id: 'game-master-honorific-salda',
+    level: 2,
+    gameType: 'topik-master',
+    category: 'grammar',
+    errorType: 'honorific',
+    prompt: 'Chọn câu dùng kính ngữ đúng nhất khi nói về bố mẹ.',
+    options: ['부모님께서는 시골에 살고 계십니다.', '부모님은 시골에 삽니다.', '부모님께서는 시골에 거주하십니다.', '부모님은 시골에 있으십니다.'],
+    answerIndex: 0,
+    explanation: 'Kính ngữ của động từ 살다 là 살고 계시다 hoặc 사시다.'
+  },
+  {
+    id: 'game-master-reading-juju',
+    level: 4,
+    gameType: 'topik-master',
+    category: 'reading',
+    errorType: 'reading',
+    prompt: '“그는 실패를 두려워하지 않고 계속 도전하여 마침내 성공했다.” Ý chính là gì?',
+    options: ['Sự kiên trì vượt qua thất bại dẫn đến thành công', 'Thất bại là điều đáng sợ', 'Thành công chỉ đến nhờ may mắn', 'Không nên thử thách bản thân'],
+    answerIndex: 0,
+    explanation: 'Ý nghĩa câu: Anh ấy không sợ thất bại mà liên tục thử thách và cuối cùng đã thành công.'
+  },
+  {
+    id: 'game-master-reading-simri',
+    level: 4,
+    gameType: 'topik-master',
+    category: 'reading',
+    errorType: 'reading',
+    prompt: '“동생이 상을 받자 형은 겉으로는 축하했지만 속으로는 부러웠다.” Tâm trạng của người anh?',
+    options: ['Ghen tị nhưng vẫn tỏ ra chúc mừng em', 'Hoàn toàn vui mừng cho em mình', 'Tức giận vì không được nhận giải', 'Thờ ơ không có cảm xúc gì'],
+    answerIndex: 0,
+    explanation: '겉으로는 축하 (ngoài mặt chúc mừng) 속으로는 부러웠다 (trong lòng ghen tị).'
+  },
+  {
+    id: 'game-master-reading-kwanggo',
+    level: 3,
+    gameType: 'topik-master',
+    category: 'reading',
+    errorType: 'reading',
+    prompt: '“한 번 사면 평생 쓰는 튼튼한 가구.” Quảng cáo này nói về sản phẩm gì?',
+    options: ['Đồ nội thất (가구)', 'Thiết bị điện tử', 'Quần áo thời trang', 'Mỹ phẩm dưỡng da'],
+    answerIndex: 0,
+    explanation: '가구 có nghĩa là đồ nội thất.'
   }
 ];
 
@@ -1078,7 +1324,8 @@ const publicVocabMatchGameState = (room) => {
     players,
     leaderboard,
     lastResult: game.lastResult || null,
-    wordBankSize: VOCAB_MATCH_WORDS.length
+    wordBankSize: VOCAB_MATCH_WORDS.length,
+    serverTime: Date.now()
   };
 };
 
@@ -1671,11 +1918,12 @@ const getRoomDirectoryList = () => {
     .slice(0, 50);
 };
 
+
 const rememberRoom = (room, hostName) => {
   const existing = roomDirectory.get(room.roomId);
   const now = new Date().toISOString();
 
-  roomDirectory.set(room.roomId, {
+  const entry = {
     id: room.roomId,
     hostName: hostName || existing?.hostName || 'An danh',
     memberCount: room.members.length,
@@ -1687,8 +1935,59 @@ const rememberRoom = (room, hostName) => {
     roomAvatarUrl: room.roomAvatarUrl || existing?.roomAvatarUrl || '',
     createdAt: existing?.createdAt || now,
     lastActiveAt: now
-  });
+  };
+
+  roomDirectory.set(room.roomId, entry);
   saveRoomDirectory();
+
+  if (SUPABASE_KEY) {
+    fetch(`${ROOMS_ENDPOINT}?id=eq.${encodeURIComponent(entry.id)}`, {
+      method: 'PATCH',
+      headers: supabaseHeaders(),
+      body: JSON.stringify({
+        title: entry.roomTitle,
+        host_name: entry.hostName,
+        host_avatar_url: entry.hostAvatarUrl,
+        is_private: entry.isPrivate,
+        last_active_at: entry.lastActiveAt,
+      }),
+    }).catch(err => console.error('[Supabase] PATCH room error:', err.message));
+  }
+};
+
+const syncRoomDirectoryWithSupabase = async () => {
+  if (!SUPABASE_KEY) return;
+  try {
+    const response = await fetch(`${ROOMS_ENDPOINT}?select=*`, {
+      headers: supabaseHeaders(),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        for (const row of data) {
+          roomDirectory.set(row.id, {
+            id: row.id,
+            hostName: row.host_name || 'Bạn học',
+            memberCount: 0,
+            currentSong: 'Đang nghe nhạc Lofi',
+            roomTitle: row.title || 'Phòng học tập',
+            isPrivate: !!row.is_private,
+            password: '',
+            hostAvatarUrl: row.host_avatar_url || '',
+            roomAvatarUrl: '',
+            createdAt: row.created_at || new Date().toISOString(),
+            lastActiveAt: row.last_active_at || new Date().toISOString(),
+          });
+        }
+        console.log(`[Supabase] Synced ${data.length} rooms from database on startup.`);
+        saveRoomDirectory();
+      }
+    } else {
+      console.warn('[Supabase] Failed to fetch rooms list on startup:', response.status, await response.text());
+    }
+  } catch (err) {
+    console.error('[Supabase] syncRoomDirectoryWithSupabase error:', err.message);
+  }
 };
 
 const broadcastRoomDirectory = () => {
@@ -3132,6 +3431,12 @@ io.on('connection', (socket) => {
     roomDirectory.delete(roomId);
     saveRoomDirectory();
     void deleteRoomStateFromSupabase(roomId);
+    if (SUPABASE_KEY) {
+      fetch(`${ROOMS_ENDPOINT}?id=eq.${encodeURIComponent(roomId)}`, {
+        method: 'DELETE',
+        headers: supabaseHeaders(),
+      }).catch(err => console.error('[Supabase] delete room error:', err.message));
+    }
     broadcastRoomDirectory();
   });
 
