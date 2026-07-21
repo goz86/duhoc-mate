@@ -221,10 +221,11 @@
     "roomTitle": "Phòng của ㄹ",
     "isPrivate": false,
     "password": "",
+    "passwordHash": "",
     "hostAvatarUrl": "https://imqrvssxfrhivlumhoze.supabase.co/storage/v1/object/public/avatars/guests/guest_os9fuoa7kkm/1780131707407.png",
     "roomAvatarUrl": "",
     "createdAt": "2026-05-30T10:03:17.386Z",
-    "lastActiveAt": "2026-07-21T07:05:00.123Z"
+    "lastActiveAt": "2026-07-21T08:27:08.551Z"
   },
   "BQIW2O": {
     "id": "BQIW2O",
@@ -364,6 +365,7 @@
     "roomTitle": "Phòng của Hùng",
     "isPrivate": false,
     "password": "",
+    "passwordHash": "",
     "hostAvatarUrl": "https://imqrvssxfrhivlumhoze.supabase.co/storage/v1/object/public/avatars/guests/guest_9xyangktt1/1780232776175.png",
     "roomAvatarUrl": "",
     "createdAt": "2026-05-31T13:07:16.865805+00:00",
@@ -429,6 +431,7 @@
     "roomTitle": "Phòng của hi",
     "isPrivate": false,
     "password": "",
+    "passwordHash": "",
     "hostAvatarUrl": "",
     "roomAvatarUrl": "",
     "createdAt": "2026-05-29T14:58:41.741431+00:00",
@@ -481,6 +484,7 @@
     "roomTitle": "Phòng của Mini",
     "isPrivate": false,
     "password": "",
+    "passwordHash": "",
     "hostAvatarUrl": "",
     "roomAvatarUrl": "",
     "createdAt": "2026-06-01T16:23:19.350071+00:00",
@@ -507,6 +511,7 @@
     "roomTitle": "Phòng của seoultech",
     "isPrivate": false,
     "password": "",
+    "passwordHash": "",
     "hostAvatarUrl": "",
     "roomAvatarUrl": "",
     "createdAt": "2026-06-08T13:35:41.581085+00:00",
@@ -514,16 +519,17 @@
   },
   "69Q99T": {
     "id": "69Q99T",
-    "hostName": "minh anh",
+    "hostName": "히",
     "memberCount": 0,
     "currentSong": "Đang nghe nhạc Lofi",
     "roomTitle": "Phòng của minh anh",
     "isPrivate": false,
     "password": "",
+    "passwordHash": "",
     "hostAvatarUrl": "",
     "roomAvatarUrl": "",
     "createdAt": "2026-06-08T14:04:03.59546+00:00",
-    "lastActiveAt": "2026-06-08T14:04:12.228+00:00"
+    "lastActiveAt": "2026-07-21T08:15:04.682+00:00"
   },
   "WO1VS0": {
     "id": "WO1VS0",
@@ -546,6 +552,7 @@
     "roomTitle": "khang 한양",
     "isPrivate": true,
     "password": "",
+    "passwordHash": "6b51d431df5d7f141cbececcf79edf3dd861c3b4069f0b11661a3eefacbba918",
     "hostAvatarUrl": "",
     "roomAvatarUrl": "",
     "createdAt": "2026-06-08T14:08:25.816542+00:00",
@@ -553,16 +560,17 @@
   },
   "QV6TCD": {
     "id": "QV6TCD",
-    "hostName": "seoultech",
+    "hostName": "히",
     "memberCount": 0,
     "currentSong": "Đang nghe nhạc Lofi",
     "roomTitle": "Phòng của seoultech",
     "isPrivate": false,
     "password": "",
+    "passwordHash": "",
     "hostAvatarUrl": "",
     "roomAvatarUrl": "",
     "createdAt": "2026-06-21T14:37:34.533463+00:00",
-    "lastActiveAt": "2026-06-21T14:37:39.04+00:00"
+    "lastActiveAt": "2026-07-21T08:27:04.864+00:00"
   },
   "NAEBA3": {
     "id": "NAEBA3",
@@ -585,9 +593,10 @@
     "roomTitle": "Vừa học vừa chơi",
     "isPrivate": false,
     "password": "",
+    "passwordHash": "",
     "hostAvatarUrl": "https://imqrvssxfrhivlumhoze.supabase.co/storage/v1/object/public/avatars/guests/29442d00-11dc-4a5c-9199-0f72faf85eda/1784616066049.png",
     "roomAvatarUrl": "",
     "createdAt": "2026-07-20T07:00:31.731291+00:00",
-    "lastActiveAt": "2026-07-21T06:45:53.312+00:00"
+    "lastActiveAt": "2026-07-21T08:21:33.513+00:00"
   }
 }

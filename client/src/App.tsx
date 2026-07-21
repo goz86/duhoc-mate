@@ -1802,25 +1802,22 @@ export default function App() {
     }
 
     if (isPrivate && enteredPassword) {
-      // Xác định xem user hiện tại có phải là chủ phòng (host) của phòng này không
-      let isHostOfRoom = false;
-      try {
-        const roomPasswordsRaw = localStorage.getItem('duhocmate_room_passwords');
-        const roomPasswords = roomPasswordsRaw ? JSON.parse(roomPasswordsRaw) : {};
-        if (roomPasswords[formattedId] !== undefined) {
-          isHostOfRoom = true;
-        }
-      } catch {}
-
-      if (user && storedRoomRecord?.hostUserId === user.id) {
-        isHostOfRoom = true;
-      }
+      // Chỉ xem là chủ phòng chính thức nếu trùng ID chủ phòng trong database
+      const isVerifiedHost = user && storedRoomRecord && storedRoomRecord.hostUserId === user.id;
 
       if (storedRoomRecord && storedRoomRecord.passwordHash) {
         const enteredHash = await hashRoomPassword(enteredPassword);
         if (enteredHash !== storedRoomRecord.passwordHash) {
-          // Bỏ qua kiểm tra mật khẩu nếu đúng là chủ phòng đã xác minh bằng hostUserId/local
-          if (!isHostOfRoom) {
+          // Bỏ qua kiểm tra mật khẩu nếu là host đã được xác minh qua auth
+          if (!isVerifiedHost) {
+            // Sai mật khẩu -> Xoá mật khẩu lưu ở local storage nếu có để yêu cầu nhập lại
+            try {
+              const roomPasswordsRaw = localStorage.getItem('duhocmate_room_passwords');
+              const roomPasswords = roomPasswordsRaw ? JSON.parse(roomPasswordsRaw) : {};
+              delete roomPasswords[formattedId];
+              localStorage.setItem('duhocmate_room_passwords', JSON.stringify(roomPasswords));
+            } catch {}
+
             setPasswordModalError('Mật khẩu không chính xác!');
             return;
           }

@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
@@ -1936,6 +1937,7 @@ const rememberRoom = (room, hostName) => {
     roomTitle: room.roomTitle || existing?.roomTitle || 'Phong hoc tap',
     isPrivate: !!room.isPrivate,
     password: room.password || existing?.password || '',
+    passwordHash: room.passwordHash || existing?.passwordHash || '',
     hostAvatarUrl: room.hostAvatarUrl || existing?.hostAvatarUrl || '',
     roomAvatarUrl: room.roomAvatarUrl || existing?.roomAvatarUrl || '',
     createdAt: existing?.createdAt || now,
@@ -1978,6 +1980,7 @@ const syncRoomDirectoryWithSupabase = async () => {
             roomTitle: row.title || 'Phòng học tập',
             isPrivate: !!row.is_private,
             password: '',
+            passwordHash: row.password_hash || '',
             hostAvatarUrl: row.host_avatar_url || '',
             roomAvatarUrl: '',
             createdAt: row.created_at || new Date().toISOString(),
@@ -2075,6 +2078,7 @@ io.on('connection', (socket) => {
     const restoredState = savedRoomState.get(roomId) || await loadRoomStateFromSupabase(roomId) || {};
     // Khởi tạo phòng nếu chưa tồn tại
     if (!rooms.has(roomId)) {
+      const incomingHash = password ? crypto.createHash('sha256').update(password).digest('hex') : '';
       rooms.set(roomId, {
         roomId,
         members: [],
@@ -2096,6 +2100,7 @@ io.on('connection', (socket) => {
         roomTitle: roomTitle || `Phòng của ${username}`,
         isPrivate: isPrivate !== undefined ? !!isPrivate : !!restoredState.isPrivate || !!rememberedRoom?.isPrivate,
         password: password || restoredState.password || rememberedRoom?.password || '',
+        passwordHash: incomingHash || rememberedRoom?.passwordHash || '',
         hostAvatarUrl: hostAvatarUrl || restoredState.hostAvatarUrl || rememberedRoom?.hostAvatarUrl || '',
         tiktokVideoId: restoredState.tiktokVideoId || '',
         hostFriendCode: restoredState.hostFriendCode || '',
@@ -2130,9 +2135,15 @@ io.on('connection', (socket) => {
       room.roomAvatarUrl = roomAvatarUrl;
     }
 
-    // Kiểm tra mật khẩu nếu phòng riêng tư và không phải là chủ phòng (members.length > 0)
-    if (room.isPrivate && room.members.length > 0) {
-      if (room.password && room.password !== password) {
+    // Kiểm tra mật khẩu nếu phòng riêng tư
+    if (room.isPrivate) {
+      if (room.passwordHash) {
+        const hash = password ? crypto.createHash('sha256').update(password).digest('hex') : '';
+        if (hash !== room.passwordHash) {
+          socket.emit('join-room-error', 'Sai mật khẩu phòng!');
+          return;
+        }
+      } else if (room.password && room.password !== password) {
         socket.emit('join-room-error', 'Sai mật khẩu phòng!');
         return;
       }
