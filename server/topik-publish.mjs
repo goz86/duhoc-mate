@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+timport { createHash } from 'node:crypto'
 
 const GAME_TYPES = new Set(['grammar-race', 'topik-master', 'sentence-build', 'vocab-speed'])
 const CATEGORIES = new Set(['grammar', 'vocabulary', 'reading', 'sentence'])

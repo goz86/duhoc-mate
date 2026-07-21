@@ -81,6 +81,38 @@ function isExplanationAlignedWithCorrectOption(question: TopikExamQuestion) {
   })
 }
 
+function isTopikAudioPath(value?: string | null) {
+  return Boolean(value && /\.(mp3|wav|m4a|ogg)(\?|#|$)/i.test(value))
+}
+
+function isTopikImagePath(value?: string | null) {
+  return Boolean(value && /\.(png|jpe?g|webp|gif)(\?|#|$)/i.test(value))
+}
+
+function getQuestionAudioSource(question?: TopikExamQuestion | null) {
+  if (!question) return ''
+  if (isTopikAudioPath(question.passage)) return question.passage!
+  if (isTopikAudioPath(question.audio_script)) return question.audio_script!
+  return ''
+}
+
+function getQuestionImageSource(question?: TopikExamQuestion | null) {
+  if (!question) return ''
+  if (question.audio_script?.startsWith('/topik_exams/') && isTopikImagePath(question.audio_script)) {
+    return question.audio_script
+  }
+  return ''
+}
+
+function cleanupAudioElement(audio?: HTMLAudioElement | null) {
+  if (!audio) return
+  audio.pause()
+  audio.onerror = null
+  audio.onended = null
+  audio.ontimeupdate = null
+  audio.src = ''
+}
+
 export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }: Props) {
   
   // ── States ──────────────────────────────────────────────────────
@@ -267,16 +299,14 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
 
     // 2. Stop Intro Audio
     if (introAudio) {
-      introAudio.pause()
-      introAudio.src = ''
+      cleanupAudioElement(introAudio)
     }
     setIntroAudio(null)
     setIsIntroPlaying(false)
 
     // 3. Stop Real Audio
     if (realAudio) {
-      realAudio.pause()
-      realAudio.src = ''
+      cleanupAudioElement(realAudio)
     }
     setRealAudio(null)
     setIsPlayingAudio(false)
@@ -342,8 +372,7 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
   // ── Real MP3 Audio Handlers ─────────────────────────────────────
   const handleSkipIntro = (qList = questions, currentIntro = introAudio) => {
     if (currentIntro) {
-      currentIntro.pause()
-      currentIntro.src = ''
+      cleanupAudioElement(currentIntro)
     }
     setIntroAudio(null)
     setIsIntroPlaying(false)
@@ -351,8 +380,9 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
     
     // Auto play Q1
     const firstQ = qList[0]
-    if (firstQ && firstQ.passage && firstQ.passage.endsWith('.mp3')) {
-      handlePlayRealAudio(firstQ.passage, firstQ.question_number)
+    const firstAudio = getQuestionAudioSource(firstQ)
+    if (firstQ && firstAudio) {
+      handlePlayRealAudio(firstAudio, firstQ.question_number)
     }
   }
 
@@ -376,15 +406,13 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
         return
       }
 
-      realAudio.pause()
-      realAudio.src = ''
+      cleanupAudioElement(realAudio)
       setRealAudio(null)
       setIsPlayingAudio(false)
     }
 
     if (introAudio) {
-      introAudio.pause()
-      introAudio.src = ''
+      cleanupAudioElement(introAudio)
       setIntroAudio(null)
       setIsIntroPlaying(false)
     }
@@ -419,7 +447,10 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
 
     setRealAudio(audio)
     setIsPlayingAudio(true)
-    audio.play()
+    audio.play().catch(() => {
+      setIsPlayingAudio(false)
+      setRealAudio(null)
+    })
   }
 
   // ── CBT Actions ─────────────────────────────────────────────────
@@ -434,11 +465,11 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
     if (
       autoPlayListening
       && selectedExam?.category === 'listening'
-      && nextQuestion?.passage?.endsWith('.mp3')
+      && getQuestionAudioSource(nextQuestion)
       && !isIntroPlaying
     ) {
       window.setTimeout(() => {
-        handlePlayRealAudio(nextQuestion.passage!, nextQuestion.question_number, true)
+        handlePlayRealAudio(getQuestionAudioSource(nextQuestion), nextQuestion.question_number, true)
       }, 0)
     }
   }
@@ -468,9 +499,10 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
 
         // Check if the exam has a real MP3 path in the first question
         const firstQ = qList[0]
-        if (firstQ && firstQ.passage && firstQ.passage.endsWith('.mp3')) {
+        const firstAudio = getQuestionAudioSource(firstQ)
+        if (firstQ && firstAudio) {
           // Play Intro Audio track_01.mp3
-          const introUrl = firstQ.passage.replace('track_02.mp3', 'track_01.mp3')
+          const introUrl = firstAudio.replace('track_02.mp3', 'track_01.mp3')
           const audio = new Audio(introUrl)
           setIsIntroPlaying(true)
           setIsPlayingAudio(true)
@@ -647,9 +679,9 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
           CBT TEST ROOM (Đang thi thử hoặc Đã xong xem kết quả)
           ───────────────────────────────────────────────────────────── */}
       {isTesting && selectedExam && (
-        <div className="w-full max-w-7xl mx-auto flex flex-col gap-3 px-3 sm:px-0">
+        <div className="topik-cbt-shell w-full max-w-7xl mx-auto flex flex-col gap-3 px-1 sm:px-0">
           {/* Header thi thử */}
-          <div className="flex flex-col gap-2 px-3 py-2.5 rounded-2xl border border-brand-terracotta-light/15 bg-white/95 shadow-sm backdrop-blur">
+          <div className="topik-cbt-summary flex flex-col gap-2 px-3 py-2.5 rounded-2xl border border-brand-terracotta-light/15 bg-white/95 shadow-sm backdrop-blur">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <button
@@ -731,10 +763,10 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
           )}
 
           {/* Khung thi chính dạng Split Screen */}
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.25fr)_minmax(300px,0.75fr)] gap-4 items-stretch w-full lg:h-[calc(100vh-112px)] min-h-[560px]">
+          <div className="topik-cbt-main-grid grid grid-cols-1 lg:grid-cols-[minmax(0,2.4fr)_minmax(280px,0.65fr)] 2xl:grid-cols-[minmax(0,2.25fr)_minmax(300px,0.75fr)] gap-4 items-stretch w-full lg:h-[calc(100vh-112px)] min-h-[560px]">
             {/* Cột 1 (Bên trái): Đề thi hoặc Bài đọc (Cuộn độc lập trên desktop) */}
             {questions[activeQuestionIdx] && (
-              <div className="flex flex-col gap-4 w-full lg:h-full lg:overflow-hidden pr-0 lg:pr-2">
+              <div className="topik-question-column flex flex-col gap-4 w-full lg:h-full lg:overflow-hidden pr-0 lg:pr-2">
                 {isIntroPlaying ? (
                   <div className="rounded-3xl border border-brand-terracotta-light/15 bg-white/95 shadow-md p-8 flex flex-col items-center justify-center text-center gap-6 h-full min-h-[400px]">
                     <div className="relative flex items-center justify-center">
@@ -765,10 +797,10 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
                 ) : (
                   <>
                     {/* ── 1. ĐỀ BÀI (ẢNH HOẶC TEXT) ───────────────── */}
-                    {questions[activeQuestionIdx].audio_script?.startsWith('/topik_exams/') ? (
-                      <div className="rounded-2xl border border-brand-terracotta-light/15 bg-white/95 shadow-md overflow-hidden flex flex-col flex-1 min-h-0">
+                    {getQuestionImageSource(questions[activeQuestionIdx]) ? (
+                      <div className="topik-image-card rounded-xl sm:rounded-2xl border border-brand-terracotta-light/15 bg-white/95 shadow-md overflow-hidden flex flex-col flex-1 min-h-0">
                         {/* Toolbar ảnh */}
-                        <div className="flex items-center justify-between px-3 py-2 border-b border-brand-terracotta-light/10 bg-brand-light/40 flex-shrink-0">
+                        <div className="topik-image-toolbar flex items-center justify-between px-2 py-2 sm:px-3 border-b border-brand-terracotta-light/10 bg-brand-light/40 flex-shrink-0">
                           <div className="flex items-center gap-2">
                             <BookOpen size={14} className="text-brand-terracotta" />
                             <span className="text-xs font-black text-brand-brown-dark">
@@ -797,14 +829,14 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
                           </div>
                         </div>
                         {/* Ảnh đề thi (scrollable inside card nếu fit-width, không scroll nếu fit-height) */}
-                        <div className={`relative flex-1 p-2 bg-gray-50/50 flex justify-center ${
-                          imageFitMode === 'height' ? 'overflow-hidden items-center h-full w-full' : 'overflow-y-auto items-start'
+                        <div className={`topik-image-stage relative flex-1 p-0.5 sm:p-2 bg-gray-50/50 flex justify-center ${
+                          imageFitMode === 'height' ? 'overflow-hidden items-start sm:items-center h-full w-full' : 'overflow-y-auto items-start'
                         }`}>
                           <img
-                            src={questions[activeQuestionIdx].audio_script!}
+                            src={getQuestionImageSource(questions[activeQuestionIdx])}
                             alt={`Đề thi TOPIK - Câu ${questions[activeQuestionIdx].question_number}`}
-                            className={`select-none transition-all duration-200 ${
-                              imageFitMode === 'height' ? 'max-w-full max-h-full object-contain' : 'w-full h-auto object-contain'
+                            className={`topik-exam-image select-none transition-all duration-200 ${
+                              imageFitMode === 'height' ? 'w-full h-auto max-h-none object-contain sm:w-auto sm:max-w-full sm:max-h-full' : 'w-full h-auto object-contain'
                             }`}
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = '/topik_exams/placeholder.jpg'
@@ -829,7 +861,11 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
                         </div>
 
                         {/* Audio Player (Dành cho phần thi Nghe) */}
-                        {selectedExam.category === 'listening' && questions[activeQuestionIdx].audio_script && (
+                        {selectedExam.category === 'listening'
+                          && questions[activeQuestionIdx].audio_script
+                          && !getQuestionImageSource(questions[activeQuestionIdx])
+                          && !isTopikAudioPath(questions[activeQuestionIdx].audio_script)
+                          && (
                           <div className="p-4 rounded-2xl bg-brand-cream border border-brand-terracotta-light/15 flex flex-col gap-3 items-center text-center">
                             <div className="flex items-center gap-2">
                               <Headphones size={20} className="text-brand-terracotta" />
@@ -867,7 +903,7 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
                         )}
 
                         {/* Passage */}
-                        {questions[activeQuestionIdx].passage && (
+                        {questions[activeQuestionIdx].passage && !isTopikAudioPath(questions[activeQuestionIdx].passage) && (
                           <div className="p-4 rounded-2xl bg-brand-light/35 border border-brand-terracotta-light/10 text-sm leading-relaxed text-brand-brown-dark font-medium whitespace-pre-wrap select-text">
                             {questions[activeQuestionIdx].passage}
                           </div>
@@ -1033,14 +1069,14 @@ export default function TopikExamComponent({ roomId, isAdmin, onTestingChange }:
               <div className="flex flex-col gap-3 w-full lg:h-full lg:overflow-y-auto pl-0 lg:pl-1">
                 
                 {/* ── REAL AUDIO PLAYER (Dành cho đề nghe chính thức có file mp3) ── */}
-                {selectedExam.category === 'listening' && questions[activeQuestionIdx].passage?.endsWith('.mp3') && (
+                {selectedExam.category === 'listening' && getQuestionAudioSource(questions[activeQuestionIdx]) && (
                   <div className="p-4 rounded-2xl border border-brand-terracotta-light/15 bg-brand-cream shadow-md flex flex-col gap-3">
 
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between gap-3 flex-wrap">
                         {/* Play/Pause Button */}
                         <button
-                          onClick={() => handlePlayRealAudio(questions[activeQuestionIdx].passage!, questions[activeQuestionIdx].question_number)}
+                          onClick={() => handlePlayRealAudio(getQuestionAudioSource(questions[activeQuestionIdx]), questions[activeQuestionIdx].question_number)}
                           className={`p-3 rounded-full transition cursor-pointer active:scale-95 flex items-center justify-center shadow ${
                             isPlayingAudio ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-brand-terracotta text-white hover:bg-brand-brown-dark'
                           }`}

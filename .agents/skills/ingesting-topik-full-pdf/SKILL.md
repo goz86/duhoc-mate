@@ -202,6 +202,17 @@ Tạo script import (ví dụ `import_exam_XX.py`) thực hiện các nhiệm v�
 Chạy script vẽ các đường lưới ngang màu đỏ cách nhau 50px (kèm chữ số chỉ tọa độ Y) đè lên các ảnh trang đề thi gốc và lưu vào thư mục `client/scripts/crop_review/topikXX_reading_grid` và `topikXX_listening_grid`.
 *Mục đích: Giúp dễ dàng tra cứu tọa độ Y chính xác của các câu hỏi hoặc hình vẽ đáp án.*
 
+#### Quy trình riêng cho PDF cũ/scan như TOPIK 60/64
+Với các đề scan cũ, cách chuẩn nhất là dựng tọa độ trên ảnh render từ PyMuPDF rồi crop cố định theo manifest. Không dựa vào auto-tighten/OCR bands làm nguồn chính.
+
+1. Render bằng PyMuPDF ở độ phân giải cao, sau đó đo `y1/y2` trên ảnh grid/render đó.
+2. Ảnh crop phải giữ đủ dòng đề bài/câu số, passage/hộp khung đen, viền trên và viền dưới. Không được cắt mất dòng prompt đầu câu.
+3. Sau khi import DB, chạy lại ảnh cũ bằng:
+   ```powershell
+   python client/scripts/rebuild_old_topik_reading_crops.py --exam=60 --source="C:\Users\Hhung\Downloads\64"
+   ```
+4. Luôn mở `client/scripts/crop_review/topikXX_reading_clean/contact_sheet.jpg` và xem bằng mắt trước khi báo xong.
+
 ### Bước 4: Thực hiện Crop hình ảnh phần Đọc (Reading)
 Tạo script `crop_topikXX_reading_clean.py` để thực hiện cắt ảnh Đọc theo 3 quy chuẩn:
 1. **Cắt rộng chứa cả đáp án (Q1-Q8, Q25-Q27):** Vì các câu hỏi này rất ngắn, ta tăng giới hạn dưới `y2` để ảnh chứa toàn bộ đề bài + các phương án trắc nghiệm ① ② ③ ④ gốc.
@@ -251,6 +262,22 @@ Viết script `fix_options_XX.py` để sắp xếp lại mảng `options` trắ
 3. Định vị chuỗi văn bản của đáp án đúng cũ trong mảng mới để tính toán lại chỉ số `correct_option` mới một cách toán học: `new_correct = sorted_options.index(old_correct_text) + 1`. Điều này giúp bảo toàn tuyệt đối đáp án đúng chính thức trong DB.
 4. Gọi AI sinh giải thích (`explanation`) bằng Tiếng Việt dựa trên đáp án đúng đã xác định.
 
+#### Quy tắc repair options an toàn sau lỗi TOPIK 96
+Khi options bị sai thứ tự trên web, ưu tiên dùng script scoped `client/scripts/repair_topik_options_by_ocr.cjs`:
+
+```bash
+node client/scripts/repair_topik_options_by_ocr.cjs --exam=96 --section=reading
+node client/scripts/repair_topik_options_by_ocr.cjs --exam=96 --section=reading --q=2,3 --apply
+```
+
+Script này lấy thứ tự từ OCR tọa độ trên ảnh trang gốc, sau đó set `correct_option` theo official key. Không dùng AI để chọn đáp án. Sau khi options của câu nào đổi, phải đặt `explanation = null` hoặc sinh lại explanation cho đúng câu đó bằng:
+
+```bash
+node client/scripts/regenerate_topik_explanations.cjs --exam=96 --section=reading --q=2,3 --apply
+```
+
+Với các câu dạng `(가)-(나)-(다)-(라)` hoặc `㉠/㉡/㉢/㉣`, OCR text thường không match tốt; không ép script tự sửa nếu dry-run báo skip. Các câu này chỉ vá thủ công khi có bằng chứng từ PDF/official key.
+
 ### Bước 8: Sửa thủ công các câu hỏi lỗi OCR đặc biệt
 Các nhóm câu hỏi đặc biệt như sắp xếp thứ tự `(가)-(나)-(다)-(라)` hoặc điền ký hiệu `㉠, ㉡, ㉢, ㉣` thường bị OCR nhận diện sai lệch hoặc bỏ qua hoàn toàn.
 Ta cần tạo script vá thủ công (ví dụ `fix_failed_options_XX.py`):
@@ -275,8 +302,9 @@ Ta cần tạo script vá thủ công (ví dụ `fix_failed_options_XX.py`):
      .order('question_number')
    ```
 2. Mở ảnh bằng `view_image` hoặc tạo contact sheet cho các câu vừa sửa. Không chỉ tin vào log `[OK]`.
-3. Chạy build/typecheck của client: `npx tsc -b`.
-4. Không commit nếu người dùng đã dặn “không commit”.
+3. Với mọi lần cắt lại ảnh, bắt buộc tạo contact sheet toàn bộ câu bị ảnh hưởng và kiểm riêng ít nhất 3 ảnh đại diện: câu đầu nhóm, câu người dùng báo lỗi, câu cuối nhóm. Chỉ được sync DB hoặc báo xong sau khi ảnh đã được xem bằng mắt và ghi nhận pass.
+4. Chạy build/typecheck của client: `npx tsc -b`.
+5. Không commit nếu người dùng đã dặn “không commit”.
 5. Luôn chạy audit đáp án chính thức sau import, sau sort options, hoặc sau mọi script có đụng `correct_option`:
    ```powershell
    node client/scripts/audit_topik_answer_integrity.cjs --exam=91 --section=all
@@ -390,6 +418,8 @@ Khi thấy các line như `[(366, 366), (784, 785)]`, crop khung nên bao từ t
     > **Co sát viền dưới để tránh dính đáp án ①:** Đối với các câu cắt sạch, cần kiểm tra kỹ toạ độ Y2. Vị trí Y2 tối đa nên cách đáp án ① ít nhất 20px-30px để thuật toán co mép không tự động nhảy xuống dính chữ đáp án.
 *   > [!IMPORTANT]
     > **Không được mất viền khung đen:** Với mọi passage/hộp thoại trong khung, phải kiểm line pixel của viền dưới. Nếu ảnh thiếu thanh dưới hoặc thanh trên, sửa tọa độ `y1/y2`, chạy lại crop, và xem ảnh bằng mắt trước khi báo xong.
+*   > [!IMPORTANT]
+    > **Crop review gate:** Sau mỗi lần đổi tọa độ crop, phải render lại ảnh, tạo contact sheet, mở contact sheet bằng công cụ xem ảnh, rồi mở riêng các ảnh đại diện ở kích thước thật. Không được báo "xong", sync DB cuối cùng, hoặc chuyển qua việc khác nếu chưa qua bước xác nhận bằng mắt này.
 *   > [!IMPORTANT]
     > **Answer key chính thức là nguồn sự thật duy nhất:** Sau khi sort options hoặc vá OCR, phải chạy `audit_topik_answer_integrity.cjs`. Không để AI tự đổi `correct_option`. Nếu `correct_option` đổi theo answer key, explanation cũ phải xóa hoặc sinh lại.
 *   > [!IMPORTANT]

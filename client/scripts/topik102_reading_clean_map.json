@@ -1,0 +1,709 @@
+{
+  "session": 102,
+  "section": "reading",
+  "source": "C:\\Users\\Hhung\\Downloads\\102\\TOPIK 102 Đề Đọc.pdf",
+  "outputDir": "/topik_exams/ky_102/clean/reading",
+  "renderer": "pymupdf",
+  "questions": {
+    "1": {
+      "image": "/topik_exams/ky_102/clean/reading/q001.png",
+      "pieces": [
+        {
+          "page": 5,
+          "y1": 405,
+          "y2": 650
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 289
+      }
+    },
+    "2": {
+      "image": "/topik_exams/ky_102/clean/reading/q002.png",
+      "pieces": [
+        {
+          "page": 5,
+          "y1": 760,
+          "y2": 975
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 259
+      }
+    },
+    "3": {
+      "image": "/topik_exams/ky_102/clean/reading/q003.png",
+      "pieces": [
+        {
+          "page": 5,
+          "y1": 1160,
+          "y2": 1445
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 329
+      }
+    },
+    "4": {
+      "image": "/topik_exams/ky_102/clean/reading/q004.png",
+      "pieces": [
+        {
+          "page": 5,
+          "y1": 1570,
+          "y2": 1795
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 269
+      }
+    },
+    "5": {
+      "image": "/topik_exams/ky_102/clean/reading/q005.png",
+      "pieces": [
+        {
+          "page": 6,
+          "y1": 265,
+          "y2": 720
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 499
+      }
+    },
+    "6": {
+      "image": "/topik_exams/ky_102/clean/reading/q006.png",
+      "pieces": [
+        {
+          "page": 6,
+          "y1": 800,
+          "y2": 1185
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 429
+      }
+    },
+    "7": {
+      "image": "/topik_exams/ky_102/clean/reading/q007.png",
+      "pieces": [
+        {
+          "page": 6,
+          "y1": 1285,
+          "y2": 1665
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 424
+      }
+    },
+    "8": {
+      "image": "/topik_exams/ky_102/clean/reading/q008.png",
+      "pieces": [
+        {
+          "page": 6,
+          "y1": 1785,
+          "y2": 2145
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 404
+      }
+    },
+    "9": {
+      "image": "/topik_exams/ky_102/clean/reading/q009.png",
+      "pieces": [
+        {
+          "page": 7,
+          "y1": 260,
+          "y2": 920
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 704
+      }
+    },
+    "10": {
+      "image": "/topik_exams/ky_102/clean/reading/q010.png",
+      "pieces": [
+        {
+          "page": 7,
+          "y1": 1260,
+          "y2": 1950
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 734
+      }
+    },
+    "11": {
+      "image": "/topik_exams/ky_102/clean/reading/q011.png",
+      "pieces": [
+        {
+          "page": 8,
+          "y1": 260,
+          "y2": 720
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 504
+      }
+    },
+    "12": {
+      "image": "/topik_exams/ky_102/clean/reading/q012.png",
+      "pieces": [
+        {
+          "page": 8,
+          "y1": 1110,
+          "y2": 1495
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 429
+      }
+    },
+    "13": {
+      "image": "/topik_exams/ky_102/clean/reading/q013.png",
+      "pieces": [
+        {
+          "page": 9,
+          "y1": 260,
+          "y2": 655
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 439
+      }
+    },
+    "14": {
+      "image": "/topik_exams/ky_102/clean/reading/q014.png",
+      "pieces": [
+        {
+          "page": 9,
+          "y1": 910,
+          "y2": 1230
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 364
+      }
+    },
+    "15": {
+      "image": "/topik_exams/ky_102/clean/reading/q015.png",
+      "pieces": [
+        {
+          "page": 9,
+          "y1": 1480,
+          "y2": 1815
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 379
+      }
+    },
+    "16": {
+      "image": "/topik_exams/ky_102/clean/reading/q016.png",
+      "pieces": [
+        {
+          "page": 10,
+          "y1": 260,
+          "y2": 660
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 444
+      }
+    },
+    "17": {
+      "image": "/topik_exams/ky_102/clean/reading/q017.png",
+      "pieces": [
+        {
+          "page": 10,
+          "y1": 930,
+          "y2": 1305
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 419
+      }
+    },
+    "18": {
+      "image": "/topik_exams/ky_102/clean/reading/q018.png",
+      "pieces": [
+        {
+          "page": 10,
+          "y1": 1570,
+          "y2": 1945
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 419
+      }
+    },
+    "19": {
+      "image": "/topik_exams/ky_102/clean/reading/q019.png",
+      "pieces": [
+        {
+          "page": 11,
+          "y1": 260,
+          "y2": 785
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 569
+      }
+    },
+    "20": {
+      "image": "/topik_exams/ky_102/clean/reading/q020.png",
+      "pieces": [
+        {
+          "page": 11,
+          "y1": 260,
+          "y2": 785
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 569
+      }
+    },
+    "21": {
+      "image": "/topik_exams/ky_102/clean/reading/q021.png",
+      "pieces": [
+        {
+          "page": 12,
+          "y1": 260,
+          "y2": 790
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 574
+      }
+    },
+    "22": {
+      "image": "/topik_exams/ky_102/clean/reading/q022.png",
+      "pieces": [
+        {
+          "page": 12,
+          "y1": 260,
+          "y2": 790
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 574
+      }
+    },
+    "23": {
+      "image": "/topik_exams/ky_102/clean/reading/q023.png",
+      "pieces": [
+        {
+          "page": 13,
+          "y1": 260,
+          "y2": 1135
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 919
+      }
+    },
+    "24": {
+      "image": "/topik_exams/ky_102/clean/reading/q024.png",
+      "pieces": [
+        {
+          "page": 13,
+          "y1": 260,
+          "y2": 1135
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 919
+      }
+    },
+    "25": {
+      "image": "/topik_exams/ky_102/clean/reading/q025.png",
+      "pieces": [
+        {
+          "page": 14,
+          "y1": 260,
+          "y2": 745
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 529
+      }
+    },
+    "26": {
+      "image": "/topik_exams/ky_102/clean/reading/q026.png",
+      "pieces": [
+        {
+          "page": 14,
+          "y1": 860,
+          "y2": 1255
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 439
+      }
+    },
+    "27": {
+      "image": "/topik_exams/ky_102/clean/reading/q027.png",
+      "pieces": [
+        {
+          "page": 14,
+          "y1": 1385,
+          "y2": 1760
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 419
+      }
+    },
+    "28": {
+      "image": "/topik_exams/ky_102/clean/reading/q028.png",
+      "pieces": [
+        {
+          "page": 15,
+          "y1": 260,
+          "y2": 730
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 514
+      }
+    },
+    "29": {
+      "image": "/topik_exams/ky_102/clean/reading/q029.png",
+      "pieces": [
+        {
+          "page": 15,
+          "y1": 1120,
+          "y2": 1550
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 474
+      }
+    },
+    "30": {
+      "image": "/topik_exams/ky_102/clean/reading/q030.png",
+      "pieces": [
+        {
+          "page": 16,
+          "y1": 260,
+          "y2": 785
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 569
+      }
+    },
+    "31": {
+      "image": "/topik_exams/ky_102/clean/reading/q031.png",
+      "pieces": [
+        {
+          "page": 16,
+          "y1": 1170,
+          "y2": 1615
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 489
+      }
+    },
+    "32": {
+      "image": "/topik_exams/ky_102/clean/reading/q032.png",
+      "pieces": [
+        {
+          "page": 17,
+          "y1": 260,
+          "y2": 785
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 569
+      }
+    },
+    "33": {
+      "image": "/topik_exams/ky_102/clean/reading/q033.png",
+      "pieces": [
+        {
+          "page": 17,
+          "y1": 1180,
+          "y2": 1625
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 489
+      }
+    },
+    "34": {
+      "image": "/topik_exams/ky_102/clean/reading/q034.png",
+      "pieces": [
+        {
+          "page": 18,
+          "y1": 260,
+          "y2": 785
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 569
+      }
+    },
+    "35": {
+      "image": "/topik_exams/ky_102/clean/reading/q035.png",
+      "pieces": [
+        {
+          "page": 18,
+          "y1": 1235,
+          "y2": 1740
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 549
+      }
+    },
+    "36": {
+      "image": "/topik_exams/ky_102/clean/reading/q036.png",
+      "pieces": [
+        {
+          "page": 19,
+          "y1": 250,
+          "y2": 720
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 514
+      }
+    },
+    "37": {
+      "image": "/topik_exams/ky_102/clean/reading/q037.png",
+      "pieces": [
+        {
+          "page": 19,
+          "y1": 1085,
+          "y2": 1540
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 499
+      }
+    },
+    "38": {
+      "image": "/topik_exams/ky_102/clean/reading/q038.png",
+      "pieces": [
+        {
+          "page": 20,
+          "y1": 250,
+          "y2": 785
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 579
+      }
+    },
+    "39": {
+      "image": "/topik_exams/ky_102/clean/reading/q039.png",
+      "pieces": [
+        {
+          "page": 20,
+          "y1": 1235,
+          "y2": 1980
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 789
+      }
+    },
+    "40": {
+      "image": "/topik_exams/ky_102/clean/reading/q040.png",
+      "pieces": [
+        {
+          "page": 21,
+          "y1": 260,
+          "y2": 965
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 749
+      }
+    },
+    "41": {
+      "image": "/topik_exams/ky_102/clean/reading/q041.png",
+      "pieces": [
+        {
+          "page": 21,
+          "y1": 1175,
+          "y2": 1820
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 689
+      }
+    },
+    "42": {
+      "image": "/topik_exams/ky_102/clean/reading/q042.png",
+      "pieces": [
+        {
+          "page": 22,
+          "y1": 250,
+          "y2": 1305
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 1099
+      }
+    },
+    "43": {
+      "image": "/topik_exams/ky_102/clean/reading/q043.png",
+      "pieces": [
+        {
+          "page": 22,
+          "y1": 250,
+          "y2": 1305
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 1099
+      }
+    },
+    "44": {
+      "image": "/topik_exams/ky_102/clean/reading/q044.png",
+      "pieces": [
+        {
+          "page": 23,
+          "y1": 260,
+          "y2": 1030
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 814
+      }
+    },
+    "45": {
+      "image": "/topik_exams/ky_102/clean/reading/q045.png",
+      "pieces": [
+        {
+          "page": 23,
+          "y1": 260,
+          "y2": 1030
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 814
+      }
+    },
+    "46": {
+      "image": "/topik_exams/ky_102/clean/reading/q046.png",
+      "pieces": [
+        {
+          "page": 24,
+          "y1": 260,
+          "y2": 1095
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 879
+      }
+    },
+    "47": {
+      "image": "/topik_exams/ky_102/clean/reading/q047.png",
+      "pieces": [
+        {
+          "page": 24,
+          "y1": 260,
+          "y2": 1095
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 879
+      }
+    },
+    "48": {
+      "image": "/topik_exams/ky_102/clean/reading/q048.png",
+      "pieces": [
+        {
+          "page": 25,
+          "y1": 250,
+          "y2": 1160
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 954
+      }
+    },
+    "49": {
+      "image": "/topik_exams/ky_102/clean/reading/q049.png",
+      "pieces": [
+        {
+          "page": 25,
+          "y1": 250,
+          "y2": 1160
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 954
+      }
+    },
+    "50": {
+      "image": "/topik_exams/ky_102/clean/reading/q050.png",
+      "pieces": [
+        {
+          "page": 25,
+          "y1": 250,
+          "y2": 1160
+        }
+      ],
+      "size": {
+        "width": 1522,
+        "height": 954
+      }
+    }
+  }
+}
