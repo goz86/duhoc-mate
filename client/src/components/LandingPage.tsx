@@ -686,7 +686,8 @@ export default function LandingPage({
             ) : (
               <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {paginatedExploreRooms.map((room: ActiveRoom, index: number) => {
-                  const hasAvatar = !!room.hostAvatarUrl;
+                  const finalAvatarUrl = room.roomAvatarUrl || room.hostAvatarUrl || '';
+                  const hasAvatar = !!finalAvatarUrl;
                   const firstLetter = room.hostName ? room.hostName.substring(0, 2).toUpperCase() : 'BH';
                   const onlineCount = Number(room.memberCount) || 0;
                   const isLive = onlineCount > 0;
@@ -702,7 +703,7 @@ export default function LandingPage({
                           {/* Avatar */}
                           <div className="h-12 w-12 shrink-0 rounded-2xl border border-black/[0.05] bg-brand-cream overflow-hidden flex items-center justify-center font-display font-black text-sm">
                             {hasAvatar ? (
-                              <img src={room.hostAvatarUrl} alt={room.hostName} className="h-full w-full object-cover" />
+                              <img src={finalAvatarUrl} alt={room.hostName} className="h-full w-full object-cover" />
                             ) : (
                               <div className={`h-full w-full flex items-center justify-center ${getAvatarColor(room.hostName)}`}>
                                 {firstLetter}
