@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   MessageSquare,
@@ -146,6 +146,79 @@ export function renderFormattedContent(text: string, isLightText = false) {
   return <div dangerouslySetInnerHTML={{ __html: html }} />
 }
 
+export function cleanHtmlToMarkdown(html: string): string {
+  const tempDiv = document.createElement('div')
+  tempDiv.innerHTML = html
+
+  const convertNode = (node: Node): string => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.nodeValue || ''
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement
+      const tagName = el.tagName.toUpperCase()
+      const children = Array.from(el.childNodes).map(convertNode).join('')
+
+      switch (tagName) {
+        case 'B':
+        case 'STRONG':
+          return `**${children}**`
+        case 'I':
+        case 'EM':
+          return `*${children}*`
+        case 'H3':
+        case 'H2':
+        case 'H1':
+          return `\n### ${children}\n`
+        case 'LI':
+          return `\n- ${children}`
+        case 'UL':
+          return `\n${children}\n`
+        case 'DIV':
+        case 'P':
+          return `\n${children}`
+        case 'BR':
+          return '\n'
+        default:
+          return children
+      }
+    }
+    return ''
+  }
+
+  const markdown = Array.from(tempDiv.childNodes)
+    .map(convertNode)
+    .join('')
+    
+  return markdown
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+export function convertMarkdownToHtml(markdown: string): string {
+  let html = markdown
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  html = html.replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+  html = html.replace(/^## (.*?)$/gm, '<h3>$1</h3>')
+  html = html.replace(/^# (.*?)$/gm, '<h3>$1</h3>')
+
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+  html = html.replace(/__(.*?)__/g, '<strong>$1</strong>')
+
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>')
+  html = html.replace(/_(.*?)_/g, '<em>$1</em>')
+
+  html = html.replace(/^- (.*?)$/gm, '<li>$1</li>')
+  
+  html = html.replace(/\n/g, '<br>')
+  return html
+}
+
 function timeAgo(dateString: string): string {
   const date = new Date(dateString)
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
@@ -263,6 +336,49 @@ export default function CommunityForum({
   const [replyToDisplayName, setReplyToDisplayName] = useState<string>('')
   const [submittingComment, setSubmittingComment] = useState(false)
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null)
+
+  // Refs for WYSIWYG editor
+  const editorRef = useRef<HTMLDivElement>(null)
+  const editEditorRef = useRef<HTMLDivElement>(null)
+
+  const handleEditorInput = () => {
+    if (editorRef.current) {
+      setWriteContent(editorRef.current.innerHTML)
+    }
+  }
+
+  const handleCommand = (command: string, value: string = '') => {
+    if (editorRef.current) {
+      editorRef.current.focus()
+    }
+    document.execCommand(command, false, value)
+    handleEditorInput()
+  }
+
+  // Synchronize WYSIWYG editor content when opened
+  useEffect(() => {
+    if (isWriting && editorRef.current) {
+      editorRef.current.innerHTML = writeContent
+    }
+  }, [isWriting]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (isEditing && editEditorRef.current) {
+      editEditorRef.current.innerHTML = editContent
+    }
+  }, [isEditing]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const cleanContentLength = useMemo(() => {
+    if (typeof document === 'undefined') return 0
+    const temp = document.createElement('div')
+    temp.innerHTML = writeContent
+    return (temp.innerText || temp.textContent || '').trim().length
+  }, [writeContent])
+
+  const isContentTooLong = useMemo(() => {
+    const limit = selectedBgStyle !== 'normal' ? 250 : 4000
+    return cleanContentLength > limit
+  }, [cleanContentLength, selectedBgStyle])
 
   useEffect(() => {
     fetchPosts()
@@ -461,43 +577,25 @@ export default function CommunityForum({
   }, [posts, selectedPost?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const insertFormatting = (type: 'bold' | 'italic' | 'heading' | 'list') => {
-    const textarea = document.getElementById('forum-textarea') as HTMLTextAreaElement
-    if (!textarea) return
-
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const text = textarea.value
-    const selected = text.substring(start, end)
-
-    let replacement = ''
-    let newCursorPos = start
-
-    if (type === 'bold') {
-      replacement = `**${selected || 'chữ_đậm'}**`
-      newCursorPos = start + 2 + (selected ? selected.length : 0) + 2
-    } else if (type === 'italic') {
-      replacement = `*${selected || 'chữ_nghiêng'}*`
-      newCursorPos = start + 1 + (selected ? selected.length : 0) + 1
-    } else if (type === 'heading') {
-      replacement = `\n### ${selected || 'Tiêu đề'}`
-      newCursorPos = start + 5 + (selected ? selected.length : 0)
-    } else if (type === 'list') {
-      replacement = `\n- ${selected || 'Mục lục'}`
-      newCursorPos = start + 3 + (selected ? selected.length : 0)
+    if (editorRef.current) {
+      editorRef.current.focus()
     }
-
-    setWriteContent(text.substring(0, start) + replacement + text.substring(end))
-    
-    // Focus back and set selection
-    setTimeout(() => {
-      textarea.focus()
-      textarea.setSelectionRange(newCursorPos, newCursorPos)
-    }, 50)
+    if (type === 'bold') {
+      document.execCommand('bold', false)
+    } else if (type === 'italic') {
+      document.execCommand('italic', false)
+    } else if (type === 'heading') {
+      document.execCommand('formatBlock', false, '<h3>')
+    } else if (type === 'list') {
+      document.execCommand('insertUnorderedList', false)
+    }
+    handleEditorInput()
   }
 
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!supabase || !writeTitle.trim() || !writeContent.trim() || submittingPost) return
+    const markdownContent = cleanHtmlToMarkdown(writeContent)
+    if (!supabase || !writeTitle.trim() || !markdownContent.trim() || submittingPost) return
     setPostSubmitError('')
     if (!currentUserId) {
       setPostSubmitError('Bạn cần đăng nhập để đăng bài. Chế độ Ẩn danh chỉ ẩn tên hiển thị sau khi đăng nhập.')
@@ -513,7 +611,7 @@ export default function CommunityForum({
       const newPostData = {
         user_id: currentUserId,
         title: writeTitle.trim(),
-        content: formatPostContent(writeContent.trim(), selectedBgStyle),
+        content: formatPostContent(markdownContent, selectedBgStyle),
         category: writeCat,
         image_urls: writeImages,
         is_anonymous: isAnon,
@@ -529,6 +627,9 @@ export default function CommunityForum({
       }
       setWriteTitle('')
       setWriteContent('')
+      if (editorRef.current) {
+        editorRef.current.innerHTML = ''
+      }
       setWriteCat('free')
       setWriteImages([])
       setSelectedBgStyle('normal')
@@ -698,13 +799,16 @@ export default function CommunityForum({
 
   const handleEditPost = async (postId: string) => {
     if (!supabase || (!isAdmin && posts.find(p => p.id === postId)?.user_id !== currentUserId)) return
-    if (!editTitle.trim() || !editContent.trim()) {
+    const editorHtml = editEditorRef.current?.innerHTML || ''
+    const markdownContent = cleanHtmlToMarkdown(editorHtml)
+
+    if (!editTitle.trim() || !markdownContent.trim()) {
       alert('Vui lòng nhập tiêu đề và nội dung')
       return
     }
     const originalPost = posts.find(p => p.id === postId)
     const originalParsed = originalPost ? parsePostContent(originalPost.content) : { text: '', backgroundStyle: 'normal' }
-    const updatedContent = formatPostContent(editContent.trim(), originalParsed.backgroundStyle)
+    const updatedContent = formatPostContent(markdownContent, originalParsed.backgroundStyle)
 
     try {
       const { error } = await supabase
@@ -719,6 +823,9 @@ export default function CommunityForum({
       setIsEditing(false)
       setEditTitle('')
       setEditContent('')
+      if (editEditorRef.current) {
+        editEditorRef.current.innerHTML = ''
+      }
     } catch (err) {
       console.error('Error editing post:', err)
     }
@@ -727,7 +834,8 @@ export default function CommunityForum({
   const startEditPost = (post: CommunityPost) => {
     setEditTitle(post.title)
     const parsed = parsePostContent(post.content)
-    setEditContent(parsed.text)
+    const htmlContent = convertMarkdownToHtml(parsed.text)
+    setEditContent(htmlContent)
     setIsEditing(true)
   }
 
@@ -962,12 +1070,12 @@ export default function CommunityForum({
                   className="w-full px-4 py-2 rounded-xl border border-brand-terracotta-light/25 bg-brand-light/50 text-sm font-black text-brand-brown-dark placeholder:text-brand-brown-light/50 outline-none focus:ring-2 focus:ring-brand-terracotta/30"
                   placeholder="Tiêu đề"
                 />
-                <textarea
-                  value={editContent}
-                  onChange={e => setEditContent(e.target.value)}
-                  rows={6}
-                  className="w-full px-4 py-3 rounded-xl border border-brand-terracotta-light/25 bg-brand-light/50 text-sm font-medium text-brand-brown-dark placeholder:text-brand-brown-light/50 outline-none focus:ring-2 focus:ring-brand-terracotta/30 resize-none"
+                <div
+                  ref={editEditorRef}
+                  contentEditable
                   placeholder="Nội dung"
+                  className="w-full px-4 py-3 rounded-xl border border-brand-terracotta-light/25 bg-brand-light/50 text-sm font-medium text-brand-brown-dark outline-none focus:ring-2 focus:ring-brand-terracotta/30 min-h-[180px] overflow-y-auto select-text forum-editor-wysiwyg"
+                  onInput={(e) => setEditContent(e.currentTarget.innerHTML)}
                 />
                 <div className="flex gap-2 justify-end">
                   <button
@@ -1260,7 +1368,7 @@ export default function CommunityForum({
           <button
             type="submit"
             form="forum-write-form"
-            disabled={!writeTitle.trim() || !writeContent.trim() || submittingPost || imageProcessing}
+            disabled={!writeTitle.trim() || cleanContentLength === 0 || isContentTooLong || submittingPost || imageProcessing}
             className="px-4 h-9 rounded-full bg-brand-terracotta text-white text-xs font-black hover:bg-brand-brown-dark transition active:scale-95 disabled:opacity-40"
           >
             {submittingPost ? '...' : imageProcessing ? 'Nén...' : 'Đăng'}
@@ -1342,31 +1450,46 @@ export default function CommunityForum({
 
           {/* Content */}
           <div className="mx-4 mt-3 mb-4 flex flex-col min-h-[300px]">
+            <style dangerouslySetInnerHTML={{ __html: `
+              .forum-editor-wysiwyg:empty:before {
+                content: attr(placeholder);
+                color: #8B7A6E;
+                opacity: 0.55;
+                font-weight: 500;
+                pointer-events: none;
+                display: block;
+              }
+              .forum-editor-wysiwyg-card:empty:before {
+                content: attr(placeholder);
+                color: #ffffff;
+                opacity: 0.70;
+                font-weight: 700;
+                pointer-events: none;
+                display: block;
+              }
+            ` }} />
+
             {selectedBgStyle !== 'normal' ? (
               <div 
                 className="w-full rounded-2xl flex items-center justify-center p-6 shadow-sm min-h-[260px]"
                 style={{ background: BACKGROUND_PRESETS.find(p => p.id === selectedBgStyle)?.bg }}
               >
-                <textarea
-                  id="forum-textarea"
-                  value={writeContent}
-                  onChange={e => setWriteContent(e.target.value)}
+                <div
+                  ref={editorRef}
+                  contentEditable
                   placeholder="Bạn đang nghĩ gì thế?"
-                  maxLength={250}
-                  required
-                  className="w-full text-white font-extrabold text-center bg-transparent outline-none placeholder:text-white/60 resize-none h-full overflow-y-auto leading-relaxed text-lg sm:text-xl py-4"
+                  onInput={handleEditorInput}
+                  className="w-full text-white font-extrabold text-center bg-transparent outline-none placeholder:text-white/60 resize-none h-full overflow-y-auto leading-relaxed text-lg sm:text-xl py-4 select-text forum-editor-wysiwyg-card"
                   style={{ border: 'none' }}
                 />
               </div>
             ) : (
-              <textarea
-                id="forum-textarea"
-                value={writeContent}
-                onChange={e => setWriteContent(e.target.value)}
+              <div
+                ref={editorRef}
+                contentEditable
                 placeholder="Chia sẻ trải nghiệm, hỏi đáp, lời khuyên..."
-                maxLength={4000}
-                required
-                className="flex-1 w-full py-2 text-sm leading-relaxed text-brand-brown-dark bg-transparent outline-none placeholder:text-brand-brown-light/40 resize-none min-h-[300px]"
+                onInput={handleEditorInput}
+                className="flex-1 w-full py-2 text-sm leading-relaxed text-brand-brown-dark bg-transparent outline-none resize-none min-h-[300px] overflow-y-auto select-text forum-editor-wysiwyg"
               />
             )}
           </div>
@@ -1384,7 +1507,7 @@ export default function CommunityForum({
                     type="button"
                     disabled={isDisabled}
                     onClick={() => {
-                      if (writeContent.length > 250 && preset.id !== 'normal') {
+                      if (cleanContentLength > 250 && preset.id !== 'normal') {
                         window.alert('Nội dung quá dài để chuyển sang bài viết có màu nền (tối đa 250 ký tự).')
                         return
                       }
@@ -1469,8 +1592,10 @@ export default function CommunityForum({
               </div>
             )}
             <div className="flex items-center justify-between">
-            <div className="text-[11px] text-brand-brown-light/70 font-medium">
-              {writeContent.length}/{selectedBgStyle !== 'normal' ? 250 : 4000}
+            <div className={`text-[11px] font-medium transition-colors ${
+              isContentTooLong ? 'text-red-500 font-bold' : 'text-brand-brown-light/70'
+            }`}>
+              {cleanContentLength}/{selectedBgStyle !== 'normal' ? 250 : 4000}
             </div>
             <button
               type="button"
