@@ -120,49 +120,48 @@ if (typeof window !== 'undefined') {
 }
 
 
-const trendingVideoSuggestions = [
-  {
-    videoId: 'nZtFlrwCbs4',
-    title: 'Lofi Girl - beats to relax/study to 🌙',
-    duration: '',
-    category: 'Lo-fi',
-  },
-  {
-    videoId: 'lTRiuFIWV54',
-    title: '1 A.M Study Session 📚 [lofi hip hop/chill beats]',
-    duration: '1:00:30',
-    category: 'Lo-fi',
-  },
-  {
-    videoId: 'S1ElLh_hf3k',
-    title: 'Study With Me 🌿',
-    duration: '',
-    category: 'Study With Me',
-  },
-  {
-    videoId: 'yYYO15hK730',
-    title: 'Study With Me ☕',
-    duration: '',
-    category: 'Study With Me',
-  },
-  {
-    videoId: 'n9iKoJ9ZE-Q',
-    title: 'Study With Me 📖',
-    duration: '',
-    category: 'Study With Me',
-  },
-  {
-    videoId: '0UN_HbOTTcI',
-    title: 'Classical Music for Brain Power 🧠 (Mozart, Beethoven...)',
-    duration: '2:19:10',
-    category: 'Classical',
-  },
-  {
-    videoId: 'TURbeWK2wwg',
-    title: 'Korean Listening Practice for Beginners 🇰🇷',
-    duration: '25:00',
-    category: 'Korean',
-  },
+const ALL_TODAY_SUGGESTIONS_POOL = [
+  // --- Lo-fi & Chill ---
+  { videoId: 'nZtFlrwCbs4', title: 'Lofi Girl - beats to relax/study to 🌙', duration: 'LIVE', category: 'Lo-fi' },
+  { videoId: 'lTRiuFIWV54', title: '1 A.M Study Session 📚 [lofi hip hop/chill beats]', duration: '1:00:30', category: 'Lo-fi' },
+  { videoId: 'jfKfPfyJRdk', title: 'lofi hip hop radio - beats to sleep/chill to 💤', duration: 'LIVE', category: 'Lo-fi' },
+  { videoId: '5qap5aO4i9A', title: 'Lofi Hip Hop Radio 24/7 ☕ Chill Study Beats', duration: 'LIVE', category: 'Lo-fi' },
+  
+  // --- Study With Me ---
+  { videoId: 'S1ElLh_hf3k', title: 'Study With Me 🌿 (Real Time 2 Hours)', duration: '2:00:00', category: 'Study With Me' },
+  { videoId: 'yYYO15hK730', title: 'Study With Me ☕ (Pomodoro 25/5)', duration: '2:30:00', category: 'Study With Me' },
+  { videoId: 'n9iKoJ9ZE-Q', title: 'Study With Me 📖 Quiet Rain Sound', duration: '1:45:00', category: 'Study With Me' },
+
+  // --- V-Pop ---
+  { videoId: 'abPmZCZZrFA', title: 'Sơn Tùng M-TP - Đừng Làm Trái Tim Anh Đau', duration: '5:33', category: 'V-Pop' },
+  { videoId: 'WP9j_S955UE', title: 'Đức Phúc - Hơn Cả Hạnh Phúc', duration: '4:15', category: 'V-Pop' },
+  { videoId: 'OZmK0YuSmXU', title: 'SOOBIN - Dancing In The Dark', duration: '3:50', category: 'V-Pop' },
+  { videoId: 'zQwKxVCR1y8', title: 'Hòa Minzy - Rời Bỏ', duration: '4:40', category: 'V-Pop' },
+  { videoId: 'ixdSsW5n2rI', title: 'Vũ. - Bước Qua Nhau', duration: '4:17', category: 'V-Pop' },
+  { videoId: '8sVtL0o-v7U', title: 'HIEUTHUHAI - Người Im Lặng Gặp Người Hay Nói', duration: '4:00', category: 'V-Pop' },
+
+  // --- K-Pop ---
+  { videoId: 'ioNng23DkIM', title: "BLACKPINK - 'How You Like That' MV", duration: '3:04', category: 'K-Pop' },
+  { videoId: 'gdZLi9oWNZg', title: "BTS - 'Dynamite' Official MV", duration: '3:44', category: 'K-Pop' },
+  { videoId: 'phuiiNCxRMg', title: "aespa - 'Supernova' Official MV", duration: '3:14', category: 'K-Pop' },
+  { videoId: '9wUKhEgnllc', title: "NewJeans - 'Hype Boy' Official MV", duration: '3:07', category: 'K-Pop' },
+  { videoId: 'Y8JFxS1HlDo', title: "IVE - 'LOVE DIVE' Official MV", duration: '2:59', category: 'K-Pop' },
+  { videoId: 'ekr2nIex040', title: 'ROSÉ & Bruno Mars - APT. Official MV', duration: '2:54', category: 'K-Pop' },
+
+  // --- Vinahouse & Remix ---
+  { videoId: 'mw7Y0jQ8_BU', title: 'Pháo - 2 Phút Hơn (KAIZ Remix)', duration: '3:11', category: 'Vinahouse' },
+  { videoId: 'npp1AN65WGM', title: 'Để Mị Nói Cho Mà Nghe (Shrimp Remix)', duration: '3:08', category: 'Vinahouse' },
+  { videoId: '8bG6ElvGRdk', title: 'Hoàng Thuỳ Linh - See Tình Remix', duration: '2:51', category: 'Vinahouse' },
+  { videoId: 'GbLtWAXQ6R4', title: 'Việt Mix Vinahouse 2026 Bass Cực Căng', duration: '1:05:48', category: 'Vinahouse' },
+
+  // --- Classical & Piano ---
+  { videoId: '0UN_HbOTTcI', title: 'Classical Music for Brain Power 🧠 (Mozart, Beethoven)', duration: '2:19:10', category: 'Classical' },
+  { videoId: 'y7e-GC6oGhg', title: 'Calm Piano Music 🎹 Peaceful Relaxing Music', duration: '3:00:00', category: 'Piano' },
+  { videoId: 'WJ3-F-m6v_8', title: 'Chopin - Nocturnes for Studying & Focus', duration: '1:50:00', category: 'Classical' },
+
+  // --- Jazz & Bossa Nova ---
+  { videoId: 'Dx5qFachd3A', title: 'Relaxing Jazz & Bossa Nova Cafe Music ☕', duration: '3:20:00', category: 'Jazz' },
+  { videoId: 'TURbeWK2wwg', title: 'Korean Listening Practice 🇰🇷', duration: '25:00', category: 'Korean' },
 ];
 
 
@@ -2478,7 +2477,18 @@ export default function App() {
   };
 
 
-  const addSuggestedVideo = (suggestion: typeof trendingVideoSuggestions[number]) => {
+  const getRandomTodaySuggestions = (count = 5) => {
+    const shuffled = [...ALL_TODAY_SUGGESTIONS_POOL].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  };
+
+  const [todaySuggestions, setTodaySuggestions] = useState<typeof ALL_TODAY_SUGGESTIONS_POOL>(() => getRandomTodaySuggestions(5));
+
+  const handleRandomizeTodaySuggestions = () => {
+    setTodaySuggestions(getRandomTodaySuggestions(5));
+  };
+
+  const addSuggestedVideo = (suggestion: typeof ALL_TODAY_SUGGESTIONS_POOL[number]) => {
     // Optimistic update: hiện ngay trong playlist
     const optimisticItem: PlaylistItem = {
       id: `optimistic-${Date.now()}`,
@@ -3927,7 +3937,7 @@ export default function App() {
                           </div>
                           </div>
                           <div className="grid gap-3 sm:grid-cols-3">
-                            {trendingVideoSuggestions.slice(0, 3).map(s => (
+                            {todaySuggestions.slice(0, 3).map(s => (
                               <button
                                 key={s.videoId}
                                 type="button"
@@ -4760,8 +4770,19 @@ export default function App() {
                           </div>
 
                           <div className="space-y-2">
-                            <p className="text-xs font-black text-brand-brown-dark">{t('playlist.todaySuggestions')}</p>
-                            {trendingVideoSuggestions.map((suggestion) => (
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-black text-brand-brown-dark">{t('playlist.todaySuggestions')}</p>
+                              <button
+                                type="button"
+                                onClick={handleRandomizeTodaySuggestions}
+                                title="Đổi danh sách gợi ý ngẫu nhiên các thể loại"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-terracotta/10 hover:bg-brand-terracotta/20 text-[11px] font-bold text-brand-terracotta transition active:scale-95 group border border-brand-terracotta/20 shadow-xs"
+                              >
+                                <RotateCcw size={12} className="transition-transform duration-500 group-hover:rotate-180" />
+                                <span>Đổi gợi ý</span>
+                              </button>
+                            </div>
+                            {todaySuggestions.map((suggestion) => (
                               <button
                                 key={suggestion.videoId}
                                 type="button"
@@ -4770,10 +4791,12 @@ export default function App() {
                               >
                                 <div className="relative h-12 w-18 flex-shrink-0 overflow-hidden rounded-xl bg-brand-light">
                                   <img
-                                    src={`https://i.ytimg.com/vi/${suggestion.videoId}/hqdefault.jpg`}
+                                    src={`https://img.youtube.com/vi/${suggestion.videoId}/hqdefault.jpg`}
                                     alt={suggestion.title}
                                     className="h-full w-full object-cover"
-                                    onError={(event) => { (event.target as HTMLImageElement).style.display = 'none'; }}
+                                    onError={(event) => {
+                                      (event.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDgwIDQ4Ij48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iNDgiIGZpbGw9IiMyNzI3MmEiLz48Y2lyY2xlIGN4PSI0MCIgY3k9IjI0IiByPSIxMiIgZmlsbD0iIzNmM2Y0NiIvPjxjaXJjbGUgY3g9IjQwIiBjeT0iMjQiIHI9IjQiIGZpbGw9IiNlNGU0ZTciLz48cGF0aCBkPSJNMzcgMTl2MTBsNy01eiIgZmlsbD0iI2MyNDEwYyIvPjwvc3ZnPg==';
+                                    }}
                                   />
                                   <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition group-hover:opacity-100">
                                     <Play size={14} className="text-white" />
