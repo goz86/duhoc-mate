@@ -311,17 +311,64 @@ export default function LandingPage({
 
   const handleRefreshRates = async () => {
     setExchangeRate('Đang tải...')
+    let fetchedRateText: string | null = null
+
     try {
       const res = await fetch('/api/exchange-rate')
-      const data = await res.json()
-      if (data.rateText) {
-        setExchangeRate(data.rateText)
-      } else {
-        throw new Error('Invalid rate response')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.rateText) {
+          fetchedRateText = data.rateText
+        }
       }
     } catch {
-      setExchangeRate('1,000 ₩ ≈ 17.830 ₫')
+      // Server API unreachable or failed
     }
+
+    if (!fetchedRateText) {
+      const apis = [
+        async () => {
+          const res = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=KRW')
+          if (!res.ok) throw new Error('Coinbase error')
+          const json = await res.json()
+          const val = parseFloat(json.data?.rates?.VND)
+          if (!val || isNaN(val)) throw new Error('Invalid Coinbase data')
+          return val
+        },
+        async () => {
+          const res = await fetch('https://open.er-api.com/v6/latest/KRW')
+          if (!res.ok) throw new Error('open.er-api error')
+          const json = await res.json()
+          const val = parseFloat(json.rates?.VND)
+          if (!val || isNaN(val)) throw new Error('Invalid open.er-api data')
+          return val
+        },
+        async () => {
+          const res = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/krw.json')
+          if (!res.ok) throw new Error('fawazahmed0 error')
+          const json = await res.json()
+          const val = parseFloat(json.krw?.vnd)
+          if (!val || isNaN(val)) throw new Error('Invalid fawazahmed0 data')
+          return val
+        }
+      ]
+
+      for (const apiFn of apis) {
+        try {
+          const rate = await apiFn()
+          if (rate > 0) {
+            const rate1000 = (1000 * rate).toFixed(0)
+            const formatted = Number(rate1000).toLocaleString('vi-VN')
+            fetchedRateText = `1,000 ₩ ≈ ${formatted} ₫`
+            break
+          }
+        } catch {
+          // try next API
+        }
+      }
+    }
+
+    setExchangeRate(fetchedRateText || '1,000 ₩ ≈ 17.780 ₫')
 
     try {
       const res = await fetch('https://wttr.in/Seoul?format=j1')
@@ -340,7 +387,7 @@ export default function LandingPage({
 
   useEffect(() => {
     handleRefreshRates()
-    const refreshTimer = window.setInterval(handleRefreshRates, 30 * 60 * 1000)
+    const refreshTimer = window.setInterval(handleRefreshRates, 15 * 60 * 1000)
 
     return () => window.clearInterval(refreshTimer)
   }, [])
@@ -412,10 +459,15 @@ export default function LandingPage({
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-brand-brown-dark shadow-sm lg:flex border border-black/[0.04]">
+            <button
+              type="button"
+              onClick={handleRefreshRates}
+              title="Bấm để cập nhật tỷ giá ngay"
+              className="hidden cursor-pointer items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-brand-brown-dark shadow-sm hover:bg-stone-50 transition-colors lg:flex border border-black/[0.04]"
+            >
               <Wallet size={13} className="text-amber-600" />
               <span>{exchangeRate}</span>
-            </div>
+            </button>
             {weather && (
               <div className="hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-brand-brown-dark shadow-sm lg:flex border border-black/[0.04]">
                 <CloudSun size={13} className="text-brand-terracotta" />

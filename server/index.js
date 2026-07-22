@@ -37,35 +37,61 @@ app.get('/health', (req, res) => {
   res.status(200).json({ ok: true });
 });
 
-let exchangeRateCache = { loadedAt: 0, rateText: '1,000 ₩ ≈ 17.830 ₫' };
+let exchangeRateCache = { loadedAt: 0, rateText: null };
+
+const fetchKRWToVNDRateServer = async () => {
+  const apis = [
+    async () => {
+      const res = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=KRW');
+      if (!res.ok) throw new Error(`Coinbase HTTP ${res.status}`);
+      const json = await res.json();
+      const val = parseFloat(json.data?.rates?.VND);
+      if (!val || isNaN(val)) throw new Error('Invalid Coinbase data');
+      return val;
+    },
+    async () => {
+      const res = await fetch('https://open.er-api.com/v6/latest/KRW');
+      if (!res.ok) throw new Error(`open.er-api HTTP ${res.status}`);
+      const json = await res.json();
+      const val = parseFloat(json.rates?.VND);
+      if (!val || isNaN(val)) throw new Error('Invalid open.er-api data');
+      return val;
+    },
+    async () => {
+      const res = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/krw.json');
+      if (!res.ok) throw new Error(`fawazahmed0 HTTP ${res.status}`);
+      const json = await res.json();
+      const val = parseFloat(json.krw?.vnd);
+      if (!val || isNaN(val)) throw new Error('Invalid fawazahmed0 data');
+      return val;
+    }
+  ];
+
+  for (const apiFn of apis) {
+    try {
+      const rate = await apiFn();
+      if (rate > 0) return rate;
+    } catch (err) {
+      console.warn('[Exchange Rate Server Provider Failed]:', err.message);
+    }
+  }
+  return null;
+};
 
 const getExchangeRateText = async () => {
   const now = Date.now();
-  if (exchangeRateCache.rateText && now - exchangeRateCache.loadedAt < 3600_000) {
+  if (exchangeRateCache.rateText && now - exchangeRateCache.loadedAt < 900_000) {
     return exchangeRateCache.rateText;
   }
-  try {
-    const res = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=KRW');
-    if (res.ok) {
-      const json = await res.json();
-      const vndRateStr = json.data?.rates?.VND;
-      if (vndRateStr) {
-        const vndRate = parseFloat(vndRateStr);
-        if (!isNaN(vndRate)) {
-          const rate1000 = (1000 * vndRate).toFixed(0);
-          const formatted = Number(rate1000).toLocaleString('vi-VN');
-          exchangeRateCache = {
-            loadedAt: now,
-            rateText: `1,000 ₩ ≈ ${formatted} ₫`
-          };
-          return exchangeRateCache.rateText;
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('[Exchange Rate] Fetch failed, using cached/fallback:', err.message);
+  const vndRate = await fetchKRWToVNDRateServer();
+  if (vndRate) {
+    const rate1000 = (1000 * vndRate).toFixed(0);
+    const formatted = Number(rate1000).toLocaleString('vi-VN');
+    const rateText = `1,000 ₩ ≈ ${formatted} ₫`;
+    exchangeRateCache = { loadedAt: now, rateText };
+    return rateText;
   }
-  return exchangeRateCache.rateText || '1,000 ₩ ≈ 17.830 ₫';
+  return exchangeRateCache.rateText || '1,000 ₩ ≈ 17.780 ₫';
 };
 
 app.get('/api/exchange-rate', async (req, res) => {
@@ -73,7 +99,7 @@ app.get('/api/exchange-rate', async (req, res) => {
     const rateText = await getExchangeRateText();
     res.json({ rateText });
   } catch (err) {
-    res.json({ rateText: '1,000 ₩ ≈ 17.830 ₫' });
+    res.json({ rateText: exchangeRateCache.rateText || '1,000 ₩ ≈ 17.780 ₫' });
   }
 });
 
