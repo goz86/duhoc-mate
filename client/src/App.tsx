@@ -2514,18 +2514,6 @@ export default function App() {
   const trendingCacheVpopRef = useRef<any[]>([]);
   const trendingCacheKpopRef = useRef<any[]>([]);
   const trendingCacheVinahouseRef = useRef<any[]>([]);
-  const aiSuggestFallbackQueries = {
-    vpop: 'nhạc việt vpop hot nhất hiện nay official mv',
-    kpop: 'kpop trending music video official korean pop',
-    vinahouse: 'vinahouse tik tok remix hot nhất',
-  };
-
-  const fetchAiSuggestionsBySearch = async (type: 'vpop' | 'kpop' | 'vinahouse') => {
-    const SEARCH_URL = `${getApiBaseCandidates()[0]}/api/search-music`;
-    const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(aiSuggestFallbackQueries[type])}`);
-    const data = await res.json();
-    return (data.results || []).filter((song: any) => song?.videoId).slice(0, 30);
-  };
 
   const preloadTrendingMusic = async () => {
     const types: ('vpop' | 'kpop' | 'vinahouse')[] = ['vpop', 'kpop', 'vinahouse'];
@@ -2573,27 +2561,11 @@ export default function App() {
       const res = await fetch(TRENDING_URL);
       const data = await res.json();
       if (data.results && data.results.length > 0) {
-        cacheRef.current = data.results;
-        shuffleAndSetAiSuggestions(data.results);
-
-        // Nếu server trả về bản fallback do cache ngầm đang khởi động, tự động fetch lại sau 2.5s để lấy 100+ bài mới nhất
-        if (data.isFallback || data.results.length < 50) {
-          setTimeout(() => {
-            fetch(TRENDING_URL)
-              .then(r => r.json())
-              .then(freshData => {
-                if (freshData?.results?.length && freshData.results.length > (cacheRef.current.length || 0)) {
-                  cacheRef.current = freshData.results;
-                  shuffleAndSetAiSuggestions(freshData.results);
-                }
-              })
-              .catch(() => {});
-          }, 2500);
+        // Bảo vệ cache: Chỉ ghi đè nếu danh sách mới có số lượng bằng hoặc lớn hơn danh sách hiện có
+        if (data.results.length >= (cacheRef.current.length || 0)) {
+          cacheRef.current = data.results;
+          shuffleAndSetAiSuggestions(data.results);
         }
-      } else {
-        const searchResults = await fetchAiSuggestionsBySearch(type);
-        cacheRef.current = searchResults;
-        shuffleAndSetAiSuggestions(searchResults);
       }
     } catch (err) {
       console.error(`Failed to fetch AI trending suggestions for ${type}`, err);

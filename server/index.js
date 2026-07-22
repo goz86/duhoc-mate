@@ -627,9 +627,9 @@ const getTrendingMusicWithYtSearch = async (type = 'vpop') => {
 
 
 const trendingCache = {
-  vpop: { data: null, lastUpdated: 0 },
-  kpop: { data: null, lastUpdated: 0 },
-  vinahouse: { data: null, lastUpdated: 0 }
+  vpop: { data: STATIC_TRENDING_FALLBACKS.vpop || [], lastUpdated: Date.now() },
+  kpop: { data: STATIC_TRENDING_FALLBACKS.kpop || [], lastUpdated: Date.now() },
+  vinahouse: { data: STATIC_TRENDING_FALLBACKS.vinahouse || [], lastUpdated: Date.now() }
 };
 const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 const zingResolveCache = new Map();
@@ -843,28 +843,25 @@ const fetchAndCacheTrending = async (type) => {
   }
 };
 
-app.get('/api/trending-music', rateLimitRest('trending-music', 30, 60_000), async (req, res) => {
+app.get('/api/trending-music', async (req, res) => {
   const requestedType = sanitizeBoundedString(req.query.type, 24);
   const type = TRENDING_MUSIC_TYPES.has(requestedType) ? requestedType : 'vpop';
 
   const now = Date.now();
   const cached = trendingCache[type];
 
-  // Nếu cache trống hoặc quá hạn, chạy fetch ngầm (không bắt client chờ spinner!)
-  if (!cached.data || now - cached.lastUpdated > CACHE_TTL_MS) {
+  // Refresh background cache if older than TTL
+  if (!cached.data || cached.data.length === 0 || now - cached.lastUpdated > CACHE_TTL_MS) {
     fetchAndCacheTrending(type).catch(err => {
       console.error(`[TRENDING CACHE] Background fetch error for ${type}:`, err);
     });
   }
 
-  // Nếu đã có danh sách chuẩn, trả về ngay lập tức (0ms delay)
-  if (cached.data && cached.data.length > 0) {
-    return res.json({ results: cached.data, isLive: true });
-  }
+  const results = (cached.data && cached.data.length > 0)
+    ? cached.data
+    : (STATIC_TRENDING_FALLBACKS[type] || []);
 
-  // Nếu chưa có (khi server mới khởi động), trả bài nhạc chất lượng tức thì ngay lập tức
-  console.log(`[TRENDING CACHE] Returning instant fallback for ${type} while background fetch runs.`);
-  return res.json({ results: STATIC_TRENDING_FALLBACKS[type] || [], isFallback: true });
+  return res.json({ results, totalCount: results.length, isLive: !!(cached.data && cached.data.length > 0) });
 });
 
 // Run background pre-fetching on startup
