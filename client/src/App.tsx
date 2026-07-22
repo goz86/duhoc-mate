@@ -2554,12 +2554,12 @@ export default function App() {
 
     const cacheRef = type === 'kpop' ? trendingCacheKpopRef : type === 'vinahouse' ? trendingCacheVinahouseRef : trendingCacheVpopRef;
 
-    // Hiển thị ngay lập tức dữ liệu đang có sẵn (0ms delay!)
+    // Hiển thị ngay lập tức dữ liệu đang có sẵn
     if (cacheRef.current.length > 0) {
       shuffleAndSetAiSuggestions(cacheRef.current);
     }
 
-    if (!forceRefresh && cacheRef.current.length > 5) {
+    if (!forceRefresh && cacheRef.current.length >= 50) {
       return;
     }
 
@@ -2575,6 +2575,21 @@ export default function App() {
       if (data.results && data.results.length > 0) {
         cacheRef.current = data.results;
         shuffleAndSetAiSuggestions(data.results);
+
+        // Nếu server trả về bản fallback do cache ngầm đang khởi động, tự động fetch lại sau 2.5s để lấy 100+ bài mới nhất
+        if (data.isFallback || data.results.length < 50) {
+          setTimeout(() => {
+            fetch(TRENDING_URL)
+              .then(r => r.json())
+              .then(freshData => {
+                if (freshData?.results?.length && freshData.results.length > (cacheRef.current.length || 0)) {
+                  cacheRef.current = freshData.results;
+                  shuffleAndSetAiSuggestions(freshData.results);
+                }
+              })
+              .catch(() => {});
+          }, 2500);
+        }
       } else {
         const searchResults = await fetchAiSuggestionsBySearch(type);
         cacheRef.current = searchResults;

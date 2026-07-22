@@ -587,37 +587,27 @@ const getTrendingMusicWithYtSearch = async (type = 'vpop') => {
   const TARGET = 200;
   console.log(`[YT-SEARCH] Fetching ~${TARGET} trending songs for ${type} (${queries.length} queries)...`);
 
-  // Shuffle queries for variety, then run sequentially with delay
   const shuffledQueries = [...queries].sort(() => 0.5 - Math.random());
-
   let allVideos = [];
   const seenIds = new Set();
-  let uniqueCount = 0;
 
-  for (let i = 0; i < shuffledQueries.length; i++) {
-    try {
-      const res = await yts(shuffledQueries[i]);
-      if (res && res.videos) {
-        for (const v of res.videos) {
-          if (v.videoId && !seenIds.has(v.videoId)) {
+  const BATCH_SIZE = 5;
+  for (let i = 0; i < shuffledQueries.length; i += BATCH_SIZE) {
+    const batch = shuffledQueries.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(batch.map(q => yts(q)));
+    for (const res of results) {
+      if (res.status === 'fulfilled' && res.value?.videos) {
+        for (const v of res.value.videos) {
+          if (v?.videoId && !seenIds.has(v.videoId)) {
             seenIds.add(v.videoId);
             allVideos.push(v);
           }
         }
-        uniqueCount = seenIds.size;
       }
-      console.log(`[YT-SEARCH] Query ${i + 1}/${shuffledQueries.length} | unique: ${uniqueCount}`);
-    } catch (err) {
-      console.warn(`[YT-SEARCH] Query ${i + 1} failed:`, err.message);
     }
-    // Early exit: stop if we already have enough unique songs
-    if (uniqueCount >= TARGET + 50) {
-      console.log(`[YT-SEARCH] Reached ${uniqueCount} unique raw songs, stopping early.`);
+    if (seenIds.size >= TARGET + 50) {
+      console.log(`[YT-SEARCH] Reached ${seenIds.size} unique raw songs, stopping early.`);
       break;
-    }
-    // Small delay between queries to avoid rate limits (150ms)
-    if (i < shuffledQueries.length - 1) {
-      await new Promise(r => setTimeout(r, 150));
     }
   }
 
@@ -867,17 +857,14 @@ setTimeout(async () => {
     console.error('[Supabase] Initial room directory sync failed:', err.message);
   });
 
-  console.log('[TRENDING CACHE] Starting initial background pre-fetch...');
-  for (const type of ['vpop', 'kpop', 'vinahouse']) {
-    try {
-      await fetchAndCacheTrending(type);
-    } catch (err) {
-      console.error(`[TRENDING CACHE] Initial background pre-fetch failed for ${type}:`, err);
-    }
-    // Wait 2 seconds between categories to avoid rate limits
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  }
-}, 3000);
+  console.log('[TRENDING CACHE] Starting parallel background pre-fetch for vpop, kpop, vinahouse...');
+  await Promise.allSettled([
+    fetchAndCacheTrending('vpop'),
+    fetchAndCacheTrending('kpop'),
+    fetchAndCacheTrending('vinahouse'),
+  ]);
+  console.log('[TRENDING CACHE] ✅ Initial background pre-fetch completed!');
+}, 500);
 
 
 const socketOptions = {
