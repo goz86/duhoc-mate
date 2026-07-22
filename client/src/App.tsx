@@ -5678,6 +5678,20 @@ export default function App() {
                         src={song.thumbnail || `https://i.ytimg.com/vi/${song.videoId}/hqdefault.jpg`}
                         alt={song.title}
                         className="h-full w-full object-cover"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          const videoId = song.videoId;
+                          if (!target.dataset.tried1) {
+                            target.dataset.tried1 = 'true';
+                            target.src = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+                          } else if (!target.dataset.tried2) {
+                            target.dataset.tried2 = 'true';
+                            target.src = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
+                          } else if (!target.dataset.tried3) {
+                            target.dataset.tried3 = 'true';
+                            target.src = `https://i.ytimg.com/vi/${videoId}/default.jpg`;
+                          }
+                        }}
                       />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition group-hover:opacity-100">
                         <Play size={14} className="text-white" />

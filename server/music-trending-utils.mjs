@@ -91,28 +91,30 @@ export function filterMusicVideo(video, type = 'vpop') {
 
 export const STATIC_TRENDING_FALLBACKS = {
   vpop: [
-    { videoId: 'gTknW_o_1pU', title: 'Sơn Tùng M-TP | ĐỪNG LÀM TRÁI TIM ANH ĐAU | OFFICIAL MUSIC VIDEO', author: 'Sơn Tùng M-TP Official', duration: '5:33', thumbnail: 'https://img.youtube.com/vi/gTknW_o_1pU/mqdefault.jpg', views: 50000000 },
-    { videoId: '3a5g2K4lX6g', title: 'Đức Phúc - CHĂM EM MỘT ĐỜI | OFFICIAL MUSIC VIDEO', author: 'Đức Phúc Official', duration: '4:15', thumbnail: 'https://img.youtube.com/vi/3a5g2K4lX6g/mqdefault.jpg', views: 20000000 },
-    { videoId: 'Wp9yP1O35n8', title: 'SOOBIN - LẮM TIỀN NHIỀU TIỀN | Official Music Video', author: 'SOOBIN', duration: '3:50', thumbnail: 'https://img.youtube.com/vi/Wp9yP1O35n8/mqdefault.jpg', views: 30000000 },
-    { videoId: '9o7L4s_m3z8', title: 'TÓC TIÊN - NGƯỜI CÒN THƯƠNG EM KHÔNG | Official Music Video', author: 'Tóc Tiên', duration: '4:55', thumbnail: 'https://img.youtube.com/vi/9o7L4s_m3z8/mqdefault.jpg', views: 15000000 },
-    { videoId: 'abPM8b567bE', title: 'Phương Ly - MẬT NGỌT | OFFICIAL MUSIC VIDEO', author: 'Phương Ly', duration: '3:45', thumbnail: 'https://img.youtube.com/vi/abPM8b567bE/mqdefault.jpg', views: 18000000 },
-    { videoId: 'L1v_3eU-uUQ', title: 'Hòa Minzy - Rời Bỏ | OFFICIAL MUSIC VIDEO', author: 'Hòa Minzy', duration: '4:40', thumbnail: 'https://img.youtube.com/vi/L1v_3eU-uUQ/mqdefault.jpg', views: 90000000 },
-    { videoId: '2J4tF8lJ_jM', title: 'Vũ. - BƯỚC QUA NHAU | Official Music Video', author: 'Vũ. Official', duration: '4:17', thumbnail: 'https://img.youtube.com/vi/2J4tF8lJ_jM/mqdefault.jpg', views: 120000000 }
+    { videoId: 'gTknW_o_1pU', title: 'Sơn Tùng M-TP | ĐỪNG LÀM TRÁI TIM ANH ĐAU | OFFICIAL MUSIC VIDEO', author: 'Sơn Tùng M-TP Official', duration: '5:33', thumbnail: 'https://i.ytimg.com/vi/gTknW_o_1pU/hqdefault.jpg', views: 50000000 },
+    { videoId: '3a5g2K4lX6g', title: 'Đức Phúc - CHĂM EM MỘT ĐỜI | OFFICIAL MUSIC VIDEO', author: 'Đức Phúc Official', duration: '4:15', thumbnail: 'https://i.ytimg.com/vi/3a5g2K4lX6g/hqdefault.jpg', views: 20000000 },
+    { videoId: 'Wp9yP1O35n8', title: 'SOOBIN - LẮM TIỀN NHIỀU TIỀN | Official Music Video', author: 'SOOBIN', duration: '3:50', thumbnail: 'https://i.ytimg.com/vi/Wp9yP1O35n8/hqdefault.jpg', views: 30000000 },
+    { videoId: '9o7L4s_m3z8', title: 'TÓC TIÊN - NGƯỜI CÒN THƯƠNG EM KHÔNG | Official Music Video', author: 'Tóc Tiên', duration: '4:55', thumbnail: 'https://i.ytimg.com/vi/9o7L4s_m3z8/hqdefault.jpg', views: 15000000 },
+    { videoId: 'abPM8b567bE', title: 'Phương Ly - MẬT NGỌT | OFFICIAL MUSIC VIDEO', author: 'Phương Ly', duration: '3:45', thumbnail: 'https://i.ytimg.com/vi/abPM8b567bE/hqdefault.jpg', views: 18000000 },
+    { videoId: 'L1v_3eU-uUQ', title: 'Hòa Minzy - Rời Bỏ | OFFICIAL MUSIC VIDEO', author: 'Hòa Minzy', duration: '4:40', thumbnail: 'https://i.ytimg.com/vi/L1v_3eU-uUQ/hqdefault.jpg', views: 90000000 },
+    { videoId: '2J4tF8lJ_jM', title: 'Vũ. - BƯỚC QUA NHAU | Official Music Video', author: 'Vũ. Official', duration: '4:17', thumbnail: 'https://i.ytimg.com/vi/2J4tF8lJ_jM/hqdefault.jpg', views: 120000000 }
   ],
   kpop: [
-    { videoId: 'gdZLi9oWNZg', title: 'BTS - Dynamite', author: 'HYBE LABELS', duration: '3:43', thumbnail: 'https://img.youtube.com/vi/gdZLi9oWNZg/mqdefault.jpg', views: 1800000000 },
-    { videoId: 'gQlMMD8auMs', title: 'BLACKPINK - Pink Venom', author: 'BLACKPINK', duration: '3:13', thumbnail: 'https://img.youtube.com/vi/gQlMMD8auMs/mqdefault.jpg', views: 800000000 },
-    { videoId: 'sVTy_wkv5mc', title: 'NewJeans - OMG', author: 'HYBE LABELS', duration: '6:33', thumbnail: 'https://img.youtube.com/vi/sVTy_wkv5mc/mqdefault.jpg', views: 150000000 },
-    { videoId: '11cta61g08Q', title: 'NewJeans - Hype Boy', author: 'HYBE LABELS', duration: '2:59', thumbnail: 'https://img.youtube.com/vi/11cta61g08Q/mqdefault.jpg', views: 180000000 },
-    { videoId: 'F0B7HGP8mE4', title: 'IVE - LOVE DIVE', author: 'STARSHIP entertainment', duration: '2:58', thumbnail: 'https://img.youtube.com/vi/F0B7HGP8mE4/mqdefault.jpg', views: 250000000 },
-    { videoId: 'Qc7_zRmbMSU', title: 'FIFTY FIFTY - Cupid', author: 'FIFTY FIFTY', duration: '3:05', thumbnail: 'https://img.youtube.com/vi/Qc7_zRmbMSU/mqdefault.jpg', views: 160000000 },
-    { videoId: 'UBURTjK3kcA', title: 'LE SSERAFIM - UNFORGIVEN (feat. Nile Rodgers)', author: 'HYBE LABELS', duration: '4:21', thumbnail: 'https://img.youtube.com/vi/UBURTjK3kcA/mqdefault.jpg', views: 110000000 },
-    { videoId: 'ioNng23DkIM', title: 'BLACKPINK - How You Like That', author: 'BLACKPINK', duration: '3:03', thumbnail: 'https://img.youtube.com/vi/ioNng23DkIM/mqdefault.jpg', views: 1200000000 }
+    { videoId: 'gdZLi9oWNZg', title: 'BTS - Dynamite', author: 'HYBE LABELS', duration: '3:43', thumbnail: 'https://i.ytimg.com/vi/gdZLi9oWNZg/hqdefault.jpg', views: 1800000000 },
+    { videoId: 'gQlMMD8auMs', title: 'BLACKPINK - Pink Venom', author: 'BLACKPINK', duration: '3:13', thumbnail: 'https://i.ytimg.com/vi/gQlMMD8auMs/hqdefault.jpg', views: 800000000 },
+    { videoId: 'sVTy_wkv5mc', title: 'NewJeans - OMG', author: 'HYBE LABELS', duration: '6:33', thumbnail: 'https://i.ytimg.com/vi/sVTy_wkv5mc/hqdefault.jpg', views: 150000000 },
+    { videoId: '11cta61g08Q', title: 'NewJeans - Hype Boy', author: 'HYBE LABELS', duration: '2:59', thumbnail: 'https://i.ytimg.com/vi/11cta61g08Q/hqdefault.jpg', views: 180000000 },
+    { videoId: 'F0B7HGP8mE4', title: 'IVE - LOVE DIVE', author: 'STARSHIP entertainment', duration: '2:58', thumbnail: 'https://i.ytimg.com/vi/F0B7HGP8mE4/hqdefault.jpg', views: 250000000 },
+    { videoId: 'Qc7_zRmbMSU', title: 'FIFTY FIFTY - Cupid', author: 'FIFTY FIFTY', duration: '3:05', thumbnail: 'https://i.ytimg.com/vi/Qc7_zRmbMSU/hqdefault.jpg', views: 160000000 },
+    { videoId: 'UBURTjK3kcA', title: 'LE SSERAFIM - UNFORGIVEN (feat. Nile Rodgers)', author: 'HYBE LABELS', duration: '4:21', thumbnail: 'https://i.ytimg.com/vi/UBURTjK3kcA/hqdefault.jpg', views: 110000000 },
+    { videoId: 'ioNng23DkIM', title: 'BLACKPINK - How You Like That', author: 'BLACKPINK', duration: '3:03', thumbnail: 'https://i.ytimg.com/vi/ioNng23DkIM/hqdefault.jpg', views: 1200000000 }
   ],
   vinahouse: [
-    { videoId: 'g8Jp37Y8g8k', title: 'Pháo - 2 Phút Hơn (KAIZ Remix)', author: 'KAIZ', duration: '3:05', thumbnail: 'https://img.youtube.com/vi/g8Jp37Y8g8k/mqdefault.jpg', views: 300000000 },
-    { videoId: '6S4B9lA89pE', title: 'Thiên Đàng - Wowy x JoliPoli (Vinahouse Remix)', author: 'Remix Official', duration: '4:20', thumbnail: 'https://img.youtube.com/vi/6S4B9lA89pE/mqdefault.jpg', views: 15000000 },
-    { videoId: 'j2_yXNfS_Ww', title: 'Phong Dạ Hành - Anh Rồng (Vinahouse Remix)', author: 'Vinahouse Club', duration: '5:10', thumbnail: 'https://img.youtube.com/vi/j2_yXNfS_Ww/mqdefault.jpg', views: 25000000 },
-    { videoId: 'R-2S1c_z1v4', title: 'Khuê Mộc Lan - Hương Ly x Jombie (Vinahouse Remix)', author: 'Hương Ly Official', duration: '4:15', thumbnail: 'https://img.youtube.com/vi/R-2S1c_z1v4/mqdefault.jpg', views: 20000000 }
+    { videoId: 'g8Jp37Y8g8k', title: 'Pháo - 2 Phút Hơn (KAIZ Remix)', author: 'KAIZ', duration: '3:05', thumbnail: 'https://i.ytimg.com/vi/g8Jp37Y8g8k/hqdefault.jpg', views: 300000000 },
+    { videoId: '6S4B9lA89pE', title: 'Thiên Đàng - Wowy x JoliPoli (Vinahouse Remix)', author: 'Remix Official', duration: '4:20', thumbnail: 'https://i.ytimg.com/vi/6S4B9lA89pE/hqdefault.jpg', views: 15000000 },
+    { videoId: 'j2_yXNfS_Ww', title: 'Phong Dạ Hành - Anh Rồng (Vinahouse Remix)', author: 'Vinahouse Club', duration: '5:10', thumbnail: 'https://i.ytimg.com/vi/j2_yXNfS_Ww/hqdefault.jpg', views: 25000000 },
+    { videoId: 'R-2S1c_z1v4', title: 'Khuê Mộc Lan - Hương Ly x Jombie (Vinahouse Remix)', author: 'Hương Ly Official', duration: '4:15', thumbnail: 'https://i.ytimg.com/vi/R-2S1c_z1v4/hqdefault.jpg', views: 20000000 }
+  ]
+}huê Mộc Lan - Hương Ly x Jombie (Vinahouse Remix)', author: 'Hương Ly Official', duration: '4:15', thumbnail: 'https://img.youtube.com/vi/R-2S1c_z1v4/mqdefault.jpg', views: 20000000 }
   ]
 }
