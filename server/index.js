@@ -583,31 +583,46 @@ const getTrendingMusicWithInvidious = async (type = 'vpop') => {
 };
 
 const getTrendingMusicWithYtSearch = async (type = 'vpop') => {
-  console.log(`[YT-SEARCH] Fetching ~100 trending songs for ${type} via multi-query search...`);
   const queries = getTrendingMusicQueries(type);
+  const TARGET = 200;
+  console.log(`[YT-SEARCH] Fetching ~${TARGET} trending songs for ${type} (${queries.length} queries)...`);
 
-  // Shuffle queries for variety, then run ALL of them sequentially with delay
+  // Shuffle queries for variety, then run sequentially with delay
   const shuffledQueries = [...queries].sort(() => 0.5 - Math.random());
 
   let allVideos = [];
+  const seenIds = new Set();
+  let uniqueCount = 0;
+
   for (let i = 0; i < shuffledQueries.length; i++) {
     try {
       const res = await yts(shuffledQueries[i]);
       if (res && res.videos) {
-        allVideos = allVideos.concat(res.videos);
+        for (const v of res.videos) {
+          if (v.videoId && !seenIds.has(v.videoId)) {
+            seenIds.add(v.videoId);
+            allVideos.push(v);
+          }
+        }
+        uniqueCount = seenIds.size;
       }
-      console.log(`[YT-SEARCH] Query ${i + 1}/${shuffledQueries.length} done, total raw: ${allVideos.length}`);
+      console.log(`[YT-SEARCH] Query ${i + 1}/${shuffledQueries.length} | unique: ${uniqueCount}`);
     } catch (err) {
       console.warn(`[YT-SEARCH] Query ${i + 1} failed:`, err.message);
     }
-    // Small delay between queries to avoid rate limits (200ms)
+    // Early exit: stop if we already have enough unique songs
+    if (uniqueCount >= TARGET + 50) {
+      console.log(`[YT-SEARCH] Reached ${uniqueCount} unique raw songs, stopping early.`);
+      break;
+    }
+    // Small delay between queries to avoid rate limits (150ms)
     if (i < shuffledQueries.length - 1) {
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 150));
     }
   }
 
-  const unique = uniqueMusicResults(allVideos, type, 100);
-  console.log(`[YT-SEARCH] Final unique ${type} songs: ${unique.length}`);
+  const unique = uniqueMusicResults(allVideos, type, TARGET);
+  console.log(`[YT-SEARCH] ✅ Final ${type}: ${unique.length} unique filtered songs`);
 
   return unique.map(v => ({
     videoId: v.videoId,
