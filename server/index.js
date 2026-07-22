@@ -583,24 +583,33 @@ const getTrendingMusicWithInvidious = async (type = 'vpop') => {
 };
 
 const getTrendingMusicWithYtSearch = async (type = 'vpop') => {
-  console.log(`Fetching trending music via yt-search fallback for ${type}...`);
+  console.log(`[YT-SEARCH] Fetching ~100 trending songs for ${type} via multi-query search...`);
   const queries = getTrendingMusicQueries(type);
-  
-  // Use a smaller query set to avoid rate limits
+
+  // Shuffle queries for variety, then run ALL of them sequentially with delay
   const shuffledQueries = [...queries].sort(() => 0.5 - Math.random());
-  const selectedQueries = shuffledQueries.slice(0, 2);
-  
-  const searchPromises = selectedQueries.map(q => yts(q));
-  const searchResults = await Promise.all(searchPromises);
-  
+
   let allVideos = [];
-  for (const res of searchResults) {
-    if (res && res.videos) {
-      allVideos = allVideos.concat(res.videos);
+  for (let i = 0; i < shuffledQueries.length; i++) {
+    try {
+      const res = await yts(shuffledQueries[i]);
+      if (res && res.videos) {
+        allVideos = allVideos.concat(res.videos);
+      }
+      console.log(`[YT-SEARCH] Query ${i + 1}/${shuffledQueries.length} done, total raw: ${allVideos.length}`);
+    } catch (err) {
+      console.warn(`[YT-SEARCH] Query ${i + 1} failed:`, err.message);
+    }
+    // Small delay between queries to avoid rate limits (200ms)
+    if (i < shuffledQueries.length - 1) {
+      await new Promise(r => setTimeout(r, 200));
     }
   }
-  
-  return uniqueMusicResults(allVideos, type, 80).map(v => ({
+
+  const unique = uniqueMusicResults(allVideos, type, 100);
+  console.log(`[YT-SEARCH] Final unique ${type} songs: ${unique.length}`);
+
+  return unique.map(v => ({
     videoId: v.videoId,
     title: v.title,
     author: v.author?.name || String(v.author) || '',
@@ -731,55 +740,71 @@ const fetchAndCacheTrending = async (type) => {
   console.log(`[TRENDING CACHE] Refreshing cache for: ${type}`);
   let results = null;
 
-  if (type === 'vpop') {
-    try {
-      results = await getVpopTrendingChart();
-    } catch (err) {
-      console.warn('[TRENDING CACHE] Official YouTube V-Pop chart failed, trying Zing MP3:', err.message);
-      try {
-        results = await getZingVpopChart();
-      } catch (zingErr) {
-        console.warn('[TRENDING CACHE] Zing V-Pop chart refresh failed:', zingErr.message);
-      }
+  // === PRIMARY: yt-search multi-query search (most reliable, ~100 songs) ===
+  try {
+    results = await getTrendingMusicWithYtSearch(type);
+    if (results && results.length > 0) {
+      console.log(`[TRENDING CACHE] yt-search returned ${results.length} songs for ${type}`);
     }
-  } else if (type === 'kpop') {
-    try {
-      results = await getKpopTrendingChart();
-    } catch (err) {
-      console.warn('[TRENDING CACHE] YouTube K-Pop chart refresh failed:', err.message);
-    }
+  } catch (err) {
+    console.warn('[TRENDING CACHE] yt-search multi-query failed:', err.message);
   }
 
-  // If vpop failed or type is not vpop, try YouTube API/yts/Invidious
-  if (!results || results.length === 0) {
-    if (YOUTUBE_API_KEY) {
-      try {
-        const officialResults = await getTrendingMusicWithOfficialApi(type);
-        if (officialResults && officialResults.length > 0) {
-          results = officialResults.filter(v => filterMusicVideo(v, type));
+  // === FALLBACK 1: Zing MP3 chart (vpop only) ===
+  if ((!results || results.length < 20) && type === 'vpop') {
+    try {
+      const zingResults = await getZingVpopChart();
+      if (zingResults && zingResults.length > 0) {
+        // Merge with existing results
+        if (results && results.length > 0) {
+          const existingIds = new Set(results.map(r => r.videoId));
+          const newSongs = zingResults.filter(r => !existingIds.has(r.videoId));
+          results = results.concat(newSongs);
+        } else {
+          results = zingResults;
         }
-      } catch (err) {
-        console.warn('[TRENDING CACHE] Official YouTube API failed for:', type, err.message);
+        console.log(`[TRENDING CACHE] After Zing merge: ${results.length} songs`);
       }
+    } catch (zingErr) {
+      console.warn('[TRENDING CACHE] Zing V-Pop chart failed:', zingErr.message);
     }
   }
 
-  if (!results || results.length === 0) {
+  // === FALLBACK 2: YouTube Data API (if key configured) ===
+  if ((!results || results.length < 20) && YOUTUBE_API_KEY) {
     try {
-      results = await getTrendingMusicWithYtSearch(type);
+      const officialResults = await getTrendingMusicWithOfficialApi(type);
+      if (officialResults && officialResults.length > 0) {
+        const filtered = officialResults.filter(v => filterMusicVideo(v, type));
+        if (results && results.length > 0) {
+          const existingIds = new Set(results.map(r => r.videoId));
+          const newSongs = filtered.filter(r => !existingIds.has(r.videoId));
+          results = results.concat(newSongs);
+        } else {
+          results = filtered;
+        }
+      }
     } catch (err) {
-      console.warn('[TRENDING CACHE] yt-search failed for:', type, err.message);
+      console.warn('[TRENDING CACHE] Official YouTube API failed:', err.message);
     }
   }
 
-  if (!results || results.length === 0) {
+  // === FALLBACK 3: Invidious ===
+  if (!results || results.length < 20) {
     try {
       const invidiousResults = await getTrendingMusicWithInvidious(type);
       if (invidiousResults && invidiousResults.length > 0) {
-        results = invidiousResults.filter(v => filterMusicVideo(v, type));
+        const filtered = invidiousResults.filter(v => filterMusicVideo(v, type));
+        if (results && results.length > 0) {
+          const existingIds = new Set(results.map(r => r.videoId));
+          const newSongs = filtered.filter(r => !existingIds.has(r.videoId));
+          results = results.concat(newSongs);
+        } else {
+          results = filtered;
+        }
       }
     } catch (err) {
-      console.warn('[TRENDING CACHE] Invidious failed for:', type, err.message);
+      console.warn('[TRENDING CACHE] Invidious failed:', err.message);
     }
   }
 
@@ -788,10 +813,10 @@ const fetchAndCacheTrending = async (type) => {
       data: results,
       lastUpdated: Date.now()
     };
-    console.log(`[TRENDING CACHE] Successfully updated cache for ${type} with ${results.length} items.`);
+    console.log(`[TRENDING CACHE] ✅ Updated cache for ${type} with ${results.length} songs.`);
     return results;
   } else {
-    console.warn(`[TRENDING CACHE] Failed to fetch fresh data for ${type}. Keeping old cache or using fallbacks.`);
+    console.warn(`[TRENDING CACHE] ❌ Failed to fetch data for ${type}. Using fallbacks.`);
     return null;
   }
 };
