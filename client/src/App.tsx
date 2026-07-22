@@ -2595,14 +2595,33 @@ export default function App() {
       .trim();
   };
 
+  const seenSongIdsRef = useRef<Set<string>>(new Set());
+
   const shuffleAndSetAiSuggestions = (list: any[]) => {
     const cleaned = list.map(item => ({
       ...item,
       title: decodeHtmlEntities(item.title),
       author: decodeHtmlEntities(item.author || '')
     }));
-    const shuffled = [...cleaned].sort(() => 0.5 - Math.random());
-    setAiSuggestions(shuffled.slice(0, 5));
+
+    // Lọc các bài chưa từng xuất hiện cho người dùng trong phiên làm việc
+    let unseen = cleaned.filter(item => item?.videoId && !seenSongIdsRef.current.has(item.videoId));
+
+    // Nếu số bài chưa xem < 5 (đã xem hết vòng 100 bài), reset bộ nhớ để bắt đầu vòng mới
+    if (unseen.length < 5) {
+      seenSongIdsRef.current.clear();
+      unseen = cleaned;
+    }
+
+    const shuffled = [...unseen].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 5);
+
+    // Đánh dấu 5 bài vừa chọn vào danh sách đã xem
+    selected.forEach(item => {
+      if (item?.videoId) seenSongIdsRef.current.add(item.videoId);
+    });
+
+    setAiSuggestions(selected);
   };
 
   const handleRandomizeSuggestions = () => {
@@ -5687,9 +5706,8 @@ export default function App() {
                           } else if (!target.dataset.tried2) {
                             target.dataset.tried2 = 'true';
                             target.src = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
-                          } else if (!target.dataset.tried3) {
-                            target.dataset.tried3 = 'true';
-                            target.src = `https://i.ytimg.com/vi/${videoId}/default.jpg`;
+                          } else {
+                            target.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="48" viewBox="0 0 80 48" fill="%2327272a"><rect width="80" height="48" fill="%2327272a"/><circle cx="40" cy="24" r="12" fill="%233f3f46"/><circle cx="40" cy="24" r="4" fill="%23e4e4e7"/><path d="M37 19v10l7-5z" fill="%23c2410c"/></svg>`;
                           }
                         }}
                       />
