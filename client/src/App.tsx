@@ -9,7 +9,7 @@ import {
   Headphones, Music2, ChevronRight, Search,
   Minimize2, Palette, Settings, Crown,
   Link2, Volume2, VolumeX, SkipForward, Plus, X, Trash2,
-  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, Sparkles, ClipboardList, Timer, Gamepad2
+  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, Sparkles, ClipboardList, Timer, Gamepad2, ListPlus
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
 import { useTranslation } from 'react-i18next';
@@ -2505,6 +2505,39 @@ export default function App() {
     setShowSearchResults(false);
     setMusicSearchResults([]);
     setSidebarTab('playlist');
+  };
+
+  const addTop30SuggestedVideos = () => {
+    if (!aiSuggestions || aiSuggestions.length === 0) return;
+    const top30 = aiSuggestions.slice(0, 30);
+    const now = Date.now();
+
+    const optimisticItems: PlaylistItem[] = top30.map((song, idx) => ({
+      id: `optimistic-${now}-${idx}`,
+      videoId: song.videoId,
+      title: song.title,
+      duration: song.duration || '0:00',
+      votes: 1,
+      votedUsers: [],
+      addedBy: username,
+      status: 'queued',
+    }));
+
+    setPlaylist(prev => [...prev, ...optimisticItems]);
+
+    top30.forEach(song => {
+      socket.emit('add-to-playlist', {
+        roomId,
+        videoId: song.videoId,
+        title: song.title,
+        duration: song.duration
+      });
+    });
+
+    setShowSearchResults(false);
+    setMusicSearchResults([]);
+    setSidebarTab('playlist');
+    setShowAiSuggestModal(false);
   };
 
   const [showAiSuggestModal, setShowAiSuggestModal] = useState(false);
@@ -5629,7 +5662,7 @@ export default function App() {
             </p>
 
             {/* Category Tabs */}
-            <div className="flex gap-2 p-1 bg-brand-light dark:bg-zinc-800 rounded-2xl mb-4 relative z-10">
+            <div className="flex gap-2 p-1 bg-brand-light dark:bg-zinc-800 rounded-2xl mb-3 relative z-10">
               {[
                 { type: 'vpop', label: 'V-Pop (Việt)' },
                 { type: 'kpop', label: 'K-Pop (Hàn)' },
@@ -5649,6 +5682,26 @@ export default function App() {
                 </button>
               ))}
             </div>
+
+            {/* Quick Batch Action: Thêm 30 bài đầu vào DS phát */}
+            {aiSuggestions.length > 0 && (
+              <div className="flex items-center justify-between gap-2 mb-3.5 px-3 py-2 rounded-2xl bg-gradient-to-r from-brand-terracotta/10 via-amber-500/10 to-transparent border border-brand-terracotta/20 dark:bg-zinc-800/70 relative z-10">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Sparkles size={15} className="text-brand-terracotta animate-pulse shrink-0" />
+                  <span className="text-[11px] font-bold text-brand-brown-dark dark:text-zinc-200 truncate">
+                    Top {Math.min(30, aiSuggestions.length)} bài hát hot nhất
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addTop30SuggestedVideos}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-brand-terracotta to-amber-600 hover:from-brand-terracotta-dark hover:to-amber-700 text-white text-[11px] font-black transition active:scale-95 cursor-pointer shadow-md hover:shadow-lg shrink-0"
+                >
+                  <ListPlus size={14} />
+                  <span>Thêm 30 bài đầu vào DS phát</span>
+                </button>
+              </div>
+            )}
 
             {aiLoading && aiSuggestions.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-3">
