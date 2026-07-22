@@ -103,6 +103,99 @@ app.get('/api/exchange-rate', async (req, res) => {
   }
 });
 
+let topikScheduleCache = { loadedAt: 0, data: null };
+
+const fetchTopikScheduleServer = async () => {
+  const now = Date.now();
+  if (topikScheduleCache.data && now - topikScheduleCache.loadedAt < 12 * 3600_000) {
+    return topikScheduleCache.data;
+  }
+
+  try {
+    const res = await fetch('https://www.topik.go.kr/TWGUID/TWGUID0020.do', {
+      headers: {
+        'Cookie': 'timezone=Asia/Seoul',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    if (res.ok) {
+      const html = await res.text();
+      const rows = html.match(/<tr[\s\S]*?<\/tr>/gi) || [];
+      const schedules = [];
+
+      for (const r of rows) {
+        const cellMatches = (r.match(/<td[\s\S]*?<\/td>/gi) || []).map(c => c.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+        if (cellMatches.length >= 4) {
+          const typeRaw = cellMatches[0] || '';
+          const roundRaw = cellMatches[1] || '';
+          const regPeriod = cellMatches[2] || '';
+          let examDateStr = cellMatches[3] || cellMatches[4] || '';
+
+          const fullTitle = `${typeRaw} ${roundRaw}`.trim();
+          if (!fullTitle.includes('제')) continue;
+
+          let yearMatch = regPeriod.match(/(202\d)/);
+          let year = yearMatch ? yearMatch[1] : new Date().getFullYear().toString();
+
+          let dateMatch = examDateStr.match(/(\d{1,2})\.(\d{1,2})/);
+          if (dateMatch) {
+            const month = dateMatch[1].padStart(2, '0');
+            const day = dateMatch[2].padStart(2, '0');
+            const isoDate = `${year}-${month}-${day}`;
+
+            schedules.push({
+              title: fullTitle,
+              type: typeRaw.includes('IBT') ? 'IBT' : typeRaw.includes('PBT') ? 'PBT' : 'Speaking',
+              regPeriod,
+              examDate: isoDate,
+              displayDate: `${month}.${day} ${examDateStr.includes('(') ? '(' + examDateStr.split('(')[1] : ''}`
+            });
+          }
+        }
+      }
+
+      schedules.sort((a, b) => a.examDate.localeCompare(b.examDate));
+
+      const todayIso = new Date().toISOString().split('T')[0];
+      const upcoming = schedules.filter(s => s.examDate >= todayIso);
+      const nextExam = upcoming.length > 0 ? upcoming[0] : (schedules[schedules.length - 1] || null);
+
+      const payload = {
+        schedules: upcoming.length > 0 ? upcoming : schedules,
+        allSchedules: schedules,
+        nextExam
+      };
+
+      topikScheduleCache = { loadedAt: now, data: payload };
+      return payload;
+    }
+  } catch (err) {
+    console.warn('[TOPIK Schedule Scraper Failed]:', err.message);
+  }
+
+  const fallbackSchedules = [
+    { title: 'TOPIK IBT 제14회', type: 'IBT', regPeriod: '2026.07.07 ~ 2026.07.13', examDate: '2026-09-12', displayDate: '09.12 (토)' },
+    { title: 'TOPIK PBT 제108회', type: 'PBT', regPeriod: '2026.08.04 ~ 2026.08.10', examDate: '2026-10-18', displayDate: '10.18 (일)' },
+    { title: 'TOPIK IBT 제15회', type: 'IBT', regPeriod: '2026.08.18 ~ 2026.08.24', examDate: '2026-10-24', displayDate: '10.24 (토)' },
+    { title: 'TOPIK PBT 제109회', type: 'PBT', regPeriod: '2026.09.01 ~ 2026.09.07', examDate: '2026-11-15', displayDate: '11.15 (일)' },
+    { title: 'TOPIK IBT 제16회', type: 'IBT', regPeriod: '2026.09.15 ~ 2026.09.21', examDate: '2026-11-28', displayDate: '11.28 (토)' }
+  ];
+  const todayIso = new Date().toISOString().split('T')[0];
+  const upcoming = fallbackSchedules.filter(s => s.examDate >= todayIso);
+  const nextExam = upcoming[0] || fallbackSchedules[0];
+
+  return { schedules: upcoming, allSchedules: fallbackSchedules, nextExam };
+};
+
+app.get('/api/topik-schedule', async (req, res) => {
+  try {
+    const data = await fetchTopikScheduleServer();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load TOPIK schedule' });
+  }
+});
+
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://imqrvssxfrhivlumhoze.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_d-szvo4evO2V69FCNc__IQ_xc8OqFPV';

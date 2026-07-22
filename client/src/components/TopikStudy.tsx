@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import {
   ChevronLeft, ChevronRight, Calendar, RotateCcw, BookOpen,
   CheckCircle2, XCircle, Volume2, Settings, Loader2,
-  Plus, Zap, Key, Shuffle, ClipboardList,
+  Plus, Zap, Key, Shuffle, ClipboardList, Sparkles,
 } from 'lucide-react'
 import {
   generateExample, generateNewWords, hasApiKey, getApiKey, setApiKey,
@@ -117,6 +117,14 @@ interface Props {
   isAdmin?: boolean
 }
 
+type TopikScheduleItem = {
+  title: string
+  type: 'IBT' | 'PBT' | 'Speaking'
+  regPeriod: string
+  examDate: string
+  displayDate: string
+}
+
 export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
@@ -133,6 +141,9 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
   const [showDateInput, setShowDateInput] = useState(false)
   const [activeTab, setActiveTab] = useState<'flashcard' | 'grammar' | 'countdown' | 'exam'>('flashcard')
   const [examTestingMode, setExamTestingMode] = useState(false)
+  const [topikSchedules, setTopikSchedules] = useState<TopikScheduleItem[]>([])
+  const [nextExamInfo, setNextExamInfo] = useState<TopikScheduleItem | null>(null)
+  const [loadingSchedule, setLoadingSchedule] = useState(false)
 
   // ── AI states ──────────────────────────────────────────────────
   const [aiWords, setAiWords] = useState<TopikCard[]>([])
@@ -148,11 +159,39 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
     return `${roomId}_${today}`
   })
 
-  // ── Load exam date from database on mount ──────────────────────
+  // ── Load exam date & official schedule from topik.go.kr ─────────
   useEffect(() => {
-    loadExamDate().then(date => {
-      if (date) setExamDate(date)
+    let cancelled = false
+    setLoadingSchedule(true)
+
+    Promise.all([
+      loadExamDate(),
+      fetch('/api/topik-schedule').then(r => r.ok ? r.json() : null).catch(() => null)
+    ]).then(([savedDate, scheduleRes]) => {
+      if (cancelled) return
+
+      let schedules: TopikScheduleItem[] = []
+      let nextExam: TopikScheduleItem | null = null
+
+      if (scheduleRes && scheduleRes.schedules) {
+        schedules = scheduleRes.schedules
+        nextExam = scheduleRes.nextExam
+      }
+
+      setTopikSchedules(schedules)
+      setNextExamInfo(nextExam)
+
+      if (savedDate) {
+        setExamDate(savedDate)
+      } else if (nextExam?.examDate) {
+        setExamDate(nextExam.examDate)
+        saveExamDateToDb(nextExam.examDate)
+      }
+    }).finally(() => {
+      if (!cancelled) setLoadingSchedule(false)
     })
+
+    return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
@@ -339,6 +378,24 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
     saveExamDateToDb(date) // Lưu vào Supabase + localStorage
     setShowDateInput(false)
   }
+
+  const handleSelectSchedule = (item: TopikScheduleItem) => {
+    setExamDate(item.examDate)
+    saveExamDateToDb(item.examDate)
+    setShowDateInput(false)
+  }
+
+  const handleUseNearestExam = () => {
+    if (nextExamInfo?.examDate) {
+      setExamDate(nextExamInfo.examDate)
+      saveExamDateToDb(nextExamInfo.examDate)
+      setShowDateInput(false)
+    }
+  }
+
+  const activeExamItem = useMemo(() => {
+    return topikSchedules.find(s => s.examDate === examDate) || null
+  }, [examDate, topikSchedules])
 
   const daysUntilExam = examDate
     ? Math.ceil((new Date(examDate).getTime() - Date.now()) / 86400000)
@@ -829,20 +886,36 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
       {activeTab === 'countdown' && (
         <div className="flex flex-col items-center gap-6 py-4">
           {/* Countdown Display */}
-          <div className="text-center space-y-4">
-            <div className="text-sm font-bold text-brand-brown-light uppercase">{t('topik.examDate')}</div>
+          <div className="text-center space-y-4 w-full max-w-md">
+            <div className="text-xs font-bold text-brand-brown-light uppercase tracking-wider">{t('topik.examDate')}</div>
+
+            {activeExamItem ? (
+              <div className="inline-flex items-center gap-2 rounded-full bg-brand-terracotta/10 px-4 py-1.5 text-xs font-black text-brand-terracotta">
+                <span>{activeExamItem.title}</span>
+                <span>·</span>
+                <span>{activeExamItem.displayDate}</span>
+              </div>
+            ) : nextExamInfo && examDate === nextExamInfo.examDate ? (
+              <div className="inline-flex items-center gap-2 rounded-full bg-brand-terracotta/10 px-4 py-1.5 text-xs font-black text-brand-terracotta">
+                <span>{nextExamInfo.title}</span>
+                <span>·</span>
+                <span>{nextExamInfo.displayDate}</span>
+              </div>
+            ) : null}
 
             {daysUntilExam !== null && daysUntilExam >= 0 ? (
               <div className="space-y-2">
-                <div className="text-7xl font-black text-brand-terracotta tabular-nums">{daysUntilExam}</div>
+                <div className="text-7xl font-black text-brand-terracotta tabular-nums tracking-tight">{daysUntilExam}</div>
                 <div className="text-xl font-bold text-brand-brown-dark">{t('topik.days')}</div>
-                <div className="text-sm text-brand-brown-light">{new Date(examDate).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                <div className="text-sm font-semibold text-brand-brown-light">
+                  {new Date(examDate).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </div>
               </div>
             ) : daysUntilExam !== null && daysUntilExam < 0 ? (
               <div className="text-center space-y-2">
                 <div className="text-5xl">🎉</div>
-                <div className="text-xl font-bold text-brand-brown-dark">Kỳ thi đã qua!</div>
-                <div className="text-sm text-brand-brown-light">Hy vọng bạn làm tốt!</div>
+                <div className="text-xl font-bold text-brand-brown-dark">Kỳ thi đã diễn ra!</div>
+                <div className="text-sm text-brand-brown-light">Hãy chọn kỳ thi tiếp theo bên dưới.</div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -853,37 +926,114 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
               </div>
             )}
 
-            <button
-              onClick={() => setShowDateInput(!showDateInput)}
-              className="px-5 py-2.5 rounded-xl bg-brand-terracotta hover:bg-brand-brown-dark text-white text-sm font-bold transition cursor-pointer shadow-sm"
-            >
-              {t('topik.setDate')}
-            </button>
+            <div className="flex flex-wrap justify-center gap-2 pt-2">
+              {nextExamInfo && (
+                <button
+                  type="button"
+                  onClick={handleUseNearestExam}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition cursor-pointer shadow-sm flex items-center gap-1.5"
+                >
+                  <Sparkles size={14} /> Mặc định: Kỳ thi gần nhất ({nextExamInfo.displayDate})
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowDateInput(!showDateInput)}
+                className="px-4 py-2 rounded-xl bg-brand-terracotta hover:bg-brand-brown-dark text-white text-xs font-bold transition cursor-pointer shadow-sm"
+              >
+                {t('topik.setDate')}
+              </button>
+            </div>
 
             {showDateInput && (
-              <div className="flex gap-2 justify-center">
+              <div className="flex gap-2 justify-center pt-2">
                 <input
                   type="date"
                   defaultValue={examDate}
                   min={new Date().toISOString().split('T')[0]}
                   onChange={e => handleSaveExamDate(e.target.value)}
-                  className="px-4 py-2.5 rounded-xl border border-brand-terracotta-light/40 text-brand-brown-dark text-sm focus:outline-none focus:ring-2 focus:ring-brand-terracotta/40 bg-white"
+                  className="px-4 py-2.5 rounded-xl border border-brand-terracotta-light/40 text-brand-brown-dark text-sm focus:outline-none focus:ring-2 focus:ring-brand-terracotta/40 bg-white shadow-sm"
                 />
               </div>
             )}
           </div>
 
-          {/* TOPIK Exam Schedule Info */}
-          <div className="w-full max-w-sm p-4 rounded-2xl bg-brand-light/60 border border-brand-terracotta-light/20">
-            <h4 className="font-bold text-sm text-brand-brown-dark mb-2">📅 Lịch thi TOPIK 2026</h4>
-            <div className="space-y-1.5 text-xs text-brand-brown-light">
-              <div className="flex justify-between"><span>TOPIK IBT 제14회</span><span className="font-bold text-brand-terracotta">09.12 (토)</span></div>
-              <div className="flex justify-between"><span>TOPIK IBT 제15회</span><span className="font-bold text-brand-terracotta">10.24 (토)</span></div>
-              <div className="flex justify-between"><span>TOPIK IBT 제16회</span><span className="font-bold text-brand-terracotta">11.28 (토)</span></div>
-              <div className="flex justify-between"><span>TOPIK PBT 제108회</span><span className="font-bold text-brand-terracotta">10.18 (일)</span></div>
-              <div className="flex justify-between"><span>TOPIK PBT 제109회</span><span className="font-bold text-brand-terracotta">11.15 (일)</span></div>
-              <div className="flex justify-between mt-2 pt-2 border-t border-brand-terracotta-light/15"><span>Đăng ký online</span><span>topik.go.kr</span></div>
-              <div className="flex justify-between"><span>Phí thi</span><span className="font-bold">55,000₩</span></div>
+          {/* TOPIK Exam Schedule Info (Live Scraped from topik.go.kr) */}
+          <div className="w-full max-w-md p-4 rounded-2xl bg-brand-light/60 border border-brand-terracotta-light/20 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-bold text-sm text-brand-brown-dark flex items-center gap-1.5">
+                📅 Lịch thi TOPIK (Tự động từ topik.go.kr)
+              </h4>
+              {loadingSchedule && <span className="text-[10px] text-brand-brown-light">Đang cập nhật...</span>}
+            </div>
+
+            <div className="space-y-2 text-xs">
+              {(topikSchedules.length > 0 ? topikSchedules : [
+                { title: 'TOPIK IBT 제14회', type: 'IBT', displayDate: '09.12 (토)', examDate: '2026-09-12', regPeriod: '07.07 ~ 07.13' },
+                { title: 'TOPIK PBT 제108회', type: 'PBT', displayDate: '10.18 (일)', examDate: '2026-10-18', regPeriod: '08.04 ~ 08.10' },
+                { title: 'TOPIK IBT 제15회', type: 'IBT', displayDate: '10.24 (토)', examDate: '2026-10-24', regPeriod: '08.18 ~ 08.24' },
+                { title: 'TOPIK PBT 제109회', type: 'PBT', displayDate: '11.15 (일)', examDate: '2026-11-15', regPeriod: '09.01 ~ 09.07' },
+                { title: 'TOPIK IBT 제16회', type: 'IBT', displayDate: '11.28 (토)', examDate: '2026-11-28', regPeriod: '09.15 ~ 09.21' },
+              ]).map((item, idx) => {
+                const isSelected = examDate === item.examDate
+                const isNearest = nextExamInfo?.examDate === item.examDate
+                return (
+                  <div
+                    key={idx}
+                    className={`flex items-center justify-between p-2.5 rounded-xl border transition ${
+                      isSelected
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-xs font-bold'
+                        : 'bg-white/80 border-brand-terracotta-light/15 hover:border-brand-terracotta/30 text-brand-brown-dark'
+                    }`}
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold truncate">{item.title}</span>
+                        {isNearest && (
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">
+                            Gần nhất
+                          </span>
+                        )}
+                      </div>
+                      {item.regPeriod && (
+                        <div className="text-[10px] text-brand-brown-light truncate">
+                          Đăng ký: {item.regPeriod.split('(')[0]}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-black text-brand-terracotta">{item.displayDate}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectSchedule(item as TopikScheduleItem)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-brand-light text-brand-brown-dark hover:bg-brand-terracotta hover:text-white'
+                        }`}
+                      >
+                        {isSelected ? 'Đã chọn' : 'Chọn'}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+
+              <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-brand-terracotta-light/15 text-brand-brown-light text-[11px]">
+                <span>Nguồn dữ liệu: <strong>topik.go.kr</strong></span>
+                <a
+                  href="https://www.topik.go.kr/TWGUID/TWGUID0020.do"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-brand-terracotta hover:underline"
+                >
+                  Trang chủ TOPIK ↗
+                </a>
+              </div>
+              <div className="flex justify-between text-brand-brown-light text-[11px]">
+                <span>Phí thi tiêu chuẩn</span>
+                <span className="font-bold">55,000₩</span>
+              </div>
             </div>
           </div>
         </div>
