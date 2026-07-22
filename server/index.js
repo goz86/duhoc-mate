@@ -767,23 +767,25 @@ const fetchAndCacheTrending = async (type) => {
 app.get('/api/trending-music', rateLimitRest('trending-music', 30, 60_000), async (req, res) => {
   const requestedType = sanitizeBoundedString(req.query.type, 24);
   const type = TRENDING_MUSIC_TYPES.has(requestedType) ? requestedType : 'vpop';
-  
+
   const now = Date.now();
   const cached = trendingCache[type];
-  
-  // If cache is expired or missing, trigger background update (non-blocking)
-  if (!cached.data || now - cached.lastUpdated > CACHE_TTL_MS) {
+
+  if (!cached.data) {
+    await fetchAndCacheTrending(type).catch(err => {
+      console.error(`[TRENDING CACHE] Initial fetch error for ${type}:`, err);
+    });
+  } else if (now - cached.lastUpdated > CACHE_TTL_MS) {
     fetchAndCacheTrending(type).catch(err => {
       console.error(`[TRENDING CACHE] Background update error for ${type}:`, err);
     });
   }
-  
-  // If we have cached data, return it immediately
-  if (cached.data && cached.data.length > 0) {
-    return res.json({ results: cached.data });
+
+  const freshData = trendingCache[type]?.data;
+  if (freshData && freshData.length > 0) {
+    return res.json({ results: freshData });
   }
-  
-  // If cache is empty/missing, return static fallback instantly
+
   console.log(`[TRENDING CACHE] Cache empty/missing for ${type}. Returning static fallback.`);
   return res.json({ results: STATIC_TRENDING_FALLBACKS[type] || [] });
 });

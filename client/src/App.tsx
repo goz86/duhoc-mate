@@ -2543,20 +2543,20 @@ export default function App() {
     });
   };
 
-  const handleOpenAiSuggest = async (type: 'vpop' | 'kpop' | 'vinahouse' = 'vpop') => {
+  const handleOpenAiSuggest = async (type: 'vpop' | 'kpop' | 'vinahouse' = 'vpop', forceRefresh = false) => {
     setShowAiSuggestModal(true);
     setAiSuggestTab(type);
 
     const cacheRef = type === 'kpop' ? trendingCacheKpopRef : type === 'vinahouse' ? trendingCacheVinahouseRef : trendingCacheVpopRef;
 
-    if (cacheRef.current.length > 0) {
+    if (!forceRefresh && cacheRef.current.length > 5) {
       shuffleAndSetAiSuggestions(cacheRef.current);
       return;
     }
 
     setAiLoading(true);
     try {
-      const TRENDING_URL = `${getApiBaseCandidates()[0]}/api/trending-music?type=${type}`;
+      const TRENDING_URL = `${getApiBaseCandidates()[0]}/api/trending-music?type=${type}&_t=${Date.now()}`;
       const res = await fetch(TRENDING_URL);
       const data = await res.json();
       if (data.results && data.results.length > 0) {
@@ -2608,10 +2608,10 @@ export default function App() {
 
   const handleRandomizeSuggestions = () => {
     const cacheRef = aiSuggestTab === 'kpop' ? trendingCacheKpopRef : aiSuggestTab === 'vinahouse' ? trendingCacheVinahouseRef : trendingCacheVpopRef;
-    if (cacheRef.current.length > 0) {
+    if (cacheRef.current.length > 5) {
       shuffleAndSetAiSuggestions(cacheRef.current);
     } else {
-      handleOpenAiSuggest(aiSuggestTab);
+      handleOpenAiSuggest(aiSuggestTab, true);
     }
   };
 
