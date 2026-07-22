@@ -194,21 +194,32 @@ export function getMusicDurationSeconds(video) {
   return 0
 }
 
+const NON_MUSIC_JUNK_KEYWORDS = [
+  'game', 'gaming', 'minecraft', 'roblox', 'liên quân', 'pubg', 'fifa',
+  'streamer', 'livestream', 'live stream', 'vlog', 'phim', 'hài', 'comedy',
+  'hoạt hình', 'anime', 'tập ', 'preview', 'trailer', 'tin tức', 'news',
+  'hướng dẫn', 'tutorial', 'reaction', 'đập hộp', 'review', 'troll', 'thách đấu'
+]
+
 export function filterMusicVideo(video, type = 'vpop') {
   const title = (video?.title || '').toLowerCase()
   const author = (typeof video?.author === 'string'
     ? video.author
     : (video?.author?.name || String(video?.author || ''))).toLowerCase()
 
+  if (type === 'vinahouse') {
+    if (NON_MUSIC_JUNK_KEYWORDS.some(keyword => title.includes(keyword) || author.includes(keyword))) {
+      return false
+    }
+    const durationSecs = getMusicDurationSeconds(video)
+    return durationSecs >= 120 && durationSecs <= 10800
+  }
+
   if (JUNK_KEYWORDS.some(keyword => title.includes(keyword) || author.includes(keyword))) {
     return false
   }
 
   const durationSecs = getMusicDurationSeconds(video)
-  if (type === 'vinahouse') {
-    return durationSecs >= 180 && durationSecs <= 7200
-  }
-
   return durationSecs >= 90 && durationSecs <= 600
 }
 
