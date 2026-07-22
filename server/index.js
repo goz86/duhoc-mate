@@ -2001,18 +2001,9 @@ const createDefaultPomodoro = () => ({
   isBreak: false
 });
 
-// Helper phát sóng danh sách phòng đang hoạt động
+// Helper phát sóng danh sách phòng đang hoạt động (kết hợp các phòng đang có người & danh sách phòng lưu trên hệ thống)
 const broadcastActiveRooms = () => {
-  const activeRooms = Array.from(rooms.values()).map(r => ({
-    id: r.roomId,
-    hostName: r.members.find(m => m.isHost)?.username || 'Ẩn danh',
-    memberCount: r.members.length,
-    currentSong: r.playlist[0]?.title || 'Đang nghe nhạc Lofi',
-    roomTitle: r.roomTitle || `Phòng học tập`,
-    isPrivate: !!r.isPrivate,
-    hostAvatarUrl: r.hostAvatarUrl || ''
-  }));
-  io.emit('active-rooms-list', activeRooms);
+  io.emit('active-rooms-list', getRoomDirectoryList());
 };
 
 const getRoomDirectoryList = () => {
@@ -2025,22 +2016,22 @@ const getRoomDirectoryList = () => {
 
       return {
         ...publicEntry,
-        hostName: host?.username || entry.hostName || 'An danh',
+        hostName: host?.username || entry.hostName || 'Ẩn danh',
         memberCount: liveRoom?.members.length || 0,
-        currentSong: liveRoom?.playlist[0]?.title || entry.currentSong || 'Dang nghe nhac Lofi',
-        roomTitle: liveRoom?.roomTitle || entry.roomTitle || 'Phong hoc tap',
+        currentSong: liveRoom?.playlist[0]?.title || entry.currentSong || 'Đang nghe nhạc Lofi',
+        roomTitle: liveRoom?.roomTitle || entry.roomTitle || 'Phòng học tập',
         isPrivate: liveRoom ? !!liveRoom.isPrivate : !!entry.isPrivate,
         hostAvatarUrl: liveRoom?.hostAvatarUrl || entry.hostAvatarUrl || '',
         roomAvatarUrl: liveRoom?.roomAvatarUrl || entry.roomAvatarUrl || '',
-        lastActiveAt: liveRoom ? new Date().toISOString() : entry.lastActiveAt
+        lastActiveAt: liveRoom ? new Date().toISOString() : (entry.lastActiveAt || entry.createdAt)
       };
     })
     .sort((a, b) => {
       const memberDiff = (b.memberCount || 0) - (a.memberCount || 0);
       if (memberDiff !== 0) return memberDiff;
-      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      return new Date(b.lastActiveAt || b.createdAt || 0).getTime() - new Date(a.lastActiveAt || a.createdAt || 0).getTime();
     })
-    .slice(0, 50);
+    .slice(0, 100);
 };
 
 
@@ -2050,10 +2041,10 @@ const rememberRoom = (room, hostName) => {
 
   const entry = {
     id: room.roomId,
-    hostName: hostName || existing?.hostName || 'An danh',
+    hostName: hostName || existing?.hostName || 'Ẩn danh',
     memberCount: room.members.length,
-    currentSong: room.playlist[0]?.title || existing?.currentSong || 'Dang nghe nhac Lofi',
-    roomTitle: room.roomTitle || existing?.roomTitle || 'Phong hoc tap',
+    currentSong: room.playlist[0]?.title || existing?.currentSong || 'Đang nghe nhạc Lofi',
+    roomTitle: room.roomTitle || existing?.roomTitle || 'Phòng học tập',
     isPrivate: !!room.isPrivate,
     password: room.password || existing?.password || '',
     passwordHash: room.passwordHash || existing?.passwordHash || '',
@@ -2067,17 +2058,23 @@ const rememberRoom = (room, hostName) => {
   saveRoomDirectory();
 
   if (SUPABASE_KEY) {
-    fetch(`${ROOMS_ENDPOINT}?id=eq.${encodeURIComponent(entry.id)}`, {
-      method: 'PATCH',
-      headers: supabaseHeaders(),
+    fetch(`${ROOMS_ENDPOINT}`, {
+      method: 'POST',
+      headers: {
+        ...supabaseHeaders(),
+        'Prefer': 'resolution=merge-duplicates',
+      },
       body: JSON.stringify({
+        id: entry.id,
         title: entry.roomTitle,
         host_name: entry.hostName,
         host_avatar_url: entry.hostAvatarUrl,
         is_private: entry.isPrivate,
+        password_hash: entry.passwordHash,
         last_active_at: entry.lastActiveAt,
+        created_at: entry.createdAt,
       }),
-    }).catch(err => console.error('[Supabase] PATCH room error:', err.message));
+    }).catch(err => console.error('[Supabase] Upsert room error:', err.message));
   }
 };
 
@@ -2091,20 +2088,22 @@ const syncRoomDirectoryWithSupabase = async () => {
       const data = await response.json();
       if (Array.isArray(data)) {
         for (const row of data) {
-          roomDirectory.set(row.id, {
-            id: row.id,
-            hostName: row.host_name || 'Bạn học',
-            memberCount: 0,
-            currentSong: 'Đang nghe nhạc Lofi',
-            roomTitle: row.title || 'Phòng học tập',
-            isPrivate: !!row.is_private,
-            password: '',
-            passwordHash: row.password_hash || '',
-            hostAvatarUrl: row.host_avatar_url || '',
-            roomAvatarUrl: '',
-            createdAt: row.created_at || new Date().toISOString(),
-            lastActiveAt: row.last_active_at || new Date().toISOString(),
-          });
+          if (!roomDirectory.has(row.id)) {
+            roomDirectory.set(row.id, {
+              id: row.id,
+              hostName: row.host_name || 'Bạn học',
+              memberCount: 0,
+              currentSong: 'Đang nghe nhạc Lofi',
+              roomTitle: row.title || 'Phòng học tập',
+              isPrivate: !!row.is_private,
+              password: '',
+              passwordHash: row.password_hash || '',
+              hostAvatarUrl: row.host_avatar_url || '',
+              roomAvatarUrl: '',
+              createdAt: row.created_at || new Date().toISOString(),
+              lastActiveAt: row.last_active_at || new Date().toISOString(),
+            });
+          }
         }
         console.log(`[Supabase] Synced ${data.length} rooms from database on startup.`);
         saveRoomDirectory();
@@ -3807,6 +3806,7 @@ const listen = (server, port, label) => {
 };
 
 listen(httpServer, PORT, 'primary');
+void syncRoomDirectoryWithSupabase();
 
 if (PORT !== DEFAULT_PORT && !DISABLE_FALLBACK_PORT) {
   const fallbackServer = createServer(app);
