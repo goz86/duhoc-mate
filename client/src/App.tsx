@@ -8,7 +8,7 @@ import {
   Clock, FileText, Video,
   Headphones, Music2, ChevronRight, Search,
   Minimize2, Palette, Settings, Crown,
-  Link2, Volume2, VolumeX, SkipForward, Plus, X, Trash2, Shuffle,
+  Link2, Volume2, VolumeX, SkipForward, Plus, X, Trash2,
   Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, Sparkles, ClipboardList, Timer, Gamepad2
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
@@ -2600,42 +2600,20 @@ export default function App() {
       .trim();
   };
 
-  const seenSongIdsRef = useRef<Set<string>>(new Set());
-
   const shuffleAndSetAiSuggestions = (list: any[]) => {
-    const cleaned = list.map(item => ({
-      ...item,
-      title: decodeHtmlEntities(item.title),
-      author: decodeHtmlEntities(item.author || '')
-    }));
-
-    // Lọc các bài chưa từng xuất hiện cho người dùng trong phiên làm việc
-    let unseen = cleaned.filter(item => item?.videoId && !seenSongIdsRef.current.has(item.videoId));
-
-    // Nếu số bài chưa xem < 5 (đã xem hết vòng 100 bài), reset bộ nhớ để bắt đầu vòng mới
-    if (unseen.length < 5) {
-      seenSongIdsRef.current.clear();
-      unseen = cleaned;
+    const seen = new Set<string>();
+    const cleaned: any[] = [];
+    for (const item of list || []) {
+      if (item?.videoId && !seen.has(item.videoId)) {
+        seen.add(item.videoId);
+        cleaned.push({
+          ...item,
+          title: decodeHtmlEntities(item.title),
+          author: decodeHtmlEntities(item.author || '')
+        });
+      }
     }
-
-    const shuffled = [...unseen].sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, 5);
-
-    // Đánh dấu 5 bài vừa chọn vào danh sách đã xem
-    selected.forEach(item => {
-      if (item?.videoId) seenSongIdsRef.current.add(item.videoId);
-    });
-
-    setAiSuggestions(selected);
-  };
-
-  const handleRandomizeSuggestions = () => {
-    const cacheRef = aiSuggestTab === 'kpop' ? trendingCacheKpopRef : aiSuggestTab === 'vinahouse' ? trendingCacheVinahouseRef : trendingCacheVpopRef;
-    if (cacheRef.current.length > 5) {
-      shuffleAndSetAiSuggestions(cacheRef.current);
-    } else {
-      handleOpenAiSuggest(aiSuggestTab, true);
-    }
+    setAiSuggestions(cleaned);
   };
 
 
@@ -5680,7 +5658,7 @@ export default function App() {
                       : 'text-brand-brown-light dark:text-zinc-400 hover:text-brand-brown-dark dark:hover:text-white'
                   }`}
                 >
-                  {tab.label}
+                  {tab.label} {aiSuggestTab === tab.type && aiSuggestions.length > 0 ? `(${aiSuggestions.length})` : ''}
                 </button>
               ))}
             </div>
@@ -5698,7 +5676,7 @@ export default function App() {
                 </span>
               </div>
             ) : (
-              <div className="max-h-[56vh] space-y-3 overflow-y-auto pr-1 relative z-10">
+              <div className="max-h-[62vh] sm:max-h-[68vh] space-y-2.5 overflow-y-auto pr-1.5 relative z-10 custom-scrollbar">
                 {aiLoading && (
                   <div className="text-[10px] font-bold text-brand-terracotta flex items-center gap-1.5 pb-1 animate-pulse">
                     <Sparkles size={12} />
@@ -5755,17 +5733,6 @@ export default function App() {
               </div>
             )}
 
-            <div className="mt-5 flex items-center justify-between gap-3 relative z-10">
-              <button
-                type="button"
-                onClick={handleRandomizeSuggestions}
-                disabled={aiLoading}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-brand-terracotta/30 bg-white dark:bg-zinc-800 text-brand-terracotta hover:bg-brand-light dark:hover:bg-zinc-800/80 text-xs font-black transition active:scale-[0.97] cursor-pointer disabled:opacity-50"
-              >
-                <Shuffle size={14} />
-                <span>Random bài khác</span>
-              </button>
-            </div>
           </div>
         </div>
       )}
