@@ -1264,3 +1264,42 @@ button.ticker-inner {
   border: 1px solid rgba(200,141,127,0.12);
 }
 
+/* Match Game Visual Effects */
+@keyframes matchShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-7px); }
+  40%, 80% { transform: translateX(7px); }
+}
+.animate-match-shake {
+  animation: matchShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes matchPulseSuccess {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); box-shadow: 0 0 22px rgba(16, 185, 129, 0.45); }
+  100% { transform: scale(1); }
+}
+.animate-match-success {
+  animation: matchPulseSuccess 0.5s ease-in-out both;
+}
+
+@keyframes floatTextUp {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.7); }
+  20% { opacity: 1; transform: translate(-50%, -10px) scale(1.1); }
+  80% { opacity: 1; transform: translate(-50%, -24px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -36px) scale(0.9); }
+}
+.animate-float-text {
+  animation: floatTextUp 0.85s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes streakBanner {
+  0% { opacity: 0; transform: scale(0.6) translateY(18px); }
+  30% { opacity: 1; transform: scale(1.08) translateY(0); }
+  80% { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0.95) translateY(-10px); }
+}
+.animate-streak-banner {
+  animation: streakBanner 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+

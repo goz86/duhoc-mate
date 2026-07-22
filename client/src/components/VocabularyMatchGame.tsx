@@ -188,6 +188,69 @@ const optionTone = (index: number, selectedIndex: number | undefined, answerInde
   return 'border-brand-terracotta-light/20 bg-white text-brand-brown-dark hover:border-brand-terracotta/35 hover:bg-brand-light/50'
 }
 
+const playAudioEffect = (type: 'click' | 'correct' | 'wrong' | 'combo') => {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioCtx) return
+    const ctx = new AudioCtx()
+    if (type === 'click') {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(550, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.04)
+      gain.gain.setValueAtTime(0.08, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.04)
+    } else if (type === 'correct') {
+      const notes = [523.25, 659.25, 783.99, 1046.50]
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'triangle'
+        osc.frequency.value = freq
+        gain.gain.setValueAtTime(0.12, ctx.currentTime + idx * 0.05)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.05 + 0.22)
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(ctx.currentTime + idx * 0.05)
+        osc.stop(ctx.currentTime + idx * 0.05 + 0.22)
+      })
+    } else if (type === 'combo') {
+      const notes = [587.33, 739.99, 880, 1174.66]
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        osc.frequency.value = freq
+        gain.gain.setValueAtTime(0.15, ctx.currentTime + idx * 0.06)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.06 + 0.3)
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(ctx.currentTime + idx * 0.06)
+        osc.stop(ctx.currentTime + idx * 0.06 + 0.3)
+      })
+    } else if (type === 'wrong') {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sawtooth'
+      osc.frequency.setValueAtTime(180, ctx.currentTime)
+      osc.frequency.linearRampToValueAtTime(110, ctx.currentTime + 0.22)
+      gain.gain.setValueAtTime(0.1, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.22)
+    }
+  } catch {
+    // Audio Context unallowed or muted
+  }
+}
+
 export default function VocabularyMatchGame({ roomId, socket, members }: VocabularyMatchGameProps) {
   const { user } = useAuth()
   const userId = user?.id || null
@@ -197,6 +260,11 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
   const [receivedAt, setReceivedAt] = useState<number>(Date.now())
   const [roomGame, setRoomGame] = useState<RoomGameState>(defaultRoomGameState)
   const [selectedCard, setSelectedCard] = useState<MatchCard | null>(null)
+  const [wrongCardIds, setWrongCardIds] = useState<Set<string>>(new Set())
+  const [justMatchedPairId, setJustMatchedPairId] = useState<string | null>(null)
+  const [floatingTexts, setFloatingTexts] = useState<Array<{ id: string; cardId: string; text: string; type: 'correct' | 'wrong' | 'combo' }>>([])
+  const [streakCount, setStreakCount] = useState<number>(0)
+  const [streakBanner, setStreakBanner] = useState<string | null>(null)
   const [durationSec, setDurationSec] = useState(15)
   const [now, setNow] = useState(Date.now())
   const [roomSelections, setRoomSelections] = useState<Record<string, number>>({})
@@ -266,6 +334,8 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
 
   useEffect(() => {
     setSelectedCard(null)
+    setStreakCount(0)
+    setWrongCardIds(new Set())
   }, [matchGame.round])
 
   useEffect(() => {
@@ -357,7 +427,10 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
   }, [roomId, socket])
 
   const handleCardClick = useCallback((card: MatchCard) => {
-    if (matchGame.status !== 'playing' || matchedPairSet.has(card.pairId)) return
+    if (matchGame.status !== 'playing' || matchedPairSet.has(card.pairId) || wrongCardIds.size > 0) return
+
+    playAudioEffect('click')
+
     if (!selectedCard) {
       setSelectedCard(card)
       return
@@ -370,8 +443,38 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
       setSelectedCard(card)
       return
     }
+
     if (selectedCard.pairId === card.pairId) {
       const pairId = card.pairId
+      const nextStreak = streakCount + 1
+      setStreakCount(nextStreak)
+
+      playAudioEffect(nextStreak >= 2 ? 'combo' : 'correct')
+
+      const pointText = nextStreak >= 2 ? `COMBO x${nextStreak}! +${nextStreak * 100}` : '+100'
+      const ftType: 'combo' | 'correct' = nextStreak >= 2 ? 'combo' : 'correct'
+
+      const nowId = Date.now()
+      const ft1 = { id: `${nowId}-1`, cardId: card.id, text: pointText, type: ftType }
+      const ft2 = { id: `${nowId}-2`, cardId: selectedCard.id, text: pointText, type: ftType }
+      setFloatingTexts(prev => [...prev, ft1, ft2])
+      setTimeout(() => {
+        setFloatingTexts(prev => prev.filter(item => item.id !== ft1.id && item.id !== ft2.id))
+      }, 850)
+
+      if (nextStreak >= 2) {
+        const bannerMsg = nextStreak === 2
+          ? 'COMBO x2! CHUỖI ĐÚNG'
+          : nextStreak === 3
+            ? 'XUẤT SẮC! 3 CHUỖI ĐÚNG'
+            : `SUPER COMBO x${nextStreak}!`
+        setStreakBanner(bannerMsg)
+        setTimeout(() => setStreakBanner(null), 1200)
+      }
+
+      setJustMatchedPairId(pairId)
+      setTimeout(() => setJustMatchedPairId(null), 600)
+
       setMatchGame(prev => {
         if (prev.status !== 'playing' || prev.matchedPairIds.includes(pairId)) return prev
         return {
@@ -391,10 +494,31 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
           },
         }
       })
+      emitMatchAction('match', { firstCardId: selectedCard.id, secondCardId: card.id })
+      setSelectedCard(null)
+    } else {
+      setStreakCount(0)
+      playAudioEffect('wrong')
+
+      const wrongSet = new Set([selectedCard.id, card.id])
+      setWrongCardIds(wrongSet)
+
+      const nowId = Date.now()
+      const ft1 = { id: `${nowId}-1`, cardId: card.id, text: 'SAI RỒI!', type: 'wrong' as const }
+      const ft2 = { id: `${nowId}-2`, cardId: selectedCard.id, text: 'SAI RỒI!', type: 'wrong' as const }
+      setFloatingTexts(prev => [...prev, ft1, ft2])
+      setTimeout(() => {
+        setFloatingTexts(prev => prev.filter(item => item.id !== ft1.id && item.id !== ft2.id))
+      }, 850)
+
+      emitMatchAction('match', { firstCardId: selectedCard.id, secondCardId: card.id })
+
+      setTimeout(() => {
+        setWrongCardIds(new Set())
+        setSelectedCard(null)
+      }, 550)
     }
-    emitMatchAction('match', { firstCardId: selectedCard.id, secondCardId: card.id })
-    setSelectedCard(null)
-  }, [currentPlayerName, emitMatchAction, matchGame.status, matchedPairSet, selectedCard, socket.id])
+  }, [currentPlayerName, emitMatchAction, matchGame.status, matchedPairSet, selectedCard, socket.id, streakCount, wrongCardIds.size])
 
   const startMatchGame = useCallback(() => emitMatchAction('start', { durationSec }), [durationSec, emitMatchAction])
   const resetMatchGame = useCallback(() => emitMatchAction('reset'), [emitMatchAction])
@@ -415,6 +539,9 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
     const question = roomGame.question
     if (!question || roomSelections[question.id] !== undefined || roomGame.status !== 'question') return
     setRoomSelections(prev => ({ ...prev, [question.id]: optionIndex }))
+    
+    playAudioEffect('click')
+
     socket.emit('topik-game-action', {
       roomId,
       type: 'answer',
@@ -501,6 +628,10 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
               setDurationSec={setDurationSec}
               matchedPairSet={matchedPairSet}
               selectedCard={selectedCard}
+              wrongCardIds={wrongCardIds}
+              justMatchedPairId={justMatchedPairId}
+              floatingTexts={floatingTexts}
+              streakBanner={streakBanner}
               waitingMembers={waitingMembers}
               members={members}
               totalPairs={totalPairs}
@@ -545,6 +676,10 @@ function MatchArenaPanel({
   setDurationSec,
   matchedPairSet,
   selectedCard,
+  wrongCardIds,
+  justMatchedPairId,
+  floatingTexts,
+  streakBanner,
   waitingMembers,
   members,
   totalPairs,
@@ -561,6 +696,10 @@ function MatchArenaPanel({
   setDurationSec: (value: number) => void
   matchedPairSet: Set<string>
   selectedCard: MatchCard | null
+  wrongCardIds: Set<string>
+  justMatchedPairId: string | null
+  floatingTexts: Array<{ id: string; cardId: string; text: string; type: 'correct' | 'wrong' | 'combo' }>
+  streakBanner: string | null
   waitingMembers: Member[]
   members: Member[]
   totalPairs: number
@@ -573,7 +712,14 @@ function MatchArenaPanel({
   onReset: () => void
 }) {
   return (
-    <section className="flex min-w-0 flex-col rounded-[28px] border border-brand-terracotta-light/20 bg-white/88 p-3 shadow-sm sm:p-4 xl:p-5">
+    <section className="relative flex min-w-0 flex-col rounded-[28px] border border-brand-terracotta-light/20 bg-white/88 p-3 shadow-sm sm:p-4 xl:p-5">
+      {streakBanner && (
+        <div className="absolute top-3 left-1/2 z-30 -translate-x-1/2 pointer-events-none">
+          <div className="rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 px-5 py-2 text-xs sm:text-sm font-black text-white shadow-xl animate-streak-banner border border-white/20">
+            {streakBanner}
+          </div>
+        </div>
+      )}
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-black">Ghép thẻ từ vựng</h3>
@@ -702,20 +848,41 @@ function MatchArenaPanel({
           {game.cards.map(card => {
             const matched = matchedPairSet.has(card.pairId)
             const selected = selectedCard?.id === card.id
+            const isWrong = wrongCardIds.has(card.id)
+            const isJustMatched = justMatchedPairId === card.pairId
+
             return (
               <button
                 key={card.id}
                 type="button"
                 onClick={() => onCardClick(card)}
                 disabled={matched || game.status !== 'playing'}
-                  className={`group min-h-[112px] rounded-[22px] border p-3 text-center transition ${
-                  matched
-                    ? 'border-green-200 bg-green-50/90 text-green-700'
-                    : selected
-                      ? 'border-brand-terracotta bg-brand-terracotta text-white shadow-lg shadow-brand-terracotta/18'
-                      : 'border-brand-terracotta-light/20 bg-white text-brand-brown-dark shadow-sm hover:-translate-y-0.5 hover:border-brand-terracotta/35 hover:shadow-md'
+                className={`relative group min-h-[112px] rounded-[22px] border p-3 text-center transition-all ${
+                  isWrong
+                    ? 'animate-match-shake border-rose-500 bg-rose-50/90 text-rose-700 shadow-md shadow-rose-200 font-bold'
+                    : isJustMatched
+                      ? 'animate-match-success border-emerald-400 bg-emerald-50 text-emerald-800 shadow-lg shadow-emerald-400/30 font-bold'
+                      : matched
+                        ? 'border-green-200 bg-green-50/90 text-green-700'
+                        : selected
+                          ? 'border-brand-terracotta bg-brand-terracotta text-white shadow-lg shadow-brand-terracotta/25 scale-[1.03]'
+                          : 'border-brand-terracotta-light/20 bg-white text-brand-brown-dark shadow-sm hover:-translate-y-0.5 hover:border-brand-terracotta/35 hover:shadow-md'
                 }`}
               >
+                {floatingTexts.filter(ft => ft.cardId === card.id).map(ft => (
+                  <span
+                    key={ft.id}
+                    className={`absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 pointer-events-none whitespace-nowrap rounded-full px-3 py-1 text-xs font-black shadow-lg animate-float-text ${
+                      ft.type === 'wrong'
+                        ? 'bg-rose-600 text-white'
+                        : ft.type === 'combo'
+                          ? 'bg-amber-500 text-white border border-yellow-200'
+                          : 'bg-emerald-600 text-white'
+                    }`}
+                  >
+                    {ft.text}
+                  </span>
+                ))}
                 <span className={`mx-auto mb-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-black ${
                   matched
                     ? 'bg-green-100 text-green-700'
