@@ -43,7 +43,7 @@ type Props = {
   username: string
   currentUserAvatarUrl?: string
   onJoinTemplateRoom: (template: RoomTemplate) => void | Promise<void>
-  onJoinRoom: (roomId: string, password?: string) => void | Promise<void>
+  onJoinRoom: (roomId: string, password?: string, isGuestConfirmed?: boolean, guestUsername?: string, isPrivateParam?: boolean) => void | Promise<void>
   onRefreshRooms: () => void
   copyFriendCode: () => void
   setFriendInputCode: (value: string) => void
@@ -182,7 +182,7 @@ export default function TemplateMarketplace({
         {activeTab === 'recent' && visibleRecentRooms.map((room, index) => (
           <button
             key={room.id}
-            onClick={() => onJoinRoom(room.id)}
+            onClick={() => onJoinRoom(room.id, undefined, undefined, undefined, room.isPrivate)}
             style={{ animationDelay: `${index * 50}ms` }}
             className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-[15px] border border-black/[0.05] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-sm"
           >
@@ -242,7 +242,7 @@ export default function TemplateMarketplace({
         {activeTab === 'explore' && visibleUserRooms.map((room, index) => (
           <button
             key={room.id}
-            onClick={() => onJoinRoom(room.id)}
+            onClick={() => onJoinRoom(room.id, undefined, undefined, undefined, room.isPrivate)}
             style={{ animationDelay: `${(index + (topikTemplate ? 1 : 0)) * 50}ms` }}
             className="group animate-fade-slide-down flex w-full items-center gap-3 rounded-[15px] border border-black/[0.05] bg-white px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-terracotta-light hover:shadow-sm"
           >

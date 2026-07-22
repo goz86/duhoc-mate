@@ -81,7 +81,7 @@ type LandingPageProps = {
     password?: string,
     avatarUrl?: string
   ) => void | Promise<void>
-  handleJoinRoom: (e?: React.FormEvent | string, enteredPassword?: string) => void | Promise<void>
+  handleJoinRoom: (e?: React.FormEvent | string, enteredPassword?: string, isGuestConfirmed?: boolean, guestUsername?: string, isPrivateParam?: boolean) => void | Promise<void>
   handleJoinTemplateRoom: (template: RoomTemplate) => void
   templates: RoomTemplate[]
   activeRooms: ActiveRoom[]
@@ -802,7 +802,7 @@ export default function LandingPage({
 
                         <button
                           type="button"
-                          onClick={() => handleJoinRoom(room.id)}
+                          onClick={() => handleJoinRoom(room.id, undefined, undefined, undefined, room.isPrivate)}
                           className="flex items-center gap-1 text-xs font-black uppercase tracking-wider text-brand-terracotta group-hover:text-brand-brown-dark transition cursor-pointer active:scale-95"
                         >
                           Vào phòng
