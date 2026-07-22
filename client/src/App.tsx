@@ -2583,8 +2583,26 @@ export default function App() {
     }
   };
 
+  const decodeHtmlEntities = (str: string) => {
+    if (!str) return '';
+    return str
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+      .replace(/&nbsp;/g, ' ')
+      .trim();
+  };
+
   const shuffleAndSetAiSuggestions = (list: any[]) => {
-    const shuffled = [...list].sort(() => 0.5 - Math.random());
+    const cleaned = list.map(item => ({
+      ...item,
+      title: decodeHtmlEntities(item.title),
+      author: decodeHtmlEntities(item.author || '')
+    }));
+    const shuffled = [...cleaned].sort(() => 0.5 - Math.random());
     setAiSuggestions(shuffled.slice(0, 5));
   };
 

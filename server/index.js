@@ -666,6 +666,40 @@ const getZingVpopChart = async () => {
   return null;
 };
 
+const cleanHtmlEntities = (str) => {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+};
+
+const getKpopTrendingChart = async () => {
+  console.log('Fetching official YouTube K-Pop Top 100 Chart (PL4fGSI1pDJn5S09aId3dUGp40ygUqmPGc)...');
+  try {
+    const playlistData = await yts({ listId: 'PL4fGSI1pDJn5S09aId3dUGp40ygUqmPGc' });
+    const videos = playlistData?.videos || [];
+    if (videos.length === 0) throw new Error('No videos returned in YouTube K-Pop playlist');
+
+    return videos.map(v => ({
+      videoId: v.videoId,
+      title: cleanHtmlEntities(v.title),
+      author: cleanHtmlEntities(v.author?.name || String(v.author) || ''),
+      duration: v.duration?.timestamp || v.timestamp || '0:00',
+      thumbnail: `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`,
+      views: v.views || 0,
+    }));
+  } catch (err) {
+    console.warn('Failed to fetch official YouTube K-Pop playlist:', err.message);
+    throw err;
+  }
+};
+
 const fetchAndCacheTrending = async (type) => {
   console.log(`[TRENDING CACHE] Refreshing cache for: ${type}`);
   let results = null;
@@ -675,6 +709,12 @@ const fetchAndCacheTrending = async (type) => {
       results = await getZingVpopChart();
     } catch (err) {
       console.warn('[TRENDING CACHE] Zing V-Pop chart refresh failed:', err.message);
+    }
+  } else if (type === 'kpop') {
+    try {
+      results = await getKpopTrendingChart();
+    } catch (err) {
+      console.warn('[TRENDING CACHE] YouTube K-Pop chart refresh failed:', err.message);
     }
   }
 
