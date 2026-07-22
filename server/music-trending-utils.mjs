@@ -4,6 +4,9 @@ const JUNK_KEYWORDS = [
   'hoạt hình', 'anime', 'tập ', 'preview', 'trailer', 'tin tức', 'news',
   'hướng dẫn', 'tutorial', 'reaction', 'đập hộp', 'review', 'troll', 'thách đấu',
   'study with me', 'study session', 'lofi', 'lo-fi', 'beats to relax', 'chill beats',
+  'top bài hát', 'top 30', 'top 50', 'top 20', 'top 10', 'bảng xếp hạng', 'bxh',
+  'tổng hợp', 'tuyển tập', 'hơn 50 bài', 'hơn 30 bài', 'tuần qua', 'nghe nhiều nhất',
+  'bài hát hot nhất', 'nhạc trẻ tuần qua', 'mashup', 'nonstop'
 ]
 
 const TRENDING_MUSIC_QUERIES = {
@@ -88,15 +91,13 @@ export function filterMusicVideo(video, type = 'vpop') {
 
 export const STATIC_TRENDING_FALLBACKS = {
   vpop: [
-    { videoId: 'zoEtcR5EW08', title: 'Sơn Tùng M-TP - Chúng Ta Của Tương Lai', author: 'Sơn Tùng M-TP Official', duration: '4:09', thumbnail: 'https://img.youtube.com/vi/zoEtcR5EW08/mqdefault.jpg', views: 50000000 },
-    { videoId: 'xypzmu5mMPY', title: 'Sơn Tùng M-TP - Muộn Rồi Mà Sao Còn', author: 'Sơn Tùng M-TP Official', duration: '4:35', thumbnail: 'https://img.youtube.com/vi/xypzmu5mMPY/mqdefault.jpg', views: 180000000 },
-    { videoId: 'UVbv-PJXm14', title: 'Đen - Mang Tiền Về Cho Mẹ ft. Nguyên Thảo', author: 'Đen Vâu Official', duration: '6:43', thumbnail: 'https://img.youtube.com/vi/UVbv-PJXm14/mqdefault.jpg', views: 110000000 },
-    { videoId: 'n5l74s26Dks', title: 'Hoàng Thùy Linh - See Tình', author: 'Hoàng Thùy Linh', duration: '3:05', thumbnail: 'https://img.youtube.com/vi/n5l74s26Dks/mqdefault.jpg', views: 60000000 },
-    { videoId: 'ZbR6dYkqorI', title: 'Double2T x Masew - À Lôi', author: 'Masew', duration: '3:18', thumbnail: 'https://img.youtube.com/vi/ZbR6dYkqorI/mqdefault.jpg', views: 40000000 },
-    { videoId: 'L_TqjWbS8Qc', title: 'HIEUTHUHAI - Ngủ Một Mình ft. Negav', author: 'HIEUTHUHAI', duration: '3:46', thumbnail: 'https://img.youtube.com/vi/L_TqjWbS8Qc/mqdefault.jpg', views: 70000000 },
-    { videoId: 'dz6xe0xXqYE', title: 'RPT MCK - Anh Đã Ổn Hơn', author: 'MCK', duration: '3:20', thumbnail: 'https://img.youtube.com/vi/dz6xe0xXqYE/mqdefault.jpg', views: 30000000 },
-    { videoId: 'kYJzX2eU2XQ', title: 'Phan Mạnh Quỳnh - Có Chàng Trai Viết Lên Cây', author: 'Phan Mạnh Quỳnh Official', duration: '5:02', thumbnail: 'https://img.youtube.com/vi/kYJzX2eU2XQ/mqdefault.jpg', views: 90000000 },
-    { videoId: 'kRvYqzCJ4vw', title: 'Vũ. - Lạ Lùng', author: 'Vũ.', duration: '4:21', thumbnail: 'https://img.youtube.com/vi/kRvYqzCJ4vw/mqdefault.jpg', views: 120000000 }
+    { videoId: 'gTknW_o_1pU', title: 'Sơn Tùng M-TP | ĐỪNG LÀM TRÁI TIM ANH ĐAU | OFFICIAL MUSIC VIDEO', author: 'Sơn Tùng M-TP Official', duration: '5:33', thumbnail: 'https://img.youtube.com/vi/gTknW_o_1pU/mqdefault.jpg', views: 50000000 },
+    { videoId: '3a5g2K4lX6g', title: 'Đức Phúc - CHĂM EM MỘT ĐỜI | OFFICIAL MUSIC VIDEO', author: 'Đức Phúc Official', duration: '4:15', thumbnail: 'https://img.youtube.com/vi/3a5g2K4lX6g/mqdefault.jpg', views: 20000000 },
+    { videoId: 'Wp9yP1O35n8', title: 'SOOBIN - LẮM TIỀN NHIỀU TIỀN | Official Music Video', author: 'SOOBIN', duration: '3:50', thumbnail: 'https://img.youtube.com/vi/Wp9yP1O35n8/mqdefault.jpg', views: 30000000 },
+    { videoId: '9o7L4s_m3z8', title: 'TÓC TIÊN - NGƯỜI CÒN THƯƠNG EM KHÔNG | Official Music Video', author: 'Tóc Tiên', duration: '4:55', thumbnail: 'https://img.youtube.com/vi/9o7L4s_m3z8/mqdefault.jpg', views: 15000000 },
+    { videoId: 'abPM8b567bE', title: 'Phương Ly - MẬT NGỌT | OFFICIAL MUSIC VIDEO', author: 'Phương Ly', duration: '3:45', thumbnail: 'https://img.youtube.com/vi/abPM8b567bE/mqdefault.jpg', views: 18000000 },
+    { videoId: 'L1v_3eU-uUQ', title: 'Hòa Minzy - Rời Bỏ | OFFICIAL MUSIC VIDEO', author: 'Hòa Minzy', duration: '4:40', thumbnail: 'https://img.youtube.com/vi/L1v_3eU-uUQ/mqdefault.jpg', views: 90000000 },
+    { videoId: '2J4tF8lJ_jM', title: 'Vũ. - BƯỚC QUA NHAU | Official Music Video', author: 'Vũ. Official', duration: '4:17', thumbnail: 'https://img.youtube.com/vi/2J4tF8lJ_jM/mqdefault.jpg', views: 120000000 }
   ],
   kpop: [
     { videoId: 'gdZLi9oWNZg', title: 'BTS - Dynamite', author: 'HYBE LABELS', duration: '3:43', thumbnail: 'https://img.youtube.com/vi/gdZLi9oWNZg/mqdefault.jpg', views: 1800000000 },
