@@ -695,7 +695,7 @@ const getVpopTrendingChart = async () => {
         title: cleanHtmlEntities(v.title),
         author: cleanHtmlEntities(v.author?.name || String(v.author) || ''),
         duration: v.duration?.timestamp || v.timestamp || '0:00',
-        thumbnail: v.thumbnail || v.image || `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`,
+        thumbnail: v.thumbnail || v.image || `https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`,
         views: v.views || 0,
       }));
   } catch (err) {
@@ -718,7 +718,7 @@ const getKpopTrendingChart = async () => {
         title: cleanHtmlEntities(v.title),
         author: cleanHtmlEntities(v.author?.name || String(v.author) || ''),
         duration: v.duration?.timestamp || v.timestamp || '0:00',
-        thumbnail: v.thumbnail || v.image || `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`,
+        thumbnail: v.thumbnail || v.image || `https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`,
         views: v.views || 0,
       }));
   } catch (err) {

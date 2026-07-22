@@ -5694,7 +5694,7 @@ export default function App() {
                   >
                     <div className="relative h-12 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-brand-light dark:bg-zinc-800">
                       <img
-                        src={song.thumbnail || `https://i.ytimg.com/vi/${song.videoId}/hqdefault.jpg`}
+                        src={song.thumbnail || `https://img.youtube.com/vi/${song.videoId}/hqdefault.jpg`}
                         alt={song.title}
                         className="h-full w-full object-cover"
                         onError={(e) => {
@@ -5702,12 +5702,12 @@ export default function App() {
                           const videoId = song.videoId;
                           if (!target.dataset.tried1) {
                             target.dataset.tried1 = 'true';
-                            target.src = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+                            target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
                           } else if (!target.dataset.tried2) {
                             target.dataset.tried2 = 'true';
-                            target.src = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
+                            target.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
                           } else {
-                            target.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="48" viewBox="0 0 80 48" fill="%2327272a"><rect width="80" height="48" fill="%2327272a"/><circle cx="40" cy="24" r="12" fill="%233f3f46"/><circle cx="40" cy="24" r="4" fill="%23e4e4e7"/><path d="M37 19v10l7-5z" fill="%23c2410c"/></svg>`;
+                            target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDgwIDQ4Ij48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iNDgiIGZpbGw9IiMyNzI3MmEiLz48Y2lyY2xlIGN4PSI0MCIgY3k9IjI0IiByPSIxMiIgZmlsbD0iIzNmM2Y0NiIvPjxjaXJjbGUgY3g9IjQwIiBjeT0iMjQiIHI9IjQiIGZpbGw9IiNlNGU0ZTciLz48cGF0aCBkPSJNMzcgMTl2MTBsNy01eiIgZmlsbD0iI2MyNDEwYyIvPjwvc3ZnPg==';
                           }
                         }}
                       />
