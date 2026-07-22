@@ -814,11 +814,28 @@ const fetchAndCacheTrending = async (type) => {
   }
 
   if (results && results.length > 0) {
+    if (type === 'vpop') {
+      try {
+        const zingChart = await getZingVpopChart();
+        if (zingChart && zingChart.length > 0) {
+          const zingIds = new Set(zingChart.map(z => z.videoId));
+          const rest = results.filter(r => !zingIds.has(r.videoId)).sort((a, b) => (b.views || 0) - (a.views || 0));
+          results = [...zingChart, ...rest];
+        } else {
+          results.sort((a, b) => (b.views || 0) - (a.views || 0));
+        }
+      } catch {
+        results.sort((a, b) => (b.views || 0) - (a.views || 0));
+      }
+    } else {
+      results.sort((a, b) => (b.views || 0) - (a.views || 0));
+    }
+
     trendingCache[type] = {
       data: results,
       lastUpdated: Date.now()
     };
-    console.log(`[TRENDING CACHE] ✅ Updated cache for ${type} with ${results.length} songs.`);
+    console.log(`[TRENDING CACHE] ✅ Updated cache for ${type} with ${results.length} chart-ranked songs.`);
     return results;
   } else {
     console.warn(`[TRENDING CACHE] ❌ Failed to fetch data for ${type}. Using fallbacks.`);
