@@ -610,6 +610,8 @@ const getTrendingMusicWithYtSearch = async (type = 'vpop') => {
   }));
 };
 
+
+
 const trendingCache = {
   vpop: { data: null, lastUpdated: 0 },
   kpop: { data: null, lastUpdated: 0 },
@@ -771,23 +773,21 @@ app.get('/api/trending-music', rateLimitRest('trending-music', 30, 60_000), asyn
   const now = Date.now();
   const cached = trendingCache[type];
 
-  if (!cached.data) {
-    await fetchAndCacheTrending(type).catch(err => {
-      console.error(`[TRENDING CACHE] Initial fetch error for ${type}:`, err);
-    });
-  } else if (now - cached.lastUpdated > CACHE_TTL_MS) {
+  // Nếu cache trống hoặc quá hạn, chạy fetch ngầm (không bắt client chờ spinner!)
+  if (!cached.data || now - cached.lastUpdated > CACHE_TTL_MS) {
     fetchAndCacheTrending(type).catch(err => {
-      console.error(`[TRENDING CACHE] Background update error for ${type}:`, err);
+      console.error(`[TRENDING CACHE] Background fetch error for ${type}:`, err);
     });
   }
 
-  const freshData = trendingCache[type]?.data;
-  if (freshData && freshData.length > 0) {
-    return res.json({ results: freshData });
+  // Nếu đã có danh sách chuẩn, trả về ngay lập tức (0ms delay)
+  if (cached.data && cached.data.length > 0) {
+    return res.json({ results: cached.data, isLive: true });
   }
 
-  console.log(`[TRENDING CACHE] Cache empty/missing for ${type}. Returning static fallback.`);
-  return res.json({ results: STATIC_TRENDING_FALLBACKS[type] || [] });
+  // Nếu chưa có (khi server mới khởi động), trả bài nhạc chất lượng tức thì ngay lập tức
+  console.log(`[TRENDING CACHE] Returning instant fallback for ${type} while background fetch runs.`);
+  return res.json({ results: STATIC_TRENDING_FALLBACKS[type] || [], isFallback: true });
 });
 
 // Run background pre-fetching on startup

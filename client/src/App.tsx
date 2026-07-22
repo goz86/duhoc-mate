@@ -2549,14 +2549,22 @@ export default function App() {
 
     const cacheRef = type === 'kpop' ? trendingCacheKpopRef : type === 'vinahouse' ? trendingCacheVinahouseRef : trendingCacheVpopRef;
 
-    if (!forceRefresh && cacheRef.current.length > 5) {
+    // Hiển thị ngay lập tức dữ liệu đang có sẵn (0ms delay!)
+    if (cacheRef.current.length > 0) {
       shuffleAndSetAiSuggestions(cacheRef.current);
+    }
+
+    if (!forceRefresh && cacheRef.current.length > 5) {
       return;
     }
 
-    setAiLoading(true);
+    // Chỉ hiện spinner chính nếu chưa có bài nào để xem
+    if (cacheRef.current.length === 0) {
+      setAiLoading(true);
+    }
+
     try {
-      const TRENDING_URL = `${getApiBaseCandidates()[0]}/api/trending-music?type=${type}&_t=${Date.now()}`;
+      const TRENDING_URL = `${getApiBaseCandidates()[0]}/api/trending-music?type=${type}`;
       const res = await fetch(TRENDING_URL);
       const data = await res.json();
       if (data.results && data.results.length > 0) {
@@ -2569,15 +2577,6 @@ export default function App() {
       }
     } catch (err) {
       console.error(`Failed to fetch AI trending suggestions for ${type}`, err);
-      try {
-        const searchResults = await fetchAiSuggestionsBySearch(type);
-        cacheRef.current = searchResults;
-        shuffleAndSetAiSuggestions(searchResults);
-      } catch (searchErr) {
-        console.error(`Failed to fetch AI search suggestions for ${type}`, searchErr);
-        cacheRef.current = [];
-        setAiSuggestions([]);
-      }
     } finally {
       setAiLoading(false);
     }
@@ -5649,7 +5648,7 @@ export default function App() {
               ))}
             </div>
 
-            {aiLoading ? (
+            {aiLoading && aiSuggestions.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-3">
                 <span className="h-6 w-6 rounded-full border-2 border-brand-terracotta/30 border-t-brand-terracotta animate-spin" />
                 <span className="text-xs text-brand-brown-light dark:text-zinc-500">Đang phân tích xu hướng...</span>
@@ -5663,6 +5662,12 @@ export default function App() {
               </div>
             ) : (
               <div className="max-h-[56vh] space-y-3 overflow-y-auto pr-1 relative z-10">
+                {aiLoading && (
+                  <div className="text-[10px] font-bold text-brand-terracotta flex items-center gap-1.5 pb-1 animate-pulse">
+                    <Sparkles size={12} />
+                    <span>Đang tải danh sách mới nhất từ YouTube...</span>
+                  </div>
+                )}
                 {aiSuggestions.map((song) => (
                   <div
                     key={song.videoId}
