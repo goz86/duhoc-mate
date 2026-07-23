@@ -638,6 +638,37 @@ export default function App() {
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showYoutubeCaptions, setShowYoutubeCaptions] = useState(false);
+  const showYoutubeCaptionsRef = useRef(showYoutubeCaptions);
+  useEffect(() => { showYoutubeCaptionsRef.current = showYoutubeCaptions; }, [showYoutubeCaptions]);
+
+  const applyCaptionState = (player: any, enabled: boolean) => {
+    if (!player) return;
+    try {
+      if (enabled) {
+        player.loadModule?.('captions');
+        const preferredLanguages = [
+          'ko',
+          ...navigator.languages.map((lang) => lang.split('-')[0]),
+          'vi',
+          'en',
+        ];
+        const trackList = player.getOption?.('captions', 'tracklist') || [];
+        let track: any = null;
+        for (const lang of preferredLanguages) {
+          track = trackList.find((item: any) => item.languageCode === lang);
+          if (track) break;
+        }
+        if (!track) track = trackList[0];
+        player.setOption?.('captions', 'fontSize', 1);
+        player.setOption?.('captions', 'track', track || { languageCode: 'vi' });
+      } else {
+        player.setOption?.('captions', 'track', {});
+        player.unloadModule?.('captions');
+      }
+    } catch (error) {
+      console.warn('[YouTube Captions] Unable to toggle captions:', error);
+    }
+  };
   const activeLyricRef = useRef<HTMLParagraphElement>(null);
   const miniActiveLyricRef = useRef<HTMLParagraphElement>(null);
   const lyricsScrollRef = useRef<HTMLDivElement>(null);
@@ -1332,7 +1363,8 @@ export default function App() {
           rel: 0,
           modestbranding: 1,
           enablejsapi: 1,
-          origin: window.location.origin
+          origin: window.location.origin,
+          cc_load_policy: 0
         },
         events: {
           onReady: (event: any) => {
@@ -1343,6 +1375,8 @@ export default function App() {
             if (typeof duration === 'number' && duration > 0) setVideoDuration(duration);
             // Áp dụng volume đã lưu khi player init mới
             event.target.setVolume?.(playerVolume);
+            // Áp dụng cài đặt phụ đề (tắt nếu showYoutubeCaptions == false)
+            applyCaptionState(event.target, showYoutubeCaptionsRef.current);
             // Nếu join phòng khi host đã pause sẵn → stop + mute + ẩn iframe ngay
             if (isHostPausedRef.current && !isHostRef.current) {
               event.target.mute();
@@ -1399,10 +1433,14 @@ export default function App() {
               cvrPlaying: cvr.playing
             });
 
-            // 1. Reset loading flag when the video successfully starts playing
+            // 1. Reset loading flag when the video successfully starts playing & ensure caption state
             if (state === 1) {
               loadingNewVideoRef.current = false;
               advancingPlaylistRef.current = false;
+              applyCaptionState(event.target, showYoutubeCaptionsRef.current);
+              window.setTimeout(() => {
+                applyCaptionState(event.target, showYoutubeCaptionsRef.current);
+              }, 600);
             }
 
             // 2. Autoplay enforcement during transition / load
@@ -2902,38 +2940,11 @@ export default function App() {
     const player = playerRef.current;
     if (!player) return;
 
-    const enableCaptions = () => {
-      player.loadModule?.('captions');
-      // Ưu tiên theo THỨ TỰ: tiếng Hàn trước (app học tiếng Hàn → muốn lời gốc),
-      // rồi tới ngôn ngữ trình duyệt, cuối cùng vi/en. Chọn ngôn ngữ ưu tiên CAO NHẤT
-      // mà video thực sự có phụ đề (trước đây dùng .find khớp bất kỳ → hay ra tiếng Anh).
-      const preferredLanguages = [
-        'ko',
-        ...navigator.languages.map((lang) => lang.split('-')[0]),
-        'vi',
-        'en',
-      ];
-      const trackList = player.getOption?.('captions', 'tracklist') || [];
-      let track: any = null;
-      for (const lang of preferredLanguages) {
-        track = trackList.find((item: any) => item.languageCode === lang);
-        if (track) break;
-      }
-      if (!track) track = trackList[0];
-      player.setOption?.('captions', 'fontSize', 1);
-      player.setOption?.('captions', 'track', track || { languageCode: 'vi' });
-    };
-
-    try {
-      if (showYoutubeCaptions) {
-        enableCaptions();
-        window.setTimeout(enableCaptions, 600);
-      } else {
-        player.unloadModule?.('captions');
-      }
-    } catch (error) {
-      console.warn('[YouTube Captions] Unable to toggle captions:', error);
-    }
+    applyCaptionState(player, showYoutubeCaptions);
+    const timer = window.setTimeout(() => {
+      applyCaptionState(player, showYoutubeCaptions);
+    }, 600);
+    return () => clearTimeout(timer);
   }, [showYoutubeCaptions, currentVideo.id, playerReinitTrigger]);
 
   const adjustLyricsOffset = (delta: number) => {
