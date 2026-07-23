@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Socket } from 'socket.io-client'
 import {
   Brain,
@@ -252,6 +253,7 @@ const playAudioEffect = (type: 'click' | 'correct' | 'wrong' | 'combo') => {
 }
 
 export default function VocabularyMatchGame({ roomId, socket, members }: VocabularyMatchGameProps) {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const userId = user?.id || null
   const [activeMode, setActiveMode] = useState<ArenaMode>('match')
@@ -578,16 +580,16 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
           </span>
           <div>
             <h2 className="text-lg font-black leading-tight sm:text-xl">TOPIK Arena</h2>
-            <p className="text-[11px] font-bold text-brand-brown-light">Đấu trường ôn luyện tiếng Hàn</p>
+            <p className="text-[11px] font-bold text-brand-brown-light">{t('arena.subtitle')}</p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-full bg-brand-light/60 px-3 py-1 text-[11px] font-black text-brand-brown-dark shadow-sm">
-            <Users size={12} className="text-brand-terracotta" /> {members.length} người học
+            <Users size={12} className="text-brand-terracotta" /> {t('arena.learnersCount', { count: members.length })}
           </span>
           <span className="inline-flex items-center gap-1 rounded-full bg-brand-light/60 px-3 py-1 text-[11px] font-black text-brand-brown-dark shadow-sm">
-            <Brain size={12} className="text-brand-terracotta" /> {mistakes.length} lỗi sai
+            <Brain size={12} className="text-brand-terracotta" /> {t('arena.mistakesCount', { count: mistakes.length })}
           </span>
         </div>
       </div>
@@ -595,8 +597,8 @@ export default function VocabularyMatchGame({ roomId, socket, members }: Vocabul
       <div className="flex justify-center sm:justify-start">
         <div className="flex rounded-2xl bg-brand-light/65 p-1 w-full sm:w-80 shadow-sm border border-brand-terracotta-light/5">
           {[
-            { id: 'match', label: 'Ghép thẻ', Icon: Layers3 },
-            { id: 'topik-master', label: 'TOPIK Master', Icon: Trophy }
+            { id: 'match', label: t('arena.tab.match'), Icon: Layers3 },
+            { id: 'topik-master', label: t('arena.tab.topikMaster'), Icon: Trophy }
           ].map(tab => {
             const Icon = tab.Icon
             const active = activeMode === tab.id
@@ -711,6 +713,7 @@ function MatchArenaPanel({
   onStart: () => void
   onReset: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <section className="relative flex min-w-0 flex-col rounded-[28px] border border-brand-terracotta-light/20 bg-white/88 p-3 shadow-sm sm:p-4 xl:p-5">
       {streakBanner && (
@@ -722,9 +725,9 @@ function MatchArenaPanel({
       )}
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-black">Ghép thẻ từ vựng</h3>
+          <h3 className="text-lg font-black">{t('arena.match.title')}</h3>
           <p className="text-[11px] font-bold text-brand-brown-light">
-            Ghép các cặp từ Hàn - Việt tương ứng thật nhanh trước khi hết giờ.
+            {t('arena.match.subtitle')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -752,7 +755,7 @@ function MatchArenaPanel({
             className="inline-flex h-10 items-center gap-2 rounded-full bg-green-500 px-4 text-sm font-black text-white shadow-lg shadow-green-500/20 transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-300 disabled:shadow-none"
           >
             {game.status !== 'playing' && <Play size={15} />}
-            {game.status === 'playing' ? 'Đang chơi' : game.status === 'idle' ? 'Bắt đầu' : 'Round mới'}
+            {game.status === 'playing' ? t('arena.match.playing') : game.status === 'idle' ? t('arena.match.start') : t('arena.match.newRound')}
           </button>
           <button
             type="button"
@@ -775,7 +778,7 @@ function MatchArenaPanel({
           </span>
         </div>
         <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-black text-green-700">
-          {matchedCount}/{totalPairs} cặp đúng
+          {t('arena.match.correctPairs', { count: matchedCount, total: totalPairs })}
         </span>
       </div>
 
@@ -791,7 +794,7 @@ function MatchArenaPanel({
       {game.status === 'playing' && game.lastResult?.type === 'match' && (
         <div className="mb-4 inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-black text-green-700 shadow-sm">
           <Trophy size={14} className="shrink-0" />
-          <span className="truncate">{game.lastResult.username || 'Bạn học'} vừa ghép đúng</span>
+          <span className="truncate">{t('arena.match.justMatched', { name: game.lastResult.username || t('members.member') })}</span>
         </div>
       )}
 
@@ -801,9 +804,9 @@ function MatchArenaPanel({
             <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-white text-brand-terracotta shadow-sm">
               <Users size={26} />
             </div>
-            <h3 className="mt-4 text-xl font-black">Chờ mọi người vào game</h3>
+            <h3 className="mt-4 text-xl font-black">{t('arena.match.waitingTitle')}</h3>
             <p className="mt-2 text-sm font-semibold leading-relaxed text-brand-brown-light">
-              Người trong phòng bấm tab này sẽ vào danh sách chờ. Bấm bắt đầu để mở round đầu tiên.
+              {t('arena.match.waitingDesc')}
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {(waitingMembers.length ? waitingMembers : members.slice(0, 4)).map(member => (
@@ -824,11 +827,11 @@ function MatchArenaPanel({
                 <Trophy size={20} />
               </span>
               <div className="min-w-0">
-                <h3 className="text-base font-black text-brand-brown-dark">Round {game.round || 1} đã kết thúc</h3>
+                <h3 className="text-base font-black text-brand-brown-dark">{t('arena.match.roundFinished', { round: game.round || 1 })}</h3>
                 <p className="mt-0.5 text-xs font-bold text-brand-brown-light">
                   {leader
-                    ? `${leader.username} đang dẫn đầu với ${leader.score} điểm và ${leader.matches || 0} cặp đúng.`
-                    : 'Chưa có cặp nào được ghép đúng trong round này.'}
+                    ? t('arena.match.leaderInfo', { name: leader.username, score: leader.score, matches: leader.matches || 0 })
+                    : t('arena.match.noMatches')}
                 </p>
               </div>
             </div>
@@ -837,7 +840,7 @@ function MatchArenaPanel({
               onClick={onStart}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-brand-terracotta px-4 text-sm font-black text-white shadow-md shadow-brand-terracotta/15 transition hover:bg-brand-brown-dark"
             >
-              <Play size={15} /> Chơi round tiếp
+              <Play size={15} /> {t('arena.match.nextRoundBtn')}
             </button>
           </div>
         </div>
@@ -899,7 +902,7 @@ function MatchArenaPanel({
                 </span>
                 {matched && (
                   <span className="mt-2 block truncate text-[11px] font-bold text-green-600">
-                    {card.matchedByName || 'Đã ghép'}
+                    {card.matchedByName || t('arena.match.matchedState')}
                   </span>
                 )}
               </button>
@@ -930,9 +933,28 @@ function QuizArenaPanel({
   onReset: () => void
   onSubModeChange?: (subMode: QuizSubMode) => void
 }) {
+  const { t } = useTranslation()
   const revealed = state.status === 'revealed' || state.status === 'finished'
   const question = state.question
   const isFinished = state.status === 'finished'
+
+  const getSubModeTitle = (subId: string, defaultTitle: string) => {
+    if (subId === 'mixed') return t('arena.quiz.mixedTitle')
+    if (subId === 'grammar') return t('arena.quiz.grammarTitle')
+    if (subId === 'listening') return t('arena.quiz.listeningTitle')
+    if (subId === 'boss') return t('arena.quiz.bossTitle')
+    return defaultTitle
+  }
+
+  const getSubModeSubtitle = (subId: string, defaultSub: string) => {
+    if (subId === 'mixed') return t('arena.quiz.mixedSub')
+    if (subId === 'grammar') return t('arena.quiz.grammarSub')
+    if (subId === 'listening') return t('arena.quiz.listeningSub')
+    if (subId === 'boss') return t('arena.quiz.bossSub')
+    return defaultSub
+  }
+
+  const modeName = mode.id === 'boss' ? 'Boss' : mode.id === 'grammar' ? t('topik.tab.grammar') : mode.id === 'listening' ? t('arena.quiz.modeListening', { defaultValue: 'Luyện nghe' }) : t('arena.quiz.modeMixed', { defaultValue: 'Hỗn hợp' })
 
   if (state.status === 'idle' || !question) {
     return (
@@ -944,7 +966,7 @@ function QuizArenaPanel({
           <h3 className="mt-4 text-xl font-black">TOPIK Master Quiz</h3>
           
           <div className="mt-6 text-left">
-            <span className="block text-[10px] font-black uppercase tracking-wider text-brand-brown-light mb-2">Chọn chế độ thi đấu</span>
+            <span className="block text-[10px] font-black uppercase tracking-wider text-brand-brown-light mb-2">{t('arena.quiz.chooseMode')}</span>
             <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
               {QUIZ_SUB_MODES.map(sub => {
                 const Icon = sub.Icon
@@ -961,13 +983,13 @@ function QuizArenaPanel({
                     }`}
                   >
                     <Icon size={12} />
-                    <span>{sub.title}</span>
+                    <span>{getSubModeTitle(sub.id, sub.title)}</span>
                   </button>
                 )
               })}
             </div>
             <p className="mt-3 text-xs font-bold text-brand-brown-light text-center sm:text-left min-h-[32px] leading-relaxed">
-              {mode.subtitle}
+              {getSubModeSubtitle(mode.id, mode.subtitle)}
             </p>
           </div>
 
@@ -976,7 +998,7 @@ function QuizArenaPanel({
             onClick={onStart}
             className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-green-500 px-6 text-sm font-black text-white shadow-lg shadow-green-500/20 transition hover:bg-green-600 active:scale-95 cursor-pointer"
           >
-            <Play size={16} /> Bắt đầu đấu
+            <Play size={16} /> {t('arena.quiz.startBattle')}
           </button>
         </div>
       </section>
@@ -987,13 +1009,13 @@ function QuizArenaPanel({
     return (
       <section className="rounded-[28px] border border-brand-terracotta-light/15 bg-white/88 p-5 text-center shadow-sm xl:min-h-[500px]">
         <Trophy size={54} className="mx-auto text-amber-500" />
-        <h3 className="mt-3 text-3xl font-black text-brand-brown-dark">Kết thúc trận</h3>
-        <p className="mt-1 text-sm font-semibold text-brand-brown-light">Điểm đã được lưu vào bảng xếp hạng nếu Supabase đã bật.</p>
+        <h3 className="mt-3 text-3xl font-black text-brand-brown-dark">{t('arena.quiz.matchEnded')}</h3>
+        <p className="mt-1 text-sm font-semibold text-brand-brown-light">{t('arena.quiz.savedLeaderboard')}</p>
         <div className="mx-auto mt-5 max-w-md space-y-2">
           {state.leaderboard.map((player, index) => (
             <div key={player.memberId} className="flex items-center justify-between rounded-2xl bg-brand-light/60 px-4 py-3">
               <span className="text-sm font-black">#{index + 1} {player.username}</span>
-              <span className="text-sm font-black text-brand-terracotta">{player.score} điểm</span>
+              <span className="text-sm font-black text-brand-terracotta">{player.score} {t('arena.quiz.pts')}</span>
             </div>
           ))}
         </div>
@@ -1002,7 +1024,7 @@ function QuizArenaPanel({
           onClick={onStart}
           className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-brand-terracotta px-5 text-sm font-black text-white shadow-md shadow-brand-terracotta/15"
         >
-          <Play size={16} /> Chơi lại mode này
+          <Play size={16} /> {t('arena.quiz.replayMode')}
         </button>
       </section>
     )
@@ -1012,9 +1034,9 @@ function QuizArenaPanel({
     <section className="rounded-[24px] border border-brand-terracotta-light/15 bg-white/88 p-4 shadow-sm xl:min-h-[500px] xl:p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-lg font-black text-brand-brown-dark">{mode.title}</h3>
+          <h3 className="text-lg font-black text-brand-brown-dark">{getSubModeTitle(mode.id, mode.title)}</h3>
           <p className="mt-1 text-[11px] font-bold text-brand-brown-light">
-            Vòng {state.round}/{state.totalRounds} · Chế độ {mode.id === 'boss' ? 'Boss' : mode.id === 'grammar' ? 'Ngữ pháp' : mode.id === 'listening' ? 'Luyện nghe' : 'Hỗn hợp'}
+            {t('arena.quiz.roundLabel', { round: state.round, total: state.totalRounds })} · {t('arena.quiz.modeLabel', { mode: modeName })}
           </p>
         </div>
         <div className="flex gap-2">
@@ -1046,7 +1068,7 @@ function QuizArenaPanel({
       </div>
 
       <div className="rounded-[24px] bg-brand-light/65 p-4">
-        <div className="mb-2 text-xs font-black text-brand-brown-light">Câu hỏi</div>
+        <div className="mb-2 text-xs font-black text-brand-brown-light">{t('arena.quiz.question')}</div>
         <p className="text-xl font-black leading-relaxed text-brand-brown-dark">{question.prompt}</p>
       </div>
 
@@ -1067,7 +1089,7 @@ function QuizArenaPanel({
 
       {selectedIndex !== undefined && !revealed && (
         <div className="mt-4 rounded-2xl bg-sky-50 p-3 text-sm font-bold text-sky-700">
-          Đã gửi đáp án. Chờ mọi người trả lời hoặc hết giờ để hiện kết quả.
+          {t('arena.quiz.submittedWait')}
         </div>
       )}
 
@@ -1075,7 +1097,7 @@ function QuizArenaPanel({
         <div className="mt-4 rounded-2xl bg-brand-light/70 p-4">
           <p className="text-sm font-semibold text-brand-brown-dark">{question.explanation}</p>
           <button onClick={onNext} className="mt-4 rounded-xl bg-brand-brown-dark px-4 py-2 text-sm font-black text-white">
-            {state.round >= state.totalRounds ? 'Xem kết quả' : 'Câu tiếp theo'}
+            {state.round >= state.totalRounds ? t('arena.quiz.seeResults') : t('arena.quiz.nextQuestion')}
           </button>
         </div>
       )}
@@ -1092,18 +1114,19 @@ function LeaderboardPanel({
   onPeriodChange: (period: LeaderboardPeriod) => void
   leaderboard: ArenaScore[]
 }) {
+  const { t } = useTranslation()
   return (
     <div className="rounded-[28px] border border-brand-terracotta-light/20 bg-white/88 p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-black">
-          <Trophy size={16} className="text-amber-500" /> Xếp hạng Arena
+          <Trophy size={16} className="text-amber-500" /> {t('arena.leaderboard.title')}
         </h3>
       </div>
       <div className="mb-3 grid grid-cols-3 gap-1 rounded-full bg-brand-light/50 p-1">
         {[
-          { key: 'room', label: 'Phòng' },
-          { key: 'week', label: 'Tuần' },
-          { key: 'month', label: 'Tháng' },
+          { key: 'room', label: t('arena.leaderboard.room') },
+          { key: 'week', label: t('arena.leaderboard.week') },
+          { key: 'month', label: t('arena.leaderboard.month') },
         ].map(item => (
           <button
             key={item.key}
@@ -1120,7 +1143,7 @@ function LeaderboardPanel({
       <div className="space-y-2">
         {leaderboard.length === 0 ? (
           <p className="rounded-2xl bg-brand-light/35 p-3 text-xs font-bold text-brand-brown-light">
-            Chưa có điểm. Chơi một trận để mở bảng xếp hạng.
+            {t('arena.leaderboard.empty')}
           </p>
         ) : (
           leaderboard.slice(0, 8).map((score, index) => (
@@ -1137,8 +1160,8 @@ function LeaderboardPanel({
                 <span className="text-sm font-black text-brand-terracotta">{score.score || 0}</span>
               </div>
               <div className="mt-2 flex items-center justify-between text-[11px] font-bold text-brand-brown-light">
-                <span>Đúng {score.correct || score.matches || 0}</span>
-                <span>Sai {score.wrong || 0}</span>
+                <span>{t('arena.leaderboard.correct', { count: score.correct || score.matches || 0 })}</span>
+                <span>{t('arena.leaderboard.wrong', { count: score.wrong || 0 })}</span>
                 <span>{score.games ? `${score.games} trận` : `Nhanh ${formatMs(score.fastestMs)}`}</span>
               </div>
             </div>
@@ -1156,22 +1179,25 @@ function WeaknessPanel({
 }: {
   weaknessSummary: Array<{ errorType: TopikErrorType; label: string; count: number }>
   mistakes: TopikMistake[]
-  topWeakness?: { label: string; count: number }
+  topWeakness?: { label: string; count: number; errorType?: TopikErrorType }
 }) {
+  const { t } = useTranslation()
   const maxCount = Math.max(1, ...weaknessSummary.map(item => item.count))
   return (
     <div className="rounded-[28px] border border-brand-terracotta-light/20 bg-white/88 p-4 shadow-sm">
       <h3 className="flex items-center gap-2 text-sm font-black">
-        <Brain size={16} className="text-brand-terracotta" /> Sổ lỗi sai thông minh
+        <Brain size={16} className="text-brand-terracotta" /> {t('arena.weakness.title')}
       </h3>
       <p className="mt-1 text-xs font-semibold text-brand-brown-light">
-        {topWeakness ? `Điểm yếu nổi bật: ${topWeakness.label}.` : 'Chơi quiz để hệ thống bắt đầu gom lỗi sai.'}
+        {topWeakness 
+          ? t('arena.weakness.topHighlight', { label: t(`errorType.${topWeakness.errorType}` as any, { defaultValue: topWeakness.label }) }) 
+          : t('arena.weakness.playToTrack')}
       </p>
       <div className="mt-3 space-y-2">
         {weaknessSummary.map(item => (
           <div key={item.errorType}>
             <div className="mb-1 flex items-center justify-between text-[11px] font-black">
-              <span className="text-brand-brown-light">{item.label}</span>
+              <span className="text-brand-brown-light">{t(`errorType.${item.errorType}` as any, { defaultValue: item.label })}</span>
               <span className="text-brand-terracotta">{item.count}</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-brand-light">
@@ -1184,7 +1210,7 @@ function WeaknessPanel({
         ))}
       </div>
       <div className="mt-3 rounded-2xl bg-emerald-50 p-3 text-xs font-bold text-emerald-700">
-        Bài chữa lỗi 10 phút: {mistakes.length ? 'sẵn sàng tạo từ lỗi gần nhất.' : 'sẽ mở sau khi có lỗi sai đầu tiên.'}
+        {mistakes.length ? t('arena.weakness.reviewReady') : t('arena.weakness.reviewEmpty')}
       </div>
     </div>
   )

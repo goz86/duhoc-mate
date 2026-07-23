@@ -532,25 +532,25 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
             onClick={() => setActiveTab('flashcard')}
             className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition cursor-pointer sm:px-4 sm:text-sm ${activeTab === 'flashcard' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
           >
-            <BookOpen size={15} /> {t('topik.flashcard')}
+            <BookOpen size={15} /> {t('topik.tab.flashcard')}
           </button>
           <button
             onClick={() => setActiveTab('exam')}
             className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition cursor-pointer sm:px-4 sm:text-sm ${activeTab === 'exam' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
           >
-            <ClipboardList size={15} /> Luyện đề thi
+            <ClipboardList size={15} /> {t('topik.tab.examPractice')}
           </button>
           <button
             onClick={() => setActiveTab('grammar')}
             className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition cursor-pointer sm:px-4 sm:text-sm ${activeTab === 'grammar' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
           >
-            <BookOpen size={15} /> Ngữ pháp
+            <BookOpen size={15} /> {t('topik.tab.grammar')}
           </button>
           <button
             onClick={() => setActiveTab('countdown')}
             className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition cursor-pointer sm:px-4 sm:text-sm ${activeTab === 'countdown' ? 'bg-white text-brand-terracotta shadow-sm' : 'text-brand-brown-light hover:text-brand-brown-dark'}`}
           >
-            <Calendar size={15} /> {t('topik.countdown')}
+            <Calendar size={15} /> {t('topik.tab.countdown')}
           </button>
         </div>
       </div>
@@ -649,7 +649,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
             {aiWords.filter(w => w.level === selectedLevel).length > 0 && (
               <div className="flex items-center gap-1 mt-1.5 justify-end">
                 <span className="topik-word-chip">
-                  +{aiWords.filter(w => w.level === selectedLevel).length} từ AI
+                  +{aiWords.filter(w => w.level === selectedLevel).length} {t('topik.aiWords')}
                 </span>
               </div>
             )}
@@ -850,12 +850,12 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
                 {aiGenLoading ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    <span>AI đang tạo từ mới...</span>
+                    <span>{t('topik.aiGeneratingWords')}</span>
                   </>
                 ) : (
                   <>
                     <Zap size={16} />
-                    <span>Tạo 20 từ mới bằng AI</span>
+                    <span>{t('topik.generate20WordsAi')}</span>
                     <Plus size={14} />
                   </>
                 )}
