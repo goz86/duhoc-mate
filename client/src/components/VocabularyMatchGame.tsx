@@ -131,7 +131,7 @@ const defaultRoomGameState: RoomGameState = {
   answers: {},
 }
 
-const durationOptions = [10, 15, 20]
+const durationOptions = [10, 20, 30, 60]
 
 const QUIZ_SUB_MODES = [
   {

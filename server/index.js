@@ -1329,9 +1329,9 @@ const TOPIK_QUESTION_BANK_CACHE_MS = 5 * 60 * 1000;
 let vocabMatchWordCache = { loadedAt: 0, words: [] };
 const VOCAB_MATCH_WORD_CACHE_MS = 5 * 60 * 1000;
 
-const VOCAB_MATCH_ROUND_SECONDS = 15;
+const VOCAB_MATCH_ROUND_SECONDS = 20;
 const VOCAB_MATCH_MIN_SECONDS = 10;
-const VOCAB_MATCH_MAX_SECONDS = 20;
+const VOCAB_MATCH_MAX_SECONDS = 60;
 const VOCAB_MATCH_PAIR_COUNT = 6;
 const VOCAB_MATCH_WORDS = [
   { id: 'vm-001', level: 1, ko: '안녕하세요', vi: 'Xin chào' },

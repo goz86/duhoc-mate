@@ -53,8 +53,8 @@ export const createEstimatedLyrics = (value: string, duration: number): LyricLin
 export const getOffsetForLyricAnchor = ({
   playbackTime,
   lyricTime,
-  minOffset = -20,
-  maxOffset = 30,
+  minOffset = -60,
+  maxOffset = 60,
 }: {
   playbackTime: number;
   lyricTime: number;

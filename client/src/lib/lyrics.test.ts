@@ -8,7 +8,7 @@ describe('getOffsetForLyricAnchor', () => {
   });
 
   it('clamps very large corrections to the supported lyric offset range', () => {
-    expect(getOffsetForLyricAnchor({ playbackTime: 10, lyricTime: 80 })).toBe(-20);
-    expect(getOffsetForLyricAnchor({ playbackTime: 90, lyricTime: 10 })).toBe(30);
+    expect(getOffsetForLyricAnchor({ playbackTime: 10, lyricTime: 80 })).toBe(-60);
+    expect(getOffsetForLyricAnchor({ playbackTime: 90, lyricTime: 10 })).toBe(60);
   });
 });

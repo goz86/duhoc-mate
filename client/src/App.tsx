@@ -2938,7 +2938,7 @@ export default function App() {
 
   const adjustLyricsOffset = (delta: number) => {
     setLyricsOffset((prev) => {
-      const next = Math.max(-20, Math.min(30, Number((prev + delta).toFixed(1))));
+      const next = Math.max(-60, Math.min(60, Number((prev + delta).toFixed(1))));
       if (currentVideo.id) {
         localStorage.setItem(`duhocmate_lyrics_offset_${currentVideo.id}`, String(next));
       }
