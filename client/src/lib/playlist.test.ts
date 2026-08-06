@@ -11,11 +11,11 @@ describe('getNextPlaylistItem', () => {
     expect(next?.id).toBe('top');
   });
 
-  it('returns null when there is no queued item', () => {
+  it('returns null when playlist is empty', () => {
     expect(getNextPlaylistItem([])).toBeNull();
   });
 
-  it('skips played and currently playing items', () => {
+  it('skips played and currently playing items when queued items exist', () => {
     const next = getNextPlaylistItem([
       { id: 'played', videoId: 'a', title: 'Played', votes: 10, status: 'played' },
       { id: 'playing', videoId: 'b', title: 'Playing', votes: 9, status: 'playing' },
@@ -34,4 +34,14 @@ describe('getNextPlaylistItem', () => {
 
     expect(next?.id).toBe('third');
   });
+
+  it('loops back to the beginning when all items in playlist have been played', () => {
+    const next = getNextPlaylistItem([
+      { id: 'song1', videoId: 'a', title: 'Song 1', status: 'played' },
+      { id: 'song2', videoId: 'b', title: 'Song 2', status: 'played' },
+    ], { playlistItemId: 'song2', videoId: 'b' });
+
+    expect(next?.id).toBe('song1');
+  });
 });
+

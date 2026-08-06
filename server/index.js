@@ -870,6 +870,9 @@ setTimeout(async () => {
   syncRoomDirectoryWithSupabase().catch(err => {
     console.error('[Supabase] Initial room directory sync failed:', err.message);
   });
+  syncRoomStatesWithSupabase().catch(err => {
+    console.error('[Supabase] Initial room states sync failed:', err.message);
+  });
 
   console.log('[TRENDING CACHE] Starting parallel background pre-fetch for vpop, kpop, vinahouse...');
   await Promise.allSettled([
@@ -2095,6 +2098,7 @@ const scheduleEmptyRoomCleanup = (roomId) => {
     const room = rooms.get(roomId);
     if (room && room.members.length === 0) {
       rememberRoom(room);
+      rememberRoomState(room);
       clearVocabMatchTimers(roomId);
       clearTopikGameTimer(roomId);
       rooms.delete(roomId);
@@ -2229,6 +2233,48 @@ const syncRoomDirectoryWithSupabase = async () => {
   }
 };
 
+const syncRoomStatesWithSupabase = async () => {
+  if (!SUPABASE_KEY) return;
+  try {
+    const response = await fetch(`${ROOM_STATES_ENDPOINT}?select=*`, {
+      headers: supabaseHeaders(),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        for (const row of data) {
+          if (row.room_id && !savedRoomState.has(row.room_id)) {
+            const restoredState = {
+              roomId: row.room_id,
+              playlist: Array.isArray(row.playlist) ? row.playlist : [],
+              videoState: row.current_video || {},
+              chatMessages: Array.isArray(row.chat_messages) ? row.chat_messages : [],
+              pomodoro: row.pomodoro || createDefaultPomodoro(),
+              ideaTasks: Array.isArray(row.idea_tasks) ? row.idea_tasks : [],
+              roomTitle: row.room_title || '',
+              isPrivate: !!row.is_private,
+              hostAvatarUrl: row.host_avatar_url || '',
+              tiktokVideoId: row.tiktok_video_id || '',
+              hostFriendCode: row.host_friend_code || '',
+              hostUsername: row.host_username || '',
+              hostReconnectUntil: row.host_reconnect_until || null,
+              studyTable: row.study_table || createDefaultStudyTable(),
+              pinnedMessage: row.pinned_message || null,
+            };
+            savedRoomState.set(row.room_id, restoredState);
+          }
+        }
+        console.log(`[Supabase] Synced ${data.length} room states from database on startup.`);
+        saveRoomState();
+      }
+    } else {
+      console.warn('[Supabase] Failed to fetch room states list on startup:', response.status, await response.text());
+    }
+  } catch (err) {
+    console.error('[Supabase] syncRoomStatesWithSupabase error:', err.message);
+  }
+};
+
 const broadcastRoomDirectory = () => {
   io.emit('active-rooms-list', getRoomDirectoryList());
 };
@@ -2307,6 +2353,10 @@ io.on('connection', (socket) => {
   socket.on('join-room', async ({ roomId, username, ideaTasks = [], roomTitle, isPrivate, password, hostAvatarUrl, roomAvatarUrl, friendCode, avatarUrl }) => {
     const rememberedRoom = roomDirectory.get(roomId);
     const restoredState = savedRoomState.get(roomId) || await loadRoomStateFromSupabase(roomId) || {};
+    if (restoredState && restoredState.roomId && !savedRoomState.has(roomId)) {
+      savedRoomState.set(roomId, restoredState);
+      saveRoomState();
+    }
     // Khởi tạo phòng nếu chưa tồn tại
     if (!rooms.has(roomId)) {
       const incomingHash = password ? crypto.createHash('sha256').update(password).digest('hex') : '';
@@ -3920,6 +3970,7 @@ const listen = (server, port, label) => {
 
 listen(httpServer, PORT, 'primary');
 void syncRoomDirectoryWithSupabase();
+void syncRoomStatesWithSupabase();
 
 if (PORT !== DEFAULT_PORT && !DISABLE_FALLBACK_PORT) {
   const fallbackServer = createServer(app);
