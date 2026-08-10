@@ -22,6 +22,7 @@ export interface TopikWord {
   vi: string
   en: string
   level: number
+  sinoVi?: string
   example?: string
   pronunciation?: string
   ai_examples?: { sentence: string; meaning: string }[]
@@ -33,22 +34,41 @@ const EMPTY_TOPIK_PROGRESS: TopikProgressState = { knownKeys: [], unknownKeys: [
 
 // ─── localStorage helpers ───────────────────────────────────────
 
+import { TOPIK_VOCABULARY_DATA } from './topikVocabularyData'
+
 function getLocalWords(): TopikWord[] {
+  let local: TopikWord[] = []
   try {
     const raw = localStorage.getItem(LOCAL_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) {
-      // Dữ liệu bị hỏng, xóa đi
-      localStorage.removeItem(LOCAL_KEY)
-      return []
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        local = parsed
+      }
     }
-    return parsed
   } catch {
-    // JSON bị lỗi, xóa dữ liệu hỏng
     localStorage.removeItem(LOCAL_KEY)
-    return []
   }
+
+  // Merge with curated TOPIK_VOCABULARY_DATA without duplicates
+  const merged = [...local]
+  for (const item of TOPIK_VOCABULARY_DATA) {
+    if (!merged.some(w => w.ko === item.ko && w.level === item.level)) {
+      merged.push({
+        id: item.id,
+        ko: item.ko,
+        vi: item.vi,
+        en: item.en,
+        level: item.level,
+        sinoVi: item.sinoVi,
+        pronunciation: item.pronunciation,
+        ai_examples: item.ai_examples,
+        created_at: item.created_at,
+      })
+    }
+  }
+
+  return merged
 }
 
 function saveLocalWords(words: TopikWord[]) {

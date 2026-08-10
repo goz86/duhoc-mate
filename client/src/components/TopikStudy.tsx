@@ -22,13 +22,15 @@ import TopikExamComponent from './TopikExam'
 import TopikGrammarLab from './TopikGrammarLab'
 
 interface TopikCard {
-  id: number
+  id: number | string
   ko: string
   pronunciation?: string
   vi: string
   en: string
   level: number
+  sinoVi?: string
   example?: string
+  ai_examples?: { sentence: string; meaning: string }[]
   isAi?: boolean // Được tạo bởi AI
 }
 
@@ -212,13 +214,15 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
     getWordsByLevel(selectedLevel).then(stored => {
       if (cancelled) return
       const mapped: TopikCard[] = stored.map((w, i) => ({
-        id: 1000 + i + (selectedLevel * 100),
+        id: w.id || (1000 + i + (selectedLevel * 100)),
         ko: w.ko,
         pronunciation: w.pronunciation,
         vi: w.vi,
         en: w.en,
         level: w.level,
+        sinoVi: w.sinoVi,
         example: w.example,
+        ai_examples: w.ai_examples,
         isAi: true,
       }))
       setAiWords(mapped)
@@ -727,10 +731,28 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
                     ) : (
                       <>
                         <div className="text-2xl font-black text-brand-terracotta">{currentCard.vi}</div>
+                        {currentCard.sinoVi && (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100/90 border border-amber-200 text-amber-900 text-xs font-black shadow-xs my-1">
+                            🏮 Hán-Việt: <span className="underline decoration-amber-400">{currentCard.sinoVi}</span>
+                          </div>
+                        )}
                         {currentCard.en && (
                           <div className="text-sm font-bold text-brand-brown-light/80 mt-1">({currentCard.en})</div>
                         )}
                       </>
+                    )}
+                    {currentCard.ai_examples && currentCard.ai_examples.length > 0 && (
+                      <div className="w-full max-w-[280px] sm:max-w-[340px] md:max-w-[400px] space-y-1.5 text-left bg-amber-50/60 p-2.5 rounded-2xl border border-amber-100 my-2">
+                        <div className="text-[11px] font-black text-amber-900 uppercase tracking-wider flex items-center gap-1">
+                          💡 Ví dụ giao tiếp & ngữ cảnh:
+                        </div>
+                        {currentCard.ai_examples.map((ex, exIdx) => (
+                          <div key={exIdx} className="text-xs text-brand-brown-dark font-medium leading-relaxed">
+                            <span className="font-bold text-brand-terracotta">• {ex.sentence}</span>
+                            <span className="text-brand-brown-light block text-[11px] pl-2">{ex.meaning}</span>
+                          </div>
+                        ))}
+                      </div>
                     )}
                     {currentCard.example && (
                       <div className="ai-example-bubble flex items-center gap-2 justify-center w-full max-w-[280px] sm:max-w-[340px] md:max-w-[400px]">
