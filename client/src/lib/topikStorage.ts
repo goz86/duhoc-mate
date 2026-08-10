@@ -62,7 +62,6 @@ function getLocalWords(): TopikWord[] {
         level: item.level,
         sinoVi: item.sinoVi,
         pronunciation: item.pronunciation,
-        ai_examples: item.ai_examples,
         created_at: item.created_at,
       })
     }
