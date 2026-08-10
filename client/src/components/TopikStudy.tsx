@@ -753,19 +753,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
                         )}
                       </>
                     )}
-                    {currentCard.ai_examples && currentCard.ai_examples.length > 0 && (
-                      <div className="w-full max-w-[280px] sm:max-w-[340px] md:max-w-[400px] space-y-1.5 text-left bg-amber-50/60 p-2.5 rounded-2xl border border-amber-100 my-2">
-                        <div className="text-[11px] font-black text-amber-900 uppercase tracking-wider flex items-center gap-1">
-                          💡 Ví dụ giao tiếp & ngữ cảnh:
-                        </div>
-                        {currentCard.ai_examples.map((ex, exIdx) => (
-                          <div key={exIdx} className="text-xs text-brand-brown-dark font-medium leading-relaxed">
-                            <span className="font-bold text-brand-terracotta">• {ex.sentence}</span>
-                            <span className="text-brand-brown-light block text-[11px] pl-2">{ex.meaning}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+
                     {currentCard.example && (
                       <div className="ai-example-bubble flex items-center gap-2 justify-center w-full max-w-[280px] sm:max-w-[340px] md:max-w-[400px]">
                         <span className="text-xs text-brand-brown-light italic leading-relaxed text-center">
