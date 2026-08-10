@@ -238,7 +238,6 @@ export default function PersonalDashboard({ profile, username, onStartRoom, onOp
             <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
               <div>
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-brand-terracotta/20 bg-brand-terracotta/8 px-3 py-1 text-xs font-bold text-brand-terracotta">
-                  <Sparkles size={13} />
                   <span>Lộ trình cá nhân hóa</span>
                 </div>
                 <h1 className="mt-3 text-2xl font-black tracking-tight text-stone-900 sm:text-3xl">
@@ -360,7 +359,6 @@ export default function PersonalDashboard({ profile, username, onStartRoom, onOp
             {/* Smart Hint Box */}
             <div className="mt-4 rounded-2xl border border-brand-terracotta/15 bg-brand-terracotta/5 p-3.5">
               <div className="flex items-center gap-1.5 text-xs font-bold text-brand-terracotta">
-                <Sparkles size={13} />
                 <span>Gợi ý hôm nay</span>
               </div>
               <p className="mt-1 text-[11px] font-medium leading-relaxed text-stone-600">

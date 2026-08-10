@@ -269,7 +269,7 @@ export default function TopikGrammarLab({ roomId, socket }: Props) {
           { key: 'practice' as const, label: 'Luyện nhanh', icon: ListChecks },
           { key: 'mistakes' as const, label: `Sổ lỗi sai (${mistakes.length})`, icon: AlertCircle },
           { key: 'room-games' as const, label: 'Chơi game', icon: Gamepad2 },
-          { key: 'ai-generator' as const, label: 'AI tạo ngữ pháp', icon: Sparkles },
+          { key: 'ai-generator' as const, label: 'Tạo ngữ pháp', icon: BookOpen },
         ].map(item => {
           const Icon = item.icon
           return (
@@ -346,7 +346,6 @@ export default function TopikGrammarLab({ roomId, socket }: Props) {
                 onClick={() => startPractice(selectedPattern.id)}
                 className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-black text-white shadow-sm transition hover:bg-emerald-600"
               >
-                <Sparkles size={16} />
                 Luyện nhanh 5 câu
               </button>
             </div>

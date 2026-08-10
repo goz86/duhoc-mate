@@ -954,7 +954,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
                   onClick={handleUseNearestExam}
                   className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition cursor-pointer shadow-sm flex items-center gap-1.5"
                 >
-                  <Sparkles size={14} /> Mặc định: Kỳ thi gần nhất ({nextExamInfo.displayDate})
+                  Mặc định: Kỳ thi gần nhất ({nextExamInfo.displayDate})
                 </button>
               )}
               <button

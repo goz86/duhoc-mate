@@ -110,10 +110,9 @@ export default function TopikGrammarGenerator({ existingTitles }: Props) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 text-brand-terracotta">
-              <Sparkles size={18} />
               <span className="text-xs font-black uppercase">Xưởng nội dung TOPIK</span>
             </div>
-            <h3 className="mt-2 text-2xl font-black text-brand-brown-dark">AI tạo bộ ngữ pháp chuẩn 10 + 5</h3>
+            <h3 className="mt-2 text-2xl font-black text-brand-brown-dark">Tạo bộ ngữ pháp chuẩn 10 + 5</h3>
           </div>
           <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-right">
             <div className="text-xs font-black text-emerald-700">TOPIK {level}</div>
@@ -175,7 +174,7 @@ export default function TopikGrammarGenerator({ existingTitles }: Props) {
             disabled={generating}
             className="inline-flex items-center gap-2 rounded-xl bg-brand-terracotta px-5 py-2.5 text-sm font-black text-white transition hover:bg-brand-brown-dark disabled:cursor-wait disabled:opacity-60"
           >
-            {generating ? <LoaderCircle size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            {generating && <LoaderCircle size={16} className="animate-spin" />}
             {generating ? progress || 'Đang tạo...' : 'Tạo bộ nội dung'}
           </button>
         </div>

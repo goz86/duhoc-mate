@@ -4651,7 +4651,6 @@ export default function App() {
                           onClick={() => handleOpenAiSuggest('vpop')}
                           className="inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-brand-terracotta to-brand-terracotta-dark text-white rounded-lg hover:shadow transition font-black text-xs cursor-pointer active:scale-95 shadow-sm border border-brand-terracotta/10"
                         >
-                          <Sparkles size={13} className="text-amber-200" />
                           <span>{t('playlist.aiSuggest')}</span>
                         </button>
                         {[
@@ -4935,7 +4934,6 @@ export default function App() {
                         <div className="mt-2 rounded-2xl border border-brand-terracotta-light/20 bg-brand-light/30 p-3">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <Sparkles size={13} className="text-brand-terracotta shrink-0" />
                               <span className="text-[11px] font-black uppercase tracking-wide text-brand-brown-dark truncate">
                                 Nghe tiếp · {relatedGenre || 'cùng thể loại'}
                               </span>
@@ -5654,7 +5652,6 @@ export default function App() {
 
             <div className="flex items-center justify-between mb-4 relative z-10">
               <div className="flex items-center gap-2">
-                <Sparkles className="text-brand-terracotta animate-pulse" size={18} />
                 <h3 className="text-sm font-black text-brand-brown-dark dark:text-white uppercase tracking-wider">
                   AI Đề xuất nhạc xu hướng
                 </h3>
@@ -5698,7 +5695,6 @@ export default function App() {
             {aiSuggestions.length > 0 && (
               <div className="flex items-center justify-between gap-2 mb-3.5 px-3 py-2 rounded-2xl bg-gradient-to-r from-brand-terracotta/10 via-amber-500/10 to-transparent border border-brand-terracotta/20 dark:bg-zinc-800/70 relative z-10">
                 <div className="flex items-center gap-2 min-w-0">
-                  <Sparkles size={15} className="text-brand-terracotta animate-pulse shrink-0" />
                   <span className="text-[11px] font-bold text-brand-brown-dark dark:text-zinc-200 truncate">
                     Top {Math.min(30, aiSuggestions.length)} bài hát hot nhất
                   </span>
@@ -5730,7 +5726,6 @@ export default function App() {
               <div className="max-h-[62vh] sm:max-h-[68vh] space-y-2.5 overflow-y-auto pr-1.5 relative z-10 custom-scrollbar">
                 {aiLoading && (
                   <div className="text-[10px] font-bold text-brand-terracotta flex items-center gap-1.5 pb-1 animate-pulse">
-                    <Sparkles size={12} />
                     <span>Đang tải danh sách mới nhất từ YouTube...</span>
                   </div>
                 )}
