@@ -20,6 +20,7 @@ import {
 import { topikWordProgressKey } from '../lib/topikProgress'
 import TopikExamComponent from './TopikExam'
 import TopikGrammarLab from './TopikGrammarLab'
+import { TOPIK_VOCABULARY_DATA } from '../lib/topikVocabularyData'
 
 interface TopikCard {
   id: number | string
@@ -34,8 +35,19 @@ interface TopikCard {
   isAi?: boolean // Được tạo bởi AI
 }
 
-// ── Bộ từ vựng TOPIK tĩnh (70 từ core) ─────────────────────────
+// ── Bộ từ vựng TOPIK đầy đủ ─────────────────────────
 const VOCAB_BANK: TopikCard[] = [
+  ...TOPIK_VOCABULARY_DATA.map((item, idx) => ({
+    id: `vdata-${item.id || idx}`,
+    ko: item.ko,
+    vi: item.vi,
+    en: item.en,
+    level: item.level,
+    sinoVi: item.sinoVi,
+    pronunciation: item.pronunciation,
+    example: item.ai_examples?.[0]?.sentence || '',
+    ai_examples: item.ai_examples,
+  })),
   // Level 1
   { id: 1, ko: '안녕하세요', vi: 'Xin chào (lịch sự)', en: 'Hello (formal)', level: 1, example: '안녕하세요! 반갑습니다.' },
   { id: 2, ko: '감사합니다', pronunciation: '감사함니다', vi: 'Cảm ơn', en: 'Thank you', level: 1, example: '도와주셔서 감사합니다.' },

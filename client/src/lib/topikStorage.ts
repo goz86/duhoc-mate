@@ -166,7 +166,7 @@ export async function getWordsByLevel(level: number): Promise<TopikWord[]> {
           }
         }
         saveLocalWords(merged)
-        return data
+        return merged.filter(w => w.level === level)
       }
     } catch (err) {
       console.warn('[TopikStorage] Supabase read fallback:', err)
