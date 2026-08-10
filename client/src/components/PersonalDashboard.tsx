@@ -13,7 +13,6 @@ import {
   ListChecks,
   Play,
   RotateCcw,
-  Sparkles,
   Target,
   Timer,
   Trophy,

@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import {
   ChevronLeft, ChevronRight, Calendar, RotateCcw, BookOpen,
   CheckCircle2, XCircle, Volume2, Settings, Loader2,
-  Plus, Zap, Key, Shuffle, ClipboardList, Sparkles,
+  Plus, Zap, Key, Shuffle, ClipboardList,
 } from 'lucide-react'
 import {
   generateExample, generateNewWords, hasApiKey, getApiKey, setApiKey,

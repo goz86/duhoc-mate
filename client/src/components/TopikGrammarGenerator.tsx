@@ -3,7 +3,6 @@ import {
   AlertCircle,
   CheckCircle2,
   LoaderCircle,
-  Sparkles,
 } from 'lucide-react'
 import {
   generateGrammarBundle,

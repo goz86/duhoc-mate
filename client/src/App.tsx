@@ -9,7 +9,7 @@ import {
   Headphones, Music2, ChevronRight, Search,
   Minimize2, Palette, Settings, Crown,
   Link2, Volume2, VolumeX, SkipForward, Plus, X, Trash2,
-  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, Sparkles, ClipboardList, Timer, Gamepad2, ListPlus
+  Mic, MicOff, PhoneOff, GripVertical, Camera, Pin, MoreVertical, ClipboardList, Timer, Gamepad2, ListPlus
 } from 'lucide-react';
 import { useVoiceChat } from './hooks/useVoiceChat';
 import { useTranslation } from 'react-i18next';

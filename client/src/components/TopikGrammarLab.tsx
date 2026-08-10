@@ -6,7 +6,6 @@ import {
   Gamepad2,
   ListChecks,
   RotateCcw,
-  Sparkles,
   Timer,
   Trash2,
   Trophy,
