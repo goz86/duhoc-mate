@@ -700,6 +700,1806 @@ const CORE_TOPIK_GRAMMAR_PATTERNS: TopikGrammarPattern[] = [
 
 const EXTRA_TOPIK_GRAMMAR_PATTERNS: TopikGrammarPattern[] = [
   {
+    id: 'g1-께서-께서는',
+    level: 1,
+    title: 'N + 께서, 께서는',
+    formula: 'N + 께서/께서는',
+    meaningVi: 'Dạng kính ngữ của 이/가, 은/는',
+    meaningEn: 'Honorific subject/topic marker',
+    examples: [
+      { ko: '선생님께서 한국어를 가르치세요.', vi: 'Cô giáo dạy tiếng Hàn.' }
+    ],
+    commonMistake: 'Dùng kính ngữ 께서 đi kèm với động từ kính ngữ 시/으시.',
+  },
+  {
+    id: 'g1-은-는-n2-은-는',
+    level: 1,
+    title: 'N1 + 은/는 ... N2 + 은/는',
+    formula: 'N1 은/는 ... N2 은/는',
+    meaningVi: 'Tiểu từ biểu hiện ý nghĩa đối chiếu',
+    meaningEn: 'Contrastive topic markers',
+    examples: [
+      { ko: '사과는 비싸요. 오렌지는 싸요.', vi: 'Táo thì đắt. Cam thì rẻ.' }
+    ],
+    commonMistake: 'Dùng khi đối chiếu 2 đối tượng có đặc điểm trái ngược.',
+  },
+  {
+    id: 'g1-에-위치',
+    level: 1,
+    title: 'N + 에 (위치)',
+    formula: 'N + 에',
+    meaningVi: 'Tiểu từ chỉ địa điểm (ở, tại)',
+    meaningEn: 'Static location marker',
+    examples: [
+      { ko: '저는 집에 있어요.', vi: 'Tôi ở nhà.' }
+    ],
+    commonMistake: 'Chỉ đi với động từ tồn tại như 있다/없다/살다, không đi với động từ hành động.',
+  },
+  {
+    id: 'g1-에-목적지',
+    level: 1,
+    title: 'N + 에 (목적지)',
+    formula: 'N + 에',
+    meaningVi: 'Tiểu từ chỉ đích đến (đến)',
+    meaningEn: 'Destination marker',
+    examples: [
+      { ko: '학교에 가요.', vi: 'Tôi đi đến trường.' }
+    ],
+    commonMistake: 'Đi với các động từ di chuyển: 가다, 오다, 다니다, 도착하다.',
+  },
+  {
+    id: 'g1-에-시간',
+    level: 1,
+    title: 'N + 에 (시간)',
+    formula: 'N + 에',
+    meaningVi: 'Tiểu từ chỉ thời gian (lúc, vào lúc)',
+    meaningEn: 'Time marker',
+    examples: [
+      { ko: '저는 아침 7시에 일어나요.', vi: 'Tôi thức dậy vào lúc 7 giờ sáng.' }
+    ],
+    commonMistake: 'Không gắn 에 sau 그저께, 어제, 오늘, 내일, 모레.',
+  },
+  {
+    id: 'g1-으-로',
+    level: 1,
+    title: 'N + (으)로',
+    formula: 'N + (으)로',
+    meaningVi: 'Bằng (nguyên liệu, dụng cụ, phương tiện)',
+    meaningEn: 'Method / means / instrument marker',
+    examples: [
+      { ko: '버스로 학교에 가요.', vi: 'Tôi đến trường bằng xe buýt.' }
+    ],
+    commonMistake: 'Danh từ kết thúc bằng ㄹ hoặc không chim dùng 로, có chim dùng 으로.',
+  },
+  {
+    id: 'g1-와-과-하고-n2',
+    level: 1,
+    title: 'N1 + 와/과/하고 + N2',
+    formula: 'N1 와/과/하고/이랑 N2',
+    meaningVi: 'Và / cùng với',
+    meaningEn: 'And / with',
+    examples: [
+      { ko: '빵하고 우유를 먹어요.', vi: 'Tôi ăn bánh mì và sữa.' }
+    ],
+    commonMistake: '하고 dùng phổ biến trong giao tiếp; 와/과 dùng trong văn viết.',
+  },
+  {
+    id: 'g1-도',
+    level: 1,
+    title: 'N + 도',
+    formula: 'N + 도',
+    meaningVi: 'Cũng',
+    meaningEn: 'Also / too',
+    examples: [
+      { ko: '저도 학생입니다.', vi: 'Tôi cũng là học sinh.' }
+    ],
+    commonMistake: 'Thay thế cho 이/가, 은/는, 을/를; không dùng chồng đè lên nhau.',
+  },
+  {
+    id: 'g1-에게-한테-께',
+    level: 1,
+    title: 'N + 에게, 한테, 께',
+    formula: 'N + 에게/한테/께',
+    meaningVi: 'Cho (làm gì cho ai / hướng tới ai)',
+    meaningEn: 'To / for (person)',
+    examples: [
+      { ko: '친구에게 선물을 줘요.', vi: 'Tôi tặng quà cho bạn.' }
+    ],
+    commonMistake: '께 dùng cho người lớn tuổi/kính ngữ; 한테 dùng nói chuyện thân mật; 에게 dùng văn viết.',
+  },
+  {
+    id: 'g1-입니다',
+    level: 1,
+    title: 'N + 입니다',
+    formula: 'N + 입니다',
+    meaningVi: 'Là (câu trần thuật trang trọng)',
+    meaningEn: 'Is/am/are (formal standard)',
+    examples: [
+      { ko: '저는 베트남 사람입니다.', vi: 'Tôi là người Việt Nam.' }
+    ],
+    commonMistake: 'Viết liền vào danh từ đứng trước, không cách.',
+  },
+  {
+    id: 'g1-입니까',
+    level: 1,
+    title: 'N + 입니까?',
+    formula: 'N + 입니까?',
+    meaningVi: 'Có phải là...? (câu hỏi trang trọng)',
+    meaningEn: 'Is/are it...? (formal question)',
+    examples: [
+      { ko: '학생입니까?', vi: 'Có phải bạn là học sinh không?' }
+    ],
+    commonMistake: 'Dạng nghi vấn tương ứng của N입니다.',
+  },
+  {
+    id: 'g1-이-가아닙니다',
+    level: 1,
+    title: 'N + 이/가 아닙니다',
+    formula: 'N + 이/가 아닙니다',
+    meaningVi: 'Không phải là (phủ định của 입니다)',
+    meaningEn: 'Is not (formal)',
+    examples: [
+      { ko: '저는 의사가 아닙니다.', vi: 'Tôi không phải là bác sĩ.' }
+    ],
+    commonMistake: 'Phải có tiểu từ 이/가 sau danh từ trước 아닙니다.',
+  },
+  {
+    id: 'g1-예요-이에요',
+    level: 1,
+    title: 'N + 예요/이에요',
+    formula: 'N + 예요/이에요',
+    meaningVi: 'Là (câu trần thuật thân mật lịch sự)',
+    meaningEn: 'Is/am/are (polite informal)',
+    examples: [
+      { ko: '이거는 책이에요.', vi: 'Cái này là sách.' }
+    ],
+    commonMistake: 'Danh từ có chim + 이에요, không chim + 예요.',
+  },
+  {
+    id: 'g1-이-가아니에요',
+    level: 1,
+    title: 'N + 이/가 아니에요',
+    formula: 'N + 이/가 아니에요',
+    meaningVi: 'Không phải là (dạng thân mật lịch sự)',
+    meaningEn: 'Is not (polite informal)',
+    examples: [
+      { ko: '저것은 제 가방이 아니에요.', vi: 'Cái kia không phải là cặp của tôi.' }
+    ],
+    commonMistake: 'Phủ định dạng thân mật của 이에요/예요.',
+  },
+  {
+    id: 'g1-습니다',
+    level: 1,
+    title: 'V/A + -ㅂ/습니다',
+    formula: 'V/A + -ㅂ/습니다',
+    meaningVi: 'Đuôi câu trần thuật trang trọng',
+    meaningEn: 'Formal polite ending',
+    examples: [
+      { ko: '저는 갑니다.', vi: 'Tôi đi.' }
+    ],
+    commonMistake: 'Không chim dùng -ㅂ니다, có chim dùng -습니다.',
+  },
+  {
+    id: 'g1-습니까',
+    level: 1,
+    title: 'V/A + -ㅂ/습니까?',
+    formula: 'V/A + -ㅂ/습니까?',
+    meaningVi: 'Đuôi câu hỏi trang trọng',
+    meaningEn: 'Formal polite question ending',
+    examples: [
+      { ko: '어디에 갑니까?', vi: 'Bạn đi đâu vậy?' }
+    ],
+    commonMistake: 'Không chim dùng -ㅂ니까, có chim dùng -습니까.',
+  },
+  {
+    id: 'g1-아-어요',
+    level: 1,
+    title: 'V/A + 아/어요',
+    formula: 'V/A + 아/어요',
+    meaningVi: 'Đuôi câu trần thuật / hỏi thân mật lịch sự',
+    meaningEn: 'Polite informal ending',
+    examples: [
+      { ko: '지금 뭐 해요?', vi: 'Bây giờ bạn làm gì?' }
+    ],
+    commonMistake: 'Nguyên âm ㅏ, ㅗ chia 아요; các nguyên âm còn lại chia 어요; 하다 chia 해요.',
+  },
+  {
+    id: 'g1-았-었다',
+    level: 1,
+    title: 'V/A + 았/었다',
+    formula: 'V/A + 았/었어요',
+    meaningVi: 'Thì quá khứ (đã...)',
+    meaningEn: 'Past tense',
+    examples: [
+      { ko: '어제 영화를 봤어요.', vi: 'Hôm qua tôi đã xem phim.' }
+    ],
+    commonMistake: 'ㅏ/ㅗ chia 았어요; các nguyên âm khác chia 었어요; 하다 chia 했어요.',
+  },
+  {
+    id: 'g1-겠다',
+    level: 1,
+    title: 'V/A + 겠다',
+    formula: 'V/A + 겠습니다/겠어요',
+    meaningVi: 'Thì tương lai / ý định / phỏng đoán',
+    meaningEn: 'Future tense / intention',
+    examples: [
+      { ko: '내일 시험을 보겠습니다.', vi: 'Ngày mai tôi sẽ thi.' }
+    ],
+    commonMistake: 'Dùng thể hiện quyết tâm trang trọng hoặc phỏng đoán hiện tại.',
+  },
+  {
+    id: 'g1-으-시다',
+    level: 1,
+    title: 'V/A + (으)시다',
+    formula: 'V/A + (으)시-',
+    meaningVi: 'Kính ngữ hóa động từ, tính từ',
+    meaningEn: 'Honorific verb suffix',
+    examples: [
+      { ko: '선생님께서 오십니다.', vi: 'Thầy giáo đang đến.' }
+    ],
+    commonMistake: 'Dùng khi nói về hành động của người lớn tuổi/cấp trên.',
+  },
+  {
+    id: 'g1-으-세요-으-십시오',
+    level: 1,
+    title: 'V + (으)세요 / (으)십시오',
+    formula: 'V + (으)세요',
+    meaningVi: 'Câu yêu cầu lịch sự (hãy, mời)',
+    meaningEn: 'Polite imperative',
+    examples: [
+      { ko: '여기에 앉으세요.', vi: 'Mời ngồi ở đây.' }
+    ],
+    commonMistake: 'Không dùng cho tính từ.',
+  },
+  {
+    id: 'g1-으-려고하다',
+    level: 1,
+    title: 'V + (으)려고 하다',
+    formula: 'V + (으)려고 하다',
+    meaningVi: 'Định làm gì (dự định)',
+    meaningEn: 'Plan to do something',
+    examples: [
+      { ko: '주말에 친구를 만나려고 해요.', vi: 'Tôi định cuối tuần gặp bạn.' }
+    ],
+    commonMistake: 'Không dùng thì quá khứ ở vế (으)려고; chỉ chia quá khứ ở 하다.',
+  },
+  {
+    id: 'g1-으-러가다-오다',
+    level: 1,
+    title: 'V + (으)러 가다/오다',
+    formula: 'V + (으)러 가다/오다',
+    meaningVi: 'Đi/đến để làm gì (mục đích di chuyển)',
+    meaningEn: 'Go/come to do something',
+    examples: [
+      { ko: '한국어를 배우러 한국에 왔어요.', vi: 'Tôi đến Hàn Quốc để học tiếng Hàn.' }
+    ],
+    commonMistake: 'Động từ phía sau phải là động từ di chuyển (가다, 오다, 다니다).',
+  },
+  {
+    id: 'g1-으-시다',
+    level: 1,
+    title: 'V + (으)ㅂ시다',
+    formula: 'V + (으)ㅂ시다',
+    meaningVi: 'Câu rủ rê ngang hàng hoặc thấp hơn (hãy... đi)',
+    meaningEn: 'Let us do something',
+    examples: [
+      { ko: '같이 갑시다.', vi: 'Chúng ta cùng đi nào.' }
+    ],
+    commonMistake: 'Không dùng rủ rê người lớn tuổi hơn mình.',
+  },
+  {
+    id: 'g1-으-까요',
+    level: 1,
+    title: 'V + (으)ㄹ까요?',
+    formula: 'V + (으)ㄹ까요?',
+    meaningVi: 'Hỏi ý kiến, đề nghị (nhé, nhỉ, nha?)',
+    meaningEn: 'Shall we...? / Should I...?',
+    examples: [
+      { ko: '우리 영화 볼까요?', vi: 'Chúng ta xem phim nhé?' }
+    ],
+    commonMistake: 'Chủ ngữ 1 người = hỏi ý kiến; chủ ngữ nhóm = đề nghị cùng làm.',
+  },
+  {
+    id: 'g1-으-래요',
+    level: 1,
+    title: 'V + (으)ㄹ래요?',
+    formula: 'V + (으)ㄹ래요?',
+    meaningVi: 'Thể hiện ý định, đề nghị thân mật (nhé?)',
+    meaningEn: 'Would you like to...?',
+    examples: [
+      { ko: '커피 한잔 할래요?', vi: 'Uống một tách cà phê nhé?' }
+    ],
+    commonMistake: 'Chỉ dùng trong giao tiếp thân mật.',
+  },
+  {
+    id: 'g1-으-수있다-없다',
+    level: 1,
+    title: 'V + (으)ㄹ 수 있다/없다',
+    formula: 'V + (으)ㄹ 수 있다/없다',
+    meaningVi: 'Có thể / không thể làm gì',
+    meaningEn: 'Can / cannot do something',
+    examples: [
+      { ko: '저는 김치를 만들 수 있어요.', vi: 'Tôi có thể làm kim chi.' }
+    ],
+    commonMistake: 'Thường bị nhầm với 못 V; (으)ㄹ 수 없다 nhấn mạnh khả năng điều kiện.',
+  },
+  {
+    id: 'g1-으-거예요',
+    level: 1,
+    title: 'V/A + (으)ㄹ 거예요',
+    formula: 'V/A + (으)ㄹ 거예요',
+    meaningVi: 'Sẽ làm gì / dự đoán tương lai',
+    meaningEn: 'Will / going to',
+    examples: [
+      { ko: '내일 비가 올 거예요.', vi: 'Ngày mai trời sẽ mưa.' }
+    ],
+    commonMistake: 'Chủ ngữ ngôi 1 = dự định; ngôi 3 = phỏng đoán.',
+  },
+  {
+    id: 'g1-아-어서-nguy-nnh-n',
+    level: 1,
+    title: 'V/A + 아/어서 (nguyên nhân)',
+    formula: 'V/A + 아/어서',
+    meaningVi: 'Vì... nên... (nguyên nhân tự nhiên)',
+    meaningEn: 'Because / so',
+    examples: [
+      { ko: '배가 아파서 병원에 갔어요.', vi: 'Vì đau bụng nên tôi đã đến bệnh viện.' }
+    ],
+    commonMistake: 'Không đi với câu mệnh lệnh/rủ rê ở vế sau.',
+  },
+  {
+    id: 'g1-지만',
+    level: 1,
+    title: 'V/A + 지만',
+    formula: 'V/A + 지만',
+    meaningVi: 'Nhưng (nối 2 vế đối lập)',
+    meaningEn: 'But / although',
+    examples: [
+      { ko: '한국어는 어렵지만 재미있어요.', vi: 'Tiếng Hàn khó nhưng thú vị.' }
+    ],
+    commonMistake: 'Có thể chia thì quá khứ 았/었지만 ở vế trước.',
+  },
+  {
+    id: 'g1-고싶다',
+    level: 1,
+    title: 'V + 고 싶다',
+    formula: 'V + 고 싶다',
+    meaningVi: 'Muốn làm gì',
+    meaningEn: 'Want to do something',
+    examples: [
+      { ko: '영화를 보고 싶어요.', vi: 'Tôi muốn xem phim.' }
+    ],
+    commonMistake: 'Ngôi thứ 3 dùng 고 싶어 하다.',
+  },
+  {
+    id: 'g1-고-v',
+    level: 1,
+    title: 'V + 고 + V',
+    formula: 'V1 + 고 + V2',
+    meaningVi: 'Làm gì rồi làm gì (trình tự)',
+    meaningEn: 'And then',
+    examples: [
+      { ko: '아침을 먹고 학교에 가요.', vi: 'Tôi ăn sáng rồi đến trường.' }
+    ],
+    commonMistake: 'Khác với 아/어서, 2 hành động vế -고 không nhất thiết có quan hệ nguyên nhân.',
+  },
+  {
+    id: 'g1-안-v-a',
+    level: 1,
+    title: '안 + V/A',
+    formula: '안 + V/A',
+    meaningVi: 'Phủ định ngắn (không...)',
+    meaningEn: 'Not (short negative)',
+    examples: [
+      { ko: '오늘 학교에 안 가요.', vi: 'Hôm nay tôi không đến trường.' }
+    ],
+    commonMistake: 'Động từ dạng N하다 đặt 안 trước 하다 (공부 안 하다).',
+  },
+  {
+    id: 'g1-지않다',
+    level: 1,
+    title: 'V/A + 지 않다',
+    formula: 'V/A + 지 않다',
+    meaningVi: 'Phủ định dài (không...)',
+    meaningEn: 'Not (long negative)',
+    examples: [
+      { ko: '저는 그 사람을 만나지 않아요.', vi: 'Tôi không gặp người đó.' }
+    ],
+    commonMistake: 'Trang trọng và tự nhiên hơn trong văn viết so với 안.',
+  },
+  {
+    id: 'g1-못-v',
+    level: 1,
+    title: '못 + V',
+    formula: '못 + V',
+    meaningVi: 'Không thể làm gì (do hoàn cảnh/năng lực)',
+    meaningEn: 'Cannot (short negative)',
+    examples: [
+      { ko: '바빠서 못 갔어요.', vi: 'Vì bận nên tôi đã không thể đi.' }
+    ],
+    commonMistake: 'Không dùng cho tính từ.',
+  },
+  {
+    id: 'g1-부터-n-까지',
+    level: 1,
+    title: 'N + 부터 ~ N + 까지',
+    formula: 'N1 부터 N2 까지',
+    meaningVi: 'Từ... đến... (thời gian / địa điểm)',
+    meaningEn: 'From... to...',
+    examples: [
+      { ko: '9시부터 5시까지 일해요.', vi: 'Tôi làm việc từ 9 giờ đến 5 giờ.' }
+    ],
+    commonMistake: 'Địa điểm thường dùng 에서 ~ 까지.',
+  },
+  {
+    id: 'g1-이-나-선택',
+    level: 1,
+    title: 'N + (이)나 (선택)',
+    formula: 'N + (이)나',
+    meaningVi: 'Hoặc (lựa chọn)',
+    meaningEn: 'Or',
+    examples: [
+      { ko: '커피나 주스를 주세요.', vi: 'Cho tôi cà phê hoặc nước ép.' }
+    ],
+    commonMistake: 'Có chim + 이나, không chim + 나.',
+  },
+  {
+    id: 'g1-이-나-수량',
+    level: 1,
+    title: 'N + (이)나 (수량)',
+    formula: 'N + (이)나',
+    meaningVi: 'Tới, tận, những (nhấn mạnh số lượng nhiều)',
+    meaningEn: 'As many as / up to',
+    examples: [
+      { ko: '어제 10시간이나 잤어요.', vi: 'Hôm qua tôi đã ngủ tới 10 tiếng.' }
+    ],
+    commonMistake: 'Diễn tả sự ngạc nhiên vì số lượng vượt mức kỳ vọng.',
+  },
+  {
+    id: 'g1-만',
+    level: 1,
+    title: 'N + 만',
+    formula: 'N + 만',
+    meaningVi: 'Chỉ',
+    meaningEn: 'Only / just',
+    examples: [
+      { ko: '오늘만 쉬어요.', vi: 'Tôi chỉ nghỉ hôm nay thôi.' }
+    ],
+    commonMistake: 'Thay thế cho 이/가, 을/를; gắn đằng sau trợ từ 에, 에서.',
+  },
+  {
+    id: 'g1-보다-더',
+    level: 1,
+    title: 'N + 보다 (더)',
+    formula: 'N + 보다 (더)',
+    meaningVi: 'So sánh hơn (hơn...)',
+    meaningEn: 'More than',
+    examples: [
+      { ko: '수박이 사과보다 더 커요.', vi: 'Dưa hấu to hơn táo.' }
+    ],
+    commonMistake: 'Danh từ gắn 보다 là danh từ làm mốc so sánh.',
+  },
+  {
+    id: 'g1-에서-한테서',
+    level: 1,
+    title: 'N + 에서/한테서',
+    formula: 'N + 에서/한테서',
+    meaningVi: 'Từ (ai đó / nguồn gốc)',
+    meaningEn: 'From (someone)',
+    examples: [
+      { ko: '친구에게서 편지를 받았어요.', vi: 'Tôi đã nhận được thư từ bạn.' }
+    ],
+    commonMistake: '한테서 dùng trong giao tiếp; 에게서/에서 dùng trong văn viết.',
+  },
+  {
+    id: 'g1-으-n',
+    level: 1,
+    title: 'A + (으)ㄴ N',
+    formula: 'A + (으)ㄴ N',
+    meaningVi: 'Định ngữ của tính từ',
+    meaningEn: 'Adjective modifier',
+    examples: [
+      { ko: '예쁜 옷을 사고 싶어요.', vi: 'Tôi muốn mua chiếc áo đẹp.' }
+    ],
+    commonMistake: 'Tính từ kết thúc bằng 있다/없다 chia dạng -는 (재미있는).',
+  },
+  {
+    id: 'g1-는n',
+    level: 1,
+    title: 'V + 는 N',
+    formula: 'V + 는 N',
+    meaningVi: 'Định ngữ của động từ (hiện tại)',
+    meaningEn: 'Present verb modifier',
+    examples: [
+      { ko: '지금 읽는 책이 재미있어요.', vi: 'Cuốn sách tôi đang đọc rất thú vị.' }
+    ],
+    commonMistake: 'Tất cả động từ thì hiện tại đều dùng -는.',
+  },
+  {
+    id: 'g1-으-n',
+    level: 1,
+    title: 'V + (으)ㄹ N',
+    formula: 'V + (으)ㄹ N',
+    meaningVi: 'Định ngữ của động từ (tương lai / dự định)',
+    meaningEn: 'Future verb modifier',
+    examples: [
+      { ko: '내일 만날 사람을 기다려요.', vi: 'Tôi đang đợi người mà tôi sẽ gặp vào ngày mai.' }
+    ],
+    commonMistake: 'Diễn tả hành động chưa xảy ra.',
+  },
+  {
+    id: 'g2-거나',
+    level: 2,
+    title: 'V/A + 거나',
+    formula: 'V/A + 거나',
+    meaningVi: 'Hoặc',
+    meaningEn: 'Or',
+    examples: [
+      { ko: '주말에 영화를 보거나 책을 읽어요.', vi: 'Cuối tuần tôi xem phim hoặc đọc sách.' }
+    ],
+    commonMistake: 'Dùng cho động từ/tính từ, khác với (이)나 dùng cho danh từ.',
+  },
+  {
+    id: 'g2-으-니까',
+    level: 2,
+    title: 'V/A + (으)니까',
+    formula: 'V/A + (으)니까',
+    meaningVi: 'Vì... nên... (dùng được cho câu mệnh lệnh, đề nghị)',
+    meaningEn: 'Because / so (allows imperative/propositive)',
+    examples: [
+      { ko: '비가 오니까 우산을 가져가세요.', vi: 'Vì trời mưa nên hãy mang theo ô.' }
+    ],
+    commonMistake: 'Vế sau có thể dùng câu rủ rê (으)ㅂ시다 hoặc mệnh lệnh (으)세요.',
+  },
+  {
+    id: 'g1-으-면',
+    level: 1,
+    title: 'V/A + (으)면',
+    formula: 'V/A + (으)면',
+    meaningVi: 'Nếu... thì...',
+    meaningEn: 'If / when',
+    examples: [
+      { ko: '돈이 많으면 집을 살 거예요.', vi: 'Nếu có nhiều tiền tôi sẽ mua nhà.' }
+    ],
+    commonMistake: 'Có chim dùng 으면, không chim/kết thúc bằng ㄹ dùng 면.',
+  },
+  {
+    id: 'g2-으-면좋겠다',
+    level: 2,
+    title: 'V + (으)면 좋겠다',
+    formula: 'V + (으)면 좋겠다',
+    meaningVi: 'Ước gì, nếu... thì tốt',
+    meaningEn: 'I wish that / it would be nice if',
+    examples: [
+      { ko: '한국에 가면 좋겠어요.', vi: 'Nếu được đến Hàn Quốc thì tốt biết mấy.' }
+    ],
+    commonMistake: 'Dùng thể hiện mong muốn chưa thành hiện thực.',
+  },
+  {
+    id: 'g2-으-면서',
+    level: 2,
+    title: 'V + (으)면서',
+    formula: 'V + (으)면서',
+    meaningVi: 'Vừa... vừa... (hai hành động song song)',
+    meaningEn: 'While / at the same time',
+    examples: [
+      { ko: '음악을 들으면서 공부해요.', vi: 'Tôi vừa nghe nhạc vừa học bài.' }
+    ],
+    commonMistake: 'Chủ ngữ ở 2 vế phải là một người.',
+  },
+  {
+    id: 'g2-으-면안되다',
+    level: 2,
+    title: 'V/A + (으)면 안 되다',
+    formula: 'V/A + (으)면 안 되다',
+    meaningVi: 'Không được làm gì (cấm đoán)',
+    meaningEn: 'Must not / not allowed to',
+    examples: [
+      { ko: '교실에서 담배를 피우면 안 돼요.', vi: 'Không được hút thuốc trong lớp học.' }
+    ],
+    commonMistake: 'Diễn tả sự cấm đoán hoặc quy định.',
+  },
+  {
+    id: 'g2-으-려고',
+    level: 2,
+    title: 'V + (으)려고',
+    formula: 'V + (으)려고',
+    meaningVi: 'Định, để làm gì (mục đích)',
+    meaningEn: 'In order to / intending to',
+    examples: [
+      { ko: '살을 빼려고 운동을 해요.', vi: 'Tôi tập thể dục để giảm cân.' }
+    ],
+    commonMistake: 'Khác với (으)러, vế 2 (으)려고 có thể đi với bất kỳ động từ nào.',
+  },
+  {
+    id: 'g1-으-때',
+    level: 1,
+    title: 'V/A + (으)ㄹ 때',
+    formula: 'V/A + (으)ㄹ 때',
+    meaningVi: 'Khi',
+    meaningEn: 'When / at the time of',
+    examples: [
+      { ko: '공부할 때 조용히 하세요.', vi: 'Hãy yên lặng khi học bài.' }
+    ],
+    commonMistake: 'Không dùng với các từ thời gian cố định như 어제, 오늘.',
+  },
+  {
+    id: 'g2-으-게요',
+    level: 2,
+    title: 'V + (으)ㄹ게요',
+    formula: 'V + (으)ㄹ게요',
+    meaningVi: 'Sẽ (hứa hẹn, ý chí của người nói)',
+    meaningEn: 'I will (promise/intent to listener)',
+    examples: [
+      { ko: '제가 도와줄게요.', vi: 'Để tôi giúp cho.' }
+    ],
+    commonMistake: 'Chỉ dùng cho chủ ngữ ngôi thứ 1 (tôi/chúng tôi).',
+  },
+  {
+    id: 'g2-으-것같다',
+    level: 2,
+    title: 'V/A + (으)ㄹ 것 같다',
+    formula: 'V/A + (으)ㄹ 것 같다',
+    meaningVi: 'Hình như, có vẻ (phỏng đoán tương lai/hiện tại)',
+    meaningEn: 'It seems like / I think',
+    examples: [
+      { ko: '비가 올 것 같아요.', vi: 'Hình như trời sắp mưa.' }
+    ],
+    commonMistake: 'Diễn tả phỏng đoán chủ quan nhẹ nhàng.',
+  },
+  {
+    id: 'g2-으-후에',
+    level: 2,
+    title: 'V + (으)ㄴ 후에',
+    formula: 'V + (으)ㄴ 후에',
+    meaningVi: 'Sau khi',
+    meaningEn: 'After doing',
+    examples: [
+      { ko: '밥을 먹은 후에 약을 드세요.', vi: 'Hãy uống thuốc sau khi ăn cơm.' }
+    ],
+    commonMistake: 'Tương đương với -고 나서.',
+  },
+  {
+    id: 'g2-으-적이있다-없다',
+    level: 2,
+    title: 'V + (으)ㄴ 적이 있다/없다',
+    formula: 'V + (으)ㄴ 적이 있다/없다',
+    meaningVi: 'Đã từng / chưa từng (kinh nghiệm)',
+    meaningEn: 'Have / have not experienced',
+    examples: [
+      { ko: '제주도에 가 본 적이 있어요.', vi: 'Tôi đã từng đi đảo Jeju.' }
+    ],
+    commonMistake: 'Thường kết hợp dạng V아/어 본 적이 있다.',
+  },
+  {
+    id: 'g2-으-지-th-igian-되다',
+    level: 2,
+    title: 'V + (으)ㄴ 지 (Thời gian) 되다',
+    formula: 'V + (으)ㄴ 지 되다',
+    meaningVi: 'Được bao lâu kể từ khi...',
+    meaningEn: 'It has been [time] since...',
+    examples: [
+      { ko: '한국에 온 지 1년이 되었어요.', vi: 'Tôi đến Hàn Quốc đã được 1 năm.' }
+    ],
+    commonMistake: 'Khoảng cách chữ: (으)ㄴ cách 지 cách thời gian.',
+  },
+  {
+    id: 'g2-는데-으-데',
+    level: 2,
+    title: 'V/A + 는데/(으)ㄴ데',
+    formula: 'V/A + 는데/(으)ㄴ데',
+    meaningVi: 'Nhưng, mà (tạo bối cảnh vế sau)',
+    meaningEn: 'But / background context',
+    examples: [
+      { ko: '날씨가 좋은데 공원에 갈까요?', vi: 'Thời tiết đẹp, chúng ta ra công viên nhé?' }
+    ],
+    commonMistake: 'Dùng đưa ra lý do, bối cảnh cho câu hỏi/đề nghị.',
+  },
+  {
+    id: 'g1-아-어야하다-되다',
+    level: 1,
+    title: 'V + 아/어야 하다/되다',
+    formula: 'V + 아/어야 하다/되다',
+    meaningVi: 'Phải làm gì (bắt buộc)',
+    meaningEn: 'Must / have to do',
+    examples: [
+      { ko: '내일 시험이 있어서 공부해야 해요.', vi: 'Vì ngày mai có bài kiểm tra nên tôi phải học.' }
+    ],
+    commonMistake: '되다 thân mật thông dụng; 하다 trang trọng văn viết.',
+  },
+  {
+    id: 'g1-아-어보다',
+    level: 1,
+    title: 'V + 아/어 보다',
+    formula: 'V + 아/어 보다',
+    meaningVi: 'Thử làm gì (thử nghiệm/trải nghiệm)',
+    meaningEn: 'Try doing something',
+    examples: [
+      { ko: '이 옷을 한번 입어 보세요.', vi: 'Hãy mặc thử chiếc áo này xem.' }
+    ],
+    commonMistake: 'Thì quá khứ 아/어 봤다 = đã từng trải nghiệm.',
+  },
+  {
+    id: 'g2-아-어도되다-좋다-괜찮다',
+    level: 2,
+    title: 'V + 아/어도 되다/좋다/괜찮다',
+    formula: 'V + 아/어도 되다',
+    meaningVi: 'Được phép làm gì (cho phép)',
+    meaningEn: 'May / allowed to do',
+    examples: [
+      { ko: '여기에 앉아도 돼요?', vi: 'Tôi ngồi đây có được không?' }
+    ],
+    commonMistake: 'Dạng câu hỏi xin phép lịch sự.',
+  },
+  {
+    id: 'g1-아-어주다-드리다',
+    level: 1,
+    title: 'V + 아/어 주다/드리다',
+    formula: 'V + 아/어 주다',
+    meaningVi: 'Làm gì cho ai đó (giúp đỡ)',
+    meaningEn: 'Do something for someone',
+    examples: [
+      { ko: '문 좀 열어 주세요.', vi: 'Làm ơn mở cửa giúp tôi.' }
+    ],
+    commonMistake: '드리다 là dạng kính ngữ của 주다 khi làm cho người lớn.',
+  },
+  {
+    id: 'g1-아-어서-tr-nht',
+    level: 1,
+    title: 'V + 아/어서 (trình tự)',
+    formula: 'V + 아/어서',
+    meaningVi: '...rồi... (chỉ trình tự thời gian gắn kết)',
+    meaningEn: 'And then (sequential action)',
+    examples: [
+      { ko: '친구를 만나서 영화를 봤어요.', vi: 'Tôi gặp bạn rồi đi xem phim.' }
+    ],
+    commonMistake: 'Khác với -고, hai hành động vế -아서/어서 có liên quan mật thiết về địa điểm/mục đích.',
+  },
+  {
+    id: 'g2-겠-ph-ng-o-n',
+    level: 2,
+    title: 'V/A + 겠- (phỏng đoán)',
+    formula: 'V/A + 겠-',
+    meaningVi: 'Chắc là, có lẽ (phỏng đoán)',
+    meaningEn: 'Must be / seems like',
+    examples: [
+      { ko: '음식이 맛있겠어요.', vi: 'Món ăn này chắc là ngon lắm.' }
+    ],
+    commonMistake: 'Diễn tả cảm nhận trực quan phỏng đoán tức thì.',
+  },
+  {
+    id: 'g2-네요',
+    level: 2,
+    title: 'V/A + -네요',
+    formula: 'V/A + -네요',
+    meaningVi: '...thật đấy! (cảm thán trực tiếp)',
+    meaningEn: 'Exclamation ending (surprise)',
+    examples: [
+      { ko: '한국말을 정말 잘하시네요!', vi: 'Bạn nói tiếng Hàn giỏi thật đấy!' }
+    ],
+    commonMistake: 'Bày tỏ sự ngạc nhiên khi trực tiếp chứng kiến.',
+  },
+  {
+    id: 'g1-지말다',
+    level: 1,
+    title: 'V + -지 말다',
+    formula: 'V + -지 말다',
+    meaningVi: 'Đừng làm gì (cấm đoán lịch sự)',
+    meaningEn: 'Do not do...',
+    examples: [
+      { ko: '걱정하지 마세요.', vi: 'Đừng lo lắng.' }
+    ],
+    commonMistake: 'Thường dùng dạng 지 마세요 / 지 마십시오.',
+  },
+  {
+    id: 'g2-지못하다',
+    level: 2,
+    title: 'V + 지 못하다',
+    formula: 'V + 지 못하다',
+    meaningVi: 'Không thể làm gì (do năng lực/hoàn cảnh)',
+    meaningEn: 'Cannot do (long negative)',
+    examples: [
+      { ko: '저는 수영을 하지 못해요.', vi: 'Tôi không thể bơi.' }
+    ],
+    commonMistake: 'Dạng dài tương ứng của 못 V.',
+  },
+  {
+    id: 'g2-지요',
+    level: 2,
+    title: 'V/A + -지요?',
+    formula: 'V/A + -지요?',
+    meaningVi: '...phải không? (xác nhận lại)',
+    meaningEn: 'Right? / Isn’t it?',
+    examples: [
+      { ko: '오늘 날씨가 춥지요?', vi: 'Thời tiết hôm nay lạnh phải không?' }
+    ],
+    commonMistake: 'Thân mật thường nói rút gọn thành -죠?',
+  },
+  {
+    id: 'g1-고있다',
+    level: 1,
+    title: 'V + -고 있다',
+    formula: 'V + -고 있다',
+    meaningVi: 'Đang... (tiếp diễn)',
+    meaningEn: 'Am/is/are doing (progressive)',
+    examples: [
+      { ko: '지금 음악을 듣고 있어요.', vi: 'Bây giờ tôi đang nghe nhạc.' }
+    ],
+    commonMistake: 'Nhấn mạnh hành động đang xảy ra tại thời điểm nói.',
+  },
+  {
+    id: 'g2-아-어지다',
+    level: 2,
+    title: 'A + -아/어지다',
+    formula: 'A + -아/어지다',
+    meaningVi: 'Trở nên... (chuyển biến tính chất)',
+    meaningEn: 'Become / turn into',
+    examples: [
+      { ko: '날씨가 따뜻해졌어요.', vi: 'Thời tiết đã trở nên ấm áp.' }
+    ],
+    commonMistake: 'Biến tính từ thành động từ chỉ sự thay đổi.',
+  },
+  {
+    id: 'g2-대신-에',
+    level: 2,
+    title: 'N + 대신(에)',
+    formula: 'N + 대신(에)',
+    meaningVi: 'Thay vì, thay cho',
+    meaningEn: 'Instead of',
+    examples: [
+      { ko: '커피 대신에 차를 마실래요.', vi: 'Tôi sẽ uống trà thay cho cà phê.' }
+    ],
+    commonMistake: 'Động từ dùng V는 대신에.',
+  },
+  {
+    id: 'g2-대로',
+    level: 2,
+    title: 'N + 대로',
+    formula: 'N + 대로',
+    meaningVi: 'Theo, như',
+    meaningEn: 'As / according to',
+    examples: [
+      { ko: '계획대로 하세요.', vi: 'Hãy làm theo kế hoạch.' }
+    ],
+    commonMistake: 'Gắn trực tiếp sau danh từ.',
+  },
+  {
+    id: 'g2-으-생각이다',
+    level: 2,
+    title: 'V + (으)ㄹ 생각이다',
+    formula: 'V + (으)ㄹ 생각이다',
+    meaningVi: 'Định, có ý định',
+    meaningEn: 'Plan to / think of doing',
+    examples: [
+      { ko: '이번 주말에 등산을 갈 생각이에요.', vi: 'Tôi định đi leo núi vào cuối tuần này.' }
+    ],
+    commonMistake: 'Diễn tả kế hoạch mang tính cá nhân.',
+  },
+  {
+    id: 'g2-으-줄알다-모르다',
+    level: 2,
+    title: 'V + (으)ㄹ 줄 알다/모르다',
+    formula: 'V + (으)ㄹ 줄 알다/모르다',
+    meaningVi: 'Biết / không biết làm gì (kỹ năng)',
+    meaningEn: 'Know / don’t know how to do',
+    examples: [
+      { ko: '저는 운전할 줄 알아요.', vi: 'Tôi biết lái xe.' }
+    ],
+    commonMistake: 'Chỉ khả năng thực hiện một kỹ năng do học tập.',
+  },
+  {
+    id: 'g2-v-n-으-덕분에',
+    level: 2,
+    title: 'V/N + (으)ㄴ 덕분에',
+    formula: 'V + (으)ㄴ 덕분에 / N 덕분에',
+    meaningVi: 'Nhờ vào, nhờ có (kết quả tốt)',
+    meaningEn: 'Thanks to',
+    examples: [
+      { ko: '선생님 덕분에 한국어를 잘하게 되었어요.', vi: 'Nhờ có cô giáo mà tôi đã giỏi tiếng Hàn.' }
+    ],
+    commonMistake: 'Chỉ dùng cho nguyên nhân dẫn đến kết quả tích cực.',
+  },
+  {
+    id: 'g3-으',
+    level: 3,
+    title: 'V/A + (으)ㅁ',
+    formula: 'V/A + (으)ㅁ',
+    meaningVi: 'Danh từ hóa động từ/tính từ',
+    meaningEn: 'Nominalizer suffix',
+    examples: [
+      { ko: '그의 죽음은 모두를 슬프게 했다.', vi: 'Cái chết của anh ấy đã làm mọi người đau buồn.' }
+    ],
+    commonMistake: 'Dùng trong thông báo văn bản viết trang trọng.',
+  },
+  {
+    id: 'g2-으-려면',
+    level: 2,
+    title: 'V + (으)려면',
+    formula: 'V + (으)려면',
+    meaningVi: 'Nếu muốn / nếu có ý định... thì...',
+    meaningEn: 'If you want to do X...',
+    examples: [
+      { ko: '한국어를 잘하려면 매일 공부해야 해요.', vi: 'Nếu muốn giỏi tiếng Hàn thì phải học mỗi ngày.' }
+    ],
+    commonMistake: 'Vế 2 thường đi với câu dặn dò (으)세요, 아/어야 해요.',
+  },
+  {
+    id: 'g2-아-어보인다',
+    level: 2,
+    title: 'V/A + 아/어 보인다',
+    formula: 'V/A + 아/어 보인다',
+    meaningVi: 'Trông có vẻ (cảm nhận qua thị giác)',
+    meaningEn: 'Looks like / appears to be',
+    examples: [
+      { ko: '그 사람은 피곤해 보조여요.', vi: 'Người đó trông có vẻ mệt mỏi.' }
+    ],
+    commonMistake: 'Dựa vào dáng vẻ bên ngoài để phỏng đoán.',
+  },
+  {
+    id: 'g2-았-었으면좋겠다',
+    level: 2,
+    title: 'V/A + 았/었으면 좋겠다',
+    formula: 'V/A + 았/었으면 좋겠다',
+    meaningVi: 'Ước gì, giá mà',
+    meaningEn: 'I wish that / hope that',
+    examples: [
+      { ko: '시험에 합격했으면 좋겠어요.', vi: 'Giá mà tôi thi đỗi.' }
+    ],
+    commonMistake: 'Đi với quá khứ 았/었 thể hiện ước muốn thiết tha.',
+  },
+  {
+    id: 'g2-거든-요',
+    level: 2,
+    title: 'V/A + 거든(요)',
+    formula: 'V/A + 거든(요)',
+    meaningVi: 'Vì, do... (giải thích lý do ở vế sau)',
+    meaningEn: 'Because / you see (explaining reason)',
+    examples: [
+      { ko: '어제는 피곤했거든요. 그래서 일찍 잤어요.', vi: 'Hôm qua tôi mệt. Vì vậy tôi đã đi ngủ sớm.' }
+    ],
+    commonMistake: 'Dùng trong giao tiếp khi người nghe chưa biết lý do.',
+  },
+  {
+    id: 'g2-게되다',
+    level: 2,
+    title: 'V/A + 게 되다',
+    formula: 'V/A + 게 되다',
+    meaningVi: 'Được, bị, trở nên (kết quả do tác động bên ngoài)',
+    meaningEn: 'Turn out to be / end up doing',
+    examples: [
+      { ko: '내년부터 한국에서 일하게 되었어요.', vi: 'Tôi sẽ được làm việc ở Hàn Quốc từ năm sau.' }
+    ],
+    commonMistake: 'Diễn tả sự thay đổi không hoàn toàn do ý chí chủ quan.',
+  },
+  {
+    id: 'g3-기는하다',
+    level: 3,
+    title: 'V/A + 기는 하다',
+    formula: 'V/A + 기는 하다',
+    meaningVi: '...thì cũng... nhưng mà...',
+    meaningEn: 'It is true that... but',
+    examples: [
+      { ko: '가기는 하겠지만 오래 있지는 않을 거예요.', vi: 'Đi thì cũng đi nhưng tôi sẽ không ở lại lâu.' }
+    ],
+    commonMistake: 'Thừa nhận vế trước nhưng bổ sung hạn chế ở vế sau.',
+  },
+  {
+    id: 'g2-기쉽다-어렵다',
+    level: 2,
+    title: 'V + 기 쉽다/어렵다',
+    formula: 'V + 기 쉽다/어렵다',
+    meaningVi: 'Dễ / khó làm gì',
+    meaningEn: 'Easy / difficult to do',
+    examples: [
+      { ko: '이 문제는 풀기 쉬워요.', vi: 'Vấn đề này dễ giải quyết.' }
+    ],
+    commonMistake: 'Khác với (으)ㄹ 수 있다, chỉ mức độ thuận lợi.',
+  },
+  {
+    id: 'g2-고나서',
+    level: 2,
+    title: 'V + 고 나서',
+    formula: 'V + 고 나서',
+    meaningVi: 'Sau khi... thì... (trình tự rõ ràng)',
+    meaningEn: 'After finishing X, do Y',
+    examples: [
+      { ko: '숙제를 하고 나서 텔레비전을 봤어요.', vi: 'Sau khi làm bài tập xong thì tôi đã xem tivi.' }
+    ],
+    commonMistake: 'Nhấn mạnh hành động 1 phải hoàn tất xong hoàn toàn mới làm 2.',
+  },
+  {
+    id: 'g2-는길이다-는길에',
+    level: 2,
+    title: 'V + 는 길이다/는 길에',
+    formula: 'V + 는 길이다/는 길에',
+    meaningVi: 'Đang trên đường...',
+    meaningEn: 'On the way to...',
+    examples: [
+      { ko: '지금 집에 가는 길이에요.', vi: 'Tôi đang trên đường về nhà.' }
+    ],
+    commonMistake: 'Chỉ đi với động từ di chuyển 가다/오다.',
+  },
+  {
+    id: 'g2-는-으-것같다',
+    level: 2,
+    title: 'V/A + 는/(으)ㄴ 것 같다',
+    formula: 'V/A + 는/(으)ㄴ 것 같다',
+    meaningVi: 'Hình như, có vẻ (hiện tại / quá khứ)',
+    meaningEn: 'It seems that...',
+    examples: [
+      { ko: '밖에서 이상한 소리가 나는 것 같아요.', vi: 'Hình như có tiếng động lạ ở bên ngoài.' }
+    ],
+    commonMistake: 'Động từ hiện tại dùng -는 것 같다.',
+  },
+  {
+    id: 'g2-는게좋다',
+    level: 2,
+    title: 'V + 는 게 좋다',
+    formula: 'V + 는 게 좋다',
+    meaningVi: '...thì tốt (lời khuyên)',
+    meaningEn: 'It is better to...',
+    examples: [
+      { ko: '감기에 걸렸을 때는 푹 쉬는 게 좋아요.', vi: 'Khi bị cảm, nghỉ ngơi thật nhiều thì tốt.' }
+    ],
+    commonMistake: 'Khuyên bảo nhẹ nhàng.',
+  },
+  {
+    id: 'g3-는-으-대신에',
+    level: 3,
+    title: 'V/A + 는/(으)ㄴ 대신에',
+    formula: 'V/A + 는/(으)ㄴ 대신에',
+    meaningVi: 'Thay vì, bù lại',
+    meaningEn: 'Instead of / to compensate for',
+    examples: [
+      { ko: '영화를 보는 대신에 집에서 책을 읽었어요.', vi: 'Thay vì xem phim, tôi đã ở nhà đọc sách.' }
+    ],
+    commonMistake: 'Có thể dùng thể hiện bù trừ tính chất.',
+  },
+  {
+    id: 'g2-는동안',
+    level: 2,
+    title: 'V + 는 동안',
+    formula: 'V + 는 동안',
+    meaningVi: 'Trong lúc, trong khi',
+    meaningEn: 'While / during',
+    examples: [
+      { ko: '여행하는 동안 사진을 많이 찍었어요.', vi: 'Tôi đã chụp nhiều ảnh trong khi đi du lịch.' }
+    ],
+    commonMistake: 'Chủ ngữ 2 vế có thể giống hoặc khác nhau.',
+  },
+  {
+    id: 'g2-는중이다',
+    level: 2,
+    title: 'V + 는 중이다',
+    formula: 'V + 는 중이다',
+    meaningVi: 'Đang trong quá trình...',
+    meaningEn: 'In the middle of doing',
+    examples: [
+      { ko: '지금 회의 중입니다.', vi: 'Bây giờ đang trong cuộc họp.' }
+    ],
+    commonMistake: 'Không dùng cho tính từ.',
+  },
+  {
+    id: 'g3-곤하다',
+    level: 3,
+    title: 'V + 곤 하다',
+    formula: 'V-곤 하다',
+    meaningVi: 'Thường... (thói quen lặp đi lặp lại)',
+    meaningEn: 'Used to / make it a rule to',
+    examples: [
+      { ko: '주말에는 보통 영화를 보곤 했어요.', vi: 'Cuối tuần tôi thường xem phim.' }
+    ],
+    commonMistake: 'Thường chia ở quá khứ 곤 했다.',
+  },
+  {
+    id: 'g3-자마자',
+    level: 3,
+    title: 'V + 자마자',
+    formula: 'V-자마자',
+    meaningVi: 'Ngay khi... (hành động tiếp nối tức thì)',
+    meaningEn: 'As soon as',
+    examples: [
+      { ko: '집에 오자마자 잤어요.', vi: 'Ngay khi về đến nhà tôi đã ngủ.' }
+    ],
+    commonMistake: 'Vế 1 không chia thì quá khứ.',
+  },
+  {
+    id: 'g3-잖아요',
+    level: 3,
+    title: 'V/A + 잖아요',
+    formula: 'V/A-잖아요',
+    meaningVi: '...còn gì, ...mà (nhắc lại điều cả 2 cùng biết)',
+    meaningEn: 'As you know / isn’t it?',
+    examples: [
+      { ko: '어제 말했잖아요.', vi: 'Hôm qua tôi đã nói rồi còn gì.' }
+    ],
+    commonMistake: 'Dùng trong giao tiếp nói.',
+  },
+  {
+    id: 'g4-얼마나v-a-는지-으-지모르다',
+    level: 4,
+    title: '얼마나 V/A + 는지/(으)ㄴ지 모르다',
+    formula: '얼마나 V/A-는지/(으)ㄴ지 모르다',
+    meaningVi: '...biết bao nhiêu (nhấn mạnh mức độ)',
+    meaningEn: 'You don’t know how much...',
+    examples: [
+      { ko: '그 소식을 듣고 얼마나 기뻤는지 몰라요.', vi: 'Nghe tin đó tôi đã vui biết bao nhiêu.' }
+    ],
+    commonMistake: 'Bày tỏ cảm xúc mãnh liệt.',
+  },
+  {
+    id: 'g3-나보다-으-가보다',
+    level: 3,
+    title: 'V/A + 나 보다/(으)ㄴ가 보다',
+    formula: 'V/A-나 보다/(으)ㄴ가 보다',
+    meaningVi: 'Có vẻ, hình như (phỏng đoán phán đoán)',
+    meaningEn: 'It seems that',
+    examples: [
+      { ko: '그 사람이 인기가 많은가 봐요.', vi: 'Người đó có vẻ nổi tiếng.' }
+    ],
+    commonMistake: 'Động từ dùng -나 보다; tính từ dùng -(으)ㄴ가 보다.',
+  },
+  {
+    id: 'g3-는-으-척하다',
+    level: 3,
+    title: 'V/A + 는/(으)ㄴ 척하다',
+    formula: 'V/A-는/(으)ㄴ 척하다',
+    meaningVi: 'Giả vờ... (tỏ ra như thể)',
+    meaningEn: 'Pretend to be / do',
+    examples: [
+      { ko: '자는 척했어요.', vi: 'Tôi đã giả vờ ngủ.' }
+    ],
+    commonMistake: 'Giả vờ trạng thái không đúng sự thật.',
+  },
+  {
+    id: 'g4-으-로인해',
+    level: 4,
+    title: 'N + (으)로 인해',
+    formula: 'N-(으)로 인해',
+    meaningVi: 'Do, bởi (nguyên nhân dẫn đến hậu quả)',
+    meaningEn: 'Due to / caused by',
+    examples: [
+      { ko: '태풍으로 인해 많은 피해가 발생했다.', vi: 'Do bão nên đã xảy ra nhiều thiệt hại.' }
+    ],
+    commonMistake: 'Văn phong trang trọng nghị luận.',
+  },
+  {
+    id: 'g4-으-로서',
+    level: 4,
+    title: 'N + (으)로서',
+    formula: 'N-(으)로서',
+    meaningVi: 'Với tư cách là (bản vị/vị thế)',
+    meaningEn: 'As / in the capacity of',
+    examples: [
+      { ko: '저는 교사로서 학생들을 가르칩니다.', vi: 'Tôi dạy học sinh với tư cách là một giáo viên.' }
+    ],
+    commonMistake: 'Phân biệt với (으)로써 (bằng phương tiện/cách thức).',
+  },
+  {
+    id: 'g4-으-로써',
+    level: 4,
+    title: 'N + (으)로써',
+    formula: 'N-(으)로써',
+    meaningVi: 'Bằng cách, bằng phương tiện',
+    meaningEn: 'By means of / using',
+    examples: [
+      { ko: '대화로서 문제를 해결해야 합니다.', vi: 'Phải giải quyết vấn đề bằng cách đối thoại.' }
+    ],
+    commonMistake: 'Chỉ công cụ hoặc công thức giải quyết.',
+  },
+  {
+    id: 'g3-이-라도',
+    level: 3,
+    title: 'N + (이)라도',
+    formula: 'N-(이)라도',
+    meaningVi: 'Dù là... (lựa chọn thứ yếu tạm chấp nhận)',
+    meaningEn: 'At least / even if it is',
+    examples: [
+      { ko: '뭐라도 좀 먹어.', vi: 'Ăn chút gì đi, dù là bất cứ thứ gì.' }
+    ],
+    commonMistake: 'Chấp nhận phương án không hoàn hảo.',
+  },
+  {
+    id: 'g3-으-뿐이다',
+    level: 3,
+    title: 'V/A + (으)ㄹ 뿐이다',
+    formula: 'V/A-(으)ㄹ 뿐이다',
+    meaningVi: 'Chỉ là... (không hơn không kém)',
+    meaningEn: 'Only / merely',
+    examples: [
+      { ko: '제가 한 것은 작은 도움이었을 뿐입니다.', vi: 'Việc tôi làm chỉ là một sự giúp đỡ nhỏ thôi.' }
+    ],
+    commonMistake: 'Nhấn mạnh sự giới hạn.',
+  },
+  {
+    id: 'g3-으-수밖에없다',
+    level: 3,
+    title: 'V/A + (으)ㄹ 수밖에 없다',
+    formula: 'V/A-(으)ㄹ 수밖에 없다',
+    meaningVi: 'Không còn cách nào khác ngoài...',
+    meaningEn: 'Have no choice but to',
+    examples: [
+      { ko: '늦어서 택시를 탈 수밖에 없었어요.', vi: 'Vì muộn nên tôi không còn cách nào khác là phải đi taxi.' }
+    ],
+    commonMistake: 'Bắt buộc theo tình thế.',
+  },
+  {
+    id: 'g4-으-채-로',
+    level: 4,
+    title: 'V + (으)ㄴ 채(로)',
+    formula: 'V-(으)ㄴ 채(로)',
+    meaningVi: 'Trong trạng thái... (duy trì trạng thái cũ)',
+    meaningEn: 'With state kept as is',
+    examples: [
+      { ko: '안경을 쓴 채로 잠이 들었어요.', vi: 'Tôi đã ngủ thiếp đi trong khi vẫn đang đeo kính.' }
+    ],
+    commonMistake: 'Hành động vế 1 đã hoàn thành và giữ nguyên trạng thái.',
+  },
+  {
+    id: 'g4-으-는만큼',
+    level: 4,
+    title: 'V/A + (으)ㄴ/는 만큼',
+    formula: 'V/A-(으)ㄴ/는 만큼',
+    meaningVi: 'Tương xứng với, đáng với (mức độ tương đương)',
+    meaningEn: 'As much as / to the extent',
+    examples: [
+      { ko: '노력한 만큼 좋은 결과가 있을 거예요.', vi: 'Kết quả tốt sẽ tương xứng với nỗ lực của bạn.' }
+    ],
+    commonMistake: 'Tương xứng nguyên nhân kết quả.',
+  },
+  {
+    id: 'g4-으-는법이다',
+    level: 4,
+    title: 'V + (으)ㄴ/는 법이다',
+    formula: 'V-(으)ㄴ/는 법이다',
+    meaningVi: 'Đương nhiên là... (quy luật tự nhiên)',
+    meaningEn: 'It is natural that...',
+    examples: [
+      { ko: '사람은 누구나 실수를 하는 법이다.', vi: 'Con người ai cũng có lúc mắc sai lầm là chuyện đương nhiên.' }
+    ],
+    commonMistake: 'Quy luật chung mang tính hiển nhiên.',
+  },
+  {
+    id: 'g4-으-는데도-불구하고',
+    level: 4,
+    title: 'V/A + (으)ㄴ/는데도 (불구하고)',
+    formula: 'V/A-(으)ㄴ/는데도 (불구하고)',
+    meaningVi: 'Mặc dù... nhưng... (bất chấp)',
+    meaningEn: 'Despite / in spite of',
+    examples: [
+      { ko: '비가 오는데도 불구하고 축구를 했어요.', vi: 'Mặc dù trời mưa nhưng chúng tôi vẫn đá bóng.' }
+    ],
+    commonMistake: 'Nhấn mạnh sự bất chấp hoàn cảnh trái ngược.',
+  },
+  {
+    id: 'g4-으-으로써',
+    level: 4,
+    title: 'V + (으)ㅁ으로써',
+    formula: 'V-(으)ㅁ으로써',
+    meaningVi: 'Bằng việc... (phương thức thực hiện)',
+    meaningEn: 'By doing / through doing',
+    examples: [
+      { ko: '꾸준히 연습함으로써 실력을 늘 수 있다.', vi: 'Có thể nâng cao trình độ bằng việc luyện tập đều đặn.' }
+    ],
+    commonMistake: 'Văn phong trang trọng báo chí.',
+  },
+  {
+    id: 'g3-으-면서도',
+    level: 3,
+    title: 'V/A + (으)면서도',
+    formula: 'V/A-(으)면서도',
+    meaningVi: 'Mặc dù... nhưng vẫn... (hai đặc tính trái ngược)',
+    meaningEn: 'Even while / yet at same time',
+    examples: [
+      { ko: '그는 가난하면서도 항상 남을 도왔다.', vi: 'Anh ấy tuy nghèo nhưng vẫn luôn giúp đỡ người khác.' }
+    ],
+    commonMistake: 'Tồn tại song song hai vế mâu thuẫn.',
+  },
+  {
+    id: 'g3-아-어버리다',
+    level: 3,
+    title: 'V + 아/어 버리다',
+    formula: 'V-아/어 버리다',
+    meaningVi: '...mất rồi (hành động kết thúc hoàn toàn / giải thoát / tiếc nuối)',
+    meaningEn: 'Ended up doing / completely done',
+    examples: [
+      { ko: '약속을 잊어버렸어요.', vi: 'Tôi quên mất cuộc hẹn rồi.' }
+    ],
+    commonMistake: 'Có thể mang sắc thái nhẹ nhõm hoặc tiếc nuối.',
+  },
+  {
+    id: 'g4-와-었던니',
+    level: 4,
+    title: 'V/A + 와/었던니',
+    formula: 'V/A-았/었던니',
+    meaningVi: '...thì thấy rằng... (kết quả sau trải nghiệm)',
+    meaningEn: 'Did X and experienced Y',
+    examples: [
+      { ko: '그 약을 먹었더니 금방 나았어요.', vi: 'Tôi uống thuốc đó thì thấy khỏi ngay.' }
+    ],
+    commonMistake: 'Kinh nghiệm bản thân đã thực hiện.',
+  },
+  {
+    id: 'g4-와-었던라면',
+    level: 4,
+    title: 'V/A + 와/었던라면',
+    formula: 'V/A-았/었던라면',
+    meaningVi: 'Nếu đã... thì... (giả định quá khứ trái thực tế)',
+    meaningEn: 'If I had done X...',
+    examples: [
+      { ko: '그때 공부를 열심히 했더라면 시험에 합격했을 텐데.', vi: 'Nếu lúc đó tôi học chăm chỉ thì đã thi đỗi rồi.' }
+    ],
+    commonMistake: 'Tiếc nuối về quá khứ đã không xảy ra.',
+  },
+  {
+    id: 'g4-게마련이다',
+    level: 4,
+    title: 'V/A + 게 마련이다',
+    formula: 'V/A-게 마련이다',
+    meaningVi: 'Đương nhiên, tất nhiên (quy luật tự nhiên)',
+    meaningEn: 'Bound to happen',
+    examples: [
+      { ko: '겨울이 가면 봄이 오는 것은 당연한 게 마련이다.', vi: 'Mùa đông đi thì mùa xuân đến là chuyện đương nhiên.' }
+    ],
+    commonMistake: 'Tương đương với 는 법이다.',
+  },
+  {
+    id: 'g4-고말다',
+    level: 4,
+    title: 'V + 고 말다',
+    formula: 'V-고 말다',
+    meaningVi: 'Cuối cùng thì... (kết quả đáng tiếc ngoài ý muốn)',
+    meaningEn: 'Ended up doing (regret)',
+    examples: [
+      { ko: '결국 울고 말았어요.', vi: 'Cuối cùng thì tôi đã khóc.' }
+    ],
+    commonMistake: 'Thể hiện sự nuối tiếc kết quả ngẫu nhiên.',
+  },
+  {
+    id: 'g4-기는커녕',
+    level: 4,
+    title: 'V/A + 기는커녕',
+    formula: 'V/A-기는커녕',
+    meaningVi: 'Nói gì đến... (ngay cả điều nhỏ hơn cũng không)',
+    meaningEn: 'Far from / let alone',
+    examples: [
+      { ko: '밥은커녕 물도 못 마셨어요.', vi: 'Nói gì đến cơm, nước tôi còn chưa uống được.' }
+    ],
+    commonMistake: 'Vế 2 tiêu cực hơn vế 1.',
+  },
+  {
+    id: 'g4-기나름이다',
+    level: 4,
+    title: 'V + 기 나름이다',
+    formula: 'V-기 나름이다',
+    meaningVi: 'Tùy thuộc vào...',
+    meaningEn: 'Depends on how you do',
+    examples: [
+      { ko: '모든 것은 생각하기 나름이다.', vi: 'Mọi thứ đều tùy thuộc vào suy nghĩ.' }
+    ],
+    commonMistake: 'Tùy thuộc vào cách thức thực hiện.',
+  },
+  {
+    id: 'g3-거든',
+    level: 3,
+    title: 'V/A + 거든',
+    formula: 'V/A-거든',
+    meaningVi: 'Nếu... thì... (điều kiện trong giao tiếp)',
+    meaningEn: 'If (informal condition)',
+    examples: [
+      { ko: '도움이 필요하거든 언제든지 연락하세요.', vi: 'Nếu cần giúp đỡ thì hãy liên lạc bất cứ lúc nào.' }
+    ],
+    commonMistake: 'Vế sau là câu mệnh lệnh hoặc rủ rê.',
+  },
+  {
+    id: 'g4-느니-차라리',
+    level: 4,
+    title: 'V + 느니 (차라리)',
+    formula: 'V-느니 (차라리)',
+    meaningVi: 'Thà... còn hơn là ("chi bằng")',
+    meaningEn: 'Rather than doing X, I would Y',
+    examples: [
+      { ko: '이렇게 기다리느니 차라리 집에 가겠어요.', vi: 'Thà về nhà còn hơn là đợi như thế này.' }
+    ],
+    commonMistake: 'Cả 2 phương án đều tiêu cực nhưng chọn cái bớt tệ hơn.',
+  },
+  {
+    id: 'g4-더니',
+    level: 4,
+    title: 'V/A + 더니',
+    formula: 'V/A-더니',
+    meaningVi: '...rồi... (sự thay đổi quan sát được ở người khác/sự vật)',
+    meaningEn: 'Used to be X, but now Y',
+    examples: [
+      { ko: '아까는 덥더니 지금은 춥네요.', vi: 'Lúc nãy còn nóng mà giờ đã lạnh rồi.' }
+    ],
+    commonMistake: 'Không dùng cho chủ ngữ ngôi thứ 1 ở vế 1.',
+  },
+  {
+    id: 'g4-는한',
+    level: 4,
+    title: 'V + 는 한',
+    formula: 'V-는 한',
+    meaningVi: 'Chừng nào mà... (điều kiện duy trì)',
+    meaningEn: 'As long as',
+    examples: [
+      { ko: '네가 노력하는 한 나는 항상 응원할게.', vi: 'Chừng nào bạn còn nỗ lực, tôi sẽ luôn ủng hộ.' }
+    ],
+    commonMistake: 'Duy trì điều kiện ở vế 1.',
+  },
+  {
+    id: 'g4-는통에',
+    level: 4,
+    title: 'V + 는 통에',
+    formula: 'V-는 통에',
+    meaningVi: 'Do, tại vì (hoàn cảnh hỗn loạn gây tiêu cực)',
+    meaningEn: 'Because of the commotion of',
+    examples: [
+      { ko: '아이들이 떠드는 통에 잠을 잘 수가 없었어요.', vi: 'Tại bọn trẻ làm ồn nên tôi không thể ngủ được.' }
+    ],
+    commonMistake: 'Vế 1 thường là tiếng ồn hoặc sự ồn ào phức tạp.',
+  },
+  {
+    id: 'g4-여간v-a-지않다',
+    level: 4,
+    title: '여간 V/A + 지 않다',
+    formula: '여간 V/A-지 않다',
+    meaningVi: '...biết bao, vô cùng (cực kỳ)',
+    meaningEn: 'Extremely / non-ordinarily',
+    examples: [
+      { ko: '그 영화는 여간 재미있지 않아요.', vi: 'Bộ phim đó thú vị vô cùng.' }
+    ],
+    commonMistake: 'Mang nghĩa khẳng định cực kỳ dù có phủ định 지 않다.',
+  },
+  {
+    id: 'g4-마저',
+    level: 4,
+    title: 'N + 마저',
+    formula: 'N-마저',
+    meaningVi: 'Ngay cả, đến cả (đối tượng cuối cùng còn lại)',
+    meaningEn: 'Even (the last remaining)',
+    examples: [
+      { ko: '마지막 희망마저 사라졌다.', vi: 'Ngay cả hy vọng cuối cùng cũng biến mất.' }
+    ],
+    commonMistake: 'Thường mang nghĩa tiêu cực (đến cả cái cuối cùng cũng mất).',
+  },
+  {
+    id: 'g5-으-로말미암아',
+    level: 5,
+    title: 'N + (으)로 말미암아',
+    formula: 'N-(으)로 말미암아',
+    meaningVi: 'Do, vì (nguyên nhân dẫn đến hậu quả nghiêm trọng)',
+    meaningEn: 'Due to / owing to',
+    examples: [
+      { ko: '전쟁으로 말미암아 많은 사람들이 죽었다.', vi: 'Nhiều người đã chết do chiến tranh.' }
+    ],
+    commonMistake: 'Văn phong trang trọng báo chí.',
+  },
+  {
+    id: 'g4-을-를비롯해서',
+    level: 4,
+    title: 'N + 을/를 비롯해서',
+    formula: 'N-을/를 비롯해서',
+    meaningVi: 'Bao gồm, kể cả (lấy làm đại diện tiêu biểu)',
+    meaningEn: 'Including / starting with',
+    examples: [
+      { ko: '학생들을 비롯해서 선생님들도 모두 참석했다.', vi: 'Bao gồm cả học sinh, các giáo viên cũng đều tham dự.' }
+    ],
+    commonMistake: 'Đại diện tiêu biểu đứng trước 을/를 비롯해서.',
+  },
+  {
+    id: 'g4-은-는물론',
+    level: 4,
+    title: 'N + 은/는 물론',
+    formula: 'N-은/는 물론',
+    meaningVi: '...là đương nhiên, không chỉ...',
+    meaningEn: 'Not to mention / of course',
+    examples: [
+      { ko: '그는 한국어는 물론 영어도 잘한다.', vi: 'Anh ấy không chỉ giỏi tiếng Hàn mà tiếng Anh cũng giỏi.' }
+    ],
+    commonMistake: 'Tương đương với 은/는 말할 것도 없이.',
+  },
+  {
+    id: 'g4-a-v-으-나',
+    level: 4,
+    title: 'A/V + (으)나',
+    formula: 'A/V-(으)나',
+    meaningVi: '...nhưng... (văn viết trang trọng)',
+    meaningEn: 'But / however (formal text)',
+    examples: [
+      { ko: '그는 부자이나 행복하지 않다.', vi: 'Anh ấy giàu nhưng không hạnh phúc.' }
+    ],
+    commonMistake: 'Dạng rút gọn văn viết của -지만.',
+  },
+  {
+    id: 'g5-a-v-으-되',
+    level: 5,
+    title: 'A/V + (으)되',
+    formula: 'A/V-(으)되',
+    meaningVi: '...nhưng... (thừa nhận vế 1 nhưng ra điều kiện vế 2)',
+    meaningEn: 'Although..., provided that...',
+    examples: [
+      { ko: '술은 마시되 과음하지는 마세요.', vi: 'Uống rượu thì được nhưng đừng uống quá nhiều.' }
+    ],
+    commonMistake: 'Văn phong cổ/trang trọng ra điều kiện giới hạn.',
+  },
+  {
+    id: 'g6-a-v-거늘',
+    level: 6,
+    title: 'A/V + 거늘',
+    formula: 'A/V-거늘',
+    meaningVi: '...huống chi... (lẽ tự nhiên)',
+    meaningEn: 'How much more so...',
+    examples: [
+      { ko: '날씨도 좋거늘 집에만 있을 수 없다.', vi: 'Thời tiết đẹp thế này huống chi lại ở nhà mãi được.' }
+    ],
+    commonMistake: 'Cấu trúc cổ cao cấp thi TOPIK II.',
+  },
+  {
+    id: 'g4-a-v-으-므로',
+    level: 4,
+    title: 'A/V + (으)므로',
+    formula: 'A/V-(으)므로',
+    meaningVi: 'Vì... nên... (lý do trang trọng văn viết)',
+    meaningEn: 'Because / since (formal)',
+    examples: [
+      { ko: '그는 약속을 잘 지키므로 신뢰할 수 있다.', vi: 'Vì anh ấy giữ lời hứa rất tốt nên có thể tin tưởng được.' }
+    ],
+    commonMistake: 'Không nhầm với (으)ㅁ으로써 (bằng cách).',
+  },
+  {
+    id: 'g5-a-v-느니만못하다',
+    level: 5,
+    title: 'A/V + 느니만 못하다',
+    formula: 'A/V-느니만 못하다',
+    meaningVi: '...không bằng... (chi bằng không làm)',
+    meaningEn: 'Not as good as / worse than',
+    examples: [
+      { ko: '비싼 돈을 주고 사는 것보다 직접 만드는 것이 낫다.', vi: 'So với việc mua bằng tiền đắt thì tự làm sẽ tốt hơn.' }
+    ],
+    commonMistake: 'So sánh mức độ kém hơn.',
+  },
+  {
+    id: 'g5-a-v-기에망정이지',
+    level: 5,
+    title: 'A/V + 기에 망정이지',
+    formula: 'A/V-기에 망정이지',
+    meaningVi: 'May mà... chứ không thì... (họa vô đơn chí)',
+    meaningEn: 'Fortunate that..., otherwise',
+    examples: [
+      { ko: '네가 도와주었기에 망정이지 혼자서는 못 했을 거야.', vi: 'May mà có cậu giúp chứ không thì một mình tôi đã không làm được.' }
+    ],
+    commonMistake: 'Giả định hậu quả tồi tệ nếu không có vế 1.',
+  },
+  {
+    id: 'g4-치고',
+    level: 4,
+    title: 'N + 치고',
+    formula: 'N-치고',
+    meaningVi: 'Đã là... thì không có ngoại lệ / So với mặt bằng chung',
+    meaningEn: 'Without exception for / considering that it is',
+    examples: [
+      { ko: '아이치고 사탕을 싫어하는 아이는 없다.', vi: 'Đã là trẻ con thì không có đứa nào ghét kẹo.' }
+    ],
+    commonMistake: 'Mang 2 nghĩa: 100% ngoại lệ không có, hoặc so sánh ngoài dự kiến.',
+  },
+  {
+    id: 'g4-a-v-다가는',
+    level: 4,
+    title: 'A/V + 다가는',
+    formula: 'A/V-다가',
+    meaningVi: 'Cứ tiếp tục... thì sẽ... (cảnh báo tiêu cực)',
+    meaningEn: 'If you keep doing X, Y negative will happen',
+    examples: [
+      { ko: '그렇게 놀다가는 시험에 떨어질 것이다.', vi: 'Cứ chơi như thế thì sẽ trượt kỳ thi.' }
+    ],
+    commonMistake: 'Cảnh báo vế 2 là kết quả xấu.',
+  },
+  {
+    id: 'g5-a-v-으-따름이다',
+    level: 5,
+    title: 'A/V + (으)ㄹ 따름이다',
+    formula: 'A/V-(으)ㄹ 따름이다',
+    meaningVi: 'Chỉ là... (không có lựa chọn/lý do khác)',
+    meaningEn: 'Only / nothing more than',
+    examples: [
+      { ko: '저는 그저 제 할 일을 했을 따름입니다.', vi: 'Tôi chỉ là đã làm công việc của mình thôi.' }
+    ],
+    commonMistake: 'Trang trọng hơn (으)ㄹ 뿐이다.',
+  },
+  {
+    id: 'g6-a-v-으-지니',
+    level: 6,
+    title: 'A/V + (으)ㄹ지니',
+    formula: 'A/V-(으)ㄹ지니',
+    meaningVi: '...nên hãy... (khuyên bảo trang trọng cổ)',
+    meaningEn: 'Therefore / so be sure to',
+    examples: [
+      { ko: '곧 추워질지니 옷을 따뜻하게 입으세요.', vi: 'Trời sắp lạnh rồi nên hãy mặc ấm vào.' }
+    ],
+    commonMistake: 'Ngữ pháp cao cấp.',
+  },
+  {
+    id: 'g4-에의하면',
+    level: 4,
+    title: 'N + 에 의하면',
+    formula: 'N-에 의하면',
+    meaningVi: 'Theo... (trích dẫn nguồn tin)',
+    meaningEn: 'According to',
+    examples: [
+      { ko: '뉴스에 의하면 내일 비가 온다고 한다.', vi: 'Theo tin tức thì ngày mai trời sẽ mưa.' }
+    ],
+    commonMistake: 'Vế sau thường là câu trích dẫn gián tiếp -다고 한다.',
+  },
+  {
+    id: 'g5-와-과더불어',
+    level: 5,
+    title: 'N + 와/과 더불어',
+    formula: 'N-와/과 더불어',
+    meaningVi: 'Cùng với... (đồng hành/cùng tồn tại)',
+    meaningEn: 'Together with / along with',
+    examples: [
+      { ko: '가족과 더불어 행복한 시간을 보냈다.', vi: 'Tôi đã có một khoảng thời gian hạnh phúc cùng với gia đình.' }
+    ],
+    commonMistake: 'Văn phong trang trọng.',
+  },
+  {
+    id: 'g5-을-를막론하고',
+    level: 5,
+    title: 'N + 을/를 막론하고',
+    formula: 'N-을/를 막론하고',
+    meaningVi: 'Bất kể... (không phân biệt)',
+    meaningEn: 'Regardless of / irrespective of',
+    examples: [
+      { ko: '남녀노소를 막론하고 모두가 즐길 수 있는 영화이다.', vi: 'Đây là một bộ phim mà bất kể già trẻ gái trai đều có thể thưởng thức.' }
+    ],
+    commonMistake: 'Gắn sau các danh từ bao quát hai mặt.',
+  },
+  {
+    id: 'g4-은-는커녕',
+    level: 4,
+    title: 'N + 은/는커녕',
+    formula: 'N-은/는커녕',
+    meaningVi: 'Nói gì đến... (ngay cả điều nhỏ hơn cũng không)',
+    meaningEn: 'Let alone / far from',
+    examples: [
+      { ko: '밥은커녕 물도 못 마셨다.', vi: 'Nói gì đến cơm, tôi còn chưa uống được nước.' }
+    ],
+    commonMistake: 'Dạng danh từ tương ứng của 기는커녕.',
+  },
+  {
+    id: 'g4-a-v-기가무섭게',
+    level: 4,
+    title: 'A/V + 기가 무섭게',
+    formula: 'A/V-기가 무섭게',
+    meaningVi: 'Ngay khi... (lập tức tức thì)',
+    meaningEn: 'Right after / the moment',
+    examples: [
+      { ko: '수업이 끝나기가 무섭게 학생들이 교실을 나갔다.', vi: 'Ngay khi buổi học kết thúc, học sinh đã rời khỏi lớp học.' }
+    ],
+    commonMistake: 'Sắc thái nhanh hơn 자마자.',
+  },
+  {
+    id: 'g4-a-v-는다고해서',
+    level: 4,
+    title: 'A/V + 는다고 해서',
+    formula: 'A/V-는다고 해서',
+    meaningVi: 'Không phải cứ... là... (phủ định quy kết)',
+    meaningEn: 'Just because X doesn’t mean Y',
+    examples: [
+      { ko: '돈이 많다고 해서 행복한 것은 아니다.', vi: 'Không phải cứ có nhiều tiền là hạnh phúc.' }
+    ],
+    commonMistake: 'Vế 2 thường là phủ định 아니다 / 것은 아니다.',
+  },
+  {
+    id: 'g5-a-v-으-나머지',
+    level: 5,
+    title: 'A/V + (으)ㄴ 나머지',
+    formula: 'A/V-(으)ㄴ 나머지',
+    meaningVi: 'Do quá... nên (kết quả ngoài ý muốn)',
+    meaningEn: 'As a result of excessive...',
+    examples: [
+      { ko: '너무 화가 난 나머지 말을 할 수가 없었다.', vi: 'Do quá tức giận nên tôi đã không thể nói nên lời.' }
+    ],
+    commonMistake: 'Cảm xúc quá mức.',
+  },
+  {
+    id: 'g4-a-v-으-턱이없다',
+    level: 4,
+    title: 'A/V + (으)ㄹ 턱이 없다',
+    formula: 'A/V-(으)ㄹ 턱이 없다',
+    meaningVi: 'Không có lý nào... (phủ định hoàn toàn căn cứ)',
+    meaningEn: 'No reason why / impossible that',
+    examples: [
+      { ko: '그가 그런 실수를 할 턱이 없다.', vi: 'Không có lý nào anh ấy lại mắc lỗi như vậy.' }
+    ],
+    commonMistake: 'Tương đương với (으)ㄹ 리가 없다.',
+  },
+  {
+    id: 'g5-a-v-으-성싶다',
+    level: 5,
+    title: 'A/V + (으)ㄹ 성싶다',
+    formula: 'A/V-(으)ㄹ 성싶다',
+    meaningVi: 'Có lẽ, hình như (phỏng đoán phán đoán)',
+    meaningEn: 'Likely that / seems like',
+    examples: [
+      { ko: '비가 올 성싶다.', vi: 'Có lẽ trời sẽ mưa.' }
+    ],
+    commonMistake: 'Văn phong trang trọng phỏng đoán.',
+  },
+  {
+    id: 'g6-a-v-으-려니하다',
+    level: 6,
+    title: 'A/V + (으)려니 하다',
+    formula: 'A/V-(으)려니 하다',
+    meaningVi: 'Cứ nghĩ là..., cứ tưởng là... (chủ quan)',
+    meaningEn: 'Assumed that naturally...',
+    examples: [
+      { ko: '그가 올 줄로만 알았으려니 했다.', vi: 'Tôi cứ nghĩ là anh ấy sẽ đến.' }
+    ],
+    commonMistake: 'Phỏng đoán chủ quan tự nhiên.',
+  },
+  {
+    id: 'g5-a-v-고도',
+    level: 5,
+    title: 'A/V + 고도',
+    formula: 'A/V-고도',
+    meaningVi: '...mà vẫn... (kết quả bất ngờ trái mong đợi)',
+    meaningEn: 'Even after doing / despite',
+    examples: [
+      { ko: '그는 실패하고도 좌절하지 않았다.', vi: 'Anh ấy thất bại mà vẫn không nản lòng.' }
+    ],
+    commonMistake: 'Tương phản giữa nguyên nhân và hành động tiếp theo.',
+  },
+  {
+    id: 'g6-a-v-기로서니',
+    level: 6,
+    title: 'A/V + 기로서니',
+    formula: 'A/V-기로서니',
+    meaningVi: 'Dù... đến mấy đi nữa (không thể bào chữa vế 2)',
+    meaningEn: 'Even if X is true, Y shouldn’t happen',
+    examples: [
+      { ko: '아무리 화가 나기로서니 그렇게 심한 말을 할 수는 없다.', vi: 'Dù có tức giận đến mấy cũng không thể nói những lời cay nghiệt như vậy.' }
+    ],
+    commonMistake: 'Vế 2 thường là câu phản bác.',
+  },
+  {
+    id: 'g5-a-v-는마당에',
+    level: 5,
+    title: 'A/V + 는 마당에',
+    formula: 'A/V-는 마당에',
+    meaningVi: 'Trong hoàn cảnh... (thời điểm thích hợp/bối cảnh)',
+    meaningEn: 'Under the circumstances that...',
+    examples: [
+      { ko: '모두가 힘든 마당에 서로 도와야 한다.', vi: 'Trong hoàn cảnh mọi người đều khó khăn thì phải giúp đỡ lẫn nhau.' }
+    ],
+    commonMistake: 'Tạo bối cảnh đưa ra trách nhiệm hoặc hành động nên làm.',
+  },
+  {
+    id: 'g5-a-v-으-지라도',
+    level: 5,
+    title: 'A/V + (으)ㄹ지라도',
+    formula: 'A/V-(으)ㄹ지라도',
+    meaningVi: 'Dù... đi nữa (giả định cực đoan)',
+    meaningEn: 'Even though / even if',
+    examples: [
+      { ko: '비록 가난할지라도 마음만은 부자다.', vi: 'Dù nghèo khó nhưng tấm lòng thì giàu có.' }
+    ],
+    commonMistake: 'Trang trọng hơn -아/어도.',
+  },
+  {
+    id: 'g6-인들',
+    level: 6,
+    title: 'N + 인들',
+    formula: 'N-인들',
+    meaningVi: 'Dù là... thì cũng... (nhấn mạnh ngay cả người giỏi nhất)',
+    meaningEn: 'Even if it is [X]',
+    examples: [
+      { ko: '천하장사인들 이 병을 이길 수는 없다.', vi: 'Dù là thiên hạ vô địch cũng không thể chiến thắng được căn bệnh này.' }
+    ],
+    commonMistake: 'Đi với câu hỏi tu từ hoặc phủ định.',
+  },
+  {
     id: 'g1-e-itta',
     level: 1,
     title: '에 있다/없다',
