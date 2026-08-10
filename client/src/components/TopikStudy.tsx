@@ -45,8 +45,7 @@ const VOCAB_BANK: TopikCard[] = [
     level: item.level,
     sinoVi: item.sinoVi,
     pronunciation: item.pronunciation,
-    example: item.ai_examples?.[0]?.sentence || '',
-    ai_examples: item.ai_examples,
+    example: '',
   })),
   // Level 1
   { id: 1, ko: '안녕하세요', vi: 'Xin chào (lịch sự)', en: 'Hello (formal)', level: 1, example: '안녕하세요! 반갑습니다.' },
@@ -754,7 +753,7 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
                       </>
                     )}
 
-                    {currentCard.example && (
+                    {currentCard.example && !currentCard.example.includes('/') && (
                       <div className="ai-example-bubble flex items-center gap-2 justify-center w-full max-w-[280px] sm:max-w-[340px] md:max-w-[400px]">
                         <span className="text-xs text-brand-brown-light italic leading-relaxed text-center">
                           "{currentCard.example}"
@@ -770,12 +769,12 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
                     )}
 
                     {/* AI Examples */}
-                    {aiExamples && aiExamples.length > 0 && (
+                    {aiExamples && aiExamples.filter(ex => !ex.sentence.includes('/')).length > 0 && (
                       <div className="space-y-2 mt-2 w-full max-w-[280px] sm:max-w-[340px] md:max-w-[400px]">
                         <div className="text-xs font-bold text-brand-terracotta text-center select-none">
                           AI Ví dụ
                         </div>
-                        {aiExamples.map((ex, idx) => (
+                        {aiExamples.filter(ex => !ex.sentence.includes('/')).map((ex, idx) => (
                           <div key={idx} className="ai-example-bubble text-left space-y-1 w-full">
                             <div className="flex items-start justify-between gap-1.5 w-full">
                               <p className="text-[13px] font-black text-brand-brown-dark flex-1 leading-snug">🇰🇷 {ex.sentence}</p>

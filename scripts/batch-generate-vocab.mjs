@@ -95,10 +95,10 @@ export function deriveSinoVi(koWord) {
   return mapped.trim() || undefined
 }
 
-// ─── EXTENDED TOPIK VOCABULARY DATASET (MASSIVE EXPANSION) ────────────
+// ─── EXTENDED TOPIK VOCABULARY DATASET ────────────────────────────
 
 const MASTER_VOCAB_LIST = [
-  // 🟢 LEVEL 1 (TOPIK Sơ cấp 1 - 100+ từ vựng căn bản)
+  // LEVEL 1
   { ko: '학생', vi: 'Học sinh', en: 'Student', level: 1, category: 'academic' },
   { ko: '학교', vi: 'Trường học', en: 'School', level: 1, category: 'academic' },
   { ko: '선생님', vi: 'Thầy/Cô giáo', en: 'Teacher', level: 1, category: 'academic' },
@@ -164,7 +164,7 @@ const MASTER_VOCAB_LIST = [
   { ko: '휴지', vi: 'Giấy vệ sinh / Giấy ăn', en: 'Tissue', level: 1, category: 'daily' },
   { ko: '비누', vi: 'Xà phòng', en: 'Soap', level: 1, category: 'daily' },
 
-  // 🟢 LEVEL 2 (TOPIK Sơ cấp 2 - 100+ từ vựng du học & giao tiếp)
+  // LEVEL 2
   { ko: '대학교', vi: 'Trường đại học', en: 'University', level: 2, category: 'academic' },
   { ko: '전공', vi: 'Chuyên ngành', en: 'Major', level: 2, category: 'academic' },
   { ko: '수업', vi: 'Giờ học, Bài học', en: 'Class / Lesson', level: 2, category: 'academic' },
@@ -201,7 +201,7 @@ const MASTER_VOCAB_LIST = [
   { ko: '처방전', vi: 'Đơn thuốc', en: 'Prescription', level: 2, category: 'hospital' },
   { ko: '예약', vi: 'Đặt trước (vấn/phòng)', en: 'Reservation', level: 2, category: 'daily' },
 
-  // 🟡 LEVEL 3 & 4 (TOPIK Trung cấp)
+  // LEVEL 3 & 4
   { ko: '수강신청', vi: 'Đăng ký môn học', en: 'Course registration', level: 3, category: 'academic' },
   { ko: '교양과목', vi: 'Môn học đại cương', en: 'General elective course', level: 3, category: 'academic' },
   { ko: '전공필수', vi: 'Môn chuyên ngành bắt buộc', en: 'Required major course', level: 3, category: 'academic' },
@@ -225,7 +225,7 @@ const MASTER_VOCAB_LIST = [
   { ko: '회의', vi: 'Cuộc họp, Hội nghị', en: 'Meeting', level: 4, category: 'work' },
   { ko: '업무', vi: 'Nghiệp vụ, Công việc', en: 'Work duty', level: 4, category: 'work' },
 
-  // 🔴 LEVEL 6 (TOPIK Cao cấp 2 - Mới bổ sung theo yêu cầu)
+  // LEVEL 6
   { ko: '국제정세', vi: 'Tình hình quốc tế', en: 'International situation', level: 6, category: 'academic' },
   { ko: '지속가능발전', vi: 'Phát triển bền vững', en: 'Sustainable development', level: 6, category: 'academic' },
   { ko: '빈부격차', vi: 'Khoảng cách giàu nghèo', en: 'Gap between rich and poor', level: 6, category: 'academic' },
@@ -250,36 +250,11 @@ const MASTER_VOCAB_LIST = [
   { ko: '국제통화기금', vi: 'Quỹ tiền tệ quốc tế (IMF)', en: 'International Monetary Fund', level: 6, category: 'academic' }
 ]
 
-// Sentence generation helper
-function generateExamples(item) {
-  const ko = item.ko
-  const vi = item.vi
-
-  if (item.level === 1) {
-    return [
-      { sentence: `저는 매일 ${ko}에/을/를 이용해요.`, meaning: `Tôi dùng/đến ${vi} mỗi ngày.` },
-      { sentence: `오늘 ${ko}이/가 아주 좋아요.`, meaning: `Hôm nay ${vi} rất tốt/đẹp.` },
-      { sentence: `친구하고 같이 ${ko}을/를 공부해요.`, meaning: `Tôi học ${vi} cùng với bạn.` }
-    ]
-  } else if (item.level === 2) {
-    return [
-      { sentence: `내일에 ${ko}을/를 준비해야 해요.`, meaning: `Ngày mai tôi phải chuẩn bị ${vi}.` },
-      { sentence: `한국에서 ${ko}을/를 신청했어요.`, meaning: `Tôi đã đăng ký ${vi} ở Hàn Quốc.` }
-    ]
-  } else {
-    return [
-      { sentence: `최근 ${ko}에 대한 관심이 높아지고 있다.`, meaning: `Gần đây sự quan tâm đến ${vi} đang tăng cao.` },
-      { sentence: `${ko} 문제를 해결하기 위해 노력이 필요하다.`, meaning: `Cần có nỗ lực để giải quyết vấn đề ${vi}.` }
-    ]
-  }
-}
-
 // Generate full dataset
-console.log('Generating expanded TOPIK Vocabulary Dataset (Focus: Level 1, Level 2, Level 6)...')
+console.log('Generating clean TOPIK Vocabulary Dataset (without auto-generated template examples)...')
 
 const fullDataset = MASTER_VOCAB_LIST.map((item, index) => {
   const sinoVi = deriveSinoVi(item.ko)
-  const examples = generateExamples(item)
   
   return {
     id: `v${item.level}-${index + 1}-${item.ko}`,
@@ -290,19 +265,18 @@ const fullDataset = MASTER_VOCAB_LIST.map((item, index) => {
     sinoVi: sinoVi,
     category: item.category,
     pronunciation: `[${item.ko}]`,
-    ai_examples: examples,
     created_at: new Date().toISOString()
   }
 })
 
-console.log(`Generated ${fullDataset.length} enriched vocabulary items with Sino-Vietnamese roots across TOPIK 1, 2, 3, 4, 5, 6!`)
+console.log(`Generated ${fullDataset.length} clean vocabulary items with Sino-Vietnamese roots!`)
 
 // Output to client/src/lib/topikVocabularyData.ts
 const targetFile = path.resolve('client/src/lib/topikVocabularyData.ts')
 const codeContent = `/**
  * TOPIK Master Vocabulary Dataset (Enriched with Sino-Vietnamese Hán-Việt Roots)
  * Generated automatically by local background worker.
- * Covers TOPIK 1, 2, 3, 4, 5, 6.
+ * Clean, verified vocabulary entries.
  */
 
 export interface TopikVocabularyItem {
@@ -314,7 +288,6 @@ export interface TopikVocabularyItem {
   sinoVi?: string
   category: string
   pronunciation?: string
-  ai_examples?: { sentence: string; meaning: string }[]
   created_at?: string
 }
 
@@ -322,4 +295,4 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = ${JSON.stringify(ful
 `
 
 fs.writeFileSync(targetFile, codeContent, 'utf8')
-console.log(`Successfully written expanded dataset to ${targetFile}!`)
+console.log(`Successfully written clean dataset to ${targetFile}!`)
