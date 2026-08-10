@@ -128,8 +128,8 @@ export default function RoomHeader({
                     {initials(member.username)}
                   </span>
                   {member.isHost && (
-                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-amber-400 text-[6px]">
-                      👑
+                    <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-white shadow-xs">
+                      <Crown size={8} className="text-white fill-white shrink-0" />
                     </span>
                   )}
                 </span>
@@ -154,8 +154,8 @@ export default function RoomHeader({
                           {initials(member.username)}
                         </div>
                         {member.isHost && (
-                          <span className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-amber-400 text-[10px] text-white shadow-sm ring-1 ring-white">
-                            👑
+                          <span className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-amber-400 text-white shadow-sm ring-1 ring-white">
+                            <Crown size={10} className="text-white fill-white shrink-0" />
                           </span>
                         )}
                       </div>
