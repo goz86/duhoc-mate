@@ -1654,6 +1654,7 @@ const publicTopikGameState = (room) => {
         username: member?.username || score.username || 'Bạn học',
         score: score.score || 0,
         correct: score.correct || 0,
+        wrong: score.wrong || 0,
         answeredAt: score.answeredAt || null
       };
     })
@@ -3249,7 +3250,8 @@ io.on('connection', (socket) => {
       const current = game.leaderboard[socket.id] || {
         username: member.username || 'Bạn học',
         score: 0,
-        correct: 0
+        correct: 0,
+        wrong: 0,
       };
 
       game.answers = {
@@ -3260,6 +3262,7 @@ io.on('connection', (socket) => {
         username: member.username || current.username,
         score: (current.score || 0) + points,
         correct: (current.correct || 0) + (correct ? 1 : 0),
+        wrong: (current.wrong || 0) + (correct ? 0 : 1),
         answeredAt: Date.now()
       };
 
