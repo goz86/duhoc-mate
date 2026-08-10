@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import {
-  ChevronLeft, ChevronRight, Calendar, RotateCcw, BookOpen,
+  ChevronLeft, ChevronRight, Calendar, RotateCcw, BookOpen, BookMarked,
   CheckCircle2, XCircle, Volume2, Settings, Loader2,
   Plus, Zap, Key, Shuffle, ClipboardList,
 } from 'lucide-react'
@@ -744,7 +744,8 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
                         <div className="text-2xl font-black text-brand-terracotta">{currentCard.vi}</div>
                         {currentCard.sinoVi && (
                           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100/90 border border-amber-200 text-amber-900 text-xs font-black shadow-xs my-1">
-                            🏮 Hán-Việt: <span className="underline decoration-amber-400">{currentCard.sinoVi}</span>
+                            <BookMarked size={13} className="text-amber-800 shrink-0" />
+                            <span>Hán-Việt: <span className="underline decoration-amber-400">{currentCard.sinoVi}</span></span>
                           </div>
                         )}
                         {currentCard.en && (
@@ -983,7 +984,8 @@ export default function TopikStudy({ roomId, socket, isAdmin }: Props) {
           <div className="w-full max-w-md p-4 rounded-2xl bg-brand-light/60 border border-brand-terracotta-light/20 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-bold text-sm text-brand-brown-dark flex items-center gap-1.5">
-                📅 Lịch thi TOPIK (Tự động từ topik.go.kr)
+                <Calendar size={16} className="text-brand-terracotta shrink-0" />
+                <span>Lịch thi TOPIK (Tự động từ topik.go.kr)</span>
               </h4>
               {loadingSchedule && <span className="text-[10px] text-brand-brown-light">Đang cập nhật...</span>}
             </div>
