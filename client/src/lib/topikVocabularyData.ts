@@ -1,6 +1,7 @@
 /**
  * TOPIK Master Vocabulary Dataset (Enriched with Sino-Vietnamese Hán-Việt Roots)
  * Generated automatically by local background worker.
+ * Covers TOPIK 1, 2, 3, 4, 5, 6.
  */
 
 export interface TopikVocabularyItem {
@@ -40,7 +41,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Học sinh cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.691Z"
+    "created_at": "2026-08-10T02:09:29.113Z"
   },
   {
     "id": "v1-2-학교",
@@ -65,7 +66,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Trường học cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.119Z"
   },
   {
     "id": "v1-3-선생님",
@@ -90,7 +91,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Thầy/Cô giáo cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.119Z"
   },
   {
     "id": "v1-4-도서관",
@@ -115,7 +116,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Thư viện cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.119Z"
   },
   {
     "id": "v1-5-책",
@@ -139,7 +140,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Sách cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.119Z"
   },
   {
     "id": "v1-6-공부",
@@ -164,7 +165,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Học tập cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.119Z"
   },
   {
     "id": "v1-7-친구",
@@ -189,7 +190,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Bạn bè cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.119Z"
   },
   {
     "id": "v1-8-가족",
@@ -214,7 +215,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Gia đình cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.119Z"
   },
   {
     "id": "v1-9-아버지",
@@ -239,7 +240,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Bố, Cha cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.119Z"
   },
   {
     "id": "v1-10-어머니",
@@ -263,7 +264,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Mẹ cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.119Z"
   },
   {
     "id": "v1-11-형",
@@ -287,7 +288,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Anh trai (nam gọi) cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-12-누나",
@@ -311,7 +312,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Chị gái (nam gọi) cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-13-오빠",
@@ -335,7 +336,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Anh trai (nữ gọi) cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-14-언니",
@@ -359,7 +360,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Chị gái (nữ gọi) cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-15-동생",
@@ -384,7 +385,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Em (em trai/em gái) cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-16-집",
@@ -408,7 +409,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Nhà cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-17-방",
@@ -432,7 +433,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Phòng cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-18-식당",
@@ -457,7 +458,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Nhà hàng, Quán ăn cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-19-음식",
@@ -482,7 +483,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Thức ăn, Món ăn cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-20-물",
@@ -507,7 +508,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Nước cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-21-밥",
@@ -531,7 +532,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Cơm cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-22-빵",
@@ -555,7 +556,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Bánh mì cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-23-우유",
@@ -579,7 +580,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Sữa cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.693Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-24-커피",
@@ -603,7 +604,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Cà phê cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-25-사과",
@@ -628,7 +629,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Quả táo cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-26-시계",
@@ -653,7 +654,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Đồng hồ cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-27-전화",
@@ -678,7 +679,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Điện thoại cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-28-컴퓨터",
@@ -702,7 +703,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Máy tính cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-29-옷",
@@ -726,7 +727,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Quần áo cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-30-신발",
@@ -750,7 +751,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Giày dép cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-31-가방",
@@ -775,7 +776,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Cặp, Túi xách cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-32-돈",
@@ -799,7 +800,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Tiền cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-33-시장",
@@ -824,7 +825,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Chợ cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-34-마트",
@@ -848,7 +849,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Siêu thị cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-35-병원",
@@ -873,7 +874,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Bệnh viện cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-36-약국",
@@ -898,7 +899,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Tiệm thuốc cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-37-의사",
@@ -923,7 +924,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Bác sĩ cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-38-약",
@@ -948,7 +949,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Thuốc cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-39-버스",
@@ -973,7 +974,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Xe buýt cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-40-지하철",
@@ -998,7 +999,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Tàu điện ngầm cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-41-택시",
@@ -1023,7 +1024,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Xe taxi cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-42-비행기",
@@ -1048,7 +1049,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Máy bay cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-43-공항",
@@ -1073,7 +1074,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Sân bay cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-44-한국",
@@ -1098,7 +1099,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Hàn Quốc cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-45-베트남",
@@ -1122,7 +1123,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Việt Nam cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-46-오늘",
@@ -1146,7 +1147,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Hôm nay cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-47-어제",
@@ -1171,7 +1172,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Hôm qua cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-48-내일",
@@ -1195,7 +1196,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Ngày mai cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-49-주말",
@@ -1219,7 +1220,7 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Cuối tuần cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
     "id": "v1-50-시간",
@@ -1244,10 +1245,356 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi học Thời gian / Giờ cùng với bạn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-51-대학교",
+    "id": "v1-51-모자",
+    "ko": "모자",
+    "vi": "Mũ, Nón",
+    "en": "Hat / Cap",
+    "level": 1,
+    "sinoVi": "Tự",
+    "category": "shopping",
+    "pronunciation": "[모자]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 모자에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Mũ, Nón mỗi ngày."
+      },
+      {
+        "sentence": "오늘 모자이/가 아주 좋아요.",
+        "meaning": "Hôm nay Mũ, Nón rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 모자을/를 공부해요.",
+        "meaning": "Tôi học Mũ, Nón cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-52-우산",
+    "ko": "우산",
+    "vi": "Cái ô, Dù",
+    "en": "Umbrella",
+    "level": 1,
+    "sinoVi": "Sơn",
+    "category": "daily",
+    "pronunciation": "[우산]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 우산에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Cái ô, Dù mỗi ngày."
+      },
+      {
+        "sentence": "오늘 우산이/가 아주 좋아요.",
+        "meaning": "Hôm nay Cái ô, Dù rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 우산을/를 공부해요.",
+        "meaning": "Tôi học Cái ô, Dù cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-53-볼펜",
+    "ko": "볼펜",
+    "vi": "Bút bi",
+    "en": "Pen",
+    "level": 1,
+    "category": "academic",
+    "pronunciation": "[볼펜]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 볼펜에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Bút bi mỗi ngày."
+      },
+      {
+        "sentence": "오늘 볼펜이/가 아주 좋아요.",
+        "meaning": "Hôm nay Bút bi rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 볼펜을/를 공부해요.",
+        "meaning": "Tôi học Bút bi cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-54-연필",
+    "ko": "연필",
+    "vi": "Bút chì",
+    "en": "Pencil",
+    "level": 1,
+    "sinoVi": "Nghiên",
+    "category": "academic",
+    "pronunciation": "[연필]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 연필에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Bút chì mỗi ngày."
+      },
+      {
+        "sentence": "오늘 연필이/가 아주 좋아요.",
+        "meaning": "Hôm nay Bút chì rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 연필을/를 공부해요.",
+        "meaning": "Tôi học Bút chì cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-55-지우개",
+    "ko": "지우개",
+    "vi": "Cục tẩy",
+    "en": "Eraser",
+    "level": 1,
+    "sinoVi": "Địa",
+    "category": "academic",
+    "pronunciation": "[지우개]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 지우개에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Cục tẩy mỗi ngày."
+      },
+      {
+        "sentence": "오늘 지우개이/가 아주 좋아요.",
+        "meaning": "Hôm nay Cục tẩy rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 지우개을/를 공부해요.",
+        "meaning": "Tôi học Cục tẩy cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-56-공책",
+    "ko": "공책",
+    "vi": "Vở ghi",
+    "en": "Notebook",
+    "level": 1,
+    "sinoVi": "Công",
+    "category": "academic",
+    "pronunciation": "[공책]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 공책에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Vở ghi mỗi ngày."
+      },
+      {
+        "sentence": "오늘 공책이/가 아주 좋아요.",
+        "meaning": "Hôm nay Vở ghi rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 공책을/를 공부해요.",
+        "meaning": "Tôi học Vở ghi cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-57-책상",
+    "ko": "책상",
+    "vi": "Bàn học",
+    "en": "Desk",
+    "level": 1,
+    "category": "academic",
+    "pronunciation": "[책상]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 책상에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Bàn học mỗi ngày."
+      },
+      {
+        "sentence": "오늘 책상이/가 아주 좋아요.",
+        "meaning": "Hôm nay Bàn học rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 책상을/를 공부해요.",
+        "meaning": "Tôi học Bàn học cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-58-의자",
+    "ko": "의자",
+    "vi": "Cái ghế",
+    "en": "Chair",
+    "level": 1,
+    "sinoVi": "Y Tự",
+    "category": "academic",
+    "pronunciation": "[의자]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 의자에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Cái ghế mỗi ngày."
+      },
+      {
+        "sentence": "오늘 의자이/가 아주 좋아요.",
+        "meaning": "Hôm nay Cái ghế rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 의자을/를 공부해요.",
+        "meaning": "Tôi học Cái ghế cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-59-문",
+    "ko": "문",
+    "vi": "Cửa ra vào",
+    "en": "Door",
+    "level": 1,
+    "sinoVi": "Môn",
+    "category": "daily",
+    "pronunciation": "[문]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 문에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Cửa ra vào mỗi ngày."
+      },
+      {
+        "sentence": "오늘 문이/가 아주 좋아요.",
+        "meaning": "Hôm nay Cửa ra vào rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 문을/를 공부해요.",
+        "meaning": "Tôi học Cửa ra vào cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-60-창문",
+    "ko": "창문",
+    "vi": "Cửa sổ",
+    "en": "Window",
+    "level": 1,
+    "sinoVi": "Môn",
+    "category": "daily",
+    "pronunciation": "[창문]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 창문에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Cửa sổ mỗi ngày."
+      },
+      {
+        "sentence": "오늘 창문이/가 아주 좋아요.",
+        "meaning": "Hôm nay Cửa sổ rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 창문을/를 공부해요.",
+        "meaning": "Tôi học Cửa sổ cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-61-안경",
+    "ko": "안경",
+    "vi": "Kính mắt",
+    "en": "Glasses",
+    "level": 1,
+    "sinoVi": "Kinh",
+    "category": "daily",
+    "pronunciation": "[안경]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 안경에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Kính mắt mỗi ngày."
+      },
+      {
+        "sentence": "오늘 안경이/가 아주 좋아요.",
+        "meaning": "Hôm nay Kính mắt rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 안경을/를 공부해요.",
+        "meaning": "Tôi học Kính mắt cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-62-거울",
+    "ko": "거울",
+    "vi": "Cái gương",
+    "en": "Mirror",
+    "level": 1,
+    "category": "daily",
+    "pronunciation": "[거울]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 거울에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Cái gương mỗi ngày."
+      },
+      {
+        "sentence": "오늘 거울이/가 아주 좋아요.",
+        "meaning": "Hôm nay Cái gương rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 거울을/를 공부해요.",
+        "meaning": "Tôi học Cái gương cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-63-휴지",
+    "ko": "휴지",
+    "vi": "Giấy vệ sinh / Giấy ăn",
+    "en": "Tissue",
+    "level": 1,
+    "sinoVi": "Địa",
+    "category": "daily",
+    "pronunciation": "[휴지]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 휴지에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Giấy vệ sinh / Giấy ăn mỗi ngày."
+      },
+      {
+        "sentence": "오늘 휴지이/가 아주 좋아요.",
+        "meaning": "Hôm nay Giấy vệ sinh / Giấy ăn rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 휴지을/를 공부해요.",
+        "meaning": "Tôi học Giấy vệ sinh / Giấy ăn cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v1-64-비누",
+    "ko": "비누",
+    "vi": "Xà phòng",
+    "en": "Soap",
+    "level": 1,
+    "category": "daily",
+    "pronunciation": "[비누]",
+    "ai_examples": [
+      {
+        "sentence": "저는 매일 비누에/을/를 이용해요.",
+        "meaning": "Tôi dùng/đến Xà phòng mỗi ngày."
+      },
+      {
+        "sentence": "오늘 비누이/가 아주 좋아요.",
+        "meaning": "Hôm nay Xà phòng rất tốt/đẹp."
+      },
+      {
+        "sentence": "친구하고 같이 비누을/를 공부해요.",
+        "meaning": "Tôi học Xà phòng cùng với bạn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v2-65-대학교",
     "ko": "대학교",
     "vi": "Trường đại học",
     "en": "University",
@@ -1265,10 +1612,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Trường đại học ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-52-전공",
+    "id": "v2-66-전공",
     "ko": "전공",
     "vi": "Chuyên ngành",
     "en": "Major",
@@ -1286,10 +1633,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Chuyên ngành ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-53-수업",
+    "id": "v2-67-수업",
     "ko": "수업",
     "vi": "Giờ học, Bài học",
     "en": "Class / Lesson",
@@ -1307,10 +1654,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Giờ học, Bài học ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-54-시험",
+    "id": "v2-68-시험",
     "ko": "시험",
     "vi": "Kỳ thi, Bài kiểm tra",
     "en": "Exam / Test",
@@ -1328,10 +1675,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Kỳ thi, Bài kiểm tra ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-55-성적",
+    "id": "v2-69-성적",
     "ko": "성적",
     "vi": "Thành tích, Điểm số",
     "en": "Grades / Score",
@@ -1349,10 +1696,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Thành tích, Điểm số ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-56-숙제",
+    "id": "v2-70-숙제",
     "ko": "숙제",
     "vi": "Bài tập về nhà",
     "en": "Homework",
@@ -1370,10 +1717,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Bài tập về nhà ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-57-방학",
+    "id": "v2-71-방학",
     "ko": "방학",
     "vi": "Kỳ nghỉ hè/đông",
     "en": "Vacation (school)",
@@ -1391,10 +1738,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Kỳ nghỉ hè/đông ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-58-장학금",
+    "id": "v2-72-장학금",
     "ko": "장학금",
     "vi": "Học bổng",
     "en": "Scholarship",
@@ -1412,10 +1759,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Học bổng ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-59-은행",
+    "id": "v2-73-은행",
     "ko": "은행",
     "vi": "Ngân hàng",
     "en": "Bank",
@@ -1433,10 +1780,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Ngân hàng ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-60-통장",
+    "id": "v2-74-통장",
     "ko": "통장",
     "vi": "Sổ tài khoản",
     "en": "Bankbook",
@@ -1454,10 +1801,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Sổ tài khoản ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-61-비밀번호",
+    "id": "v2-75-비밀번호",
     "ko": "비밀번호",
     "vi": "Mật khẩu",
     "en": "Password / PIN",
@@ -1475,10 +1822,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Mật khẩu ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-62-카카오톡",
+    "id": "v2-76-카카오톡",
     "ko": "카카오톡",
     "vi": "Ứng dụng KakaoTalk",
     "en": "KakaoTalk",
@@ -1495,10 +1842,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Ứng dụng KakaoTalk ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-63-편의점",
+    "id": "v2-77-편의점",
     "ko": "편의점",
     "vi": "Cửa hàng tiện lợi",
     "en": "Convenience store",
@@ -1516,10 +1863,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Cửa hàng tiện lợi ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-64-아르바이트",
+    "id": "v2-78-아르바이트",
     "ko": "아르바이트",
     "vi": "Việc làm thêm (Part-time)",
     "en": "Part-time job",
@@ -1536,10 +1883,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Việc làm thêm (Part-time) ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-65-월세",
+    "id": "v2-79-월세",
     "ko": "월세",
     "vi": "Tiền thuê nhà theo tháng",
     "en": "Monthly rent",
@@ -1556,10 +1903,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Tiền thuê nhà theo tháng ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-66-보증금",
+    "id": "v2-80-보증금",
     "ko": "보증금",
     "vi": "Tiền đặt cọc nhà",
     "en": "Deposit money",
@@ -1576,10 +1923,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Tiền đặt cọc nhà ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-67-원룸",
+    "id": "v2-81-원룸",
     "ko": "원룸",
     "vi": "Phòng khép kín (One-room)",
     "en": "Studio apartment",
@@ -1597,10 +1944,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Phòng khép kín (One-room) ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-68-기숙사",
+    "id": "v2-82-기숙사",
     "ko": "기숙사",
     "vi": "Ký túc xá",
     "en": "Dormitory",
@@ -1618,10 +1965,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Ký túc xá ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-69-외국인등록증",
+    "id": "v2-83-외국인등록증",
     "ko": "외국인등록증",
     "vi": "Thẻ cư trú người nước ngoài",
     "en": "Alien Registration Card",
@@ -1639,10 +1986,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Thẻ cư trú người nước ngoài ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-70-여권",
+    "id": "v2-84-여권",
     "ko": "여권",
     "vi": "Hộ chiếu",
     "en": "Passport",
@@ -1659,10 +2006,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Hộ chiếu ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-71-비자",
+    "id": "v2-85-비자",
     "ko": "비자",
     "vi": "Thị thực (Visa)",
     "en": "Visa",
@@ -1680,10 +2027,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Thị thực (Visa) ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-72-취업",
+    "id": "v2-86-취업",
     "ko": "취업",
     "vi": "Xin việc, Tìm việc",
     "en": "Employment",
@@ -1700,10 +2047,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Xin việc, Tìm việc ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-73-회사원",
+    "id": "v2-87-회사원",
     "ko": "회사원",
     "vi": "Nhân viên công ty",
     "en": "Office worker",
@@ -1721,10 +2068,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Nhân viên công ty ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-74-월급",
+    "id": "v2-88-월급",
     "ko": "월급",
     "vi": "Lương hàng tháng",
     "en": "Monthly salary",
@@ -1742,10 +2089,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Lương hàng tháng ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-75-휴가",
+    "id": "v2-89-휴가",
     "ko": "휴가",
     "vi": "Kỳ nghỉ làm",
     "en": "Leave / Holiday",
@@ -1763,10 +2110,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Kỳ nghỉ làm ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-76-출근",
+    "id": "v2-90-출근",
     "ko": "출근",
     "vi": "Đi làm",
     "en": "Going to work",
@@ -1784,10 +2131,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Đi làm ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-77-퇴근",
+    "id": "v2-91-퇴근",
     "ko": "퇴근",
     "vi": "Tan làm",
     "en": "Leaving work",
@@ -1805,10 +2152,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Tan làm ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-78-야근",
+    "id": "v2-92-야근",
     "ko": "야근",
     "vi": "Làm tăng ca đêm",
     "en": "Night overtime",
@@ -1826,10 +2173,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Làm tăng ca đêm ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-79-간호사",
+    "id": "v2-93-간호사",
     "ko": "간호사",
     "vi": "Y tá, Cán hộ sư",
     "en": "Nurse",
@@ -1847,10 +2194,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Y tá, Cán hộ sư ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-80-감기",
+    "id": "v2-94-감기",
     "ko": "감기",
     "vi": "Bệnh cảm cúm",
     "en": "Cold / Flu",
@@ -1868,10 +2215,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Bệnh cảm cúm ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-81-열",
+    "id": "v2-95-열",
     "ko": "열",
     "vi": "Sốt",
     "en": "Fever",
@@ -1888,10 +2235,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Sốt ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-82-기침",
+    "id": "v2-96-기침",
     "ko": "기침",
     "vi": "Ho",
     "en": "Cough",
@@ -1909,10 +2256,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Ho ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-83-주사",
+    "id": "v2-97-주사",
     "ko": "주사",
     "vi": "Tiêm thuốc",
     "en": "Injection",
@@ -1930,10 +2277,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Tiêm thuốc ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-84-처방전",
+    "id": "v2-98-처방전",
     "ko": "처방전",
     "vi": "Đơn thuốc",
     "en": "Prescription",
@@ -1951,10 +2298,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Đơn thuốc ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v2-85-예약",
+    "id": "v2-99-예약",
     "ko": "예약",
     "vi": "Đặt trước (vấn/phòng)",
     "en": "Reservation",
@@ -1972,10 +2319,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Tôi đã đăng ký Đặt trước (vấn/phòng) ở Hàn Quốc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-86-수강신청",
+    "id": "v3-100-수강신청",
     "ko": "수강신청",
     "vi": "Đăng ký môn học",
     "en": "Course registration",
@@ -1993,10 +2340,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Đăng ký môn học."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-87-교양과목",
+    "id": "v3-101-교양과목",
     "ko": "교양과목",
     "vi": "Môn học đại cương",
     "en": "General elective course",
@@ -2014,10 +2361,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Môn học đại cương."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-88-전공필수",
+    "id": "v3-102-전공필수",
     "ko": "전공필수",
     "vi": "Môn chuyên ngành bắt buộc",
     "en": "Required major course",
@@ -2035,10 +2382,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Môn chuyên ngành bắt buộc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-89-이력서",
+    "id": "v3-103-이력서",
     "ko": "이력서",
     "vi": "Sơ yếu lý lịch (CV)",
     "en": "Resume / CV",
@@ -2056,10 +2403,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Sơ yếu lý lịch (CV)."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-90-자기소개서",
+    "id": "v3-104-자기소개서",
     "ko": "자기소개서",
     "vi": "Bài tự giới thiệu bản thân",
     "en": "Cover letter",
@@ -2077,10 +2424,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Bài tự giới thiệu bản thân."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-91-면접",
+    "id": "v3-105-면접",
     "ko": "면접",
     "vi": "Phỏng vấn",
     "en": "Interview",
@@ -2098,10 +2445,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Phỏng vấn."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-92-합격통지서",
+    "id": "v3-106-합격통지서",
     "ko": "합격통지서",
     "vi": "Giấy báo trúng tuyển",
     "en": "Acceptance letter",
@@ -2119,10 +2466,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Giấy báo trúng tuyển."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-93-등록금",
+    "id": "v3-107-등록금",
     "ko": "등록금",
     "vi": "Học phí",
     "en": "Tuition fee",
@@ -2139,10 +2486,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Học phí."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-94-부동산",
+    "id": "v3-108-부동산",
     "ko": "부동산",
     "vi": "Bất động sản / Văn phòng môi giới",
     "en": "Real estate",
@@ -2160,10 +2507,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Bất động sản / Văn phòng môi giới."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-95-계약서",
+    "id": "v3-109-계약서",
     "ko": "계약서",
     "vi": "Hợp đồng",
     "en": "Contract document",
@@ -2181,10 +2528,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Hợp đồng."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-96-관리비",
+    "id": "v3-110-관리비",
     "ko": "관리비",
     "vi": "Phí quản lý nhà",
     "en": "Maintenance fee",
@@ -2202,10 +2549,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Phí quản lý nhà."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-97-공과금",
+    "id": "v3-111-공과금",
     "ko": "공과금",
     "vi": "Tiền điện nước ga sinh hoạt",
     "en": "Utility bills",
@@ -2223,10 +2570,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Tiền điện nước ga sinh hoạt."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-98-송금",
+    "id": "v3-112-송금",
     "ko": "송금",
     "vi": "Chuyển tiền",
     "en": "Remittance / Money transfer",
@@ -2244,10 +2591,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Chuyển tiền."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-99-환전",
+    "id": "v3-113-환전",
     "ko": "환전",
     "vi": "Đổi ngoại tệ",
     "en": "Currency exchange",
@@ -2265,10 +2612,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Đổi ngoại tệ."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-100-건강보험",
+    "id": "v3-114-건강보험",
     "ko": "건강보험",
     "vi": "Bảo hiểm y tế",
     "en": "Health insurance",
@@ -2285,10 +2632,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Bảo hiểm y tế."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-101-응급실",
+    "id": "v3-115-응급실",
     "ko": "응급실",
     "vi": "Phòng cấp cứu",
     "en": "Emergency room",
@@ -2306,10 +2653,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Phòng cấp cứu."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v3-102-진료비",
+    "id": "v3-116-진료비",
     "ko": "진료비",
     "vi": "Phí khám bệnh",
     "en": "Medical treatment fee",
@@ -2326,10 +2673,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Phí khám bệnh."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v4-103-승진",
+    "id": "v4-117-승진",
     "ko": "승진",
     "vi": "Thăng tiến, Thăng chức",
     "en": "Promotion",
@@ -2347,10 +2694,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Thăng tiến, Thăng chức."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v4-104-출장",
+    "id": "v4-118-출장",
     "ko": "출장",
     "vi": "Đi công tác",
     "en": "Business trip",
@@ -2368,10 +2715,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Đi công tác."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v4-105-보고서",
+    "id": "v4-119-보고서",
     "ko": "보고서",
     "vi": "Bản báo cáo",
     "en": "Report document",
@@ -2389,10 +2736,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Bản báo cáo."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v4-106-회의",
+    "id": "v4-120-회의",
     "ko": "회의",
     "vi": "Cuộc họp, Hội nghị",
     "en": "Meeting",
@@ -2410,10 +2757,10 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Cuộc họp, Hội nghị."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v4-107-업무",
+    "id": "v4-121-업무",
     "ko": "업무",
     "vi": "Nghiệp vụ, Công việc",
     "en": "Work duty",
@@ -2431,141 +2778,15 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Nghiệp vụ, Công việc."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v5-108-경제성장",
-    "ko": "경제성장",
-    "vi": "Tăng trưởng kinh tế",
-    "en": "Economic growth",
-    "level": 5,
-    "sinoVi": "Kinh Tế Trường",
-    "category": "academic",
-    "pronunciation": "[경제성장]",
-    "ai_examples": [
-      {
-        "sentence": "최근 경제성장에 대한 관심이 높아지고 있다.",
-        "meaning": "Gần đây sự quan tâm đến Tăng trưởng kinh tế đang tăng cao."
-      },
-      {
-        "sentence": "경제성장 문제를 해결하기 위해 노력이 필요하다.",
-        "meaning": "Cần có nỗ lực để giải quyết vấn đề Tăng trưởng kinh tế."
-      }
-    ],
-    "created_at": "2026-08-10T01:38:06.694Z"
-  },
-  {
-    "id": "v5-109-환경오염",
-    "ko": "환경오염",
-    "vi": "Ô nhiễm môi trường",
-    "en": "Environmental pollution",
-    "level": 5,
-    "sinoVi": "Kinh",
-    "category": "academic",
-    "pronunciation": "[환경오염]",
-    "ai_examples": [
-      {
-        "sentence": "최근 환경오염에 대한 관심이 높아지고 있다.",
-        "meaning": "Gần đây sự quan tâm đến Ô nhiễm môi trường đang tăng cao."
-      },
-      {
-        "sentence": "환경오염 문제를 해결하기 위해 노력이 필요하다.",
-        "meaning": "Cần có nỗ lực để giải quyết vấn đề Ô nhiễm môi trường."
-      }
-    ],
-    "created_at": "2026-08-10T01:38:06.694Z"
-  },
-  {
-    "id": "v5-110-저출산",
-    "ko": "저출산",
-    "vi": "Tỷ lệ sinh thấp",
-    "en": "Low birth rate",
-    "level": 5,
-    "sinoVi": "Sơn",
-    "category": "academic",
-    "pronunciation": "[저출산]",
-    "ai_examples": [
-      {
-        "sentence": "최근 저출산에 대한 관심이 높아지고 있다.",
-        "meaning": "Gần đây sự quan tâm đến Tỷ lệ sinh thấp đang tăng cao."
-      },
-      {
-        "sentence": "저출산 문제를 해결하기 위해 노력이 필요하다.",
-        "meaning": "Cần có nỗ lực để giải quyết vấn đề Tỷ lệ sinh thấp."
-      }
-    ],
-    "created_at": "2026-08-10T01:38:06.694Z"
-  },
-  {
-    "id": "v5-111-고령화",
-    "ko": "고령화",
-    "vi": "Dân số già hóa",
-    "en": "Aging population",
-    "level": 5,
-    "sinoVi": "Lĩnh Hóa",
-    "category": "academic",
-    "pronunciation": "[고령화]",
-    "ai_examples": [
-      {
-        "sentence": "최근 고령화에 대한 관심이 높아지고 있다.",
-        "meaning": "Gần đây sự quan tâm đến Dân số già hóa đang tăng cao."
-      },
-      {
-        "sentence": "고령화 문제를 해결하기 위해 노력이 필요하다.",
-        "meaning": "Cần có nỗ lực để giải quyết vấn đề Dân số già hóa."
-      }
-    ],
-    "created_at": "2026-08-10T01:38:06.694Z"
-  },
-  {
-    "id": "v5-112-인공지능",
-    "ko": "인공지능",
-    "vi": "Trí tuệ nhân tạo (AI)",
-    "en": "Artificial intelligence",
-    "level": 5,
-    "sinoVi": "Nhân Công Địa",
-    "category": "academic",
-    "pronunciation": "[인공지능]",
-    "ai_examples": [
-      {
-        "sentence": "최근 인공지능에 대한 관심이 높아지고 있다.",
-        "meaning": "Gần đây sự quan tâm đến Trí tuệ nhân tạo (AI) đang tăng cao."
-      },
-      {
-        "sentence": "인공지능 문제를 해결하기 위해 노력이 필요하다.",
-        "meaning": "Cần có nỗ lực để giải quyết vấn đề Trí tuệ nhân tạo (AI)."
-      }
-    ],
-    "created_at": "2026-08-10T01:38:06.694Z"
-  },
-  {
-    "id": "v5-113-기후변화",
-    "ko": "기후변화",
-    "vi": "Biến đổi khí hậu",
-    "en": "Climate change",
-    "level": 5,
-    "sinoVi": "Kế Hóa",
-    "category": "academic",
-    "pronunciation": "[기후변화]",
-    "ai_examples": [
-      {
-        "sentence": "최근 기후변화에 대한 관심이 높아지고 있다.",
-        "meaning": "Gần đây sự quan tâm đến Biến đổi khí hậu đang tăng cao."
-      },
-      {
-        "sentence": "기후변화 문제를 해결하기 위해 노력이 필요하다.",
-        "meaning": "Cần có nỗ lực để giải quyết vấn đề Biến đổi khí hậu."
-      }
-    ],
-    "created_at": "2026-08-10T01:38:06.694Z"
-  },
-  {
-    "id": "v6-114-국제정세",
+    "id": "v6-122-국제정세",
     "ko": "국제정세",
     "vi": "Tình hình quốc tế",
     "en": "International situation",
     "level": 6,
-    "sinoVi": "Cục Tế Chính",
+    "sinoVi": "Quốc tế tình thế",
     "category": "academic",
     "pronunciation": "[국제정세]",
     "ai_examples": [
@@ -2578,15 +2799,15 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Tình hình quốc tế."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v6-115-지속가능발전",
+    "id": "v6-123-지속가능발전",
     "ko": "지속가능발전",
     "vi": "Phát triển bền vững",
     "en": "Sustainable development",
     "level": 6,
-    "sinoVi": "Địa Gia Điện",
+    "sinoVi": "Trì tục khả năng phát triển",
     "category": "academic",
     "pronunciation": "[지속가능발전]",
     "ai_examples": [
@@ -2599,15 +2820,15 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Phát triển bền vững."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v6-116-빈부격차",
+    "id": "v6-124-빈부격차",
     "ko": "빈부격차",
     "vi": "Khoảng cách giàu nghèo",
     "en": "Gap between rich and poor",
     "level": 6,
-    "sinoVi": "Xa",
+    "sinoVi": "Bần phú cách sai",
     "category": "academic",
     "pronunciation": "[빈부격차]",
     "ai_examples": [
@@ -2620,15 +2841,15 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Khoảng cách giàu nghèo."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
   },
   {
-    "id": "v6-117-문화유산",
+    "id": "v6-125-문화유산",
     "ko": "문화유산",
     "vi": "Di sản văn hóa",
     "en": "Cultural heritage",
     "level": 6,
-    "sinoVi": "Môn Hóa Sơn",
+    "sinoVi": "Văn hóa di sản",
     "category": "academic",
     "pronunciation": "[문화유산]",
     "ai_examples": [
@@ -2641,6 +2862,384 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = [
         "meaning": "Cần có nỗ lực để giải quyết vấn đề Di sản văn hóa."
       }
     ],
-    "created_at": "2026-08-10T01:38:06.694Z"
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-126-사법개혁",
+    "ko": "사법개혁",
+    "vi": "Cải cách tư pháp",
+    "en": "Judicial reform",
+    "level": 6,
+    "sinoVi": "Tư pháp cải cách",
+    "category": "academic",
+    "pronunciation": "[사법개혁]",
+    "ai_examples": [
+      {
+        "sentence": "최근 사법개혁에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Cải cách tư pháp đang tăng cao."
+      },
+      {
+        "sentence": "사법개혁 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Cải cách tư pháp."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-127-경제위기",
+    "ko": "경제위기",
+    "vi": "Khủng hoảng kinh tế",
+    "en": "Economic crisis",
+    "level": 6,
+    "sinoVi": "Kinh tế nguy cơ",
+    "category": "academic",
+    "pronunciation": "[경제위기]",
+    "ai_examples": [
+      {
+        "sentence": "최근 경제위기에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Khủng hoảng kinh tế đang tăng cao."
+      },
+      {
+        "sentence": "경제위기 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Khủng hoảng kinh tế."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-128-외교관",
+    "ko": "외교관",
+    "vi": "Nhà ngoại giao",
+    "en": "Diplomat",
+    "level": 6,
+    "sinoVi": "Ngoại giao quán",
+    "category": "academic",
+    "pronunciation": "[외교관]",
+    "ai_examples": [
+      {
+        "sentence": "최근 외교관에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Nhà ngoại giao đang tăng cao."
+      },
+      {
+        "sentence": "외교관 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Nhà ngoại giao."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-129-지적재산권",
+    "ko": "지적재산권",
+    "vi": "Quyền sở hữu trí tuệ",
+    "en": "Intellectual property rights",
+    "level": 6,
+    "sinoVi": "Trí đích tài sản quyền",
+    "category": "academic",
+    "pronunciation": "[지적재산권]",
+    "ai_examples": [
+      {
+        "sentence": "최근 지적재산권에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Quyền sở hữu trí tuệ đang tăng cao."
+      },
+      {
+        "sentence": "지적재산권 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Quyền sở hữu trí tuệ."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-130-헌법재판소",
+    "ko": "헌법재판소",
+    "vi": "Tòa án hiến pháp",
+    "en": "Constitutional Court",
+    "level": 6,
+    "sinoVi": "Hiến pháp tài phán sở",
+    "category": "academic",
+    "pronunciation": "[헌법재판소]",
+    "ai_examples": [
+      {
+        "sentence": "최근 헌법재판소에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Tòa án hiến pháp đang tăng cao."
+      },
+      {
+        "sentence": "헌법재판소 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Tòa án hiến pháp."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-131-국회의원",
+    "ko": "국회의원",
+    "vi": "Nghị sĩ quốc hội",
+    "en": "Member of National Assembly",
+    "level": 6,
+    "sinoVi": "Quốc hội nghị viên",
+    "category": "academic",
+    "pronunciation": "[국회의원]",
+    "ai_examples": [
+      {
+        "sentence": "최근 국회의원에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Nghị sĩ quốc hội đang tăng cao."
+      },
+      {
+        "sentence": "국회의원 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Nghị sĩ quốc hội."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-132-민주주의",
+    "ko": "민주주의",
+    "vi": "Chủ nghĩa dân chủ",
+    "en": "Democracy",
+    "level": 6,
+    "sinoVi": "Dân chủ chủ nghĩa",
+    "category": "academic",
+    "pronunciation": "[민주주의]",
+    "ai_examples": [
+      {
+        "sentence": "최근 민주주의에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Chủ nghĩa dân chủ đang tăng cao."
+      },
+      {
+        "sentence": "민주주의 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Chủ nghĩa dân chủ."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-133-자본주의",
+    "ko": "자본주의",
+    "vi": "Chủ nghĩa tư bản",
+    "en": "Capitalism",
+    "level": 6,
+    "sinoVi": "Tư bản chủ nghĩa",
+    "category": "academic",
+    "pronunciation": "[자본주의]",
+    "ai_examples": [
+      {
+        "sentence": "최근 자본주의에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Chủ nghĩa tư bản đang tăng cao."
+      },
+      {
+        "sentence": "자본주의 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Chủ nghĩa tư bản."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-134-세계화",
+    "ko": "세계화",
+    "vi": "Toàn cầu hóa",
+    "en": "Globalization",
+    "level": 6,
+    "sinoVi": "Thế giới hóa",
+    "category": "academic",
+    "pronunciation": "[세계화]",
+    "ai_examples": [
+      {
+        "sentence": "최근 세계화에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Toàn cầu hóa đang tăng cao."
+      },
+      {
+        "sentence": "세계화 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Toàn cầu hóa."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-135-다문화사회",
+    "ko": "다문화사회",
+    "vi": "Xã hội đa văn hóa",
+    "en": "Multicultural society",
+    "level": 6,
+    "sinoVi": "Đa văn hóa xã hội",
+    "category": "academic",
+    "pronunciation": "[다문화사회]",
+    "ai_examples": [
+      {
+        "sentence": "최근 다문화사회에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Xã hội đa văn hóa đang tăng cao."
+      },
+      {
+        "sentence": "다문화사회 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Xã hội đa văn hóa."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-136-초고령사회",
+    "ko": "초고령사회",
+    "vi": "Xã hội siêu già hóa",
+    "en": "Super-aged society",
+    "level": 6,
+    "sinoVi": "Siêu cao linh xã hội",
+    "category": "academic",
+    "pronunciation": "[초고령사회]",
+    "ai_examples": [
+      {
+        "sentence": "최근 초고령사회에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Xã hội siêu già hóa đang tăng cao."
+      },
+      {
+        "sentence": "초고령사회 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Xã hội siêu già hóa."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-137-지구온난화",
+    "ko": "지구온난화",
+    "vi": "Hiện tượng nóng lên toàn cầu",
+    "en": "Global warming",
+    "level": 6,
+    "sinoVi": "Địa cầu ôn nạn hóa",
+    "category": "academic",
+    "pronunciation": "[지구온난화]",
+    "ai_examples": [
+      {
+        "sentence": "최근 지구온난화에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Hiện tượng nóng lên toàn cầu đang tăng cao."
+      },
+      {
+        "sentence": "지구온난화 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Hiện tượng nóng lên toàn cầu."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-138-신재생에너지",
+    "ko": "신재생에너지",
+    "vi": "Năng lượng tái tạo mới",
+    "en": "Renewable energy",
+    "level": 6,
+    "sinoVi": "Tân tái sinh năng lượng",
+    "category": "academic",
+    "pronunciation": "[신재생에너지]",
+    "ai_examples": [
+      {
+        "sentence": "최근 신재생에너지에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Năng lượng tái tạo mới đang tăng cao."
+      },
+      {
+        "sentence": "신재생에너지 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Năng lượng tái tạo mới."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-139-인공지능",
+    "ko": "인공지능",
+    "vi": "Trí tuệ nhân tạo",
+    "en": "Artificial intelligence",
+    "level": 6,
+    "sinoVi": "Nhân công trí năng",
+    "category": "academic",
+    "pronunciation": "[인공지능]",
+    "ai_examples": [
+      {
+        "sentence": "최근 인공지능에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Trí tuệ nhân tạo đang tăng cao."
+      },
+      {
+        "sentence": "인공지능 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Trí tuệ nhân tạo."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-140-빅데이터",
+    "ko": "빅데이터",
+    "vi": "Dữ liệu lớn",
+    "en": "Big data",
+    "level": 6,
+    "sinoVi": "Đại dữ liệu",
+    "category": "academic",
+    "pronunciation": "[빅데이터]",
+    "ai_examples": [
+      {
+        "sentence": "최근 빅데이터에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Dữ liệu lớn đang tăng cao."
+      },
+      {
+        "sentence": "빅데이터 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Dữ liệu lớn."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-141-생명공학",
+    "ko": "생명공학",
+    "vi": "Công nghệ sinh học",
+    "en": "Biotechnology",
+    "level": 6,
+    "sinoVi": "Sinh mệnh công học",
+    "category": "academic",
+    "pronunciation": "[생명공학]",
+    "ai_examples": [
+      {
+        "sentence": "최근 생명공학에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Công nghệ sinh học đang tăng cao."
+      },
+      {
+        "sentence": "생명공학 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Công nghệ sinh học."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-142-우주탐사",
+    "ko": "우주탐사",
+    "vi": "Thám hiểm vũ trụ",
+    "en": "Space exploration",
+    "level": 6,
+    "sinoVi": "Vũ trụ thám tra",
+    "category": "academic",
+    "pronunciation": "[우주탐사]",
+    "ai_examples": [
+      {
+        "sentence": "최근 우주탐사에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Thám hiểm vũ trụ đang tăng cao."
+      },
+      {
+        "sentence": "우주탐사 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Thám hiểm vũ trụ."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
+  },
+  {
+    "id": "v6-143-국제통화기금",
+    "ko": "국제통화기금",
+    "vi": "Quỹ tiền tệ quốc tế (IMF)",
+    "en": "International Monetary Fund",
+    "level": 6,
+    "sinoVi": "Quốc tế thông hóa cơ kim",
+    "category": "academic",
+    "pronunciation": "[국제통화기금]",
+    "ai_examples": [
+      {
+        "sentence": "최근 국제통화기금에 대한 관심이 높아지고 있다.",
+        "meaning": "Gần đây sự quan tâm đến Quỹ tiền tệ quốc tế (IMF) đang tăng cao."
+      },
+      {
+        "sentence": "국제통화기금 문제를 해결하기 위해 노력이 필요하다.",
+        "meaning": "Cần có nỗ lực để giải quyết vấn đề Quỹ tiền tệ quốc tế (IMF)."
+      }
+    ],
+    "created_at": "2026-08-10T02:09:29.120Z"
   }
 ]

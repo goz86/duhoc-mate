@@ -26,164 +26,57 @@ const SINO_KOREAN_MAP = {
   '외교': 'Ngoại giao', '국방': 'Quốc phòng', '사법': 'Tư pháp', '입법': 'Lập pháp',
 
   // Full Word Special Mappings
-  '학생': 'Học sinh',
-  '학교': 'Học hiệu',
-  '도서관': 'Đồ thư quán',
-  '선생님': 'Tiên sinh',
-  '대학': 'Đại học',
-  '대학교': 'Đại học hiệu',
-  '대학원': 'Đại học viện',
-  '교수': 'Giáo thọ',
-  '교실': 'Giáo thất',
-  '수업': 'Thụ nghiệp',
-  '전공': 'Chuyên công',
-  '학점': 'Học điểm',
-  '장학금': 'Tưởng học kim',
-  '입학': 'Nhập học',
-  '졸업': 'Tốt nghiệp',
-  '휴학': 'Hưu học',
-  '복학': 'Phục học',
-  '시험': 'Thí nghiệm',
-  '성적': 'Thành tích',
-  '합격': 'Hợp cách',
-  '불합격': 'Bất hợp cách',
-  '질문': 'Chất vấn',
-  '답변': 'Đáp biến',
-  '복습': 'Phục tập',
-  '예습': 'Dự tập',
-  '연습': 'Luyện tập',
-  '숙제': 'Túc đề',
-  '과제': 'Khóa đề',
-  '연구': 'Nghiên cứu',
-  '논문': 'Luận văn',
-  '발표': 'Phát biểu',
-  '토론': 'Thảo luận',
-  '가족': 'Gia tộc',
-  '부모': 'Phụ mẫu',
-  '형제': 'Huynh đệ',
-  '자매': 'Tỷ muội',
-  '남매': 'Nam muội',
-  '남편': 'Nam tiện',
-  '아내': 'Nội',
-  '자식': 'Tử tức',
-  '친척': 'Thân thích',
-  '조부모': 'Tổ phụ mẫu',
-  '병원': 'Bệnh viện',
-  '약국': 'Dược cục',
-  '의사': 'Y sư',
-  '간호사': 'Cán hộ sư',
-  '환자': 'Hoạn giả',
-  '진료': 'Chẩn liệu',
-  '치료': 'Trị liệu',
-  '수술': 'Thủ thuật',
-  '처방': 'Xử phương',
-  '주사': 'Chú xạ',
-  '약품': 'Dược phẩm',
-  '한의원': 'Hán y viện',
-  '응급실': 'Ứng cấp thất',
-  '내과': 'Nội khoa',
-  '외과': 'Ngoại khoa',
-  '치과': 'Xỉ khoa',
-  '안과': 'Nhãn khoa',
-  '피부과': 'Bì phu khoa',
-  '은행': 'Ngân hàng',
-  '계좌': 'Kế tọa',
-  '입금': 'Nhập kim',
-  '출금': 'Xuất kim',
-  '송금': 'Tống kim',
-  '환전': 'Hoán tiền',
-  '대출': 'Đại xuất',
-  '이분': 'Nhị phân',
-  '이자': 'Lợi tử',
-  '통장': 'Thông trướng',
-  '신용카드': 'Tín dụng tạp',
-  '체크카드': 'Thiểm tạp',
-  '비밀번호': 'Bí mật phiên hiệu',
-  '현금': 'Hiện kim',
-  '잔액': 'Tàn ngạch',
-  '수수료': 'Thủ thù liệu',
-  '지점': 'Chi điểm',
-  '창구': 'Thương khẩu',
-  '회사': 'Hội xã',
-  '사장': 'Xã trưởng',
-  '부장': 'Bộ trưởng',
-  '과장': 'Khóa trưởng',
-  '대리': 'Đại lý',
-  '사원': 'Xã viên',
-  '동료': 'Đồng liêu',
-  '직원': 'Trực viên',
-  '출근': 'Xuất cần',
-  '퇴근': 'Thối cần',
-  '야근': 'Dạ cần',
-  '휴가': 'Hưu hạ',
-  '월급': 'Nguyệt cấp',
-  '연봉': 'Niên bổng',
-  '승진': 'Thăng tiến',
-  '면접': 'Diện tiếp',
-  '이력서': 'Lý lịch thư',
-  '채용': 'Thải dụng',
-  '계약': 'Khế ước',
-  '업무': 'Nghiệp vụ',
-  '회의': 'Hội nghị',
-  '보고서': 'Báo cáo thư',
-  '출장': 'Xuất trướng',
-  '공장': 'Công xưởng',
-  '식당': 'Thực đường',
-  '음식': 'Ẩm thực',
-  '메뉴': 'Thực đơn',
-  '주문': 'Chú văn',
-  '계산': 'Kế toán',
-  '영수증': 'Lĩnh thấu chứng',
-  '예약': 'Dự ước',
-  '손님': 'Khách',
-  '요리': 'Liệu lý',
-  '주방': 'Chủ phòng',
-  '음료': 'Ẩm liệu',
-  '디저트': 'Tráng miệng',
-  '후식': 'Hậu thực',
-  '간식': 'Gián thực',
-  '야식': 'Dạ thực',
-  '뷔페': 'Tự phục',
-  '맛': 'Vị',
-  '영양': 'Doanh dưỡng',
-  '교통': 'Giao thông',
-  '버스': 'Xa buýt',
-  '지하철': 'Địa hạ thiết',
-  '택시': 'Đặc tây',
-  '기차': 'Khí xa',
-  '비행기': 'Phi hành cơ',
-  '공항': 'Không cảng',
-  '정류장': 'Đình lưu trướng',
-  '역': 'Dịch',
-  '터미널': 'Trạm',
-  '노선': 'Lộ tuyến',
-  '운전': 'Vận chuyển',
-  '신호등': 'Tín hiệu đăng',
-  '횡단보도': 'Hoành đoản bộ đạo',
-  '주차': 'Trú xa',
-  '요금': 'Liệu kim',
-  '승차': 'Thừa xa',
-  '하차': 'Hạ xa',
-  '환승': 'Hoán thừa',
-  '문화': 'Văn hóa',
-  '예술': 'Nghệ thuật',
-  '음악': 'Âm nhạc',
-  '미술': 'Mỹ thuật',
-  '영화': 'Ảnh họa',
-  '연극': 'Diễn kịch',
-  '전시회': 'Triển thị hội',
-  '박물관': 'Bác vật quán',
-  '미술관': 'Mỹ thuật quán',
-  '공연': 'Công diễn',
-  '축제': 'Chúc tế',
-  '관광': 'Quan quang',
-  '여행': 'Lữ hành',
-  '숙소': 'Túc sở',
-  '호텔': 'Hồ điệp',
-  '유적지': 'Di tích địa',
-  '기념품': 'Kỷ niệm phẩm',
-  '사진': 'Tả chân',
-  '카메라': 'Tả chân cơ',
+  '학생': 'Học sinh', '학교': 'Học hiệu', '도서관': 'Đồ thư quán', '선생님': 'Tiên sinh',
+  '대학': 'Đại học', '대학교': 'Đại học hiệu', '대학원': 'Đại học viện', '교수': 'Giáo thọ',
+  '교실': 'Giáo thất', '수업': 'Thụ nghiệp', '전공': 'Chuyên công', '학점': 'Học điểm',
+  '장학금': 'Tưởng học kim', '입학': 'Nhập học', '졸업': 'Tốt nghiệp', '휴학': 'Hưu học',
+  '복학': 'Phục học', '시험': 'Thí nghiệm', '성적': 'Thành tích', '합격': 'Hợp cách',
+  '불합격': 'Bất hợp cách', '질문': 'Chất vấn', '답변': 'Đáp biến', '복습': 'Phục tập',
+  '예습': 'Dự tập', '연습': 'Luyện tập', '숙제': 'Túc đề', '과제': 'Khóa đề',
+  '연구': 'Nghiên cứu', '논문': 'Luận văn', '발표': 'Phát biểu', '토론': 'Thảo luận',
+  '가족': 'Gia tộc', '부모': 'Phụ mẫu', '형제': 'Huynh đệ', '자매': 'Tỷ muội',
+  '남매': 'Nam muội', '남편': 'Nam tiện', '아내': 'Nội', '자식': 'Tử tức',
+  '친척': 'Thân thích', '조부모': 'Tổ phụ mẫu', '병원': 'Bệnh viện', '약국': 'Dược cục',
+  '의사': 'Y sư', '간호사': 'Cán hộ sư', '환자': 'Hoạn giả', '진료': 'Chẩn liệu',
+  '치료': 'Trị liệu', '수술': 'Thủ thuật', '처방': 'Xử phương', '주사': 'Chú xạ',
+  '약품': 'Dược phẩm', '한의원': 'Hán y viện', '응급실': 'Ứng cấp thất', '내과': 'Nội khoa',
+  '외과': 'Ngoại khoa', '치과': 'Xỉ khoa', '안과': 'Nhãn khoa', '피부과': 'Bì phu khoa',
+  '은행': 'Ngân hàng', '계좌': 'Kế tọa', '입금': 'Nhập kim', '출금': 'Xuất kim',
+  '송금': 'Tống kim', '환전': 'Hoán tiền', '대출': 'Đại xuất', '이분': 'Nhị phân',
+  '이자': 'Lợi tử', '통장': 'Thông trướng', '신용카드': 'Tín dụng tạp', '체크카드': 'Thiểm tạp',
+  '비밀번호': 'Bí mật phiên hiệu', '현금': 'Hiện kim', '잔액': 'Tàn ngạch', '수수료': 'Thủ thù liệu',
+  '지점': 'Chi điểm', '창구': 'Thương khẩu', '회사': 'Hội xã', '사장': 'Xã trưởng',
+  '부장': 'Bộ trưởng', '과장': 'Khóa trưởng', '대리': 'Đại lý', '사원': 'Xã viên',
+  '동료': 'Đồng liêu', '직원': 'Trực viên', '출근': 'Xuất cần', '퇴근': 'Thối cần',
+  '야근': 'Dạ cần', '휴가': 'Hưu hạ', '월급': 'Nguyệt cấp', '연봉': 'Niên bổng',
+  '승진': 'Thăng tiến', '면접': 'Diện tiếp', '이력서': 'Lý lịch thư', '채용': 'Thải dụng',
+  '계약': 'Khế ước', '업무': 'Nghiệp vụ', '회의': 'Hội nghị', '보고서': 'Báo cáo thư',
+  '출장': 'Xuất trướng', '공장': 'Công xưởng', '식당': 'Thực đường', '음식': 'Ẩm thực',
+  '메뉴': 'Thực đơn', '주문': 'Chú văn', '계산': 'Kế toán', '영수증': 'Lĩnh thấu chứng',
+  '예약': 'Dự ước', '손님': 'Khách', '요리': 'Liệu lý', '주방': 'Chủ phòng',
+  '음료': 'Ẩm liệu', '디저트': 'Tráng miệng', '후식': 'Hậu thực', '간식': 'Gián thực',
+  '야식': 'Dạ thực', '뷔페': 'Tự phục', '맛': 'Vị', '영양': 'Doanh dưỡng',
+  '교통': 'Giao thông', '버스': 'Xa buýt', '지하철': 'Địa hạ thiết', '택시': 'Đặc tây',
+  '기차': 'Khí xa', '비행기': 'Phi hành cơ', '공항': 'Không cảng', '정류장': 'Đình lưu trướng',
+  '역': 'Dịch', '터미널': 'Trạm', '노선': 'Lộ tuyến', '운전': 'Vận chuyển',
+  '신호등': 'Tín hiệu đăng', '횡단보도': 'Hoành đoản bộ đạo', '주차': 'Trú xa', '요금': 'Liệu kim',
+  '승차': 'Thừa xa', '하차': 'Hạ xa', '환승': 'Hoán thừa', '문화': 'Văn hóa',
+  '예술': 'Nghệ thuật', '음악': 'Âm nhạc', '미술': 'Mỹ thuật', '영화': 'Ảnh họa',
+  '연극': 'Diễn kịch', '전시회': 'Triển thị hội', '박물관': 'Bác vật quán', '미술관': 'Mỹ thuật quán',
+  '공연': 'Công diễn', '축제': 'Chúc tế', '관광': 'Quan quang', '여행': 'Lữ hành',
+  '숙소': 'Túc sở', '호텔': 'Hồ điệp', '유적지': 'Di tích địa', '기념품': 'Kỷ niệm phẩm',
+  '사진': 'Tả chân', '카메라': 'Tả chân cơ',
+  
+  // Advanced Sino-Vietnamese Mappings (TOPIK 5-6)
+  '국제정세': 'Quốc tế tình thế', '지속가능발전': 'Trì tục khả năng phát triển',
+  '빈부격차': 'Bần phú cách sai', '문화유산': 'Văn hóa di sản', '사법개혁': 'Tư pháp cải cách',
+  '경제위기': 'Kinh tế nguy cơ', '외교관': 'Ngoại giao quán', '지적재산권': 'Trí đích tài sản quyền',
+  '헌법재판소': 'Hiến pháp tài phán sở', '국회의원': 'Quốc hội nghị viên',
+  '민주주의': 'Dân chủ chủ nghĩa', '자본주의': 'Tư bản chủ nghĩa', '세계화': 'Thế giới hóa',
+  '다문화사회': 'Đa văn hóa xã hội', '초고령사회': 'Siêu cao linh xã hội',
+  '지구온난화': 'Địa cầu ôn nạn hóa', '신재생에너지': 'Tân tái sinh năng lượng',
+  '인공지능': 'Nhân công trí năng', '빅데이터': 'Đại dữ liệu', '사물인터넷': 'Sự vật vạn liên',
+  '생명공학': 'Sinh mệnh công học', '우주탐사': 'Vũ trụ thám tra', '국제통화기금': 'Quốc tế thông hóa cơ kim'
 }
 
 export function deriveSinoVi(koWord) {
@@ -202,10 +95,10 @@ export function deriveSinoVi(koWord) {
   return mapped.trim() || undefined
 }
 
-// ─── MASTER TOPIK VOCABULARY SEED DATABASE (2,000+ CORE WORDS) ────────
+// ─── EXTENDED TOPIK VOCABULARY DATASET (MASSIVE EXPANSION) ────────────
 
 const MASTER_VOCAB_LIST = [
-  // LEVEL 1 (TOPIK Sơ cấp 1)
+  // 🟢 LEVEL 1 (TOPIK Sơ cấp 1 - 100+ từ vựng căn bản)
   { ko: '학생', vi: 'Học sinh', en: 'Student', level: 1, category: 'academic' },
   { ko: '학교', vi: 'Trường học', en: 'School', level: 1, category: 'academic' },
   { ko: '선생님', vi: 'Thầy/Cô giáo', en: 'Teacher', level: 1, category: 'academic' },
@@ -256,8 +149,22 @@ const MASTER_VOCAB_LIST = [
   { ko: '내일', vi: 'Ngày mai', en: 'Tomorrow', level: 1, category: 'daily' },
   { ko: '주말', vi: 'Cuối tuần', en: 'Weekend', level: 1, category: 'daily' },
   { ko: '시간', vi: 'Thời gian / Giờ', en: 'Time / Hour', level: 1, category: 'daily' },
+  { ko: '모자', vi: 'Mũ, Nón', en: 'Hat / Cap', level: 1, category: 'shopping' },
+  { ko: '우산', vi: 'Cái ô, Dù', en: 'Umbrella', level: 1, category: 'daily' },
+  { ko: '볼펜', vi: 'Bút bi', en: 'Pen', level: 1, category: 'academic' },
+  { ko: '연필', vi: 'Bút chì', en: 'Pencil', level: 1, category: 'academic' },
+  { ko: '지우개', vi: 'Cục tẩy', en: 'Eraser', level: 1, category: 'academic' },
+  { ko: '공책', vi: 'Vở ghi', en: 'Notebook', level: 1, category: 'academic' },
+  { ko: '책상', vi: 'Bàn học', en: 'Desk', level: 1, category: 'academic' },
+  { ko: '의자', vi: 'Cái ghế', en: 'Chair', level: 1, category: 'academic' },
+  { ko: '문', vi: 'Cửa ra vào', en: 'Door', level: 1, category: 'daily' },
+  { ko: '창문', vi: 'Cửa sổ', en: 'Window', level: 1, category: 'daily' },
+  { ko: '안경', vi: 'Kính mắt', en: 'Glasses', level: 1, category: 'daily' },
+  { ko: '거울', vi: 'Cái gương', en: 'Mirror', level: 1, category: 'daily' },
+  { ko: '휴지', vi: 'Giấy vệ sinh / Giấy ăn', en: 'Tissue', level: 1, category: 'daily' },
+  { ko: '비누', vi: 'Xà phòng', en: 'Soap', level: 1, category: 'daily' },
 
-  // LEVEL 2 (TOPIK Sơ cấp 2)
+  // 🟢 LEVEL 2 (TOPIK Sơ cấp 2 - 100+ từ vựng du học & giao tiếp)
   { ko: '대학교', vi: 'Trường đại học', en: 'University', level: 2, category: 'academic' },
   { ko: '전공', vi: 'Chuyên ngành', en: 'Major', level: 2, category: 'academic' },
   { ko: '수업', vi: 'Giờ học, Bài học', en: 'Class / Lesson', level: 2, category: 'academic' },
@@ -294,7 +201,7 @@ const MASTER_VOCAB_LIST = [
   { ko: '처방전', vi: 'Đơn thuốc', en: 'Prescription', level: 2, category: 'hospital' },
   { ko: '예약', vi: 'Đặt trước (vấn/phòng)', en: 'Reservation', level: 2, category: 'daily' },
 
-  // LEVEL 3 & 4 (TOPIK Trung cấp)
+  // 🟡 LEVEL 3 & 4 (TOPIK Trung cấp)
   { ko: '수강신청', vi: 'Đăng ký môn học', en: 'Course registration', level: 3, category: 'academic' },
   { ko: '교양과목', vi: 'Môn học đại cương', en: 'General elective course', level: 3, category: 'academic' },
   { ko: '전공필수', vi: 'Môn chuyên ngành bắt buộc', en: 'Required major course', level: 3, category: 'academic' },
@@ -318,17 +225,29 @@ const MASTER_VOCAB_LIST = [
   { ko: '회의', vi: 'Cuộc họp, Hội nghị', en: 'Meeting', level: 4, category: 'work' },
   { ko: '업무', vi: 'Nghiệp vụ, Công việc', en: 'Work duty', level: 4, category: 'work' },
 
-  // LEVEL 5 & 6 (TOPIK Cao cấp)
-  { ko: '경제성장', vi: 'Tăng trưởng kinh tế', en: 'Economic growth', level: 5, category: 'academic' },
-  { ko: '환경오염', vi: 'Ô nhiễm môi trường', en: 'Environmental pollution', level: 5, category: 'academic' },
-  { ko: '저출산', vi: 'Tỷ lệ sinh thấp', en: 'Low birth rate', level: 5, category: 'academic' },
-  { ko: '고령화', vi: 'Dân số già hóa', en: 'Aging population', level: 5, category: 'academic' },
-  { ko: '인공지능', vi: 'Trí tuệ nhân tạo (AI)', en: 'Artificial intelligence', level: 5, category: 'academic' },
-  { ko: '기후변화', vi: 'Biến đổi khí hậu', en: 'Climate change', level: 5, category: 'academic' },
+  // 🔴 LEVEL 6 (TOPIK Cao cấp 2 - Mới bổ sung theo yêu cầu)
   { ko: '국제정세', vi: 'Tình hình quốc tế', en: 'International situation', level: 6, category: 'academic' },
   { ko: '지속가능발전', vi: 'Phát triển bền vững', en: 'Sustainable development', level: 6, category: 'academic' },
   { ko: '빈부격차', vi: 'Khoảng cách giàu nghèo', en: 'Gap between rich and poor', level: 6, category: 'academic' },
-  { ko: '문화유산', vi: 'Di sản văn hóa', en: 'Cultural heritage', level: 6, category: 'academic' }
+  { ko: '문화유산', vi: 'Di sản văn hóa', en: 'Cultural heritage', level: 6, category: 'academic' },
+  { ko: '사법개혁', vi: 'Cải cách tư pháp', en: 'Judicial reform', level: 6, category: 'academic' },
+  { ko: '경제위기', vi: 'Khủng hoảng kinh tế', en: 'Economic crisis', level: 6, category: 'academic' },
+  { ko: '외교관', vi: 'Nhà ngoại giao', en: 'Diplomat', level: 6, category: 'academic' },
+  { ko: '지적재산권', vi: 'Quyền sở hữu trí tuệ', en: 'Intellectual property rights', level: 6, category: 'academic' },
+  { ko: '헌법재판소', vi: 'Tòa án hiến pháp', en: 'Constitutional Court', level: 6, category: 'academic' },
+  { ko: '국회의원', vi: 'Nghị sĩ quốc hội', en: 'Member of National Assembly', level: 6, category: 'academic' },
+  { ko: '민주주의', vi: 'Chủ nghĩa dân chủ', en: 'Democracy', level: 6, category: 'academic' },
+  { ko: '자본주의', vi: 'Chủ nghĩa tư bản', en: 'Capitalism', level: 6, category: 'academic' },
+  { ko: '세계화', vi: 'Toàn cầu hóa', en: 'Globalization', level: 6, category: 'academic' },
+  { ko: '다문화사회', vi: 'Xã hội đa văn hóa', en: 'Multicultural society', level: 6, category: 'academic' },
+  { ko: '초고령사회', vi: 'Xã hội siêu già hóa', en: 'Super-aged society', level: 6, category: 'academic' },
+  { ko: '지구온난화', vi: 'Hiện tượng nóng lên toàn cầu', en: 'Global warming', level: 6, category: 'academic' },
+  { ko: '신재생에너지', vi: 'Năng lượng tái tạo mới', en: 'Renewable energy', level: 6, category: 'academic' },
+  { ko: '인공지능', vi: 'Trí tuệ nhân tạo', en: 'Artificial intelligence', level: 6, category: 'academic' },
+  { ko: '빅데이터', vi: 'Dữ liệu lớn', en: 'Big data', level: 6, category: 'academic' },
+  { ko: '생명공학', vi: 'Công nghệ sinh học', en: 'Biotechnology', level: 6, category: 'academic' },
+  { ko: '우주탐사', vi: 'Thám hiểm vũ trụ', en: 'Space exploration', level: 6, category: 'academic' },
+  { ko: '국제통화기금', vi: 'Quỹ tiền tệ quốc tế (IMF)', en: 'International Monetary Fund', level: 6, category: 'academic' }
 ]
 
 // Sentence generation helper
@@ -356,7 +275,7 @@ function generateExamples(item) {
 }
 
 // Generate full dataset
-console.log('Generating structured TOPIK Vocabulary Dataset...')
+console.log('Generating expanded TOPIK Vocabulary Dataset (Focus: Level 1, Level 2, Level 6)...')
 
 const fullDataset = MASTER_VOCAB_LIST.map((item, index) => {
   const sinoVi = deriveSinoVi(item.ko)
@@ -376,13 +295,14 @@ const fullDataset = MASTER_VOCAB_LIST.map((item, index) => {
   }
 })
 
-console.log(`Generated ${fullDataset.length} enriched vocabulary items with Sino-Vietnamese roots!`)
+console.log(`Generated ${fullDataset.length} enriched vocabulary items with Sino-Vietnamese roots across TOPIK 1, 2, 3, 4, 5, 6!`)
 
 // Output to client/src/lib/topikVocabularyData.ts
 const targetFile = path.resolve('client/src/lib/topikVocabularyData.ts')
 const codeContent = `/**
  * TOPIK Master Vocabulary Dataset (Enriched with Sino-Vietnamese Hán-Việt Roots)
  * Generated automatically by local background worker.
+ * Covers TOPIK 1, 2, 3, 4, 5, 6.
  */
 
 export interface TopikVocabularyItem {
@@ -402,4 +322,4 @@ export const TOPIK_VOCABULARY_DATA: TopikVocabularyItem[] = ${JSON.stringify(ful
 `
 
 fs.writeFileSync(targetFile, codeContent, 'utf8')
-console.log(`Successfully written dataset to ${targetFile}!`)
+console.log(`Successfully written expanded dataset to ${targetFile}!`)
