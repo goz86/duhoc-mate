@@ -504,7 +504,7 @@ export default function StudyTableStage({
               <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 bg-gradient-to-b from-black/75 via-black/35 to-transparent p-4">
                 <div className="min-w-0 text-white">
                   <p className="truncate text-sm font-black sm:text-base">
-                    {expandedVideo.member.username}{expandedVideo.isLocal ? ` (${t('members.you')})` : ''}
+                    {expandedVideo.member.username}
                   </p>
                   <p className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-black text-white/85 backdrop-blur">
                     <Video size={11} />
@@ -894,7 +894,7 @@ export default function StudyTableStage({
                               />
                               <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/75 via-black/35 to-transparent p-2.5">
                                 <span className="min-w-0 truncate text-xs font-black text-white">
-                                  {member.username}{isLocal ? ` (${t('members.you')})` : ''}
+                                  {member.username}
                                 </span>
                                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/15 text-white shadow backdrop-blur">
                                   <Minimize2 size={13} />
@@ -950,7 +950,7 @@ export default function StudyTableStage({
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <h3 className={`truncate font-display font-black text-brand-brown-dark ${isMicro ? 'text-xs' : 'text-sm'}`}>
-                                  {member.username}{isLocal ? ` (${t('members.you')})` : ''}
+                                  {member.username}
                                 </h3>
                                 <p className="mt-0.5 truncate text-[10px] font-bold text-brand-brown-light">
                                   {roleLabel}
